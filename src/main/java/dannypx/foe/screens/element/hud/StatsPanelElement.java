@@ -22,9 +22,9 @@ public class StatsPanelElement extends PanelElement {
     /// White label on a filled box, drawn to match the server's rarity badges: a lighter top edge
     /// and a darker drop shadow underneath.
     private static final Component GIGANTIC_BADGE = Component.literal("GIGANTIC").withStyle(ChatFormatting.WHITE);
-    private static final int GIGANTIC_COLOR = 0xFFC93832;
-    private static final int GIGANTIC_LIGHT = 0xFFE05A55;
-    private static final int GIGANTIC_SHADOW = 0xFF5A1414;
+    private static final int GIGANTIC_COLOR = 0xFFAF3333;
+    private static final int GIGANTIC_LIGHT = 0xFFCC5050;
+    private static final int GIGANTIC_SHADOW = 0xFF4A1010;
     private Component giganticLine = null;
 
     private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
