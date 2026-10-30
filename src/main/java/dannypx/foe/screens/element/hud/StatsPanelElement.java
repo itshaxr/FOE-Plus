@@ -19,6 +19,11 @@ import java.util.List;
 /// FOECollab's FishTrackerHudHandler (AGPL-3.0); the numbers come from FOE-R's stats tracker.
 public class StatsPanelElement extends PanelElement {
     private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
+    /// Bold white label drawn on a box in the gigantic colour, like the rarity badges.
+    private static final Component GIGANTIC_BADGE = Component.literal(" ɢɪɢᴀɴᴛɪᴄ ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE);
+    private static final int GIGANTIC_COLOR = 0xFFAF3333;
+    private Component giganticLine = null;
+
     private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
 
     public StatsPanelElement() {
@@ -79,10 +84,11 @@ public class StatsPanelElement extends PanelElement {
                     .getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
             int amount = gigantic == null ? 0 : gigantic.amount();
             int dryStreak = gigantic == null ? fishTotal : fishTotal - gigantic.caughtOn();
-            lines.add(join(ConstantDataHandler.instance().getConstantFishComponent("gigantic"),
+            giganticLine = join(GIGANTIC_BADGE,
                     white(" " + amount + " "),
                     label("(" + percent(amount, fishTotal) + "%) "),
-                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY)));
+                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(giganticLine);
         }
         lines.add(Component.empty());
 
@@ -98,6 +104,14 @@ public class StatsPanelElement extends PanelElement {
         }
 
         return lines;
+    }
+
+    @Override
+    protected void beforeLine(net.minecraft.client.gui.GuiGraphics guiGraphics, net.minecraft.client.gui.Font font, Component line, int x, int y) {
+        if (line != giganticLine) return;
+        int width = font.width(GIGANTIC_BADGE);
+        guiGraphics.fill(x - 1, y - 1, x + width, y + font.lineHeight - 1, GIGANTIC_COLOR);
+        guiGraphics.renderOutline(x - 2, y - 2, width + 3, font.lineHeight + 2, 0xFFFFFFFF);
     }
 
     private static Component white(String text) {

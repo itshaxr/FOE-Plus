@@ -73,6 +73,10 @@ public abstract class PanelElement extends Element {
         return 0xFF555555;
     }
 
+    /// Called just before a line is drawn, so a panel can draw something behind it.
+    protected void beforeLine(GuiGraphics guiGraphics, Font font, Component line, int x, int y) {
+    }
+
     private int iconSpace() {
         net.minecraft.world.item.ItemStack icon = this.icon();
         return icon == null || icon.isEmpty() ? 0 : 18 + PADDING;
@@ -205,6 +209,7 @@ public abstract class PanelElement extends Element {
         int y = top + PADDING;
         for (Component line : lines) {
             int x = textRight ? textRightEdge - font.width(line) : textLeft;
+            this.beforeLine(guiGraphics, font, line, x, y);
             guiGraphics.drawString(font, line, x, y, 0xFFFFFFFF, true);
             y += lineHeight;
         }
