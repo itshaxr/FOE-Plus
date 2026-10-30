@@ -25,3 +25,4 @@ Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
 - Moon cycle timer in the inventory screen (`MoonTimerHandler`, `InventoryScreenRenderHandler.renderMoonTimer`).
 - FOE title screen (`screens/FoeTitleScreen.java`) with its logo and background images under `textures/gui/title/` and `sprites/title/`.
 - FOE catch popup (`screens/element/hud/CatchPopupElement.java`).
+- FOE top bar (`TopBarElement`) and pet panel (`PetPanelElement`).

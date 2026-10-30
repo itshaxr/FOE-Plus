@@ -56,7 +56,7 @@ public class PetElement extends Element {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(Configs.hudConfig.petElementScale.get(), Configs.hudConfig.petElementScale.get());
         if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showPetElement.get()
+                && Configs.hudConfig.showPetElement.get() && !Configs.hudConfig.showPetPanel.get()
                 && TabOverlayHandler.instance().isInInstance()
         ) {
             // Position

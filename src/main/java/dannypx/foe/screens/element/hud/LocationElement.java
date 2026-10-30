@@ -55,7 +55,7 @@ public class LocationElement extends Element {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(Configs.hudConfig.locationElementScale.get(), Configs.hudConfig.locationElementScale.get());
         if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showLocationElement.get()
+                && Configs.hudConfig.showLocationElement.get() && !Configs.hudConfig.showTopBar.get()
                 && TabOverlayHandler.instance().isInInstance()
         ) {
             // Position

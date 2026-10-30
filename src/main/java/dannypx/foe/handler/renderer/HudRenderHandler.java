@@ -76,6 +76,8 @@ public class HudRenderHandler extends Handler {
 
     private void registerElements() {
         if(elements.isEmpty()) {
+            // FOE top bar first so everything else draws over it
+            elements.add(Pair.of("top_bar", new TopBarElement()));
             elements.add(Pair.of("profile_hud", new ProfileElement()));
             elements.add(Pair.of("location_hud", new LocationElement()));
             elements.add(Pair.of("hotbar_hud", new HotbarElement()));
@@ -87,6 +89,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("stats_panel", new StatsPanelElement()));
             elements.add(Pair.of("quest_panel", new QuestPanelElement()));
             elements.add(Pair.of("catch_popup", new CatchPopupElement()));
+            elements.add(Pair.of("pet_panel", new PetPanelElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 

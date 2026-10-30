@@ -262,6 +262,25 @@ public class MoveElementScreen extends DefaultModScreen {
         ));
 
         widgets.add(new MovableBoxWidget(this.minecraft,
+                new PetPanelElement(true),
+                Alignment.getCorners(),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.petPanelXPosition.accept(xPercent);
+                        Configs.hudConfig.petPanelYPosition.accept(yPercent);
+                        Configs.hudConfig.petPanelAlignment.accept(alignment);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.showPetPanel.translationKey());
+                    }
+                }
+        ));
+
+        widgets.add(new MovableBoxWidget(this.minecraft,
                 new CatchPopupElement(true),
                 List.of(Alignment.TOP),
                 new MovableBoxWidget.Callback() {

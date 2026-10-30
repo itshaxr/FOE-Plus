@@ -63,6 +63,20 @@ public abstract class PanelElement extends Element {
     protected boolean alignTextToAnchor() {
         return true;
     }
+
+    /// Optional item drawn in a bordered box beside the text (the pet HUD uses this).
+    protected net.minecraft.world.item.ItemStack icon() {
+        return null;
+    }
+
+    protected int iconBorderColor() {
+        return 0xFF555555;
+    }
+
+    private int iconSpace() {
+        net.minecraft.world.item.ItemStack icon = this.icon();
+        return icon == null || icon.isEmpty() ? 0 : 18 + PADDING;
+    }
     //endregion
 
     private List<Component> buildLines() {
@@ -85,7 +99,7 @@ public abstract class PanelElement extends Element {
     /// Outer size of the panel including the border, before scaling.
     private int outerWidth(List<Component> lines, Font font) {
         int max = lines.stream().mapToInt(font::width).max().orElse(0);
-        max = Math.max(max, font.width(this.title()) + 8);
+        max = Math.max(max + iconSpace(), font.width(this.title()) + 8);
         return max + PADDING * 4;
     }
 
@@ -128,6 +142,8 @@ public abstract class PanelElement extends Element {
         int anchorY = bottom ? screenHeight - Math.round(screenHeight * yPos) : Math.round(screenHeight * yPos);
         int outerX = right ? anchorX - outerWidth : anchorX;
         int outerY = bottom ? anchorY - outerHeight : anchorY;
+        // Keep top-anchored panels below FOE's top bar.
+        if (!bottom) outerY = Math.max(outerY, Math.round(TopBarElement.barHeight() / scale) + 2);
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
@@ -172,10 +188,23 @@ public abstract class PanelElement extends Element {
             guiGraphics.drawString(font, title, titleX, top - font.lineHeight / 2 - 1, white, false);
         }
 
+        // Icon box on the anchored side, text beside it.
+        int iconSpace = iconSpace();
+        int textLeft = contentLeft;
+        int textRightEdge = contentRight;
+        if (iconSpace > 0) {
+            int iconBoxX = right ? contentRight - 18 : contentLeft;
+            int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - 18) / 2 - 2;
+            guiGraphics.renderOutline(iconBoxX, iconBoxY, 18, 18, iconBorderColor());
+            guiGraphics.renderItem(this.icon(), iconBoxX + 1, iconBoxY + 1);
+            if (right) textRightEdge -= iconSpace;
+            else textLeft += iconSpace;
+        }
+
         boolean textRight = right && alignTextToAnchor();
         int y = top + PADDING;
         for (Component line : lines) {
-            int x = textRight ? contentRight - font.width(line) : contentLeft;
+            int x = textRight ? textRightEdge - font.width(line) : textLeft;
             guiGraphics.drawString(font, line, x, y, 0xFFFFFFFF, true);
             y += lineHeight;
         }

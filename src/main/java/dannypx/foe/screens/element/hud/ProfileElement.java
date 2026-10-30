@@ -58,7 +58,7 @@ public class ProfileElement extends Element {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(Configs.hudConfig.profileElementScale.get(), Configs.hudConfig.profileElementScale.get());
         if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showProfileElement.get()
+                && Configs.hudConfig.showProfileElement.get() && !Configs.hudConfig.showTopBar.get()
                 && TabOverlayHandler.instance().isInInstance()
         ) {
             // Position

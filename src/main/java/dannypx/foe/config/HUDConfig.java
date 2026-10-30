@@ -329,6 +329,46 @@ public class HUDConfig extends Config {
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
     public ValidatedFloat questPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Pet Panel")
+    @Desc("§7FOE's pet panel: icon, name, level, XP and rating (replaces the FOE-R pet element while on)")
+    public ConfigGroup petPanelGroup = new ConfigGroup("pet_panel_group");
+
+    @Name("Show Pet Panel")
+    public ValidatedBoolean showPetPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt petPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt petPanelYPosition = new ValidatedInt(2, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> petPanelAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt petPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat petPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Top Bar")
+    @Desc("§7FOE's bar across the top: name, level, location, weather, time, balance, catches")
+    public ConfigGroup topBarGroup = new ConfigGroup("top_bar_group");
+
+    @Name("Show Top Bar")
+    public ValidatedBoolean showTopBar = new ValidatedBoolean(true);
+
+    @Name("Show climate")
+    public ValidatedBoolean topBarShowClimate = new ValidatedBoolean(true);
+
+    @Name("Background opacity in %")
+    public ValidatedInt topBarOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat topBarScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
+
     @Name("FOE Catch Popup")
     @Desc("§7The floating catch text used when Fish catch style is FOE")
     public ConfigGroup catchPopupGroup = new ConfigGroup("catch_popup_group");
