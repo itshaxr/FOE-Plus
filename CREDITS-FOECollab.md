@@ -13,3 +13,12 @@ The pet markers (clover = max luck, anchor = max scale, combined icon = both) an
 `textures/gui/sprites/icons/max_luck.png`, `max_scale.png`, `max_perfect.png` were also ported from
 FOECollab (AGPL-3.0). The drawing code was rewritten into `ItemRendererHandler.drawMaxPetStats`
 using FOE-R's existing `PetTagObject` getters.
+
+## Pet rating letter, vault page buttons, info panels
+
+Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
+- Always-on pet rating letter (`ItemRendererHandler.drawPetRatingLetter`).
+- Personal vault page buttons 1–7 (`PersonalVaultScreenRenderHandler`).
+- Contest, Daily Quests, Quests and All-Time Stats panels (`screens/element/hud/*PanelElement.java`),
+  contest and daily-mission parsing (`ContestTrackerHandler`, `DailyQuestHandler`), and the panel
+  border textures under `textures/gui/sprites/themes/`.

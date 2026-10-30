@@ -194,6 +194,11 @@ public class StatsDataHandler extends Handler {
         this.needsUpdate = true;
     }
 
+    public void addQuestCompleted() {
+        statsData.questsCompleted++;
+        this.needsUpdate = true;
+    }
+
     public void updateData(String set, int value) {
         switch (set) {
             case "fish" -> {
@@ -326,6 +331,9 @@ public class StatsDataHandler extends Handler {
          * Other items
          */
         public Map<String, Integer> questItemData = new HashMap<>();
+
+        /// Quests completed (counted from chat, used by the All-Time Stats panel)
+        public int questsCompleted = 0;
 
         public StatsDataModel() {
             super(STATS_DATA_MODEL_VERSION, null);

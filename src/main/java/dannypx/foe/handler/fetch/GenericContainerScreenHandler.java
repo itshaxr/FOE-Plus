@@ -64,6 +64,12 @@ public class GenericContainerScreenHandler extends Handler {
             QuestScreenHandler.instance().init(genericContainerScreen);
         }
 
+        // Main Menu (holds the Daily Missions item for the Daily Quests panel)
+        else if (Objects.equals(genericContainerScreen.getTitle().getString(), dannypx.foe.handler.logic.DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER)) {
+            dannypx.foe.handler.logic.DailyQuestHandler.instance().setMenuOpen(true);
+            ScreenEvents.remove(genericContainerScreen).register(screen -> dannypx.foe.handler.logic.DailyQuestHandler.instance().setMenuOpen(false));
+        }
+
         // Stats Screen
         else if (Objects.equals(genericContainerScreen.getTitle().getString(), STATS_SCREEN_CONTAINER)) {
             StatsScreenHandler.instance().init(genericContainerScreen);

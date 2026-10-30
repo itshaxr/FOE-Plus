@@ -2,6 +2,7 @@ package dannypx.foe.config;
 
 import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.type.Alignment;
+import dannypx.foe.type.PanelTheme;
 import me.fzzyhmstrs.fzzy_config.annotations.Version;
 import me.fzzyhmstrs.fzzy_config.api.FileType;
 import me.fzzyhmstrs.fzzy_config.config.Config;
@@ -221,6 +222,107 @@ public class HUDConfig extends Config {
     @Name("Show notification when empty slots left")
     @Desc("§7How many empty slots before it shows the notification")
     public ValidatedInt showNotificationAtEmptySlots = new ValidatedInt(3, 36, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    // FOE-style info panels (ported from FOECollab)
+    @Name("Info panel border style")
+    @Desc("§7Border style of the Contest, Quests, Daily Quests and All-Time Stats panels")
+    public ValidatedEnum<PanelTheme> panelTheme = new ValidatedEnum<>(PanelTheme.CLEAN_ROUNDED, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Contest Panel")
+    @Desc("§7Contest timer, type, location and top 3")
+    public ConfigGroup contestPanelGroup = new ConfigGroup("contestPanel_group");
+
+    @Name("Show Contest Panel")
+    public ValidatedBoolean showContestPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt contestPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt contestPanelYPosition = new ValidatedInt(2, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> contestPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt contestPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
+    public ValidatedFloat contestPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Daily Quests Panel")
+    @Desc("§7Your unfinished daily missions")
+    public ConfigGroup dailyQuestPanelGroup = new ConfigGroup("dailyQuestPanel_group");
+
+    @Name("Show Daily Quests Panel")
+    public ValidatedBoolean showDailyQuestPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt dailyQuestPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt dailyQuestPanelYPosition = new ValidatedInt(18, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> dailyQuestPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt dailyQuestPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
+    public ValidatedFloat dailyQuestPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("All-Time Stats Panel")
+    @Desc("§7Fish caught, fish/hour, rarities and variants")
+    public ConfigGroup statsPanelGroup = new ConfigGroup("statsPanel_group");
+
+    @Name("Show All-Time Stats Panel")
+    public ValidatedBoolean showStatsPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt statsPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt statsPanelYPosition = new ValidatedInt(18, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> statsPanelAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt statsPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
+    public ValidatedFloat statsPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Quests Panel")
+    @Desc("§7Quests for your current location")
+    public ConfigGroup questPanelGroup = new ConfigGroup("questPanel_group");
+
+    @Name("Show Quests Panel")
+    public ValidatedBoolean showQuestPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt questPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt questPanelYPosition = new ValidatedInt(2, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> questPanelAlignment = new ValidatedChoice<>(Alignment.BOTTOM_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt questPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
+    public ValidatedFloat questPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Override
     public @NotNull FileType fileType() {

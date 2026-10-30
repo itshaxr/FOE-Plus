@@ -81,6 +81,11 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("hotbar_hud", new HotbarElement()));
             elements.add(Pair.of("pet_hud", new PetElement()));
             elements.add(Pair.of("notifier_hud", new NotifierElement()));
+            // FOE-style info panels (ported from FOECollab)
+            elements.add(Pair.of("contest_panel", new ContestPanelElement()));
+            elements.add(Pair.of("daily_quest_panel", new DailyQuestPanelElement()));
+            elements.add(Pair.of("stats_panel", new StatsPanelElement()));
+            elements.add(Pair.of("quest_panel", new QuestPanelElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 

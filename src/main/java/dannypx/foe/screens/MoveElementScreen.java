@@ -185,6 +185,82 @@ public class MoveElementScreen extends DefaultModScreen {
             }
         });
 
+        widgets.add(new MovableBoxWidget(this.minecraft,
+                new ContestPanelElement(true),
+                Alignment.getCorners(),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.contestPanelXPosition.accept(xPercent);
+                        Configs.hudConfig.contestPanelYPosition.accept(yPercent);
+                        Configs.hudConfig.contestPanelAlignment.accept(alignment);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.showContestPanel.translationKey());
+                    }
+                }
+        ));
+
+        widgets.add(new MovableBoxWidget(this.minecraft,
+                new DailyQuestPanelElement(true),
+                Alignment.getCorners(),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.dailyQuestPanelXPosition.accept(xPercent);
+                        Configs.hudConfig.dailyQuestPanelYPosition.accept(yPercent);
+                        Configs.hudConfig.dailyQuestPanelAlignment.accept(alignment);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.showDailyQuestPanel.translationKey());
+                    }
+                }
+        ));
+
+        widgets.add(new MovableBoxWidget(this.minecraft,
+                new StatsPanelElement(true),
+                Alignment.getCorners(),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.statsPanelXPosition.accept(xPercent);
+                        Configs.hudConfig.statsPanelYPosition.accept(yPercent);
+                        Configs.hudConfig.statsPanelAlignment.accept(alignment);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.showStatsPanel.translationKey());
+                    }
+                }
+        ));
+
+        widgets.add(new MovableBoxWidget(this.minecraft,
+                new QuestPanelElement(true),
+                Alignment.getCorners(),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.questPanelXPosition.accept(xPercent);
+                        Configs.hudConfig.questPanelYPosition.accept(yPercent);
+                        Configs.hudConfig.questPanelAlignment.accept(alignment);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.showQuestPanel.translationKey());
+                    }
+                }
+        ));
+
         if(Configs.debugConfig.debugMode.get()) {
             widgets.add(new MovableBoxWidget(this.minecraft,
                     new _DebugField(true),
