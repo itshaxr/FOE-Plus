@@ -95,33 +95,36 @@ public class ContestPanelElement extends PanelElement {
 
         lines.add(join(label("ᴛʏᴘᴇ: "), Component.literal(contest.type).withStyle(ChatFormatting.WHITE)));
         if (Configs.hudConfig.showContestBestBait.get()) lines.addAll(bestBaitLines(contest));
+        // Where the contest is, with a warning when you are fishing somewhere else. The rankings
+        // below always show (they belong to the contest, not to where you are standing).
+        lines.add(join(label("ʟᴏᴄᴀᴛɪᴏɴ: "), location));
         if (!atLocation) {
-            lines.add(Component.literal("⚠ ɴᴏᴛ ɪɴ ᴀᴄᴛɪᴠᴇ ᴀʀᴇᴀ").withStyle(ChatFormatting.YELLOW));
-            lines.add(join(label("ᴛᴏ ᴠɪᴇᴡ ᴄᴏɴᴛᴇѕᴛ ᴅᴇᴛᴀɪʟѕ, ɢᴏ ᴛᴏ "), location));
-        } else {
-            lines.add(join(label("ʟᴏᴄᴀᴛɪᴏɴ: "), location));
-            lines.add(Component.empty());
-            lines.add(place("\uF060 ", contest.firstName, contest.firstStat));
-            lines.add(place("\uF061 ", contest.secondName, contest.secondStat));
-            lines.add(place("\uF062 ", contest.thirdName, contest.thirdStat));
+            lines.add(join(Component.literal("⚠ ɴᴏᴛ ɪɴ ᴀᴄᴛɪᴠᴇ ᴀʀᴇᴀ").withStyle(ChatFormatting.YELLOW),
+                    label(" (ʏᴏᴜ'ʀᴇ ɪɴ "),
+                    Component.literal(currentArea()).withStyle(ChatFormatting.WHITE),
+                    label(")")));
+        }
+        lines.add(Component.empty());
+        lines.add(place("\uF060 ", contest.firstName, contest.firstStat));
+        lines.add(place("\uF061 ", contest.secondName, contest.secondStat));
+        lines.add(place("\uF062 ", contest.thirdName, contest.thirdStat));
 
-            if (Minecraft.getInstance().player != null) {
-                lines.add(Component.empty());
-                List<Component> rank = new ArrayList<>();
-                rank.add(label("ʏᴏᴜʀ ʀᴀɴᴋ: "));
-                rank.add(Component.literal(contest.rank).withStyle(ChatFormatting.WHITE));
-                if (contest.totalParticipants > 0) {
-                    rank.add(Component.literal(" (ᴏᴜᴛ ᴏғ ").withStyle(ChatFormatting.DARK_GRAY));
-                    rank.add(label(String.valueOf(contest.totalParticipants)));
-                    rank.add(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
-                }
-                if (!contest.rankStat.isEmpty()) {
-                    rank.add(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY));
-                    rank.add(label(contest.rankStat));
-                    rank.add(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
-                }
-                lines.add(join(rank.toArray(new Component[0])));
+        if (Minecraft.getInstance().player != null) {
+            lines.add(Component.empty());
+            List<Component> rank = new ArrayList<>();
+            rank.add(label("ʏᴏᴜʀ ʀᴀɴᴋ: "));
+            rank.add(Component.literal(contest.rank).withStyle(ChatFormatting.WHITE));
+            if (contest.totalParticipants > 0) {
+                rank.add(Component.literal(" (ᴏᴜᴛ ᴏғ ").withStyle(ChatFormatting.DARK_GRAY));
+                rank.add(label(String.valueOf(contest.totalParticipants)));
+                rank.add(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
             }
+            if (!contest.rankStat.isEmpty()) {
+                rank.add(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY));
+                rank.add(label(contest.rankStat));
+                rank.add(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+            }
+            lines.add(join(rank.toArray(new Component[0])));
         }
 
         if (contest.isContest && contest.lastUpdated > 0) {
@@ -130,6 +133,11 @@ public class ContestPanelElement extends PanelElement {
                     label(" ᴀɢᴏ")));
         }
         return lines;
+    }
+
+    private static String currentArea() {
+        String here = BossEventHandler.instance().getLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        return here.isEmpty() ? "another area" : here;
     }
 
     /// "BEST BAIT: Cut Shad", then the fallbacks, from the bait sheet.

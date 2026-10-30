@@ -106,11 +106,21 @@ public final class SortPlanner {
 
         Map<Integer, Entry> state = new HashMap<>();
         for (Entry e : kept) state.put(e.slot(), e);
+        groups.addAll(arrange(state, desired, slots));
+        return groups;
+    }
 
-        for (int i = 0; i < desired.size(); i++) {
+    /// Click groups that move items so {@code desired.get(i)} ends up in {@code slots.get(i)}.
+    /// {@code state} maps slot to the item there now (it is updated as the moves are planned).
+    /// Items are compared by identity. Moving into an empty slot takes 2 clicks, a swap 3; each
+    /// group leaves the cursor empty. Only for slots where items don't stack (vaults, chests of
+    /// unique items), since a click on a same-item stack would merge instead of swap.
+    public static <T> List<List<Click>> arrange(Map<Integer, T> state, List<T> desired, List<Integer> slots) {
+        List<List<Click>> groups = new ArrayList<>();
+        for (int i = 0; i < desired.size() && i < slots.size(); i++) {
             int target = slots.get(i);
-            Entry want = desired.get(i);
-            Entry there = state.get(target);
+            T want = desired.get(i);
+            T there = state.get(target);
             if (there == want) continue;
             int from = -1;
             for (var en : state.entrySet()) {
@@ -119,6 +129,7 @@ public final class SortPlanner {
                     break;
                 }
             }
+            if (from < 0) continue;
             if (there == null) {
                 groups.add(List.of(Click.pick(from), Click.pick(target)));
                 state.remove(from);

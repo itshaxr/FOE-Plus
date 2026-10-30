@@ -174,6 +174,10 @@ public class HUDConfig extends Config {
     @Name("Show notification when catching pets")
     public ValidatedBoolean showPetCatchNotification = new ValidatedBoolean(true);
 
+    @Name("Chat message when you pull a pet")
+    @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
+    public ValidatedBoolean showPetCatchChat = new ValidatedBoolean(true);
+
     @Name("Show drystreak in notification when catching pets")
     public ValidatedBoolean showPetsDrystreakNotification = new ValidatedBoolean(true);
 
@@ -395,6 +399,32 @@ public class HUDConfig extends Config {
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat baitPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Luck & Scale Panel")
+    @Desc("§7Your current Luck and Scale from your pet and armor at this location")
+    public ConfigGroup luckScalePanelGroup = new ConfigGroup("luck_scale_panel_group");
+
+    @Name("Show Luck & Scale Panel")
+    public ValidatedBoolean showLuckScalePanel = new ValidatedBoolean(true);
+
+    @Name("Show where it comes from (pet / armor)")
+    public ValidatedBoolean luckScalePanelBreakdown = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt luckScalePanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt luckScalePanelYPosition = new ValidatedInt(20, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> luckScalePanelAlignment = new ValidatedChoice<>(Alignment.BOTTOM_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt luckScalePanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat luckScalePanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Equipment Bar")
     @Desc("§7FOE's armor and rod-part boxes above the hotbar, underlined in their rarity colour")

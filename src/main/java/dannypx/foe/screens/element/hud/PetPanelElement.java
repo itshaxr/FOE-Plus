@@ -2,6 +2,7 @@ package dannypx.foe.screens.element.hud;
 
 import dannypx.foe.config.Configs;
 import dannypx.foe.handler.logic.InventoryHandler;
+import dannypx.foe.item.PetHeldItem;
 import dannypx.foe.item.PetTagObject;
 import dannypx.foe.type.Alignment;
 import net.minecraft.ChatFormatting;
@@ -48,14 +49,16 @@ public class PetPanelElement extends PanelElement {
         return InventoryHandler.instance().hasPet();
     }
 
-    @Override
-    protected ItemStack icon() {
-        return hasPet() ? InventoryHandler.instance().getCurrentPet().getItemStack() : null;
-    }
+    private static final int PET_BORDER = 0xFF4C88F1;
+    private static final int HELD_ITEM_BORDER = 0xFFD9A441;
 
+    /// The pet, then the item it holds (an empty box when it holds nothing).
     @Override
-    protected int iconBorderColor() {
-        return 0xFF4C88F1;
+    protected List<PanelIcon> icons() {
+        if (!hasPet()) return List.of();
+        PetTagObject pet = InventoryHandler.instance().getCurrentPet();
+        return List.of(new PanelIcon(pet.getItemStack(), PET_BORDER),
+                new PanelIcon(PetHeldItem.of(pet), HELD_ITEM_BORDER));
     }
 
     private static ChatFormatting progressColor(double value) {
@@ -96,6 +99,13 @@ public class PetPanelElement extends PanelElement {
                 .append(Component.literal(max ? "MAX" : compact(needed)).withStyle(ChatFormatting.BLUE))
                 .append(Component.literal(") ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(String.format("%.1f%%", percent)).withStyle(progressColor(percent))));
+
+        ItemStack held = PetHeldItem.of(pet);
+        lines.add(Component.empty()
+                .append(Component.literal("ʜᴇʟᴅ ɪᴛᴇᴍ ").withStyle(ChatFormatting.GRAY))
+                .append(held.isEmpty()
+                        ? Component.literal("ɴᴏɴᴇ").withStyle(ChatFormatting.DARK_GRAY)
+                        : held.getHoverName().copy()));
 
         Component rating = pet.getRatingComponent();
         if (!rating.getString().isBlank()) {

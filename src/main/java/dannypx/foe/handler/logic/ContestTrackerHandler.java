@@ -46,12 +46,22 @@ public class ContestTrackerHandler {
     private static final long MIN_REFRESH_GAP_MS = 5_000L;
     private static final long HIDE_WINDOW_MS = 4_000L;
 
+    /// The first automatic refresh waits this long after a contest starts, so it never lands on
+    /// top of the server's own "contest started" announcement.
+    private static final long START_GRACE_MS = 15_000L;
+
     private long lastRefresh = 0L;
     /// While > now, the /contest output we asked for is hidden from chat.
     private long hideUntil = 0L;
     private boolean hidingOutput = false;
-    /// After the hidden output ends, separator bars are still hidden until this time.
+    /// After the hidden output ends, the one closing bar right after it is hidden until this time.
     private long hideTailUntil = 0L;
+    /// A bar that arrived while waiting for our /contest output. Held back until we know whether
+    /// it opens that output (then it's dropped) or belongs to some other message (then it's put
+    /// back in chat, so other messages keep their own spacing).
+    private Component heldSeparator = null;
+    /// Area you were in last tick, to refresh the rankings when you move.
+    private String lastArea = "";
     private boolean announcePersonalBest = false;
     /// Your biggest qualifying fish this contest (lb or in, depending on the contest type).
     private float personalBest = 0f;
@@ -65,6 +75,8 @@ public class ContestTrackerHandler {
     }
 
     public void tick() {
+        this.flushHeldSeparator(false);
+        this.refreshOnAreaChange();
         this.autoRefresh();
         long hourMs = System.currentTimeMillis() % (2 * HALF_HOUR);
         this.timeLeft = HALF_HOUR - (hourMs % HALF_HOUR);
@@ -85,7 +97,21 @@ public class ContestTrackerHandler {
     /// Every minute during a contest, quietly run /contest so the panel stays current.
     private void autoRefresh() {
         if (!isContest || !Configs.hudConfig.contestAutoRefresh.get()) return;
+        long sinceStart = System.currentTimeMillis() % (2 * HALF_HOUR);
+        if (sinceStart < START_GRACE_MS) return;
         if (System.currentTimeMillis() - lastRefresh >= AUTO_REFRESH_MS) refresh(false);
+    }
+
+    /// Moving to another area refreshes the rankings (quietly), so the panel is current wherever
+    /// you go. The rankings themselves stay on the panel the whole time.
+    private void refreshOnAreaChange() {
+        String area = BossEventHandler.instance().getLocation().getString().trim();
+        if (area.equals(lastArea)) return;
+        boolean firstReading = lastArea.isEmpty();
+        lastArea = area;
+        if (firstReading || area.isEmpty() || !isContest || !Configs.hudConfig.contestAutoRefresh.get()) return;
+        if (System.currentTimeMillis() % (2 * HALF_HOUR) < START_GRACE_MS) return;
+        refresh(false);
     }
 
     private void refresh(boolean personalBestRefresh) {
@@ -139,23 +165,95 @@ public class ContestTrackerHandler {
     }
 
     /**
-     * Chat filter: hides the /contest output that the mod asked for itself (from the rankings
-     * header to your "You →" line), and reads it. Returns true when the message should be hidden.
+     * Chat filter for every game message (ALLOW_GAME). Hides the /contest output the mod asked
+     * for itself (from the rankings header to your "You →" line, plus the bars right around it)
+     * and reads it, and keeps fishing contest messages visually apart from the rest of chat.
+     * Returns true when the message should be shown.
      */
-    public boolean hideAutoRefreshMessage(Component message) {
-        long now = System.currentTimeMillis();
+    public boolean filterGameMessage(Component message) {
         String text = message.getString();
+        long now = clock.getAsLong();
 
-        // Separator bars right after the hidden output (the line under "You →").
-        if (now <= hideTailUntil && isSeparator(text)) return true;
+        if (this.hideAutoRefreshMessage(message, text, now)) return false;
+
+        boolean separator = isSeparator(text);
+        // Lines arriving right after a contest line belong to the same block (the server sends a
+        // block in one go), even when they don't look like contest lines themselves.
+        boolean contestLine = isContestLine(text) || (inContestBlock && now - lastContestLineAt <= BLOCK_GAP_MS);
+        // A blank line before a contest message and after the contest block, unless chat
+        // already has one there (the server's own bars count).
+        if (contestLine && !inContestBlock && !lastShownWasSeparator) addSpacer();
+        else if (!contestLine && !separator && inContestBlock && !lastShownWasSeparator) addSpacer();
+        if (contestLine) lastContestLineAt = now;
+        if (!separator) inContestBlock = contestLine;
+        lastShownWasSeparator = separator;
+        return true;
+    }
+
+    /// A block's lines arrive together (same tick); anything later is a new message.
+    private static final long BLOCK_GAP_MS = 150L;
+    java.util.function.LongSupplier clock = System::currentTimeMillis;
+    private long lastContestLineAt = 0L;
+    /// Where extra chat lines go (the chat window; swapped out in tests).
+    java.util.function.Consumer<Component> chatSink = line -> {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.gui != null) mc.gui.getChat().addMessage(line);
+    };
+
+    /// A player chat message was shown: it ends any contest block.
+    public void onChatMessageShown() {
+        if (inContestBlock && !lastShownWasSeparator) addSpacer();
+        inContestBlock = false;
+        lastShownWasSeparator = false;
+    }
+
+    private boolean inContestBlock = false;
+    private boolean lastShownWasSeparator = true;
+
+    private void addSpacer() {
+        chatSink.accept(Component.empty());
+        lastShownWasSeparator = true;
+    }
+
+    /// Server lines that belong to a fishing contest: announcements ("FISHING CONTEST", "CONTEST »")
+    /// and the lines of a /contest you ran yourself.
+    static boolean isContestLine(String text) {
+        String t = text.strip();
+        return t.contains("CONTEST") || t.startsWith("Type: ") || t.startsWith("Location: ") || t.startsWith("Level: ")
+                || t.startsWith("You → ") || t.startsWith("\uF060") || t.startsWith("\uF061") || t.startsWith("\uF062")
+                || t.startsWith("[Contest]");
+    }
+
+    /// True when the message is part of the mod's own /contest output and must be hidden.
+    private boolean hideAutoRefreshMessage(Component message, String text, long now) {
+        // The closing bar right under the hidden output ("You →" line). Only the very next line.
+        if (hideTailUntil != 0L) {
+            boolean closingBar = now <= hideTailUntil && isSeparator(text);
+            hideTailUntil = 0L;
+            if (closingBar) return true;
+        }
 
         if (now > hideUntil) {
             hidingOutput = false;
+            flushHeldSeparator(true);
             return false;
         }
-        if (text.contains("FISHING CONTEST RANKINGS")) hidingOutput = true;
-        // The bar printed just before the rankings header.
-        if (!hidingOutput) return isSeparator(text);
+
+        if (text.contains("FISHING CONTEST RANKINGS")) {
+            hidingOutput = true;
+            heldSeparator = null; // it was the bar opening our output
+        }
+        if (!hidingOutput) {
+            if (isSeparator(text)) {
+                // Might be the bar opening our output; hold it until the next line says.
+                flushHeldSeparator(true);
+                heldSeparator = message;
+                return true;
+            }
+            // Something else arrived first: give back the bar we held, in order.
+            flushHeldSeparator(true);
+            return false;
+        }
 
         this.onReceiveMessage(message);
         if (text.startsWith("You → ")) {
@@ -172,6 +270,17 @@ public class ContestTrackerHandler {
             announcePersonalBest = false;
         }
         return true;
+    }
+
+    /// Puts a held-back bar into chat. With {@code force} false it only does so once the wait for
+    /// our /contest output is over (called every tick, so a lone bar is never lost).
+    private void flushHeldSeparator(boolean force) {
+        if (heldSeparator == null) return;
+        if (!force && System.currentTimeMillis() <= hideUntil) return;
+        Component bar = heldSeparator;
+        heldSeparator = null;
+        chatSink.accept(bar);
+        lastShownWasSeparator = true;
     }
 
     /// A blank or bar-only chat line: the server draws its separators as struck-through spaces

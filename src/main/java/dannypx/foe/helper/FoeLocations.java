@@ -56,34 +56,43 @@ public final class FoeLocations {
     }
 
     public enum Location {
-        CYPRESS_LAKE("spawn", "cypresslake", Climate.SUBTROPICAL),
-        KENAI_RIVER("kenai", "kenairiver", Climate.SUBARCTIC),
-        LAKE_BIWA("biwa", "lakebiwa", Climate.SUBTROPICAL),
-        MURRAY_RIVER("murray", "murrayriver", Climate.SEMI_ARID),
-        EVERGLADES("everglades", "everglades", Climate.SAVANNA),
-        KEY_WEST("keywest", "keywest", Climate.SAVANNA),
-        TOLEDO_BEND("toledobend", "toledobend", Climate.SUBTROPICAL),
-        GREAT_LAKES("greatlakes", "greatlakes", Climate.CONTINENTAL),
-        DANUBE_RIVER("danube", "danuberiver", Climate.CONTINENTAL),
-        OIL_RIG("oilrig", "oilrig", Climate.SAVANNA),
-        AMAZON_RIVER("amazon", "amazonriver", Climate.RAINFOREST),
-        MEDITERRANEAN_SEA("mediterranean", "mediterraneansea", Climate.MEDITERRANEAN),
-        CAPE_COD("capecod", "capecod", Climate.OCEANIC),
-        HAWAII("hawaii", "hawaii", Climate.SAVANNA),
-        CAIRNS("cairns", "cairns", Climate.MONSOON),
-        LOFOTEN_ISLANDS("lofotenislands", "lofotenislands", Climate.SUBARCTIC),
-        NILE_RIVER("nile", "nileriver", Climate.ARID);
+        // Each location has exactly one pet: its species id (pet NBT "pet") and name. The species
+        // order matches FOECollab's pet constants, which follow the location order; Great Lakes =
+        // Eagle and Danube = Wolf as on the server.
+        CYPRESS_LAKE("spawn", "cypresslake", Climate.SUBTROPICAL, "bullfrog", "Bullfrog"),
+        KENAI_RIVER("kenai", "kenairiver", Climate.SUBARCTIC, "bear", "Bear"),
+        LAKE_BIWA("biwa", "lakebiwa", Climate.SUBTROPICAL, "fox", "Fox"),
+        MURRAY_RIVER("murray", "murrayriver", Climate.SEMI_ARID, "kangaroo", "Kangaroo"),
+        EVERGLADES("everglades", "everglades", Climate.SAVANNA, "marshrabbit", "Marsh Rabbit"),
+        KEY_WEST("keywest", "keywest", Climate.SAVANNA, "seaturtle", "Sea Turtle"),
+        TOLEDO_BEND("toledobend", "toledobend", Climate.SUBTROPICAL, "duck", "Duck"),
+        GREAT_LAKES("greatlakes", "greatlakes", Climate.CONTINENTAL, "eagle", "Eagle"),
+        DANUBE_RIVER("danube", "danuberiver", Climate.CONTINENTAL, "wolf", "Wolf"),
+        OIL_RIG("oilrig", "oilrig", Climate.SAVANNA, "pelican", "Pelican"),
+        AMAZON_RIVER("amazon", "amazonriver", Climate.RAINFOREST, "capybara", "Capybara"),
+        MEDITERRANEAN_SEA("mediterranean", "mediterraneansea", Climate.MEDITERRANEAN, "lynx", "Lynx"),
+        CAPE_COD("capecod", "capecod", Climate.OCEANIC, "shark", "Shark"),
+        HAWAII("hawaii", "hawaii", Climate.SAVANNA, "dolphin", "Dolphin"),
+        CAIRNS("cairns", "cairns", Climate.MONSOON, "koala", "Koala"),
+        LOFOTEN_ISLANDS("lofotenislands", "lofotenislands", Climate.SUBARCTIC, "sheep", "Sheep"),
+        NILE_RIVER("nile", "nileriver", Climate.ARID, "hippo", "Hippo");
 
         /// ID used in pet NBT ("location").
         public final String id;
         /// Display name with everything but letters removed, for matching the boss bar.
         private final String key;
         public final Climate climate;
+        /// Species id of this location's pet (pet NBT "pet").
+        public final String petId;
+        /// e.g. "Wolf" (the item is called "Wolf Pet").
+        public final String petName;
 
-        Location(String id, String key, Climate climate) {
+        Location(String id, String key, Climate climate, String petId, String petName) {
             this.id = id;
             this.key = key;
             this.climate = climate;
+            this.petId = petId;
+            this.petName = petName;
         }
     }
 
@@ -93,6 +102,15 @@ public final class FoeLocations {
         if (name.isEmpty()) return null;
         for (Location location : Location.values()) {
             if (name.startsWith(location.key) || location.key.startsWith(name)) return location;
+        }
+        return null;
+    }
+
+    /// The location whose pet NBT id is {@code id} ("danube"), or null.
+    public static Location fromId(String id) {
+        if (id == null) return null;
+        for (Location location : Location.values()) {
+            if (location.id.equalsIgnoreCase(id.trim())) return location;
         }
         return null;
     }

@@ -33,6 +33,20 @@ public class EquipmentBarElement extends Element {
         super(0, 0, 0, 0, Alignment.BOTTOM, Component.literal("Equipment Bar"), false);
     }
 
+    /// Where the bar is drawn this frame, in GUI pixels, or null when it is hidden. Reserved in the
+    /// HUD layout so panels stay out of it.
+    public static dannypx.foe.helper.HudLayout.Rect bounds() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!Configs.hudConfig.showEquipmentBar.get() || mc.player == null || !LoadingHandler.instance().isLoadingDone() || mc.options.hideGui) return null;
+        float scale = Configs.hudConfig.equipmentBarScale.get();
+        int centerX = Math.round(mc.getWindow().getGuiScaledWidth() / 2f / scale);
+        int top = Math.round(mc.getWindow().getGuiScaledHeight() / scale) - Configs.hudConfig.equipmentBarOffsetFromBottom.get() - BOX;
+        int left = centerX - 64 - 1;
+        int right = centerX + 1 + STEP * 2 + BOX;
+        return new dannypx.foe.helper.HudLayout.Rect(Math.round(left * scale), Math.round(top * scale),
+                Math.round((right - left) * scale), Math.round(BOX * scale));
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics) {
         Minecraft mc = Minecraft.getInstance();

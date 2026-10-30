@@ -46,14 +46,9 @@ public class BaitPanelElement extends PanelElement {
     }
 
     @Override
-    protected ItemStack icon() {
+    protected List<PanelIcon> icons() {
         TagObject bait = activeBait();
-        return bait == null ? null : bait.getItemStack();
-    }
-
-    @Override
-    protected int iconBorderColor() {
-        return 0xFFFFFFFF;
+        return bait == null ? List.of() : List.of(new PanelIcon(bait.getItemStack(), 0xFFFFFFFF));
     }
 
     @Override

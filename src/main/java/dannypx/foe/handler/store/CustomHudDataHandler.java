@@ -56,6 +56,7 @@ public class CustomHudDataHandler extends Handler {
         } else if(customHudData.uuid != null && this.needsUpdate) {
             this.updateCustomHudData();
         } else if(!CustomHudDataModel.CUSTOM_HUD_DATA_MODEL_VERSION.equals(customHudData.version)) {
+            this.hideUntouchedDefaults();
             this.updateDefault();
             customHudData.version = CustomHudDataModel.CUSTOM_HUD_DATA_MODEL_VERSION;
             needsUpdate = true;
@@ -117,19 +118,44 @@ public class CustomHudDataHandler extends Handler {
         needsUpdate = true;
     }
 
+    /// Adds any missing example HUD (hidden). Never changes or removes your own HUDs.
     public void updateDefault() {
-        CustomHudDataModel.defaultHuds.forEach((key, timer) -> {
-            customHudData.customHudRawDataList.putIfAbsent(key, timer);
+        CustomHudDataModel.defaultHuds().forEach((key, hud) -> {
+            customHudData.customHudRawDataList.putIfAbsent(key, hud);
         });
     }
 
+    /**
+     * Older versions turned the example HUDs on for everyone. Once (data version 0.5), an example
+     * HUD that is still exactly as shipped (never edited or moved) is switched off, so it stops
+     * showing up uninvited. It stays in the Custom HUDs list to turn back on. HUDs you edited,
+     * moved or made yourself are left exactly as they are.
+     */
+    void hideUntouchedDefaults() {
+        CustomHudDataModel.defaultHuds().forEach((key, shipped) -> {
+            CustomHud mine = customHudData.customHudRawDataList.get(key);
+            if (mine != null && mine.showElement && isAsShipped(mine, shipped)) mine.showElement = false;
+        });
+    }
+
+    static boolean isAsShipped(CustomHud mine, CustomHud shipped) {
+        return mine.getStringLines().equals(shipped.getStringLines())
+                && mine.getAlignment() == shipped.getAlignment()
+                && mine.xPos == shipped.xPos
+                && mine.yPos == shipped.yPos
+                && mine.scale == shipped.scale
+                && mine.showBackground == shipped.showBackground
+                && mine.showBars == shipped.showBars;
+    }
+
     public void fixDefault() {
-        customHudData.customHudRawDataList.putAll(CustomHudDataModel.defaultHuds);
+        // Restores missing example HUDs (hidden) without overwriting yours.
+        this.updateDefault();
         needsUpdate = true;
     }
 
     public void resetHuds() {
-        customHudData.customHudRawDataList = new HashMap<>(CustomHudDataModel.defaultHuds);
+        customHudData.customHudRawDataList = new HashMap<>(CustomHudDataModel.defaultHuds());
 
         needsUpdate = true;
     }
@@ -137,9 +163,13 @@ public class CustomHudDataHandler extends Handler {
 
     //region Model
     public static class CustomHudDataModel extends DataModels.DataModel {
-        private static final String CUSTOM_HUD_DATA_MODEL_VERSION = "0.4";
+        private static final String CUSTOM_HUD_DATA_MODEL_VERSION = "0.5";
 
-        private static final Map<String, CustomHud> defaultHuds = Map.of(
+        /// FOE-R's example HUDs. They are listed under Custom HUDs but start hidden: nothing shows
+        /// up on a fresh install until you turn it on. Fresh objects every call, so editing a HUD
+        /// never changes the defaults themselves.
+        static Map<String, CustomHud> defaultHuds() {
+            return Map.of(
                 "Quest Hud",
                 new CustomHud(new ArrayList<>(Arrays.asList(
                         Triplet.of("%hide_line.(<is_blank.(<quest_data.data.0.goal>)>)%&7&l- &fQuests &7-", true, true),
@@ -159,7 +189,7 @@ public class CustomHudDataHandler extends Handler {
                         1.0f,
                         true,
                         true,
-                        true
+                        false
                 ),
                 "Contest Hud",
                 new CustomHud(new ArrayList<>(Arrays.asList(
@@ -184,12 +214,13 @@ public class CustomHudDataHandler extends Handler {
                         1.0f,
                         true,
                         true,
-                        true
+                        false
                 )
-        );
+            );
+        }
 
         // ID of the HUD
-        public Map<String, CustomHud> customHudRawDataList = new HashMap<>(defaultHuds);
+        public Map<String, CustomHud> customHudRawDataList = new HashMap<>(defaultHuds());
 
         public CustomHudDataModel() {
             super(CUSTOM_HUD_DATA_MODEL_VERSION, null);

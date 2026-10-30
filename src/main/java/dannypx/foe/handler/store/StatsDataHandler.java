@@ -109,6 +109,12 @@ public class StatsDataHandler extends Handler {
     }
 
     public Pair<Pair<String, Integer>, Pair<String, Integer>> setPet(PetTagObject pet) {
+        // Fish since the last pet of any rarity (the newest pet catch), before this one is added.
+        int petDryStreak = statsData.fishTotal - this.lastPetCaughtOn();
+        Map<String, Stat<Integer, Integer>> petRarities = statsData.petData.getOrDefault(PetTagObject.RARITY, Map.of());
+        Stat<Integer, Integer> lastOfRarity = petRarities.get(pet.getRarity());
+        int petRarityDryStreak = lastOfRarity == null || lastOfRarity.amount() == null || lastOfRarity.amount() == 0
+                ? statsData.fishTotal : statsData.fishTotal - lastOfRarity.caughtOn();
         statsData.petTotal++;
 
         Pair<String, Integer> rarityDrystreak = this.updatePetData(statsData, PetTagObject.RARITY, pet.getRarity());
@@ -119,8 +125,20 @@ public class StatsDataHandler extends Handler {
 
         // Notify Pet
         NotifierHandler.instance().notifyPet(pet, rarityDrystreak, ratingDrystreak);
+        NotifierHandler.instance().chatPet(pet, petDryStreak, petRarityDryStreak);
 
         return Pair.of(rarityDrystreak, ratingDrystreak);
+    }
+
+    /// Fish count at your most recent pet catch (0 if you have never caught one).
+    int lastPetCaughtOn() {
+        Map<String, Stat<Integer, Integer>> byRarity = statsData.petData.get(PetTagObject.RARITY);
+        if (byRarity == null) return 0;
+        int last = 0;
+        for (Stat<Integer, Integer> stat : byRarity.values()) {
+            if (stat != null && stat.amount() != null && stat.amount() > 0 && stat.caughtOn() != null) last = Math.max(last, stat.caughtOn());
+        }
+        return last;
     }
 
     // Field, Old Drystreak
@@ -360,6 +378,10 @@ public class StatsDataHandler extends Handler {
 
         /// Set once stats from a previous FOE install have been imported
         public boolean importedFoeStats = false;
+
+        /// Stats file of the other FOE-R install these stats were imported from (null if none), so
+        /// the automatic import never runs twice
+        public String importedFoerFrom = null;
 
         public StatsDataModel() {
             super(STATS_DATA_MODEL_VERSION, null);

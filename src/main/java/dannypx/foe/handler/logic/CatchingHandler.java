@@ -93,6 +93,7 @@ public class CatchingHandler extends Handler {
 
                 QuestDataHandler.instance().setFish(foundFish.value2());
                 ContestTrackerHandler.instance().onFishCaught(foundFish.value2());
+                DailyQuestHandler.instance().onFishCaught(foundFish.value2());
                 LoggerHandler._debug("Found Fish: " + foundFish.value2().getName().getString());
 
                 CodeExecuterHandler.runLater(Configs.handlerConfig.catchingItemsDelayCheck.get(), this::checkForCaughtItems);
@@ -134,6 +135,7 @@ public class CatchingHandler extends Handler {
             } else {
                 Pair<String, Integer> prevStats = StatsDataHandler.instance().setOtherItem(validatedItem.value2(), count);
                 lastCaughtItems.add(Triplet.of(validatedItem.value2(), count, prevStats));
+                DailyQuestHandler.instance().onItemCaught(validatedItem.value2(), count);
             }
             LoggerHandler._debug("Found Item: " + itemStack.getHoverName().getString(), itemStack);
         }

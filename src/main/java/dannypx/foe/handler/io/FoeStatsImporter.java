@@ -36,6 +36,8 @@ public final class FoeStatsImporter {
     /// (so your FOE-R stats have finished loading first).
     public static void tick() {
         if (checked) return;
+        // The FOE-R import (another FOE-R install) goes first; FOE's streaks then apply on top.
+        if (!FoerStatsImporter.isDone()) return;
         long now = System.currentTimeMillis();
         if (readyAt == 0L) readyAt = now + 5000L;
         if (now < readyAt) return;
@@ -72,7 +74,8 @@ public final class FoeStatsImporter {
 
             long activeTime = getLong(foe, "activeTime");
             int timedFish = (int) getLong(foe, "timerFishCaughtCount");
-            if (activeTime > 0) {
+            // Never replace a longer fish timer with an older, shorter one.
+            if (activeTime > data.fishTimeMs) {
                 data.fishTimeMs = activeTime;
                 data.fishTimeFish = timedFish;
             }

@@ -4,6 +4,7 @@ import dannypx.foe.config.Configs;
 import dannypx.foe.handler.fetch.BossEventHandler;
 import dannypx.foe.handler.fetch.TabOverlayHandler;
 import dannypx.foe.handler.logic.InventoryHandler;
+import dannypx.foe.handler.logic.PetLocationHandler;
 import dannypx.foe.helper.FoeLocations;
 import dannypx.foe.item.ArmorTagObject;
 import dannypx.foe.item.PetTagObject;
@@ -24,7 +25,7 @@ import java.util.List;
  * you are fishing, and disappears once you swap to the right gear.
  * <ul>
  *   <li>Armor is wrong when its climate isn't the climate of the current location.</li>
- *   <li>A pet is wrong when it belongs to neither the current location nor its climate.</li>
+ *   <li>A pet is wrong when it is not the current location's own pet (same climate is not enough).</li>
  * </ul>
  * Ported from FOECollab's ArmorHandler / PetEquipHandler / NotificationHudHandler (AGPL-3.0).
  */
@@ -96,27 +97,23 @@ public class GearWarningPanelElement extends PanelElement {
             }
         }
 
-        // Pet
-        if (InventoryHandler.instance().hasPet()) {
+        // Pet: must be this exact location's pet, not just one from the same climate.
+        if (PetLocationHandler.isWrongPet(location)) {
             PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-            String petLocation = pet.getString("location");
-            FoeLocations.Climate petClimate = FoeLocations.climateFromId(pet.getString("climate"));
-            boolean rightLocation = location.id.equalsIgnoreCase(petLocation);
-            boolean rightClimate = petClimate != null && petClimate == location.climate;
-            if (!petLocation.isEmpty() && !rightLocation && !rightClimate) {
-                lines.add(Component.empty()
-                        .append(Component.literal("Your ").withStyle(ChatFormatting.RED))
-                        .append(pet.getName())
-                        .append(Component.literal(" has no use in ").withStyle(ChatFormatting.RED))
-                        .append(locationName)
-                        .append(Component.literal(".").withStyle(ChatFormatting.RED)));
-            }
+            lines.add(Component.empty()
+                    .append(Component.literal("Your ").withStyle(ChatFormatting.RED))
+                    .append(pet.getName())
+                    .append(Component.literal(" is not the ").withStyle(ChatFormatting.RED))
+                    .append(locationName)
+                    .append(Component.literal(" pet.").withStyle(ChatFormatting.RED)));
+            lines.add(PetLocationHandler.suggestion(location));
         }
         return lines;
     }
 
     @Override
     protected List<Component> previewLines() {
-        return List.of(Component.literal("Your pet has no use in this location.").withStyle(ChatFormatting.RED));
+        return List.of(Component.literal("Your Eagle Pet is not the Danube River pet.").withStyle(ChatFormatting.RED),
+                Component.literal("Use a ").withStyle(ChatFormatting.RED).append(Component.literal("Wolf Pet").withStyle(ChatFormatting.GOLD)));
     }
 }

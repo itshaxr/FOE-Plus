@@ -10,7 +10,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 
+import dannypx.foe.helper.FoeLocations;
+import dannypx.foe.item.FishTagObject;
+import dannypx.foe.item.TagObject;
+
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -80,6 +86,159 @@ public class DailyQuestHandler {
             }
         }
     }
+
+    //region Per-catch progress
+    /// What a catch was, for matching it against the mission goals.
+    public record Catch(String fishName, String group, String rarity, String variant, String size, FoeLocations.Location here) {}
+
+    private static final Map<String, String> RARITY_GLYPHS = Map.of(
+            "common", "\uF033", "rare", "\uF034", "epic", "\uF035", "legendary", "\uF036", "mythical", "\uF037");
+    private static final Map<String, String> VARIANT_GLYPHS = Map.of(
+            "albino", "\uF041", "melanistic", "\uF042", "trophy", "\uF043", "fabled", "\uF044");
+    private static final List<String> SIZES = List.of("baby", "juvenile", "adult", "large", "gigantic");
+    /// Goals with these words are not "catch a fish" goals (they have their own triggers or none).
+    private static final Pattern NOT_A_CATCH_GOAL = Pattern.compile(
+            "\\b(quests?|contests?|shards?|sell|sold|earn|spend|pets?|baits?|lures?|crates?|levels?|money|coins?)\\b|\\$");
+    private static final Pattern GENERIC_CATCH = Pattern.compile("\\b(anywhere|any|fish|fishes)\\b");
+
+    /// Called for every fish you catch: every unfinished mission it counts for goes up by one,
+    /// straight away, so the panel never waits for the main menu to be reopened.
+    public void onFishCaught(FishTagObject fish) {
+        if (quests.isEmpty()) return;
+        String rarity = fish.getRarity().toLowerCase(Locale.ROOT);
+        if (rarity.equals("mythic")) rarity = "mythical";
+        Catch caught = new Catch(fish.getName().getString(), fish.getString("group"), rarity,
+                fish.getVariant().toLowerCase(Locale.ROOT), fish.getFishSize().toLowerCase(Locale.ROOT),
+                PetLocationHandler.currentLocation());
+        applyCatch(quests, caught);
+    }
+
+    /// Called for every other item you catch; shards count for the shard missions.
+    public void onItemCaught(TagObject item, int count) {
+        if (quests.isEmpty() || !item.getType().toLowerCase(Locale.ROOT).contains("shard")) return;
+        FoeLocations.Location here = PetLocationHandler.currentLocation();
+        quests.removeIf(quest -> {
+            String goal = quest.goal.toLowerCase(Locale.ROOT);
+            if (!goal.contains("shard") || !sectionAllows(quest.section, here)) return false;
+            quest.progress += Math.max(1, count);
+            return quest.isDone();
+        });
+    }
+
+    /// Adds the catch to every quest it counts for and drops the ones it finishes. Package-private for tests.
+    static void applyCatch(List<Quest> quests, Catch caught) {
+        quests.removeIf(quest -> {
+            if (!countsCatch(quest.goal, quest.section, caught)) return false;
+            quest.progress++;
+            return quest.isDone();
+        });
+    }
+
+    /// Whether a mission goal (under its section header) counts this catch. Package-private for tests.
+    static boolean countsCatch(String goal, String section, Catch c) {
+        if (goal == null || goal.isBlank()) return false;
+        String g = goal.toLowerCase(Locale.ROOT);
+        if (NOT_A_CATCH_GOAL.matcher(g).find()) return false;
+
+        // Location: a location section ("Danube River Missions") or a location named in the goal
+        // only counts there.
+        if (!sectionAllows(section, c.here())) return false;
+        FoeLocations.Location goalLocation = locationNamedIn(g);
+        if (goalLocation != null && goalLocation != c.here()) return false;
+
+        // Rarity / variant / size named in the goal (as a server glyph or a word) must match.
+        boolean constrained = goalLocation != null;
+        for (Map.Entry<String, String> rarity : RARITY_GLYPHS.entrySet()) {
+            boolean named = goal.contains(rarity.getValue()) || hasWord(g, rarity.getKey())
+                    || (rarity.getKey().equals("mythical") && hasWord(g, "mythic"));
+            if (named) {
+                if (!rarity.getKey().equals(c.rarity())) return false;
+                constrained = true;
+            }
+        }
+        for (Map.Entry<String, String> variant : VARIANT_GLYPHS.entrySet()) {
+            if (goal.contains(variant.getValue()) || hasWord(g, variant.getKey())) {
+                if (!variant.getKey().equals(c.variant())) return false;
+                constrained = true;
+            }
+        }
+        for (String size : SIZES) {
+            if (hasWord(g, size)) {
+                if (!size.equals(c.size())) return false;
+                constrained = true;
+            }
+        }
+
+        // A specific fish or fish family ("Rainbow Trout", "Perches").
+        String name = c.fishName() == null ? "" : c.fishName().toLowerCase(Locale.ROOT).trim();
+        if (!name.isEmpty() && g.contains(name)) return true;
+        String group = c.group() == null ? "" : c.group().toLowerCase(Locale.ROOT).trim();
+        if (!group.isEmpty() && (hasWord(g, group) || hasWord(g, plural(group)))) return true;
+
+        // Otherwise only generic goals ("Catch 50 Fish", "Anywhere") or ones that only set
+        // conditions we checked above ("Catch 3 <mythical glyph>").
+        return GENERIC_CATCH.matcher(g).find() || (constrained && !mentionsOtherWords(g));
+    }
+
+    private static boolean sectionAllows(String section, FoeLocations.Location here) {
+        if (section == null || section.isBlank()) return true;
+        FoeLocations.Location sectionLocation = locationNamedIn(section.toLowerCase(Locale.ROOT));
+        return sectionLocation == null || sectionLocation == here;
+    }
+
+    /// Location names as players write them, matched as whole words.
+    private static final Map<FoeLocations.Location, List<String>> LOCATION_WORDS = Map.ofEntries(
+            Map.entry(FoeLocations.Location.CYPRESS_LAKE, List.of("cypress lake", "cypress")),
+            Map.entry(FoeLocations.Location.KENAI_RIVER, List.of("kenai")),
+            Map.entry(FoeLocations.Location.LAKE_BIWA, List.of("biwa")),
+            Map.entry(FoeLocations.Location.MURRAY_RIVER, List.of("murray")),
+            Map.entry(FoeLocations.Location.EVERGLADES, List.of("everglades")),
+            Map.entry(FoeLocations.Location.KEY_WEST, List.of("key west")),
+            Map.entry(FoeLocations.Location.TOLEDO_BEND, List.of("toledo bend", "toledo")),
+            Map.entry(FoeLocations.Location.GREAT_LAKES, List.of("great lakes")),
+            Map.entry(FoeLocations.Location.DANUBE_RIVER, List.of("danube")),
+            Map.entry(FoeLocations.Location.OIL_RIG, List.of("oil rig")),
+            Map.entry(FoeLocations.Location.AMAZON_RIVER, List.of("amazon")),
+            Map.entry(FoeLocations.Location.MEDITERRANEAN_SEA, List.of("mediterranean sea")),
+            Map.entry(FoeLocations.Location.CAPE_COD, List.of("cape cod")),
+            Map.entry(FoeLocations.Location.HAWAII, List.of("hawaii")),
+            Map.entry(FoeLocations.Location.CAIRNS, List.of("cairns")),
+            Map.entry(FoeLocations.Location.LOFOTEN_ISLANDS, List.of("lofoten")),
+            Map.entry(FoeLocations.Location.NILE_RIVER, List.of("nile")));
+
+    private static FoeLocations.Location locationNamedIn(String lower) {
+        for (Map.Entry<FoeLocations.Location, List<String>> entry : LOCATION_WORDS.entrySet()) {
+            for (String word : entry.getValue()) {
+                if (hasWord(lower, word)) return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    /// After removing numbers, glyphs and filler words, is anything left (like a fish name we
+    /// didn't match)? Then the goal is about something else.
+    private static boolean mentionsOtherWords(String lower) {
+        String rest = lower.replaceAll("[\\uE000-\\uF8FF]", " ")
+                .replaceAll("\\b(catch|caught|reel|in|a|an|the|of|at|on|x|common|rare|epic|legendary|mythical|mythic|albino|melanistic|trophy|fabled|baby|juvenile|adult|large|gigantic)\\b", " ")
+                .replaceAll("[^a-z]", " ").trim();
+        for (List<String> words : LOCATION_WORDS.values()) {
+            for (String word : words) rest = rest.replace(word, " ");
+        }
+        return !rest.isBlank();
+    }
+
+    private static boolean hasWord(String text, String word) {
+        return Pattern.compile("(?<![a-z])" + Pattern.quote(word) + "(?![a-z])").matcher(text).find();
+    }
+
+    private static String plural(String word) {
+        if (word.endsWith("s") || word.endsWith("x") || word.endsWith("ch") || word.endsWith("sh")) return word + "es";
+        if (word.endsWith("y") && word.length() > 2 && "aeiou".indexOf(word.charAt(word.length() - 2)) < 0) {
+            return word.substring(0, word.length() - 1) + "ies";
+        }
+        return word + "s";
+    }
+    //endregion
 
     private void updateQuest(String goal) {
         Quest match = null;

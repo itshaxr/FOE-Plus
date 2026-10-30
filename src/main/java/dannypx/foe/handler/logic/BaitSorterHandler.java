@@ -100,6 +100,23 @@ public class BaitSorterHandler {
         credit = 0;
     }
 
+    /**
+     * Runs another sort through the same paced click queue (used by the vault's sort buttons).
+     * The plan is made when it runs, from the screen as it is then. Ignored while a sort is running.
+     */
+    public boolean queueSort(Minecraft mc, Supplier<List<List<SortPlanner.Click>>> plan) {
+        if (busy() || !isSortableScreen(mc)) return false;
+        containerId = ((AbstractContainerScreen<?>) mc.screen).getMenu().containerId;
+        stages.add(plan);
+        cooldown = 0;
+        credit = 0;
+        return true;
+    }
+
+    public boolean isSorting() {
+        return busy();
+    }
+
     /** Baits and lures in the open screen: player inventory + hotbar when {@code playerSide}, otherwise the chest/vault slots. */
     private List<SortPlanner.Entry> scan(boolean playerSide) {
         List<SortPlanner.Entry> found = new ArrayList<>();

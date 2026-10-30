@@ -56,7 +56,9 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register(this::onLeave);
         ClientTickEvents.END_CLIENT_TICK.register(this::onEndClientTick);
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
-                overlay || !ContestTrackerHandler.instance().hideAutoRefreshMessage(message));
+                overlay || ContestTrackerHandler.instance().filterGameMessage(message));
+        ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
+                ContestTrackerHandler.instance().onChatMessageShown());
         ClientReceiveMessageEvents.GAME.register(this::receiveGameMessage);
         ClientSendMessageEvents.MODIFY_CHAT.register(this::modifyChatMessage);
         ClientEntityEvents.ENTITY_UNLOAD.register(this::onEntityUnload);
@@ -207,7 +209,9 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 PetPriceSheetHandler.instance().tick();
                 DailyQuestHandler.instance().tick();
                 FishSessionHandler.instance().tick();
+                dannypx.foe.handler.io.FoerStatsImporter.tick();
                 dannypx.foe.handler.io.FoeStatsImporter.tick();
+                dannypx.foe.handler.logic.PetLocationHandler.instance().tick();
                 if(Configs.handlerConfig.catchingHandler.get()) CatchingHandler.instance().tick();
                 if(Configs.handlerConfig.rayCastHandler.get()) HitResultHandler.instance().tick();
                 if(Configs.handlerConfig.notifierHandler.get()) NotifierHandler.instance().tick();

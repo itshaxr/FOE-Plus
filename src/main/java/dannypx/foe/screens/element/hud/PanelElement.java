@@ -3,6 +3,7 @@ package dannypx.foe.screens.element.hud;
 import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.config.Configs;
 import dannypx.foe.handler.logic.LoadingHandler;
+import dannypx.foe.helper.HudLayout;
 import dannypx.foe.screens.element.Element;
 import dannypx.foe.type.Alignment;
 import dannypx.foe.type.PanelTheme;
@@ -64,22 +65,24 @@ public abstract class PanelElement extends Element {
         return true;
     }
 
-    /// Optional item drawn in a bordered box beside the text (the pet HUD uses this).
-    protected net.minecraft.world.item.ItemStack icon() {
-        return null;
-    }
+    /// An item box drawn beside the text. An empty stack draws an empty box (the "nothing here" state).
+    public record PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor) {}
 
-    protected int iconBorderColor() {
-        return 0xFF555555;
+    /// Optional item boxes beside the text, side by side (the pet HUD shows the pet and its held item).
+    protected List<PanelIcon> icons() {
+        return List.of();
     }
 
     /// Called just before a line is drawn, so a panel can draw something behind it.
     protected void beforeLine(GuiGraphics guiGraphics, Font font, Component line, int x, int y) {
     }
 
+    private static final int ICON_SIZE = 18;
+    private static final int ICON_GAP = 3;
+
     private int iconSpace() {
-        net.minecraft.world.item.ItemStack icon = this.icon();
-        return icon == null || icon.isEmpty() ? 0 : 18 + PADDING;
+        int n = this.icons().size();
+        return n == 0 ? 0 : n * ICON_SIZE + (n - 1) * ICON_GAP + PADDING;
     }
     //endregion
 
@@ -146,8 +149,18 @@ public abstract class PanelElement extends Element {
         int anchorY = bottom ? screenHeight - Math.round(screenHeight * yPos) : Math.round(screenHeight * yPos);
         int outerX = right ? anchorX - outerWidth : anchorX;
         int outerY = bottom ? anchorY - outerHeight : anchorY;
-        // Keep top-anchored panels below FOE's top bar.
-        if (!bottom) outerY = Math.max(outerY, Math.round(TopBarElement.barHeight() / scale) + 2);
+
+        // Fit the panel into this frame's layout (in GUI pixels): always fully on screen, and the
+        // live HUD also moves it off any box placed before it (top bar, equipment bar, other
+        // panels). Recomputed every frame, so a panel that grows pushes its neighbours instead of
+        // running off screen or over them, and returns to its spot when it shrinks again.
+        HudLayout.Rect wanted = new HudLayout.Rect(Math.round(outerX * scale), Math.round(outerY * scale),
+                Math.round(outerWidth * scale), Math.round(outerHeight * scale));
+        HudLayout.Rect placed = isCopy
+                ? HudLayout.clamp(wanted, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight())
+                : HudLayout.FRAME.place(wanted, bottom, right);
+        outerX = Math.round(placed.x() / scale);
+        outerY = Math.round(placed.y() / scale);
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
@@ -192,15 +205,26 @@ public abstract class PanelElement extends Element {
             guiGraphics.drawString(font, title, titleX, top - font.lineHeight / 2 - 1, white, false);
         }
 
-        // Icon box on the anchored side, text beside it.
+        // Icon boxes on the anchored side, text beside them.
+        List<PanelIcon> icons = this.icons();
         int iconSpace = iconSpace();
         int textLeft = contentLeft;
         int textRightEdge = contentRight;
         if (iconSpace > 0) {
-            int iconBoxX = right ? contentRight - 18 : contentLeft;
-            int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - 18) / 2 - 2;
-            guiGraphics.renderOutline(iconBoxX, iconBoxY, 18, 18, iconBorderColor());
-            guiGraphics.renderItem(this.icon(), iconBoxX + 1, iconBoxY + 1);
+            int iconsWidth = iconSpace - PADDING;
+            int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - ICON_SIZE) / 2 - 2;
+            int x = right ? contentRight - iconsWidth : contentLeft;
+            for (PanelIcon icon : icons) {
+                guiGraphics.renderOutline(x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor());
+                if (icon.stack() == null || icon.stack().isEmpty()) {
+                    // Empty state: darker inside and a dash.
+                    guiGraphics.fill(x + 1, iconBoxY + 1, x + ICON_SIZE - 1, iconBoxY + ICON_SIZE - 1, 0x55000000);
+                    guiGraphics.drawString(font, "-", x + (ICON_SIZE - font.width("-")) / 2, iconBoxY + (ICON_SIZE - font.lineHeight) / 2 + 1, 0xFF777777, false);
+                } else {
+                    guiGraphics.renderItem(icon.stack(), x + 1, iconBoxY + 1);
+                }
+                x += ICON_SIZE + ICON_GAP;
+            }
             if (right) textRightEdge -= iconSpace;
             else textLeft += iconSpace;
         }

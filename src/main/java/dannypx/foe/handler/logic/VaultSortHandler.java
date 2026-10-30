@@ -1,0 +1,104 @@
+package dannypx.foe.handler.logic;
+
+import dannypx.foe.helper.SortPlanner;
+import dannypx.foe.item.TagObject;
+import dannypx.foe.item.ValidateItem;
+import dannypx.foe.type.tuple.Pair;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Sorts the open Personal Vault page by amount or by rarity. Only the 45 item slots are touched
+ * (the bottom row holds the page arrows). The moves go through the bait sorter's paced click
+ * queue, so they follow its click speed setting and stop if you close the vault.
+ */
+public final class VaultSortHandler {
+    private VaultSortHandler() {}
+
+    public enum Mode { AMOUNT, RARITY }
+
+    /// Vault item slots: rows 1-5 of the 6-row vault.
+    static final int ITEM_SLOTS = 45;
+
+    /// One item in the vault. Compared by identity while planning.
+    record Item(int slot, String name, int amount, int rarityRank) {}
+
+    /// Starts a sort of the open vault page; {@code reverse} flips the order (Shift-click).
+    public static boolean sort(Mode mode, boolean reverse) {
+        Minecraft mc = Minecraft.getInstance();
+        return BaitSorterHandler.instance().queueSort(mc, () -> {
+            List<Integer> slots = new ArrayList<>();
+            List<Item> items = scan(slots);
+            return plan(items, slots, mode, reverse);
+        });
+    }
+
+    public static boolean isSorting() {
+        return BaitSorterHandler.instance().isSorting();
+    }
+
+    /// Items in the vault's item slots; fills {@code slots} with all item slot ids, in order.
+    private static List<Item> scan(List<Integer> slots) {
+        List<Item> items = new ArrayList<>();
+        if (!(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)
+                || !(screen.getMenu() instanceof ChestMenu)) return items;
+        for (Slot slot : screen.getMenu().slots) {
+            if (slot.container instanceof Inventory || slot.index >= ITEM_SLOTS) continue;
+            slots.add(slot.index);
+            ItemStack stack = slot.getItem();
+            if (stack.isEmpty()) continue;
+            int amount = stack.getCount();
+            String rarity = "";
+            Pair<Boolean, TagObject> tag = ValidateItem.isServerItem(stack, true);
+            if (tag.value1() && tag.value2() != null) {
+                amount = tag.value2().getCount();
+                rarity = tag.value2().getRarity();
+            }
+            items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity)));
+        }
+        slots.sort(Comparator.naturalOrder());
+        return items;
+    }
+
+    /// Higher is rarer; unknown rarities sort last.
+    static int rarityRank(String rarity) {
+        return switch (rarity == null ? "" : rarity.toLowerCase(Locale.ROOT)) {
+            case "special" -> 6;
+            case "mythical", "mythic" -> 5;
+            case "legendary" -> 4;
+            case "epic" -> 3;
+            case "rare" -> 2;
+            case "common" -> 1;
+            default -> 0;
+        };
+    }
+
+    /// Order: Amount = most first; Rarity = rarest first. Ties by name, then the other key, then
+    /// slot, so the result is stable. Items are packed into the first slots. Package-private for tests.
+    static List<List<SortPlanner.Click>> plan(List<Item> items, List<Integer> slots, Mode mode, boolean reverse) {
+        Comparator<Item> byAmount = Comparator.comparingInt(Item::amount).reversed();
+        Comparator<Item> byRarity = Comparator.comparingInt(Item::rarityRank).reversed();
+        Comparator<Item> order = mode == Mode.AMOUNT
+                ? byAmount.thenComparing(byRarity)
+                : byRarity.thenComparing(byAmount);
+        if (reverse) order = order.reversed();
+        order = order.thenComparing(Item::name).thenComparingInt(Item::slot);
+
+        List<Item> desired = new ArrayList<>(items);
+        desired.sort(order);
+        Map<Integer, Item> state = new HashMap<>();
+        for (Item item : items) state.put(item.slot(), item);
+        return SortPlanner.arrange(state, desired, slots);
+    }
+}

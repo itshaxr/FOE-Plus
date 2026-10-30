@@ -3,6 +3,7 @@ package dannypx.foe.handler.renderer;
 import dannypx.foe.handler.ScreenHandler;
 import dannypx.foe.handler.logic.LoadingHandler;
 import dannypx.foe.handler.logic.SearchHandler;
+import dannypx.foe.handler.logic.VaultSortHandler;
 import dannypx.foe.search.editbox.SearchBarEditBox;
 import dannypx.foe.type.tuple.Pair;
 import dannypx.foe.config.Configs;
@@ -80,8 +81,24 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
                 widgets.add(button);
             }
 
+            // Sort buttons on the left side of the vault (FOE+). Shift-click for the reverse order.
+            int left = minecraft.getWindow().getGuiScaledWidth() / 2 - 88;
+            int top = minecraft.getWindow().getGuiScaledHeight() / 2 - 111;
+            int sortWidth = 64;
+            widgets.add(sortButton("⇅ Amount", VaultSortHandler.Mode.AMOUNT,
+                    "Sort this page by amount, most first.\nShift-click: fewest first.", left - sortWidth - 4, top + 18, sortWidth));
+            widgets.add(sortButton("⇅ Rarity", VaultSortHandler.Mode.RARITY,
+                    "Sort this page by rarity, rarest first.\nShift-click: most common first.", left - sortWidth - 4, top + 42, sortWidth));
+
             widgets.forEach(Screens.getButtons(screen)::add);
         }
+    }
+
+    private Button sortButton(String label, VaultSortHandler.Mode mode, String tooltip, int x, int y, int width) {
+        return Button.builder(Component.literal(label), b -> VaultSortHandler.sort(mode, minecraft.hasShiftDown()))
+                .bounds(x, y, width, 20)
+                .tooltip(Tooltip.create(Component.literal(tooltip)))
+                .build();
     }
 
     private static int getCurrentPage(Screen screen) {

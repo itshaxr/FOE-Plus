@@ -164,6 +164,36 @@ public class NotifierHandler extends Handler {
         );
     }
 
+    /// Chat line for every pet you pull: rarity, name, rating with its %, and the dry streaks
+    /// (fish since your last pet, and since your last pet of this rarity).
+    public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
+        if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
+        String rarity = pet.getRarity();
+        String rarityName = rarity.isEmpty() ? "" : Character.toUpperCase(rarity.charAt(0)) + rarity.substring(1).toLowerCase(java.util.Locale.ROOT);
+        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(rarity);
+        net.minecraft.network.chat.MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("PET PULLED! ").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
+                .append(pet.getRarityComponent())
+                .append(Component.literal(" "))
+                .append(pet.getName())
+                .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
+        Component rating = pet.getRatingComponent();
+        if (!rating.getString().isBlank()) line.append(Component.literal(" ").withStyle(ChatFormatting.DARK_GRAY)).append(rating);
+        line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY))
+                .append(Component.literal(" · Dry streak: ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, petDryStreak))).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" fish").withStyle(ChatFormatting.GRAY));
+        if (!rarityName.isEmpty()) {
+            line.append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(rarityColor >= 0 ? Component.literal(rarityName).withColor(rarityColor) : Component.literal(rarityName).withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, rarityDryStreak))).withStyle(ChatFormatting.YELLOW))
+                    .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        minecraft.player.displayClientMessage(line, false);
+    }
+
     public void notifyItem(TagObject item, int count, Pair<String, Integer> itemDrystreak) {
         if(!Configs.hudConfig.showOtherItemCatchNotification.get()) {
             return;
