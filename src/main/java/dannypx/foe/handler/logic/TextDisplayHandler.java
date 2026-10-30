@@ -28,6 +28,9 @@ public class TextDisplayHandler extends Handler {
     private static final String ICON_CHAR = "\uDB80\uDC6A";
 
     private final Map<UUID, String> USERS = new ConcurrentHashMap<>();
+    /// Players using FOE+ (this merged build); they get a + after their name.
+    private final Map<UUID, String> FOE_PLUS_USERS = new ConcurrentHashMap<>();
+    private volatile Pattern foePlusPattern = buildPattern(Set.of());
     private final Map<Display.TextDisplay, Entry> CACHE = new WeakHashMap<>();
     private volatile Pattern pattern = build();
 
@@ -47,7 +50,18 @@ public class TextDisplayHandler extends Handler {
     }
 
     public void removeModUser(UUID uuid) {
-        if (this.USERS.remove(uuid) != null) this.rebuild();
+        boolean changed = this.USERS.remove(uuid) != null;
+        changed |= this.FOE_PLUS_USERS.remove(uuid) != null;
+        if (changed) this.rebuild();
+    }
+
+    public void addFoePlusUser(UUID uuid, String name) {
+        if (name.equals(this.FOE_PLUS_USERS.put(uuid, name))) return;
+        this.rebuild();
+    }
+
+    public boolean isFoePlusUser(UUID uuid) {
+        return this.FOE_PLUS_USERS.containsKey(uuid);
     }
 
     public boolean contains(UUID uuid) {
@@ -60,6 +74,7 @@ public class TextDisplayHandler extends Handler {
 
     private void rebuild() {
         this.pattern = build();
+        this.foePlusPattern = buildPattern(new LinkedHashSet<>(this.FOE_PLUS_USERS.values()));
         Minecraft.getInstance().execute(this::clearCache);
     }
 
@@ -69,6 +84,7 @@ public class TextDisplayHandler extends Handler {
 
     public void clear() {
         USERS.clear();
+        FOE_PLUS_USERS.clear();
         rebuild();
     }
 
@@ -80,7 +96,9 @@ public class TextDisplayHandler extends Handler {
         String s = original.getString();
         if (!s.contains(MARKER)) return original;
         if (!this.matches(s)) return original;
-        return Component.empty().append(ICON_CHAR).append(" ").append(original);
+        Component named = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get()
+                ? dannypx.foe.helper.NameTagMarker.insertAfterName(original, this.foePlusPattern) : original;
+        return Component.empty().append(ICON_CHAR).append(" ").append(named);
     }
 
     public Entry get(Display.TextDisplay display, Component source, int lineWidth, BiFunction<Component, Integer, Display.TextDisplay.CachedInfo> splitter) {
@@ -99,9 +117,15 @@ public class TextDisplayHandler extends Handler {
     }
 
     private Pattern build() {
+        Set<String> names = new LinkedHashSet<>(this.USERS.values());
+        return buildPattern(names);
+    }
+
+    /// Whole-name pattern for these players, always including you (you use this mod too).
+    private static Pattern buildPattern(Set<String> others) {
         Set<String> names = new LinkedHashSet<>();
         names.add(Minecraft.getInstance().getUser().getName());
-        names.addAll(this.USERS.values());
+        names.addAll(others);
 
         String alternation = names.stream()
                 .map(Pattern::quote)

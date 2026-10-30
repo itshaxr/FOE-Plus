@@ -66,6 +66,10 @@ public class RendererConfig extends Config {
     @Name("Show Equipped Pet Item")
     public ValidatedBoolean showPetEquippedMarker = new ValidatedBoolean(true);
 
+    @Name("+ next to FOE+ users' names")
+    @Desc("§7Players near you who use this mod get a + after their name above their head")
+    public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
+
     @Name("Clean tab list tags")
     @Desc("§7Show rank tags in the tab list as FOE's compact lettered squares")
     public ValidatedBoolean cleanTabListTags = new ValidatedBoolean(true);

@@ -103,7 +103,9 @@ public class ProfileStatsHandler {
                 best = lines;
                 break;
             }
-            if (best == null && (isMainMenu || profileItem)) best = lines;
+            // Someone else's profile (e.g. viewing another player) is never taken as yours outside
+            // your own /menu.
+            if (best == null && isMainMenu) best = lines;
         }
         if (best == null) return;
 
