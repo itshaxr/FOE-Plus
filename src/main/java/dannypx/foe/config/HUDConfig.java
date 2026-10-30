@@ -253,6 +253,14 @@ public class HUDConfig extends Config {
     @Name("Background opacity in %")
     public ValidatedInt contestPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("Refresh every minute")
+    @Desc("§7Quietly run /contest once a minute during a contest (the chat output is hidden)")
+    public ValidatedBoolean contestAutoRefresh = new ValidatedBoolean(true);
+
+    @Name("Refresh on a new personal best")
+    @Desc("§7Run /contest when you catch a bigger qualifying fish at the contest location")
+    public ValidatedBoolean contestRefreshOnBest = new ValidatedBoolean(true);
+
     @Name("Show best bait")
     @Desc("§7Look up the best bait for the current contest in the bait sheet")
     public ValidatedBoolean showContestBestBait = new ValidatedBoolean(true);

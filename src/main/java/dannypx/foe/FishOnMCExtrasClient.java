@@ -55,6 +55,8 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register(this::onJoin);
         ClientPlayConnectionEvents.DISCONNECT.register(this::onLeave);
         ClientTickEvents.END_CLIENT_TICK.register(this::onEndClientTick);
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
+                overlay || !ContestTrackerHandler.instance().hideAutoRefreshMessage(message));
         ClientReceiveMessageEvents.GAME.register(this::receiveGameMessage);
         ClientSendMessageEvents.MODIFY_CHAT.register(this::modifyChatMessage);
         ClientEntityEvents.ENTITY_UNLOAD.register(this::onEntityUnload);

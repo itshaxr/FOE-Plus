@@ -92,6 +92,7 @@ public class CatchingHandler extends Handler {
                 NotifierHandler.instance().notifyFish(foundFish.value2(), prevStats.value1(), prevStats.value2(), prevStats.value3());
 
                 QuestDataHandler.instance().setFish(foundFish.value2());
+                ContestTrackerHandler.instance().onFishCaught(foundFish.value2());
                 LoggerHandler._debug("Found Fish: " + foundFish.value2().getName().getString());
 
                 CodeExecuterHandler.runLater(Configs.handlerConfig.catchingItemsDelayCheck.get(), this::checkForCaughtItems);
