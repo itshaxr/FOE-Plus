@@ -18,6 +18,7 @@ import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.Items;
 import java.util.ArrayList;
@@ -111,11 +112,12 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
     }
 
     private static Component pageTooltip(int page) {
-        String[] ranks = {"", "", "Angler", "Sailor", "Mariner", "Captain", "Admiral", "Admiral"};
+        // The server's rank badges (resource pack glyphs), the same ones shown in chat and tab.
+        String[] rankBadges = {"", "", "\uF032", "\uF031", "\uF030", "\uF029", "\uF028", "\uF028"}; // angler, sailor, mariner, captain, admiral
         MutableComponent tooltip = Component.literal("Page " + page).withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE);
         if (page > 1) {
             tooltip.append(Component.literal("\n\nRequires at least ").withStyle(ChatFormatting.WHITE, ChatFormatting.ITALIC))
-                    .append(Component.literal(ranks[page]).withStyle(ChatFormatting.WHITE));
+                    .append(Component.literal(rankBadges[page]).withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE).withBold(false).withItalic(false)));
         }
         return tooltip;
     }

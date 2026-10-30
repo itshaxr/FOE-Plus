@@ -88,24 +88,30 @@ public class ProfileStatsHandler {
 
         List<String> best = null;
         for (ItemStack stack : items) {
-            if (stack == null || stack.getItem() != Items.PLAYER_HEAD) continue;
+            if (stack == null || stack.isEmpty()) continue;
+            // Your profile: "Profile of <name>" (a player head on FishOnMC).
+            String name = stack.getHoverName().getString();
+            boolean profileItem = name.startsWith("Profile of");
+            if (!profileItem && stack.getItem() != Items.PLAYER_HEAD) continue;
             ItemLore lore = stack.get(DataComponents.LORE);
             if (lore == null || lore.lines().isEmpty()) continue;
             List<String> lines = lore.lines().stream().map(Component::getString).toList();
             if (lines.stream().noneMatch(l -> hasWord(l, "luck") || hasWord(l, "scale"))) continue;
             // Your own head first; another head only as a fallback in the main menu.
-            if (isOwnHead(stack, me, mc.player.getGameProfile().name())) {
+            String myName = mc.player.getGameProfile().name();
+            if (isOwnHead(stack, me, myName) || name.equalsIgnoreCase("Profile of " + myName)) {
                 best = lines;
                 break;
             }
-            if (best == null && isMainMenu) best = lines;
+            if (best == null && (isMainMenu || profileItem)) best = lines;
         }
         if (best == null) return;
 
         String newLuck = null;
         String newScale = null;
         for (String line : best) {
-            if (newLuck == null) newLuck = valueFor(line, "luck");
+            // "Pet Luck +82.5%" is a different stat from your Luck.
+            if (newLuck == null && !hasWord(line, "pet")) newLuck = valueFor(line, "luck");
             if (newScale == null) newScale = valueFor(line, "scale");
         }
         if (newLuck == null && newScale == null) {
