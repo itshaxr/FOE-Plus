@@ -312,7 +312,8 @@ public class NotifierHandler extends Handler {
     public void notifyEmptySlots(int currentEmptySlots) {
         this.removeNotification(EMPTY_SLOTS_KEY);
 
-        if(!Configs.hudConfig.showEmptySlotsNotification.get()) {
+        if(!Configs.hudConfig.showEmptySlotsNotification.get()
+                || Configs.hudConfig.showInventoryWarning.get()) { // FOE's warning replaces this one
             return;
         }
 

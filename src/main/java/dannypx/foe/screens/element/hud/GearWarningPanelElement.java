@@ -41,7 +41,7 @@ public class GearWarningPanelElement extends PanelElement {
                 isCopy);
     }
 
-    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get(); }
+    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get() || Configs.hudConfig.showInventoryWarning.get(); }
     @Override protected float configX() { return Configs.hudConfig.gearWarningXPosition.get() / 100f; }
     @Override protected float configY() { return Configs.hudConfig.gearWarningYPosition.get() / 100f; }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.gearWarningAlignment.get(); }
@@ -55,14 +55,25 @@ public class GearWarningPanelElement extends PanelElement {
 
     @Override
     protected Component title() {
-        return Component.literal("⚠ ᴡʀᴏɴɢ ɢᴇᴀʀ").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
+        return Component.literal("⚠ ᴡᴀʀɴɪɴɢ").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     }
 
     @Override
     protected List<Component> lines() {
         List<Component> lines = new ArrayList<>();
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || !TabOverlayHandler.instance().isInInstance()) return lines;
+        if (mc.player == null) return lines;
+
+        // Inventory almost full (FOE's FullInventoryHandler warning)
+        dannypx.foe.handler.logic.FullInventoryHandler inventory = dannypx.foe.handler.logic.FullInventoryHandler.instance();
+        if (inventory.isAlmostFull()) {
+            lines.add(Component.empty()
+                    .append(Component.literal("Inventory almost full. Slots left: ").withStyle(ChatFormatting.RED))
+                    .append(Component.literal(String.valueOf(inventory.getSlotsLeft())).withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(".").withStyle(ChatFormatting.RED)));
+        }
+
+        if (!Configs.hudConfig.showGearWarning.get() || !TabOverlayHandler.instance().isInInstance()) return lines;
 
         Component locationName = BossEventHandler.instance().getLocation();
         FoeLocations.Location location = FoeLocations.fromName(locationName.getString());

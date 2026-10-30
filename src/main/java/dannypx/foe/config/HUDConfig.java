@@ -4,6 +4,7 @@ import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.type.Alignment;
 import dannypx.foe.type.PanelTheme;
 import dannypx.foe.type.CatchPopupStyle;
+import dannypx.foe.type.WarningSound;
 import me.fzzyhmstrs.fzzy_config.annotations.Version;
 import me.fzzyhmstrs.fzzy_config.api.FileType;
 import me.fzzyhmstrs.fzzy_config.config.Config;
@@ -415,6 +416,21 @@ public class HUDConfig extends Config {
 
     @Name("Show Wrong Gear Warning")
     public ValidatedBoolean showGearWarning = new ValidatedBoolean(true);
+
+    @Name("Show inventory almost full warning")
+    public ValidatedBoolean showInventoryWarning = new ValidatedBoolean(true);
+
+    @Name("Warn at this many free slots or fewer")
+    public ValidatedInt inventoryWarningThreshold = new ValidatedInt(3, 35, 1, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Play a warning sound")
+    public ValidatedBoolean inventoryWarningSound = new ValidatedBoolean(true);
+
+    @Name("Seconds between sounds")
+    public ValidatedInt inventoryWarningSoundSeconds = new ValidatedInt(10, 30, 1, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Warning sound")
+    public ValidatedEnum<WarningSound> inventoryWarningSoundType = new ValidatedEnum<>(WarningSound.DIDGERIDOO, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("X Position in %")
     public ValidatedInt gearWarningXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
