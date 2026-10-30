@@ -147,7 +147,9 @@ public abstract class PanelElement extends Element {
 
         int anchorX = right ? screenWidth - Math.round(screenWidth * xPos) : Math.round(screenWidth * xPos);
         int anchorY = bottom ? screenHeight - Math.round(screenHeight * yPos) : Math.round(screenHeight * yPos);
-        int outerX = right ? anchorX - outerWidth : anchorX;
+        // Top/bottom-centre anchors keep the box centred on its spot, so it grows evenly both ways.
+        boolean centered = alignment == Alignment.TOP || alignment == Alignment.BOTTOM || alignment == Alignment.CENTER;
+        int outerX = centered ? anchorX - outerWidth / 2 : right ? anchorX - outerWidth : anchorX;
         int outerY = bottom ? anchorY - outerHeight : anchorY;
 
         // Fit the panel into this frame's layout (in GUI pixels): always fully on screen, and the

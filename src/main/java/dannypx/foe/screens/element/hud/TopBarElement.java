@@ -138,7 +138,8 @@ public class TopBarElement extends Element {
         return Component.empty()
                 .append(Component.literal("ʙᴀʟᴀɴᴄᴇ: ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal("$").withStyle(ChatFormatting.DARK_GREEN))
-                .append(Component.literal(scoreboard.getWallet().getString().trim()).withStyle(ChatFormatting.GREEN))
+                // The scoreboard's wallet already starts with its own "$"; keep only ours.
+                .append(Component.literal(scoreboard.getWallet().getString().trim().replaceFirst("^\\$\\s*", "")).withStyle(ChatFormatting.GREEN))
                 .append(Component.literal(" ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(scoreboard.getCredits().getString().trim()).withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal("    "))

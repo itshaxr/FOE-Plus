@@ -79,6 +79,9 @@ public class HudRenderHandler extends Handler {
             // FOE top bar first so everything else draws over it
             elements.add(Pair.of("top_bar", new TopBarElement()));
             elements.add(Pair.of("notifier_hud", new NotifierElement()));
+            // The wrong-gear warning claims its spot first: it always stays exactly where you put
+            // it, whatever its size, and the other panels make room while it is showing.
+            elements.add(Pair.of("gear_warning", new GearWarningPanelElement()));
             // FOE-style info panels (ported from FOECollab)
             elements.add(Pair.of("contest_panel", new ContestPanelElement()));
             elements.add(Pair.of("daily_quest_panel", new DailyQuestPanelElement()));
@@ -89,7 +92,6 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("bait_panel", new BaitPanelElement()));
             elements.add(Pair.of("luck_scale_panel", new LuckScalePanelElement()));
             elements.add(Pair.of("equipment_bar", new EquipmentBarElement()));
-            elements.add(Pair.of("gear_warning", new GearWarningPanelElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 

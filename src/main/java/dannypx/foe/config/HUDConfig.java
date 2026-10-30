@@ -474,13 +474,13 @@ public class HUDConfig extends Config {
     public ValidatedEnum<WarningSound> inventoryWarningSoundType = new ValidatedEnum<>(WarningSound.DIDGERIDOO, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("X Position in %")
-    public ValidatedInt gearWarningXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+    public ValidatedInt gearWarningXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @Name("Y Position in %")
     public ValidatedInt gearWarningYPosition = new ValidatedInt(35, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @Name("Anchor point")
-    public ValidatedChoice<Alignment> gearWarningAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+    public ValidatedChoice<Alignment> gearWarningAlignment = new ValidatedChoice<>(Alignment.TOP, Alignment.getCornersAndCenters(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
 
     @Name("Background opacity in %")
     public ValidatedInt gearWarningOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);

@@ -15,6 +15,11 @@ public enum Alignment implements EnumTranslatable {
     BOTTOM_RIGHT,
     CENTER;
 
+    /// The four corners plus top-centre and bottom-centre (the box stays centred on its spot).
+    public static List<Alignment> getCornersAndCenters() {
+        return List.of(TOP_LEFT, TOP, TOP_RIGHT, BOTTOM_LEFT, BOTTOM, BOTTOM_RIGHT);
+    }
+
     public static List<Alignment> getHorizontal() {
         return List.of(LEFT, RIGHT);
     }
