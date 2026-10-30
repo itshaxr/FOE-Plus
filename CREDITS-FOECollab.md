@@ -28,3 +28,4 @@ Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
 - FOE top bar (`TopBarElement`) and pet panel (`PetPanelElement`).
 - FOE main menu (`FoeMainScreen`), HUD editor layout (`MoveElementScreen`), bait panel and equipped-pet highlight (`icons/selected_slot.png`).
 - Equipment bar (`EquipmentBarElement`), wrong-gear warning (`GearWarningPanelElement`) and the location/climate table (`helper/FoeLocations.java`).
+- Auto Tip (`AutotipHandler`), ported from FishOnAutotip by Kimberlyow (https://github.com/Kimberlyow/FishOnAutotip), GPL-3.0.

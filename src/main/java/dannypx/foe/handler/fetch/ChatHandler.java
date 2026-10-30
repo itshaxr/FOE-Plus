@@ -57,6 +57,8 @@ public class ChatHandler extends Handler {
     }
 
     public void onReceiveMessage(Component component) {
+        // Auto Tip needs REACTIONS lines, which the blacklist below skips.
+        dannypx.foe.handler.logic.AutotipHandler.instance().onReceiveMessage(component);
         if(this.inBlackList(component)) return;
         
         this.checkPet(component);

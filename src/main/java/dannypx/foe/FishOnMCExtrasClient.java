@@ -188,6 +188,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 BaitSorterHandler.instance().tick(minecraft);
                 ContestTrackerHandler.instance().tick();
                 ContestBaitSheetHandler.instance().tick();
+                AutotipHandler.instance().tick();
                 DailyQuestHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 if(Configs.handlerConfig.catchingHandler.get()) CatchingHandler.instance().tick();

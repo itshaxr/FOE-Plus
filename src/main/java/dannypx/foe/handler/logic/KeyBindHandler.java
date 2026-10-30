@@ -39,6 +39,12 @@ public class KeyBindHandler extends Handler {
             minecraft.setScreen(new dannypx.foe.screens.FoeMainScreen(minecraft.screen));
         }
 
+        if(minecraft.screen == null
+                && KeyBindHelper.isPressed(Configs.keyBindConfig.openAutotipKeybind)
+        ) {
+            minecraft.setScreen(new dannypx.foe.screens.AutotipScreen(minecraft.screen));
+        }
+
         switch (Configs.keyBindConfig.inspectMode.get()) {
             case HOLD -> isPressingInspect = KeyBindHelper.isPressed(Configs.keyBindConfig.inspectKeybind);
             case TOGGLE -> {

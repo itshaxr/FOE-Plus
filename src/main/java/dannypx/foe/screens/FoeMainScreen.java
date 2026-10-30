@@ -37,8 +37,10 @@ public class FoeMainScreen extends Screen {
                 b -> this.minecraft.setScreen(new MoveElementScreen(this)), "Move, anchor and resize your HUDs");
         addIconButton("Custom HUDs", x, height / 2 + BUTTON_HEIGHT + 8,
                 b -> this.minecraft.setScreen(new CustomHudMakerScreen(this)), "Create your own HUD text");
+        addIconButton("Auto Tip", x, height / 2 + (BUTTON_HEIGHT + 8) * 2,
+                b -> this.minecraft.setScreen(new AutotipScreen(this)), "Tip reaction winners and chummers automatically");
         this.addRenderableWidget(Button.builder(Component.literal("More (FOE-R)"), b -> this.minecraft.setScreen(new MainScreen(this)))
-                .bounds(x, height / 2 + (BUTTON_HEIGHT + 8) * 2, BUTTON_WIDTH, 20)
+                .bounds(x, height / 2 + (BUTTON_HEIGHT + 8) * 3, BUTTON_WIDTH, 20)
                 .tooltip(Tooltip.create(Component.literal("FOE-R's full menu: triggers, timers, notifications, snippets")))
                 .build());
     }
@@ -73,6 +75,7 @@ public class FoeMainScreen extends Screen {
         guiGraphics.renderItem(new ItemStack(Items.COMMAND_BLOCK), x, height / 2 - BUTTON_HEIGHT - 8 + 4);
         guiGraphics.renderItem(new ItemStack(Items.STRUCTURE_VOID), x, height / 2 + 4);
         guiGraphics.renderItem(new ItemStack(Items.OAK_SIGN), x, height / 2 + BUTTON_HEIGHT + 8 + 4);
+        guiGraphics.renderItem(new ItemStack(Items.GOLD_NUGGET), x, height / 2 + (BUTTON_HEIGHT + 8) * 2 + 4);
     }
 
     @Override

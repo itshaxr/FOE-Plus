@@ -12,6 +12,7 @@ public class Configs {
     public static KeyBindConfig keyBindConfig = ConfigApiJava.registerAndLoadConfig(KeyBindConfig::new, RegisterType.CLIENT);
     public static MixinConfig mixinConfig = ConfigApiJava.registerAndLoadConfig(MixinConfig::new, RegisterType.CLIENT);
     public static HandlerConfig handlerConfig = ConfigApiJava.registerAndLoadConfig(HandlerConfig::new, RegisterType.CLIENT);
+    public static AutotipConfig autotipConfig = ConfigApiJava.registerAndLoadConfig(AutotipConfig::new, RegisterType.CLIENT);
     public static _DebugConfig debugConfig = ConfigApiJava.registerAndLoadConfig(_DebugConfig::new, RegisterType.CLIENT);
 
     public static void init() {}
