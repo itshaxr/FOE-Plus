@@ -64,6 +64,7 @@ public class ChatHandler extends Handler {
         // FOE-style info panels
         dannypx.foe.handler.logic.ContestTrackerHandler.instance().onReceiveMessage(component);
         dannypx.foe.handler.logic.DailyQuestHandler.instance().onReceiveMessage(component);
+        dannypx.foe.handler.logic.MoonTimerHandler.instance().onReceiveMessage(component);
         if (component.getString().startsWith("QUEST Complete")) {
             dannypx.foe.handler.store.StatsDataHandler.instance().addQuestCompleted();
         }

@@ -20,6 +20,10 @@ public class InventoryScreenConfig extends Config {
     @Name("Show Stats Element")
     public ValidatedBoolean showStatsElement = new ValidatedBoolean(true);
 
+    @Name("Show Moon Timer")
+    @Desc("§7Time until the next moonrise, shown left of your inventory")
+    public ValidatedBoolean showMoonTimer = new ValidatedBoolean(true);
+
     @Override
     public @NotNull FileType fileType() {
         return FileType.JSON;

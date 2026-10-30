@@ -86,6 +86,56 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
                 this.renderStatBoxHeaderString(guiGraphics);
             }
             this.renderButtonBoxString(guiGraphics);
+            if(Configs.inventoryScreenConfig.showMoonTimer.get()) this.renderMoonTimer(guiGraphics);
+        }
+    }
+
+    /// Moon timer box left of the inventory, ported from FOECollab's MoonTimerWidget (AGPL-3.0).
+    private void renderMoonTimer(GuiGraphics guiGraphics) {
+        dannypx.foe.handler.logic.MoonTimerHandler moonTimer = dannypx.foe.handler.logic.MoonTimerHandler.instance();
+        long timeLeft = moonTimer.getTimeUntilNextMoon();
+        long totalSeconds = timeLeft / 1000L;
+
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.literal("ᴍᴏᴏɴ ᴄʏᴄʟᴇ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
+
+        dannypx.foe.handler.logic.MoonTimerHandler.Moon current = moonTimer.getCurrentMoon();
+        if(current != null) {
+            lines.add(Component.literal(current.displayName + " is up").withColor(current.color));
+        }
+
+        lines.add(Component.literal("ɴᴇxᴛ ᴍᴏᴏɴ: ").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(String.format("%02d:%02d:%02d", totalSeconds / 3600, (totalSeconds / 60) % 60, totalSeconds % 60))
+                        .withStyle(ChatFormatting.WHITE)));
+
+        // Progress bar: fills up as the next moon gets closer.
+        int dashes = 14;
+        float remaining = (float) timeLeft / (float) dannypx.foe.handler.logic.MoonTimerHandler.CYCLE_MS;
+        int grayDashes = Math.round(dashes * remaining);
+        int greenDashes = dashes - grayDashes;
+        lines.add(Component.literal("|").withStyle(ChatFormatting.WHITE)
+                .append(Component.literal(" ".repeat(greenDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GREEN))
+                .append(Component.literal(" ".repeat(grayDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GRAY))
+                .append(Component.literal("|").withStyle(ChatFormatting.WHITE)));
+
+        int padding = 5;
+        int lineHeight = font.lineHeight + 2;
+        int contentWidth = lines.stream().mapToInt(font::width).max().orElse(0);
+        int boxWidth = contentWidth + padding * 2;
+        int boxHeight = lines.size() * lineHeight - 2 + padding * 2;
+
+        // Right edge sits just left of the inventory panel (176 wide, centred).
+        int right = minecraft.getWindow().getGuiScaledWidth() / 2 - 88 - 6;
+        int left = right - boxWidth;
+        int top = minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP;
+
+        guiGraphics.fill(left, top, right, top + boxHeight, 0xB0000000);
+        guiGraphics.renderOutline(left, top, boxWidth, boxHeight, 0xFF505050);
+
+        int y = top + padding;
+        for(Component line : lines) {
+            guiGraphics.drawString(font, line, left + padding + (contentWidth - font.width(line)) / 2, y, CommonColors.WHITE, true);
+            y += lineHeight;
         }
     }
 

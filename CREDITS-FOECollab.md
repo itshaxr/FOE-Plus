@@ -22,3 +22,4 @@ Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
 - Contest, Daily Quests, Quests and All-Time Stats panels (`screens/element/hud/*PanelElement.java`),
   contest and daily-mission parsing (`ContestTrackerHandler`, `DailyQuestHandler`), and the panel
   border textures under `textures/gui/sprites/themes/`.
+- Moon cycle timer in the inventory screen (`MoonTimerHandler`, `InventoryScreenRenderHandler.renderMoonTimer`).
