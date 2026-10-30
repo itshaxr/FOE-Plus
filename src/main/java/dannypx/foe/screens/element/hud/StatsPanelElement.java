@@ -19,9 +19,12 @@ import java.util.List;
 /// FOECollab's FishTrackerHudHandler (AGPL-3.0); the numbers come from FOE-R's stats tracker.
 public class StatsPanelElement extends PanelElement {
     private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
-    /// Bold white label drawn on a box in the gigantic colour, like the rarity badges.
-    private static final Component GIGANTIC_BADGE = Component.literal(" ɢɪɢᴀɴᴛɪᴄ ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE);
-    private static final int GIGANTIC_COLOR = 0xFFAF3333;
+    /// White label on a filled box, drawn to match the server's rarity badges: a lighter top edge
+    /// and a darker drop shadow underneath.
+    private static final Component GIGANTIC_BADGE = Component.literal("GIGANTIC").withStyle(ChatFormatting.WHITE);
+    private static final int GIGANTIC_COLOR = 0xFFC93832;
+    private static final int GIGANTIC_LIGHT = 0xFFE05A55;
+    private static final int GIGANTIC_SHADOW = 0xFF5A1414;
     private Component giganticLine = null;
 
     private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
@@ -110,8 +113,13 @@ public class StatsPanelElement extends PanelElement {
     protected void beforeLine(net.minecraft.client.gui.GuiGraphics guiGraphics, net.minecraft.client.gui.Font font, Component line, int x, int y) {
         if (line != giganticLine) return;
         int width = font.width(GIGANTIC_BADGE);
-        guiGraphics.fill(x - 1, y - 1, x + width, y + font.lineHeight - 1, GIGANTIC_COLOR);
-        guiGraphics.renderOutline(x - 2, y - 2, width + 3, font.lineHeight + 2, 0xFFFFFFFF);
+        int left = x - 2;
+        int right = x + width + 1;
+        int top = y - 1;
+        int bottom = y + 8;
+        guiGraphics.fill(left + 1, top + 1, right + 1, bottom + 1, GIGANTIC_SHADOW); // drop shadow
+        guiGraphics.fill(left, top, right, bottom, GIGANTIC_COLOR);
+        guiGraphics.fill(left, top, right, top + 1, GIGANTIC_LIGHT);
     }
 
     private static Component white(String text) {
