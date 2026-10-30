@@ -127,6 +127,7 @@ public class TooltipHandler extends Handler {
 
         if(rightClickLine != -1
                 && armorNbtObject.isIdentified()
+                && !Configs.keyBindConfig.inspectAlwaysOn.get()
         ) {
             Component inspectComponent = TextHelper.concat(
                     Component.literal(TextHelper.smallCaps("Hold ")),

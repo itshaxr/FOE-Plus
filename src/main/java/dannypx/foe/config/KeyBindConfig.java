@@ -40,9 +40,13 @@ public class KeyBindConfig extends Config {
     @Name("Inspect Key")
     public ValidatedKeybind inspectKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_LEFT_SHIFT, ContextInput.KEYBOARD, false, false, false);
 
-    @ConfigGroup.Pop
     @Name("Button mode")
     public ValidatedEnum<KeyBindMode> inspectMode = new ValidatedEnum<>(KeyBindMode.HOLD, ValidatedEnum.WidgetType.CYCLING);
+
+    @ConfigGroup.Pop
+    @Name("Inspect always on")
+    @Desc("§7Always show pet %, armor rolls and other inspect info, without holding the inspect key")
+    public ValidatedBoolean inspectAlwaysOn = new ValidatedBoolean(false);
 
     @Name("Enable page scrolling with scroll wheel")
     public ValidatedBoolean scrollWheelScrolling = new ValidatedBoolean(true);

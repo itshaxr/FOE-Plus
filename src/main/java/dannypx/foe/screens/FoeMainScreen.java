@@ -41,6 +41,14 @@ public class FoeMainScreen extends Screen {
                 b -> this.minecraft.setScreen(new AutotipScreen(this)), "Tip reaction winners and chummers automatically");
         addIconButton("Pet Prices", x, height / 2 + (BUTTON_HEIGHT + 8) * 3,
                 b -> this.minecraft.setScreen(new PetPriceScreen(this)), "Pet price table from the price sheet (U)");
+        // Inspect: off (hold the key) or always on
+        this.addRenderableWidget(Button.builder(inspectLabel(), b -> {
+                    dannypx.foe.handler.logic.KeyBindHandler.toggleInspectAlwaysOn();
+                    b.setMessage(inspectLabel());
+                })
+                .bounds(width / 2 - 4 - 130, height / 2 - 50, 130, 20)
+                .tooltip(Tooltip.create(Component.literal("Always On: pet %, fish details and armor rolls show without holding the inspect key. Off: hold the key to inspect.")))
+                .build());
         // Stats tools
         this.addRenderableWidget(Button.builder(Component.literal("Import FOE stats"), b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false))
                 .bounds(width / 2 - 4 - 130, height / 2 + 26, 130, 20)
@@ -62,6 +70,13 @@ public class FoeMainScreen extends Screen {
                 .bounds(x, height / 2 + (BUTTON_HEIGHT + 8) * 4, BUTTON_WIDTH, 20)
                 .tooltip(Tooltip.create(Component.literal("FOE-R's full menu: triggers, timers, notifications, snippets")))
                 .build());
+    }
+
+    private static Component inspectLabel() {
+        boolean on = dannypx.foe.config.Configs.keyBindConfig.inspectAlwaysOn.get();
+        return Component.literal("Inspect: ").append(on
+                ? Component.literal("Always On").withStyle(net.minecraft.ChatFormatting.GREEN)
+                : Component.literal("Hold " + dannypx.foe.helper.KeyBindHelper.getKeyString(dannypx.foe.config.Configs.keyBindConfig.inspectKeybind)).withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 
     private void addIconButton(String label, int x, int y, Button.OnPress onPress, String tooltip) {

@@ -26,8 +26,15 @@ public class KeyBindHandler extends Handler {
     private boolean isPressingInspect = false;
     private boolean wasInspectKeyDown = false;
 
+    /// Inspect info is shown: the key is held (or toggled on), or "Inspect always on" is set.
     public boolean isPressingInspect() {
-        return isPressingInspect;
+        return isPressingInspect || Configs.keyBindConfig.inspectAlwaysOn.get();
+    }
+
+    /// The O menu button: flips "Inspect always on" and saves it.
+    public static void toggleInspectAlwaysOn() {
+        Configs.keyBindConfig.inspectAlwaysOn.accept(!Configs.keyBindConfig.inspectAlwaysOn.get());
+        Configs.keyBindConfig.save();
     }
     //endregion
 
