@@ -36,7 +36,7 @@ public class KeyBindHandler extends Handler {
         if(minecraft.screen == null
                 && KeyBindHelper.isPressed(Configs.keyBindConfig.openMainKeybind)
         ) {
-            minecraft.setScreen(new MainScreen(minecraft.screen));
+            minecraft.setScreen(new dannypx.foe.screens.FoeMainScreen(minecraft.screen));
         }
 
         switch (Configs.keyBindConfig.inspectMode.get()) {

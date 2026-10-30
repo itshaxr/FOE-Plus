@@ -78,10 +78,6 @@ public class HudRenderHandler extends Handler {
         if(elements.isEmpty()) {
             // FOE top bar first so everything else draws over it
             elements.add(Pair.of("top_bar", new TopBarElement()));
-            elements.add(Pair.of("profile_hud", new ProfileElement()));
-            elements.add(Pair.of("location_hud", new LocationElement()));
-            elements.add(Pair.of("hotbar_hud", new HotbarElement()));
-            elements.add(Pair.of("pet_hud", new PetElement()));
             elements.add(Pair.of("notifier_hud", new NotifierElement()));
             // FOE-style info panels (ported from FOECollab)
             elements.add(Pair.of("contest_panel", new ContestPanelElement()));
@@ -90,6 +86,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("quest_panel", new QuestPanelElement()));
             elements.add(Pair.of("catch_popup", new CatchPopupElement()));
             elements.add(Pair.of("pet_panel", new PetPanelElement()));
+            elements.add(Pair.of("bait_panel", new BaitPanelElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 

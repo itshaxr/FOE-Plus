@@ -203,7 +203,7 @@ public class CommandRegistry {
             }
 
             public static int openMainScreen(CommandContext<FabricClientCommandSource> context) {
-                return executeCommand(() -> Minecraft.getInstance().setScreen(new MainScreen(Minecraft.getInstance().screen)));
+                return executeCommand(() -> Minecraft.getInstance().setScreen(new dannypx.foe.screens.FoeMainScreen(Minecraft.getInstance().screen)));
             }
 
             public static int exportPlaceholderData(CommandContext<FabricClientCommandSource> context) {

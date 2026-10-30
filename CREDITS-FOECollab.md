@@ -26,3 +26,4 @@ Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
 - FOE title screen (`screens/FoeTitleScreen.java`) with its logo and background images under `textures/gui/title/` and `sprites/title/`.
 - FOE catch popup (`screens/element/hud/CatchPopupElement.java`).
 - FOE top bar (`TopBarElement`) and pet panel (`PetPanelElement`).
+- FOE main menu (`FoeMainScreen`), HUD editor layout (`MoveElementScreen`), bait panel and equipped-pet highlight (`icons/selected_slot.png`).

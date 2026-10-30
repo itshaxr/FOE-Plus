@@ -66,6 +66,9 @@ public class RendererConfig extends Config {
     @Name("Show Equipped Pet Item")
     public ValidatedBoolean showPetEquippedMarker = new ValidatedBoolean(true);
 
+    @Name("Gold ring on equipped pet")
+    public ValidatedBoolean showEquippedPetHighlight = new ValidatedBoolean(true);
+
     @Name("Always show pet rating letter")
     public ValidatedBoolean showPetRatingLetter = new ValidatedBoolean(true);
 

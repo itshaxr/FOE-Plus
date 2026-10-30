@@ -352,6 +352,29 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat petPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Bait Panel")
+    @Desc("§7The bait or lure on your rod and how many are left")
+    public ConfigGroup baitPanelGroup = new ConfigGroup("bait_panel_group");
+
+    @Name("Show Bait Panel")
+    public ValidatedBoolean showBaitPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt baitPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt baitPanelYPosition = new ValidatedInt(2, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> baitPanelAlignment = new ValidatedChoice<>(Alignment.BOTTOM_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt baitPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat baitPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
     @Name("Top Bar")
     @Desc("§7FOE's bar across the top: name, level, location, weather, time, balance, catches")
     public ConfigGroup topBarGroup = new ConfigGroup("top_bar_group");

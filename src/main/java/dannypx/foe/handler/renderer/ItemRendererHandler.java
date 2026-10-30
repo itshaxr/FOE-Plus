@@ -153,6 +153,21 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");
+
+    /// Gold ring behind the pet you have equipped, like FOE. Drawn before the item so it sits behind it.
+    public void drawEquippedPetHighlight(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
+        if(!Configs.rendererConfig.showEquippedPetHighlight.get() || stack.isEmpty()) return;
+        if(!dannypx.foe.handler.logic.InventoryHandler.instance().hasPet()) return;
+
+        Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
+        if(!validatedPet.value1()) return;
+        java.util.UUID equipped = dannypx.foe.handler.logic.InventoryHandler.instance().getCurrentPet().getID();
+        if(equipped != null && equipped.equals(validatedPet.value2().getID())) {
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, selectedSlotMarker, x, y, 16, 16, 0x99FFAA00);
+        }
+    }
+
     public void drawFishSize(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
         Pair<Boolean, FishTagObject> validatedFish = ValidateItem.isFish(stack);
 

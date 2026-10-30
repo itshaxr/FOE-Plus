@@ -53,13 +53,12 @@ public abstract class GuiMixin {
         }
     }
 
-    @Inject(method = "renderItemHotbar", at = @At("HEAD"), cancellable = true)
-    private void injectRenderItemHotbar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.guiMixinRenderItemHotbar.get()
-        ) {
-            ci.cancel();
+    // FOE's gold ring behind the equipped pet in the hotbar (ported from FOECollab).
+    // FOE-R's custom hotbar was removed in favour of FOE's HUD, so the vanilla hotbar is used again.
+    @Inject(method = "renderSlot", at = @At("HEAD"))
+    private void injectRenderSlotEquippedPet(GuiGraphics guiGraphics, int x, int y, DeltaTracker deltaTracker, net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack stack, int seed, CallbackInfo ci) {
+        if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
+            dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawEquippedPetHighlight(guiGraphics, stack, x, y);
         }
     }
 }
