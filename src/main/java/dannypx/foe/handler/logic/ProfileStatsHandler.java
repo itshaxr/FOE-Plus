@@ -1,5 +1,6 @@
 package dannypx.foe.handler.logic;
 
+import dannypx.foe.config.Configs;
 import dannypx.foe.helper.FoeLocations;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -21,7 +22,9 @@ import java.util.regex.Pattern;
 /**
  * Your current Luck and Scale as the server shows them on your profile in /menu (your player
  * head), so every booster, event and gear bonus is included. Read every tick while the menu is
- * open; the Luck & Scale panel shows the last values it saw and how old they are.
+ * open, and automatically a few seconds after every location change: the mod quietly runs
+ * /menu, reads your head from the menu's contents and closes it again without ever showing it
+ * (only when you have no other screen open). The panel shows how old the values are.
  */
 public class ProfileStatsHandler {
     private static ProfileStatsHandler INSTANCE = new ProfileStatsHandler();
@@ -66,25 +69,36 @@ public class ProfileStatsHandler {
 
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || !(mc.screen instanceof AbstractContainerScreen<?> screen)) return;
+        if (mc.player == null) return;
+        this.tickAutoRefresh(mc);
+        if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return;
+        List<ItemStack> items = new java.util.ArrayList<>();
+        for (Slot slot : screen.getMenu().slots) {
+            if (!(slot.container instanceof Inventory)) items.add(slot.getItem());
+        }
+        this.read(items, screen.getTitle().getString().equals(DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER));
+    }
+
+    /// Reads Luck/Scale from the profile head among {@code items} (a menu's own slots).
+    /// {@code isMainMenu}: another head may be used when none is yours.
+    private void read(List<ItemStack> items, boolean isMainMenu) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
         UUID me = mc.player.getUUID();
 
         List<String> best = null;
-        for (Slot slot : screen.getMenu().slots) {
-            if (slot.container instanceof Inventory) continue;
-            ItemStack stack = slot.getItem();
-            if (stack.getItem() != Items.PLAYER_HEAD) continue;
+        for (ItemStack stack : items) {
+            if (stack == null || stack.getItem() != Items.PLAYER_HEAD) continue;
             ItemLore lore = stack.get(DataComponents.LORE);
             if (lore == null || lore.lines().isEmpty()) continue;
             List<String> lines = lore.lines().stream().map(Component::getString).toList();
             if (lines.stream().noneMatch(l -> hasWord(l, "luck") || hasWord(l, "scale"))) continue;
-            // Your own head first; another head (e.g. someone else's profile) only as a fallback
-            // when the menu has no head with your UUID.
+            // Your own head first; another head only as a fallback in the main menu.
             if (isOwnHead(stack, me, mc.player.getGameProfile().name())) {
                 best = lines;
                 break;
             }
-            if (best == null && screen.getTitle().getString().equals(DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER)) best = lines;
+            if (best == null && isMainMenu) best = lines;
         }
         if (best == null) return;
 
@@ -106,6 +120,81 @@ public class ProfileStatsHandler {
         readAt = System.currentTimeMillis();
         readAtLocation = PetLocationHandler.currentLocation();
     }
+
+    //region Auto refresh on location change
+    /// Wait after arriving, so the server has applied the new location's bonuses.
+    private static final long ARRIVAL_DELAY_MS = 3_000L;
+    /// Give up waiting for a closed screen after this long (try again next location change).
+    private static final long GIVE_UP_MS = 60_000L;
+    /// Never ask more often than this.
+    private static final long MIN_GAP_MS = 10_000L;
+    /// How long to wait for the server to answer /menu.
+    private static final long ANSWER_MS = 4_000L;
+
+    private FoeLocations.Location lastLocation = null;
+    private boolean locationKnown = false;
+    private long refreshDueAt = 0L;
+    private long lastRequest = 0L;
+    /// While > now, the next menu the server opens is our silent /menu.
+    private long expectMenuUntil = 0L;
+    /// Container id of the silent menu we are reading, or -1.
+    private int silentContainerId = -1;
+    private long silentOpenedAt = 0L;
+
+    private void tickAutoRefresh(Minecraft mc) {
+        long now = System.currentTimeMillis();
+        FoeLocations.Location here = PetLocationHandler.currentLocation();
+        if (!locationKnown || here != lastLocation) {
+            locationKnown = true;
+            lastLocation = here;
+            refreshDueAt = here == null ? 0L : now + ARRIVAL_DELAY_MS;
+        }
+
+        // The server never sent the contents: close the menu anyway.
+        if (silentContainerId != -1 && now - silentOpenedAt > ANSWER_MS) closeSilentMenu(mc);
+
+        if (refreshDueAt == 0L || now < refreshDueAt) return;
+        if (now - refreshDueAt > GIVE_UP_MS) {
+            refreshDueAt = 0L;
+            return;
+        }
+        if (!Configs.hudConfig.showLuckScalePanel.get() || !Configs.hudConfig.luckScaleAutoRefresh.get()) {
+            refreshDueAt = 0L;
+            return;
+        }
+        // Only while you aren't in a menu or typing, so nothing you're doing gets interrupted.
+        if (mc.screen != null || mc.getConnection() == null || silentContainerId != -1 || now - lastRequest < MIN_GAP_MS) return;
+        refreshDueAt = 0L;
+        lastRequest = now;
+        expectMenuUntil = now + ANSWER_MS;
+        mc.getConnection().sendCommand("menu");
+    }
+
+    /// From the packet listener: true when this menu is our silent /menu and must not open.
+    public boolean onOpenScreen(int containerId) {
+        Minecraft mc = Minecraft.getInstance();
+        if (System.currentTimeMillis() > expectMenuUntil || mc.screen != null) return false;
+        expectMenuUntil = 0L;
+        silentContainerId = containerId;
+        silentOpenedAt = System.currentTimeMillis();
+        return true;
+    }
+
+    /// From the packet listener: the silent menu's items arrived; read them and close it.
+    public void onContainerContent(int containerId, List<ItemStack> items) {
+        if (containerId != silentContainerId || silentContainerId == -1) return;
+        this.read(items, true);
+        closeSilentMenu(Minecraft.getInstance());
+    }
+
+    private void closeSilentMenu(Minecraft mc) {
+        if (silentContainerId == -1) return;
+        if (mc.getConnection() != null) {
+            mc.getConnection().send(new net.minecraft.network.protocol.game.ServerboundContainerClosePacket(silentContainerId));
+        }
+        silentContainerId = -1;
+    }
+    //endregion
 
     private static boolean isOwnHead(ItemStack stack, UUID me, String myName) {
         ResolvableProfile profile = stack.get(DataComponents.PROFILE);

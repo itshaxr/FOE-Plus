@@ -174,6 +174,10 @@ public class HUDConfig extends Config {
     @Name("Show notification when catching pets")
     public ValidatedBoolean showPetCatchNotification = new ValidatedBoolean(true);
 
+    @Name("Chat message when you catch a variant")
+    @Desc("§7Albino, Melanistic, Trophy and Fabled catches with the fish and its dry streak, in chat")
+    public ValidatedBoolean showVariantCatchChat = new ValidatedBoolean(true);
+
     @Name("Chat message when you pull a pet")
     @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
     public ValidatedBoolean showPetCatchChat = new ValidatedBoolean(true);
@@ -406,6 +410,10 @@ public class HUDConfig extends Config {
 
     @Name("Show Luck & Scale Panel")
     public ValidatedBoolean showLuckScalePanel = new ValidatedBoolean(true);
+
+    @Name("Update automatically on every location change")
+    @Desc("§7Quietly reads your profile from /menu a few seconds after you arrive somewhere (the menu never shows)")
+    public ValidatedBoolean luckScaleAutoRefresh = new ValidatedBoolean(true);
 
     @Name("Show when the numbers were read from /menu")
     public ValidatedBoolean luckScalePanelBreakdown = new ValidatedBoolean(true);

@@ -164,6 +164,28 @@ public class NotifierHandler extends Handler {
         );
     }
 
+    private static final java.util.Map<String, Integer> VARIANT_COLORS = java.util.Map.of(
+            "albino", 0xF2F2F2, "melanistic", 0x5A5A6E, "trophy", 0xFFC93C, "fabled", 0xFC3E35);
+
+    /// Chat line for every variant fish (albino, melanistic, trophy, fabled): the fish, its
+    /// variant and the dry streak (fish since your last of that variant, this catch included).
+    public void chatVariant(FishTagObject fish, int dryStreak) {
+        String variant = fish.getVariant().toLowerCase(java.util.Locale.ROOT);
+        if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
+        String variantName = Character.toUpperCase(variant.charAt(0)) + variant.substring(1);
+        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal(variantName.toUpperCase(java.util.Locale.ROOT) + "! ").withColor(VARIANT_COLORS.get(variant)).withStyle(ChatFormatting.BOLD))
+                .append(fish.getVariantComponent())
+                .append(Component.literal(" "))
+                .append(fish.getRarityComponent())
+                .append(Component.literal(" "))
+                .append(fish.getName())
+                .append(Component.literal(" · " + variantName + " dry streak: ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, dryStreak))).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" fish").withStyle(ChatFormatting.GRAY));
+        minecraft.player.displayClientMessage(line, false);
+    }
+
     /// Chat line for every pet you pull: rarity, name, rating with its %, and the dry streaks
     /// (fish since your last pet, and since your last pet of this rarity).
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {

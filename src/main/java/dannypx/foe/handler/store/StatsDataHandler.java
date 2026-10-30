@@ -79,6 +79,11 @@ public class StatsDataHandler extends Handler {
     }
 
     public Triplet<Pair<String, Integer>, Pair<String, Integer>, Pair<String, Integer>> setFish(FishTagObject fish) {
+        // Dry streak of this fish's variant: fish since the last one, counting this catch.
+        Map<String, Stat<Integer, Integer>> variants = statsData.fishData.getOrDefault(FishTagObject.VARIANT, Map.of());
+        Stat<Integer, Integer> lastOfVariant = variants.get(fish.getVariant());
+        int variantDryStreak = lastOfVariant == null || lastOfVariant.amount() == null || lastOfVariant.amount() == 0
+                ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastOfVariant.caughtOn();
         statsData.fishTotal++;
 
         Pair<String, Integer> rarityDrystreak = this.updateFishData(statsData, FishTagObject.RARITY, fish.getRarity(), 1);
@@ -89,6 +94,8 @@ public class StatsDataHandler extends Handler {
 
         Pair<String, Integer> sizeDryStreak = this.updateFishData(statsData, FishTagObject.FISH_SIZE, fish.getFishSize(), 1);
         ConstantDataHandler.instance().updateFishData(FishTagObject.FISH_SIZE, fish.getFishSize(), fish.getFishSizeComponent());
+
+        NotifierHandler.instance().chatVariant(fish, variantDryStreak);
 
         return Triplet.of(rarityDrystreak, variantDrystreak, sizeDryStreak);
     }
