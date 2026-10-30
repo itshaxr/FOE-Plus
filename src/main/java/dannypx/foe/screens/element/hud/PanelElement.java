@@ -31,8 +31,11 @@ public abstract class PanelElement extends Element {
 
     protected PanelElement(float xPos, float yPos, Alignment alignment, Component message, boolean isCopy) {
         super(120, 60, xPos, yPos, alignment, message, isCopy);
-        // Give the editor a sensible starting size.
-        this.updateSize(this.buildLines(), Minecraft.getInstance().font);
+        // Give the editor a sensible starting size. The HUD panels are created during client
+        // init, before Minecraft has a font, so only measure when one exists (render() keeps the
+        // size current afterwards).
+        Font font = Minecraft.getInstance().font;
+        if (font != null) this.updateSize(this.buildLines(), font);
     }
 
     //region Subclass hooks
