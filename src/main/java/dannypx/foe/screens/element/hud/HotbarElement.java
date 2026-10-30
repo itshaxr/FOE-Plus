@@ -134,6 +134,15 @@ public class HotbarElement extends Element {
 
                 guiGraphics.renderItem(item, x + itemX + (18 * i), y + itemY);
 
+                // Pet markers (ported from FOECollab): this hotbar draws items itself, so the
+                // decoration hook that adds them elsewhere doesn't run here.
+                dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawMaxPetStats(guiGraphics, item, x + itemX + (18 * i), y + itemY);
+                if (dannypx.foe.handler.logic.KeyBindHandler.instance().isPressingInspect()) {
+                    dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawPetRating(guiGraphics, font, item, x + itemX + (18 * i), y + itemY);
+                } else {
+                    dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawPetRatingLetter(guiGraphics, font, item, x + itemX + (18 * i), y + itemY);
+                }
+
                 if(Configs.rendererConfig.useSmallStackCountNumber.get()) {
                     int count = Configs.rendererConfig.showStackCountOnBait.get()
                             ? validatedItem.value2().getCount()
