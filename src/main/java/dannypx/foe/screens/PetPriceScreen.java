@@ -43,23 +43,56 @@ public class PetPriceScreen extends Screen {
     private int tableBottom() { return this.height - 34; }
     private int visibleHeight() { return tableBottom() - tableTop() - HEADER_HEIGHT; }
 
-    private int tableWidth() {
-        return Math.min(this.width - 20, 520);
+    private static final int CELL_PADDING = 12;
+
+    /// Each column's natural width: its widest cell or bold header, plus padding.
+    private int[] naturalWidths() {
+        PetPriceSheetHandler.Table table = PetPriceSheetHandler.instance().getTable();
+        int count = table.headers().size();
+        int[] widths = new int[count];
+        for (int c = 0; c < count; c++) {
+            if (c == table.notesColumn()) {
+                widths[c] = 24; // notes show as an "ⓘ" with a hover tooltip
+                continue;
+            }
+            int w = this.font.width(Component.literal(table.headers().get(c)).withStyle(ChatFormatting.BOLD));
+            for (List<String> row : table.rows()) {
+                if (c < row.size()) w = Math.max(w, this.font.width(row.get(c)));
+            }
+            widths[c] = w + CELL_PADDING;
+        }
+        return widths;
     }
 
+    private int tableWidth() {
+        int natural = SCROLLBAR_WIDTH + 4;
+        for (int w : naturalWidths()) natural += w;
+        return Math.min(this.width - 20, Math.max(natural, 360));
+    }
+
+    /// Natural widths, spread out to fill the table, or shrunk (widest columns first) on small screens.
     private int[] columnWidths() {
-        List<String> headers = PetPriceSheetHandler.instance().getTable().headers();
+        int[] widths = naturalWidths();
+        if (widths.length == 0) return widths;
         int notes = PetPriceSheetHandler.instance().getTable().notesColumn();
-        int count = headers.size();
-        if (count == 0) return new int[0];
-        int[] widths = new int[count];
         int available = tableWidth() - SCROLLBAR_WIDTH - 4;
-        int ratingWidth = 56;
-        int notesWidth = notes >= 0 ? 24 : 0; // notes show as an "ⓘ" with a hover tooltip
-        int others = count - 1 - (notes >= 0 ? 1 : 0);
-        int each = others > 0 ? (available - ratingWidth - notesWidth) / others : 0;
-        for (int i = 0; i < count; i++) {
-            widths[i] = i == 0 ? ratingWidth : (i == notes ? notesWidth : each);
+        int total = 0;
+        for (int w : widths) total += w;
+
+        if (total < available) {
+            int extra = available - total;
+            int flexible = widths.length - (notes >= 0 ? 1 : 0);
+            for (int c = 0; c < widths.length; c++) {
+                if (c != notes) widths[c] += extra / flexible;
+            }
+        } else {
+            while (total > available) {
+                int widest = 0;
+                for (int c = 1; c < widths.length; c++) if (widths[c] > widths[widest]) widest = c;
+                if (widths[widest] <= 30) break;
+                widths[widest]--;
+                total--;
+            }
         }
         return widths;
     }
@@ -166,6 +199,7 @@ public class PetPriceScreen extends Screen {
         guiGraphics.enableScissor(left, bodyTop, left + width, bottom);
         List<List<String>> rows = table.rows();
         int hoveredRow = -1;
+        String hoveredFullText = null;
         for (int r = 0; r < rows.size(); r++) {
             int y = bodyTop + r * ROW_HEIGHT - (int) scroll;
             if (y + ROW_HEIGHT < bodyTop || y > bottom) continue;
@@ -188,8 +222,12 @@ public class PetPriceScreen extends Screen {
                     text = Component.literal(value).withStyle(ChatFormatting.WHITE);
                 } else {
                     boolean cellHighlight = r == highlightRow && c == highlightColumn;
-                    text = Component.literal(fit(value, widths[c] - 4))
-                            .withStyle(cellHighlight ? ChatFormatting.GOLD : ChatFormatting.GRAY);
+                    String shown = fit(value, widths[c] - 4);
+                    text = Component.literal(shown)
+                            .withStyle(cellHighlight ? ChatFormatting.GOLD : ChatFormatting.WHITE);
+                    if (hovered && !shown.equals(value) && mouseX >= x - 2 && mouseX < x - 2 + widths[c]) {
+                        hoveredFullText = value;
+                    }
                     if (cellHighlight) guiGraphics.fill(x - 2, y, x - 2 + widths[c], y + ROW_HEIGHT, 0x80FFAA00);
                 }
                 drawCell(guiGraphics, text, x, y + 3, widths[c], c == 0);
@@ -208,8 +246,10 @@ public class PetPriceScreen extends Screen {
             guiGraphics.fill(trackX + 1, thumbY, trackX + SCROLLBAR_WIDTH - 1, thumbY + thumbHeight, 0xFF909090);
         }
 
-        // Hover: full cell text and notes
-        if (hoveredRow >= 0 && table.notesColumn() >= 0) {
+        // Hover: full text of a shortened cell, otherwise the row's note
+        if (hoveredFullText != null) {
+            guiGraphics.setTooltipForNextFrame(this.font, Component.literal(hoveredFullText), mouseX, mouseY);
+        } else if (hoveredRow >= 0 && table.notesColumn() >= 0) {
             String note = rows.get(hoveredRow).size() > table.notesColumn() ? rows.get(hoveredRow).get(table.notesColumn()) : "";
             if (!note.isBlank()) {
                 guiGraphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(note), 220), mouseX, mouseY);
