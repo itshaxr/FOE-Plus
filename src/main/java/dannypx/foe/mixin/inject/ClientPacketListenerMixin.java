@@ -89,13 +89,13 @@ public abstract class ClientPacketListenerMixin {
     @Inject(method = "handleOpenScreen", at = @At("HEAD"), cancellable = true)
     private void foe$silentMenuOpen(net.minecraft.network.protocol.game.ClientboundOpenScreenPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        if (dannypx.foe.handler.logic.ProfileStatsHandler.instance().onOpenScreen(packet.getContainerId())) ci.cancel();
+        if (dannypx.foe.handler.logic.SilentMenuHandler.instance().onOpenScreen(packet.getContainerId())) ci.cancel();
     }
 
     @Inject(method = "handleContainerContent", at = @At("HEAD"))
     private void foe$silentMenuContent(net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        dannypx.foe.handler.logic.ProfileStatsHandler.instance().onContainerContent(packet.containerId(), packet.items());
+        dannypx.foe.handler.logic.SilentMenuHandler.instance().onContainerContent(packet.containerId(), packet.items());
     }
 
     @Inject(method = "handleBlockDestruction", at = @At("HEAD"))

@@ -132,75 +132,22 @@ public class ProfileStatsHandler {
     //region Auto refresh on location change
     /// Wait after arriving, so the server has applied the new location's bonuses.
     private static final long ARRIVAL_DELAY_MS = 3_000L;
-    /// Give up waiting for a closed screen after this long (try again next location change).
-    private static final long GIVE_UP_MS = 60_000L;
-    /// Never ask more often than this.
-    private static final long MIN_GAP_MS = 10_000L;
-    /// How long to wait for the server to answer /menu.
-    private static final long ANSWER_MS = 4_000L;
-
     private FoeLocations.Location lastLocation = null;
     private boolean locationKnown = false;
-    private long refreshDueAt = 0L;
-    private long lastRequest = 0L;
-    /// While > now, the next menu the server opens is our silent /menu.
-    private long expectMenuUntil = 0L;
-    /// Container id of the silent menu we are reading, or -1.
-    private int silentContainerId = -1;
-    private long silentOpenedAt = 0L;
 
     private void tickAutoRefresh(Minecraft mc) {
-        long now = System.currentTimeMillis();
         FoeLocations.Location here = PetLocationHandler.currentLocation();
-        if (!locationKnown || here != lastLocation) {
-            locationKnown = true;
-            lastLocation = here;
-            refreshDueAt = here == null ? 0L : now + ARRIVAL_DELAY_MS;
+        if (locationKnown && here == lastLocation) return;
+        locationKnown = true;
+        lastLocation = here;
+        if (here != null && Configs.hudConfig.showLuckScalePanel.get() && Configs.hudConfig.luckScaleAutoRefresh.get()) {
+            SilentMenuHandler.instance().request(ARRIVAL_DELAY_MS);
         }
-
-        // The server never sent the contents: close the menu anyway.
-        if (silentContainerId != -1 && now - silentOpenedAt > ANSWER_MS) closeSilentMenu(mc);
-
-        if (refreshDueAt == 0L || now < refreshDueAt) return;
-        if (now - refreshDueAt > GIVE_UP_MS) {
-            refreshDueAt = 0L;
-            return;
-        }
-        if (!Configs.hudConfig.showLuckScalePanel.get() || !Configs.hudConfig.luckScaleAutoRefresh.get()) {
-            refreshDueAt = 0L;
-            return;
-        }
-        // Only while you aren't in a menu or typing, so nothing you're doing gets interrupted.
-        if (mc.screen != null || mc.getConnection() == null || silentContainerId != -1 || now - lastRequest < MIN_GAP_MS) return;
-        refreshDueAt = 0L;
-        lastRequest = now;
-        expectMenuUntil = now + ANSWER_MS;
-        mc.getConnection().sendCommand("menu");
     }
 
-    /// From the packet listener: true when this menu is our silent /menu and must not open.
-    public boolean onOpenScreen(int containerId) {
-        Minecraft mc = Minecraft.getInstance();
-        if (System.currentTimeMillis() > expectMenuUntil || mc.screen != null) return false;
-        expectMenuUntil = 0L;
-        silentContainerId = containerId;
-        silentOpenedAt = System.currentTimeMillis();
-        return true;
-    }
-
-    /// From the packet listener: the silent menu's items arrived; read them and close it.
-    public void onContainerContent(int containerId, List<ItemStack> items) {
-        if (containerId != silentContainerId || silentContainerId == -1) return;
+    /// Items of a /menu read in the background by {@link SilentMenuHandler}.
+    public void readMenu(List<ItemStack> items) {
         this.read(items, true);
-        closeSilentMenu(Minecraft.getInstance());
-    }
-
-    private void closeSilentMenu(Minecraft mc) {
-        if (silentContainerId == -1) return;
-        if (mc.getConnection() != null) {
-            mc.getConnection().send(new net.minecraft.network.protocol.game.ServerboundContainerClosePacket(silentContainerId));
-        }
-        silentContainerId = -1;
     }
     //endregion
 

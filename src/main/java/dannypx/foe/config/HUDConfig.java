@@ -290,6 +290,10 @@ public class HUDConfig extends Config {
     @Name("Show Daily Quests Panel")
     public ValidatedBoolean showDailyQuestPanel = new ValidatedBoolean(true);
 
+    @Name("Update after every catch")
+    @Desc("§7Quietly reads Daily Missions from /menu after each catch (the menu never shows), so progress is exact")
+    public ValidatedBoolean dailyQuestAutoRefresh = new ValidatedBoolean(true);
+
     @Name("X Position in %")
     public ValidatedInt dailyQuestPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 

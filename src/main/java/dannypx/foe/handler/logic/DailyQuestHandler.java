@@ -63,29 +63,67 @@ public class DailyQuestHandler {
         String plain = message.getString();
         if (plain.startsWith("QUEST Complete [")) {
             updateQuest("Quests Completed");
-        } else if (plain.startsWith("DAILY MISSIONS » Contest Participation")) {
-            updateQuest("Contest Participation");
+            requestRefresh();
+        } else if (plain.startsWith("DAILY MISSIONS")) {
+            if (plain.startsWith("DAILY MISSIONS » Contest Participation")) updateQuest("Contest Participation");
+            requestRefresh();
         }
     }
 
     /// Items in a menu arrive a few ticks after it opens, so scan every tick while it's open.
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
+        this.tickAutoRefresh(mc);
         if (!menuOpen || !(mc.screen instanceof AbstractContainerScreen<?> screen)) {
             return;
         }
+        List<ItemStack> items = new ArrayList<>();
         for (Slot slot : screen.getMenu().slots) {
-            if (slot.container instanceof Inventory) continue;
-            ItemStack stack = slot.getItem();
-            if (stack.getItem() == Items.END_CRYSTAL && "Daily Missions".equals(stack.getHoverName().getString())) {
-                ItemLore lore = stack.get(DataComponents.LORE);
-                if (lore == null) continue;
-                quests.clear();
-                quests.addAll(parseQuests(lore.lines().stream().map(Component::getString).toList()));
-                initialized = true;
-            }
+            if (!(slot.container instanceof Inventory)) items.add(slot.getItem());
+        }
+        this.readMenu(items);
+    }
+
+    /// Reads the Daily Missions item among a menu's items (the open main menu, or a /menu read
+    /// in the background by {@link SilentMenuHandler}). The server's numbers replace ours.
+    public void readMenu(List<ItemStack> items) {
+        for (ItemStack stack : items) {
+            if (stack == null || stack.getItem() != Items.END_CRYSTAL || !"Daily Missions".equals(stack.getHoverName().getString())) continue;
+            ItemLore lore = stack.get(DataComponents.LORE);
+            if (lore == null) continue;
+            quests.clear();
+            quests.addAll(parseQuests(lore.lines().stream().map(Component::getString).toList()));
+            initialized = true;
+            return;
         }
     }
+
+    //region Background refresh
+    /// After a catch the server needs a moment to count it.
+    private static final long AFTER_CATCH_DELAY_MS = 1_500L;
+    private boolean requestedOnJoin = false;
+
+    private void tickAutoRefresh(Minecraft mc) {
+        if (mc.player == null) {
+            requestedOnJoin = false;
+            return;
+        }
+        // Load the panel on joining, without having to open /menu first.
+        if (!requestedOnJoin && autoRefreshOn() && dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance()) {
+            requestedOnJoin = true;
+            SilentMenuHandler.instance().request(5_000L);
+        }
+    }
+
+    private static boolean autoRefreshOn() {
+        return dannypx.foe.config.Configs.hudConfig.showDailyQuestPanel.get()
+                && dannypx.foe.config.Configs.hudConfig.dailyQuestAutoRefresh.get();
+    }
+
+    private static void requestRefresh() {
+        if (autoRefreshOn()) SilentMenuHandler.instance().request(AFTER_CATCH_DELAY_MS);
+    }
+    //endregion
 
     //region Per-catch progress
     /// What a catch was, for matching it against the mission goals.
@@ -104,6 +142,8 @@ public class DailyQuestHandler {
     /// Called for every fish you catch: every unfinished mission it counts for goes up by one,
     /// straight away, so the panel never waits for the main menu to be reopened.
     public void onFishCaught(FishTagObject fish) {
+        // Exact numbers from the server shortly after; the guess below shows up instantly.
+        requestRefresh();
         if (quests.isEmpty()) return;
         String rarity = fish.getRarity().toLowerCase(Locale.ROOT);
         if (rarity.equals("mythic")) rarity = "mythical";
@@ -116,6 +156,7 @@ public class DailyQuestHandler {
     /// Called for every other item you catch; shards count for the shard missions.
     public void onItemCaught(TagObject item, int count) {
         if (quests.isEmpty() || !item.getType().toLowerCase(Locale.ROOT).contains("shard")) return;
+        requestRefresh();
         FoeLocations.Location here = PetLocationHandler.currentLocation();
         quests.removeIf(quest -> {
             String goal = quest.goal.toLowerCase(Locale.ROOT);
