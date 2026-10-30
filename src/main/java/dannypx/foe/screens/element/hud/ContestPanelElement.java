@@ -168,18 +168,16 @@ public class ContestPanelElement extends PanelElement {
         return out;
     }
 
-    /// Bait names; "$Name$" in the sheet marks a bait bought with money, shown with a green $.
+    /// Bait names from the sheet, with its $ marks removed.
     private static Component baitText(String text) {
         net.minecraft.network.chat.MutableComponent out = Component.empty();
         String[] options = text.split("=");
         for (int i = 0; i < options.length; i++) {
             if (i > 0) out.append(Component.literal(" = ").withStyle(ChatFormatting.DARK_GRAY));
-            String option = options[i].trim();
-            if (option.equalsIgnoreCase("none") || option.equalsIgnoreCase("$none$")) {
+            // The sheet's $ marks are ignored.
+            String option = options[i].replace("$", "").trim();
+            if (option.equalsIgnoreCase("none")) {
                 out.append(Component.literal("No bait helps").withStyle(ChatFormatting.GRAY));
-            } else if (option.startsWith("$") && option.endsWith("$") && option.length() > 2) {
-                out.append(Component.literal("$").withStyle(ChatFormatting.DARK_GREEN))
-                        .append(Component.literal(option.substring(1, option.length() - 1)).withStyle(ChatFormatting.GREEN));
             } else {
                 out.append(Component.literal(option).withStyle(ChatFormatting.WHITE));
             }
