@@ -94,6 +94,7 @@ public class ContestPanelElement extends PanelElement {
                 .equals(normalizeLocation(BossEventHandler.instance().getLocation().getString()));
 
         lines.add(join(label("ᴛʏᴘᴇ: "), Component.literal(contest.type).withStyle(ChatFormatting.WHITE)));
+        if (Configs.hudConfig.showContestBestBait.get()) lines.addAll(bestBaitLines(contest));
         if (!atLocation) {
             lines.add(Component.literal("⚠ ɴᴏᴛ ɪɴ ᴀᴄᴛɪᴠᴇ ᴀʀᴇᴀ").withStyle(ChatFormatting.YELLOW));
             lines.add(join(label("ᴛᴏ ᴠɪᴇᴡ ᴄᴏɴᴛᴇѕᴛ ᴅᴇᴛᴀɪʟѕ, ɢᴏ ᴛᴏ "), location));
@@ -129,6 +130,61 @@ public class ContestPanelElement extends PanelElement {
                     label(" ᴀɢᴏ")));
         }
         return lines;
+    }
+
+    /// "BEST BAIT: Cut Shad", then the fallbacks, from the bait sheet.
+    private static List<Component> bestBaitLines(ContestTrackerHandler contest) {
+        List<Component> out = new ArrayList<>();
+        dannypx.foe.handler.logic.ContestBaitSheetHandler sheet = dannypx.foe.handler.logic.ContestBaitSheetHandler.instance();
+        List<dannypx.foe.handler.logic.ContestBaitSheetHandler.Row> rows = sheet.lookup(contest.location, contest.type);
+        if (rows.isEmpty()) {
+            if (!sheet.hasData() && !sheet.getLastError().isEmpty()) {
+                out.add(join(label("ʙᴇѕᴛ ʙᴀɪᴛ: "), Component.literal(sheet.getLastError()).withStyle(ChatFormatting.RED)));
+            }
+            return out;
+        }
+        for (dannypx.foe.handler.logic.ContestBaitSheetHandler.Row row : rows) {
+            // Strategy is "best > next > ...", with "=" for equally good options.
+            String[] steps = row.strategy().split(">");
+            Component best = baitText(steps[0].trim());
+            List<Component> header = new ArrayList<>();
+            header.add(label("ʙᴇѕᴛ ʙᴀɪᴛ"));
+            if (rows.size() > 1 && !row.fish().isBlank()) {
+                header.add(Component.literal(" (" + row.fish() + ")").withStyle(ChatFormatting.DARK_GRAY));
+            }
+            header.add(label(": "));
+            header.add(best);
+            out.add(join(header.toArray(new Component[0])));
+            if (steps.length > 1) {
+                List<Component> rest = new ArrayList<>();
+                rest.add(label("  ᴛʜᴇɴ: "));
+                for (int i = 1; i < steps.length; i++) {
+                    if (i > 1) rest.add(Component.literal(" > ").withStyle(ChatFormatting.DARK_GRAY));
+                    rest.add(baitText(steps[i].trim()));
+                }
+                out.add(join(rest.toArray(new Component[0])));
+            }
+        }
+        return out;
+    }
+
+    /// Bait names; "$Name$" in the sheet marks a bait bought with money, shown with a green $.
+    private static Component baitText(String text) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        String[] options = text.split("=");
+        for (int i = 0; i < options.length; i++) {
+            if (i > 0) out.append(Component.literal(" = ").withStyle(ChatFormatting.DARK_GRAY));
+            String option = options[i].trim();
+            if (option.equalsIgnoreCase("none") || option.equalsIgnoreCase("$none$")) {
+                out.append(Component.literal("No bait helps").withStyle(ChatFormatting.GRAY));
+            } else if (option.startsWith("$") && option.endsWith("$") && option.length() > 2) {
+                out.append(Component.literal("$").withStyle(ChatFormatting.DARK_GREEN))
+                        .append(Component.literal(option.substring(1, option.length() - 1)).withStyle(ChatFormatting.GREEN));
+            } else {
+                out.append(Component.literal(option).withStyle(ChatFormatting.WHITE));
+            }
+        }
+        return out;
     }
 
     private static Component place(String glyph, String name, String stat) {

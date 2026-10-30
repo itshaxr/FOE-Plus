@@ -12,6 +12,7 @@ import me.fzzyhmstrs.fzzy_config.util.Translatable;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedChoice;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum;
+import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString;
 import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedFloat;
 import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedInt;
 import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedNumber;
@@ -251,6 +252,14 @@ public class HUDConfig extends Config {
 
     @Name("Background opacity in %")
     public ValidatedInt contestPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Show best bait")
+    @Desc("§7Look up the best bait for the current contest in the bait sheet")
+    public ValidatedBoolean showContestBestBait = new ValidatedBoolean(true);
+
+    @Name("Bait sheet link")
+    @Desc("§7Google Sheets link (shared 'anyone with the link'). Columns: Location, Family, Fish, Rarity, Habitat, Bait Strategy")
+    public ValidatedString contestBaitSheetUrl = new ValidatedString.Builder("https://docs.google.com/spreadsheets/d/1CJDgpV0FFdlJ4RuuZIHJEoZ02FJiCWRG/edit?usp=sharing").withCorrector().build();
 
     @ConfigGroup.Pop
     @Name("Scale")
