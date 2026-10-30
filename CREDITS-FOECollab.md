@@ -23,3 +23,4 @@ Also ported from FOECollab (AGPL-3.0) and rewritten for FOE-R:
   contest and daily-mission parsing (`ContestTrackerHandler`, `DailyQuestHandler`), and the panel
   border textures under `textures/gui/sprites/themes/`.
 - Moon cycle timer in the inventory screen (`MoonTimerHandler`, `InventoryScreenRenderHandler.renderMoonTimer`).
+- FOE title screen (`screens/FoeTitleScreen.java`) with its logo and background images under `textures/gui/title/` and `sprites/title/`.

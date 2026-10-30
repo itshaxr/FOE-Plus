@@ -29,6 +29,10 @@ public class MainConfig extends Config {
     @Desc("§7The URL used for the wiki button")
     public ValidatedString wikiUrl = new ValidatedString.Builder("https://fishonextras.github.io/FishonMC-Extras-R-Wiki/").withCorrector().build();
 
+    @Name("Use FOE title screen")
+    @Desc("§7Replace the main menu with the FOE title screen (Join FishOnMC button, player count)")
+    public ValidatedBoolean useCustomTitleScreen = new ValidatedBoolean(true);
+
     @Override
     public @NotNull FileType fileType() {
         return FileType.JSON;

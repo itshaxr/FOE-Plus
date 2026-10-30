@@ -59,6 +59,14 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientSendMessageEvents.MODIFY_CHAT.register(this::modifyChatMessage);
         ClientEntityEvents.ENTITY_UNLOAD.register(this::onEntityUnload);
         ScreenEvents.AFTER_INIT.register(this::onAfterInitScreen);
+        ScreenEvents.BEFORE_INIT.register((minecraft, screen, w, h) -> {
+            // FOE title screen (ported from FOECollab)
+            if (screen instanceof net.minecraft.client.gui.screens.TitleScreen
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mainConfig.useCustomTitleScreen.get()) {
+                minecraft.setScreen(new dannypx.foe.screens.FoeTitleScreen());
+            }
+        });
         ItemTooltipCallback.EVENT.register(this::onItemTooltip);
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register(this::onLivingEntityFeatureRenderingRegistrationCallback);
 
