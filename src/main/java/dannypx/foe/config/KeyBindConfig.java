@@ -1,6 +1,7 @@
 package dannypx.foe.config;
 
 import dannypx.foe.FishOnMCExtras;
+import dannypx.foe.type.baitsorter.BaitSortOrder;
 import dannypx.foe.type.keybind.KeyBindMode;
 import me.fzzyhmstrs.fzzy_config.annotations.Version;
 import me.fzzyhmstrs.fzzy_config.api.FileType;
@@ -11,6 +12,8 @@ import me.fzzyhmstrs.fzzy_config.util.Translatable;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum;
 import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedKeybind;
+import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedInt;
+import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedNumber;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
@@ -38,6 +41,20 @@ public class KeyBindConfig extends Config {
     @Name("Enable page scrolling with scroll wheel")
     public ValidatedBoolean scrollWheelScrolling = new ValidatedBoolean(true);
 
+
+    // Bait sorter (ported from FOECollab)
+    @Name("Bait Sorter")
+    public ConfigGroup baitSorterGroup = new ConfigGroup("bait_sorter_group");
+
+    @Name("Sort Baits Key")
+    public ValidatedKeybind sortBaitsKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_B, ContextInput.KEYBOARD, false, false, false);
+
+    @Name("Sort order")
+    public ValidatedEnum<BaitSortOrder> baitSortOrder = new ValidatedEnum<>(BaitSortOrder.COMMON_TO_LEGENDARY, ValidatedEnum.WidgetType.CYCLING);
+
+    @ConfigGroup.Pop
+    @Name("Click speed (1 = safest, 8 = fastest)")
+    public ValidatedInt baitSortClickSpeed = new ValidatedInt(1, 8, 1, ValidatedNumber.WidgetType.SLIDER);
 
     @Override
     public @NotNull FileType fileType() {
