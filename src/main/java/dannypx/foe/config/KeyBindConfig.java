@@ -31,6 +31,9 @@ public class KeyBindConfig extends Config {
     @Name("Open Auto Tip menu")
     public ValidatedKeybind openAutotipKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_M, ContextInput.KEYBOARD, false, false, false);
 
+    @Name("Open Pet Prices menu")
+    public ValidatedKeybind openPetPricesKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_U, ContextInput.KEYBOARD, false, false, false);
+
     @Name("Inspect")
     public ConfigGroup inspectGroup = new ConfigGroup("inspect_group");
 

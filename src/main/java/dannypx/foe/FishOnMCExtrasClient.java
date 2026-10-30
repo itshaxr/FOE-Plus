@@ -70,6 +70,18 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
             }
         });
         ItemTooltipCallback.EVENT.register(this::onItemTooltip);
+        ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
+            // Estimated price from the pet price sheet
+            if (!Configs.mainConfig.showPetPriceTooltip.get() || !ConnectionHandler.instance().isOnServer()) return;
+            var pet = dannypx.foe.item.ValidateItem.isPet(stack);
+            if (!pet.value1()) return;
+            String price = PetPriceSheetHandler.instance().priceFor(pet.value2());
+            if (price != null) {
+                lines.add(net.minecraft.network.chat.Component.literal("Est. price: ").withStyle(net.minecraft.ChatFormatting.GRAY)
+                        .append(net.minecraft.network.chat.Component.literal(price).withStyle(net.minecraft.ChatFormatting.GOLD))
+                        .append(net.minecraft.network.chat.Component.literal(" (U for table)").withStyle(net.minecraft.ChatFormatting.DARK_GRAY)));
+            }
+        });
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register(this::onLivingEntityFeatureRenderingRegistrationCallback);
 
         this.initHudRenderer();
@@ -192,6 +204,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 ContestBaitSheetHandler.instance().tick();
                 AutotipHandler.instance().tick();
                 FullInventoryHandler.instance().tick();
+                PetPriceSheetHandler.instance().tick();
                 DailyQuestHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 if(Configs.handlerConfig.catchingHandler.get()) CatchingHandler.instance().tick();

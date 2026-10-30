@@ -73,7 +73,7 @@ public class ContestBaitSheetHandler {
     }
 
     /// Turns any Google Sheets link (edit, share, export) into its CSV export link.
-    static String toCsvUrl(String link) {
+    public static String toCsvUrl(String link) {
         if (link == null || link.isBlank()) return null;
         Matcher id = SHEET_ID.matcher(link);
         if (!id.find()) return link.trim(); // already a direct CSV link
@@ -148,7 +148,7 @@ public class ContestBaitSheetHandler {
     }
 
     /// Small RFC 4180 reader: quoted fields, escaped quotes, commas and newlines inside quotes.
-    private static List<List<String>> readCsv(String csv) {
+    public static List<List<String>> readCsv(String csv) {
         List<List<String>> rows = new ArrayList<>();
         List<String> row = new ArrayList<>();
         StringBuilder field = new StringBuilder();
