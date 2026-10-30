@@ -8,7 +8,10 @@ import dannypx.foe.type.tuple.Pair;
 import dannypx.foe.config.Configs;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -56,8 +59,48 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
 
             widgets.add(searchBarWidget);
 
+            // Page buttons 1-7 under the vault, ported from FOECollab's PersonalVaultScreenHandler.
+            int currentPage = getCurrentPage(screen);
+            int buttonSize = 22 + 1;
+            for (int i = 1; i <= 7; i++) {
+                final int page = i;
+                boolean isCurrent = page == currentPage;
+                Component label = isCurrent
+                        ? Component.literal("" + page).withStyle(ChatFormatting.BOLD, ChatFormatting.GOLD)
+                        : Component.literal("" + page).withStyle(ChatFormatting.BOLD);
+                Button button = Button.builder(label, b -> {
+                            if (minecraft.player != null) minecraft.player.connection.sendCommand("pv " + page);
+                        })
+                        .bounds(minecraft.getWindow().getGuiScaledWidth() / 2 - 22 / 2 - buttonSize * 4 + buttonSize * page,
+                                minecraft.getWindow().getGuiScaledHeight() / 2 + 111,
+                                22, 20)
+                        .tooltip(Tooltip.create(pageTooltip(page)))
+                        .build();
+                button.active = !isCurrent;
+                widgets.add(button);
+            }
+
             widgets.forEach(Screens.getButtons(screen)::add);
         }
+    }
+
+    private static int getCurrentPage(Screen screen) {
+        String title = screen.getTitle().getString();
+        try {
+            return Integer.parseInt(title.substring(title.lastIndexOf('#') + 1).trim());
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            return -1;
+        }
+    }
+
+    private static Component pageTooltip(int page) {
+        String[] ranks = {"", "", "Angler", "Sailor", "Mariner", "Captain", "Admiral", "Admiral"};
+        MutableComponent tooltip = Component.literal("Page " + page).withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE);
+        if (page > 1) {
+            tooltip.append(Component.literal("\n\nRequires at least ").withStyle(ChatFormatting.WHITE, ChatFormatting.ITALIC))
+                    .append(Component.literal(ranks[page]).withStyle(ChatFormatting.WHITE));
+        }
+        return tooltip;
     }
 
     @Override

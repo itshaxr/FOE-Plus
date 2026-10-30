@@ -52,6 +52,8 @@ public abstract class GuiGraphicsMixin {
                 ItemRendererHandler.instance().drawFishSize((GuiGraphics) (Object) this, font, stack, x, y);
                 ItemRendererHandler.instance().drawPetRating((GuiGraphics) (Object) this, font, stack, x, y);
                 ItemRendererHandler.instance().drawArmorQuality((GuiGraphics) (Object) this, font, stack, x, y);
+            } else {
+                ItemRendererHandler.instance().drawPetRatingLetter((GuiGraphics) (Object) this, font, stack, x, y);
             }
         }
     }

@@ -199,6 +199,23 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    /// Rating letter (S, A, B...) in the bottom-right of a pet slot, shown at all times like FOECollab.
+    /// While the inspect key is held, drawPetRating shows the full percentage instead.
+    public void drawPetRatingLetter(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
+        if(!Configs.rendererConfig.showPetRatingLetter.get()) {
+            return;
+        }
+
+        Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
+        if(validatedPet.value1()) {
+            Component ratingComponent = validatedPet.value2().getRatingComponent();
+            if(!ratingComponent.getString().isBlank()) {
+                Component letter = TextHelper.substring(ratingComponent, 0, 1);
+                guiGraphics.drawString(font, letter, x + 17 - font.width(letter), y + 18 - font.lineHeight, CommonColors.WHITE, true);
+            }
+        }
+    }
+
     public void drawArmorQuality(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
         Pair<Boolean, ArmorTagObject> validatedArmor = ValidateItem.isArmor(stack);
 
