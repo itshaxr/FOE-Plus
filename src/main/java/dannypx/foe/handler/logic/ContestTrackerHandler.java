@@ -50,6 +50,8 @@ public class ContestTrackerHandler {
     /// While > now, the /contest output we asked for is hidden from chat.
     private long hideUntil = 0L;
     private boolean hidingOutput = false;
+    /// After the hidden output ends, separator bars are still hidden until this time.
+    private long hideTailUntil = 0L;
     private boolean announcePersonalBest = false;
     /// Your biggest qualifying fish this contest (lb or in, depending on the contest type).
     private float personalBest = 0f;
@@ -141,18 +143,25 @@ public class ContestTrackerHandler {
      * header to your "You →" line), and reads it. Returns true when the message should be hidden.
      */
     public boolean hideAutoRefreshMessage(Component message) {
-        if (System.currentTimeMillis() > hideUntil) {
+        long now = System.currentTimeMillis();
+        String text = message.getString();
+
+        // Separator bars right after the hidden output (the line under "You →").
+        if (now <= hideTailUntil && isSeparator(text)) return true;
+
+        if (now > hideUntil) {
             hidingOutput = false;
             return false;
         }
-        String text = message.getString();
         if (text.contains("FISHING CONTEST RANKINGS")) hidingOutput = true;
-        if (!hidingOutput) return false;
+        // The bar printed just before the rankings header.
+        if (!hidingOutput) return isSeparator(text);
 
         this.onReceiveMessage(message);
         if (text.startsWith("You → ")) {
             hidingOutput = false;
             hideUntil = 0L;
+            hideTailUntil = now + 1500L;
             if (announcePersonalBest && Minecraft.getInstance().player != null) {
                 Minecraft.getInstance().player.displayClientMessage(Component.literal("[Contest] ").withStyle(ChatFormatting.GOLD)
                         .append(Component.literal("New personal best! ").withStyle(ChatFormatting.YELLOW))
@@ -163,6 +172,13 @@ public class ContestTrackerHandler {
             announcePersonalBest = false;
         }
         return true;
+    }
+
+    /// A blank or bar-only chat line: the server draws its separators as struck-through spaces
+    /// (or dashes/box lines), so the plain text is empty or only those characters.
+    private static boolean isSeparator(String text) {
+        return text.isBlank() || text.strip().chars().allMatch(c -> c == '-' || c == '=' || c == '_'
+                || c == '─' || c == '━' || c == '▬' || c == '▭' || Character.isWhitespace(c));
     }
 
     public void onReceiveMessage(Component message) {
