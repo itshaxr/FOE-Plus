@@ -63,6 +63,17 @@ public abstract class PlayerTabOverlayMixin {
         }
     }
 
+    // FOE's clean tab list: rank tags drawn as compact lettered squares (ported from FOECollab).
+    @Inject(method = "getNameForDisplay", at = @At("RETURN"), cancellable = true)
+    private void injectCleanTabTags(net.minecraft.client.multiplayer.PlayerInfo playerInfo, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<net.minecraft.network.chat.Component> cir) {
+        if (ConnectionHandler.instance().isOnServer()
+                && Configs.mainConfig.enableMod.get()
+                && Configs.rendererConfig.cleanTabListTags.get()
+        ) {
+            cir.setReturnValue(dannypx.foe.helper.SimpleTagFont.apply(cir.getReturnValue(), true, true));
+        }
+    }
+
     @Inject(method = "getPlayerInfos", at = @At("RETURN"), cancellable = true)
     private void injectGetPlayerInfos(@NotNull CallbackInfoReturnable<List<PlayerInfo>> cir) {
         if(ConnectionHandler.instance().isOnServer()
