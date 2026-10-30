@@ -62,43 +62,36 @@ public class FoeTitleScreen extends Screen {
 
     private static Identifier background;
 
-    private final ServerStatusPinger pinger = new ServerStatusPinger();
-    private ServerData serverData;
-    private long pingStarted = 0L;
+    /// Latest ping of play.fishonmc.net; null while the first ping is running. Shared across
+    /// title screen visits so it shows straight away when you come back.
+    private static volatile dannypx.foe.helper.ServerPing.Result pingResult = null;
+    private static volatile long lastPing = 0L;
 
     public FoeTitleScreen() {
         super(Component.literal("Title Screen"));
     }
 
+    /// Pings on a background thread at most every 30 seconds.
+    private static void pingIfNeeded() {
+        long now = System.currentTimeMillis();
+        if (now - lastPing < 30_000L) return;
+        lastPing = now;
+        Thread thread = new Thread(() -> pingResult = dannypx.foe.helper.ServerPing.ping(SERVER_ADDRESS, 5000), "FOE title screen ping");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
     @Override
     public void tick() {
         super.tick();
-        pinger.tick();
+        pingIfNeeded();
     }
 
     @Override
     protected void init() {
         if (background == null) background = BACKGROUNDS.get(new Random().nextInt(BACKGROUNDS.size()));
 
-        serverData = new ServerData("FishOnMC", SERVER_ADDRESS, ServerData.Type.OTHER);
-        serverData.setState(ServerData.State.PINGING);
-        pingStarted = System.currentTimeMillis();
-        boolean nativeTransport = this.minecraft.options.useNativeTransport();
-        Thread pingThread = new Thread(() -> {
-            try {
-                // The pinger fills in players/ping but leaves the state to the caller (the server
-                // list sets it in these callbacks), so mark the ping as done here.
-                pinger.pingServer(serverData,
-                        () -> serverData.setState(ServerData.State.SUCCESSFUL),
-                        () -> serverData.setState(ServerData.State.SUCCESSFUL),
-                        EventLoopGroupHolder.remote(nativeTransport));
-            } catch (Exception e) {
-                serverData.setState(ServerData.State.UNREACHABLE);
-                serverData.ping = -1L;
-            }
-        }, "FOE title screen ping");
-        pingThread.setDaemon(true);
-        pingThread.start();
+        pingIfNeeded();
 
         this.initButtons();
     }
@@ -174,31 +167,27 @@ public class FoeTitleScreen extends Screen {
         int centerX = Math.max(width / 4, 90 + 40);
         int textY = height / 2 - 11;
 
-        // Answered as soon as player counts arrive; give up after 10 seconds without an answer.
-        boolean answered = serverData.players != null;
-        boolean timedOut = !answered && System.currentTimeMillis() - pingStarted > 10_000L;
-        if (answered && serverData.state() != ServerData.State.SUCCESSFUL) serverData.setState(ServerData.State.SUCCESSFUL);
-        if (timedOut) serverData.setState(ServerData.State.UNREACHABLE);
+        dannypx.foe.helper.ServerPing.Result result = pingResult;
 
         Component line;
-        if (answered) {
-            line = Component.literal("There are ")
-                    .append(Component.literal(String.valueOf(serverData.players.online())).withStyle(ChatFormatting.BOLD, ChatFormatting.YELLOW))
-                    .append(Component.literal(" players online."));
-        } else if (serverData.state() == ServerData.State.UNREACHABLE) {
+        if (result == null) {
+            line = Component.literal("Pinging FishOnMC...").withStyle(ChatFormatting.GRAY);
+        } else if (!result.reachable()) {
             line = Component.literal("Can't reach FishOnMC right now.").withStyle(ChatFormatting.RED);
         } else {
-            line = Component.literal("Pinging FishOnMC...").withStyle(ChatFormatting.GRAY);
+            line = Component.literal("There are ")
+                    .append(Component.literal(String.valueOf(result.online())).withStyle(ChatFormatting.BOLD, ChatFormatting.YELLOW))
+                    .append(Component.literal(" players online."));
         }
         guiGraphics.drawCenteredString(this.font, line, centerX, textY, 0xFFFFFFFF);
 
         Identifier pingIcon;
-        if (serverData.state() == ServerData.State.UNREACHABLE || serverData.ping < 0L) pingIcon = UNREACHABLE_TEXTURE;
-        else if (serverData.state() != ServerData.State.SUCCESSFUL) pingIcon = null;
-        else if (serverData.ping < 50L) pingIcon = PING_5_TEXTURE;
-        else if (serverData.ping < 100L) pingIcon = PING_4_TEXTURE;
-        else if (serverData.ping < 175L) pingIcon = PING_3_TEXTURE;
-        else if (serverData.ping < 300L) pingIcon = PING_2_TEXTURE;
+        if (result == null) pingIcon = null;
+        else if (!result.reachable()) pingIcon = UNREACHABLE_TEXTURE;
+        else if (result.pingMs() < 50L) pingIcon = PING_5_TEXTURE;
+        else if (result.pingMs() < 100L) pingIcon = PING_4_TEXTURE;
+        else if (result.pingMs() < 175L) pingIcon = PING_3_TEXTURE;
+        else if (result.pingMs() < 300L) pingIcon = PING_2_TEXTURE;
         else pingIcon = PING_1_TEXTURE;
 
         if (pingIcon != null) {
@@ -206,12 +195,6 @@ public class FoeTitleScreen extends Screen {
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, pingIcon,
                     columnLeft() + BUTTON_FULL_WIDTH - 10 - 8, height / 2 + 6, 10, 8);
         }
-    }
-
-    @Override
-    public void removed() {
-        super.removed();
-        pinger.removeAll();
     }
 
     @Override
