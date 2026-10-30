@@ -3,6 +3,7 @@ package dannypx.foe.config;
 import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.type.Alignment;
 import dannypx.foe.type.PanelTheme;
+import dannypx.foe.type.CatchPopupStyle;
 import me.fzzyhmstrs.fzzy_config.annotations.Version;
 import me.fzzyhmstrs.fzzy_config.api.FileType;
 import me.fzzyhmstrs.fzzy_config.config.Config;
@@ -156,6 +157,10 @@ public class HUDConfig extends Config {
 
     @Name("Show notification when catching fish")
     public ValidatedBoolean showFishCatchNotification = new ValidatedBoolean(true);
+
+    @Name("Fish catch style")
+    @Desc("§7FOE: floating text in the middle of the screen (move it in Move HUD Elements)\nBOX: the notification box")
+    public ValidatedEnum<CatchPopupStyle> fishCatchStyle = new ValidatedEnum<>(CatchPopupStyle.FOE, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("Show drystreak in notification when catching fish")
     public ValidatedBoolean showFishDrystreakNotification = new ValidatedBoolean(true);
@@ -323,6 +328,30 @@ public class HUDConfig extends Config {
     @Name("Scale")
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
     public ValidatedFloat questPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("FOE Catch Popup")
+    @Desc("§7The floating catch text used when Fish catch style is FOE")
+    public ConfigGroup catchPopupGroup = new ConfigGroup("catch_popup_group");
+
+    @Name("X Position in %")
+    public ValidatedInt catchPopupXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt catchPopupYPosition = new ValidatedInt(30, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Show weight")
+    public ValidatedBoolean catchPopupShowWeight = new ValidatedBoolean(true);
+
+    @Name("Show length")
+    public ValidatedBoolean catchPopupShowLength = new ValidatedBoolean(true);
+
+    @Name("Display time in seconds")
+    public ValidatedInt catchPopupTime = new ValidatedInt(5, 30, 1, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
+    public ValidatedFloat catchPopupScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
 
     @Override
     public @NotNull FileType fileType() {

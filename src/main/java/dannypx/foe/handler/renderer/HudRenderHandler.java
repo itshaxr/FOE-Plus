@@ -86,6 +86,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("daily_quest_panel", new DailyQuestPanelElement()));
             elements.add(Pair.of("stats_panel", new StatsPanelElement()));
             elements.add(Pair.of("quest_panel", new QuestPanelElement()));
+            elements.add(Pair.of("catch_popup", new CatchPopupElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 

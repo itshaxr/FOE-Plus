@@ -89,6 +89,12 @@ public class NotifierHandler extends Handler {
             return;
         }
 
+        // FOE-style floating catch text (ported from FOECollab)
+        if(Configs.hudConfig.fishCatchStyle.get() == dannypx.foe.type.CatchPopupStyle.FOE) {
+            dannypx.foe.screens.element.hud.CatchPopupElement.show(fish);
+            return;
+        }
+
         Component tagComponent = !Objects.equals(fish.getVariant(), "normal")
                 ? TextHelper.concat(fish.getVariantComponent(), Component.literal(" "), fish.getRarityComponent())
                 : TextHelper.concat(fish.getRarityComponent());

@@ -261,6 +261,24 @@ public class MoveElementScreen extends DefaultModScreen {
                 }
         ));
 
+        widgets.add(new MovableBoxWidget(this.minecraft,
+                new CatchPopupElement(true),
+                List.of(Alignment.TOP),
+                new MovableBoxWidget.Callback() {
+                    @Override
+                    public void onRelease(int xPercent, int yPercent, Alignment alignment) {
+                        Configs.hudConfig.catchPopupXPosition.accept(xPercent);
+                        Configs.hudConfig.catchPopupYPosition.accept(yPercent);
+                        Configs.hudConfig.save();
+                    }
+
+                    @Override
+                    public void onConfig() {
+                        ConfigApiJava.INSTANCE.openScreen(Configs.hudConfig.catchPopupXPosition.translationKey());
+                    }
+                }
+        ));
+
         if(Configs.debugConfig.debugMode.get()) {
             widgets.add(new MovableBoxWidget(this.minecraft,
                     new _DebugField(true),
