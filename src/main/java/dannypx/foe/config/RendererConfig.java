@@ -66,6 +66,9 @@ public class RendererConfig extends Config {
     @Name("Show Equipped Pet Item")
     public ValidatedBoolean showPetEquippedMarker = new ValidatedBoolean(true);
 
+    @Name("Show max Luck/Scale pet marker")
+    public ValidatedBoolean showMaxPetStatsMarker = new ValidatedBoolean(true);
+
     @Name("Show Rarity marker")
     public ValidatedBoolean showRarityMarker = new ValidatedBoolean(true);
 

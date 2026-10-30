@@ -46,6 +46,7 @@ public abstract class GuiGraphicsMixin {
             ItemRendererHandler.instance().drawRarityMarker((GuiGraphics) (Object) this, font, stack, x, y);
             ItemRendererHandler.instance().drawSearchItem((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawPetItemEquipped((GuiGraphics) (Object) this, stack, x, y);
+            ItemRendererHandler.instance().drawMaxPetStats((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawBaitStackerMarker((GuiGraphics) (Object) this, font, stack, x, y);
             if(KeyBindHandler.instance().isPressingInspect()) {
                 ItemRendererHandler.instance().drawFishSize((GuiGraphics) (Object) this, font, stack, x, y);

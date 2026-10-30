@@ -36,6 +36,10 @@ public class ItemRendererHandler extends Handler {
 
     //region Fields
     private final Identifier petItemMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/pet_item");
+    // Max pet stat markers, ported from FOECollab (AGPL-3.0)
+    private final Identifier maxLuckMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_luck");
+    private final Identifier maxScaleMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_scale");
+    private final Identifier maxPerfectMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_perfect");
     private final Identifier rarityMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/rarity");
     //endregion
 
@@ -121,6 +125,31 @@ public class ItemRendererHandler extends Handler {
                 || validatedPet.value2().contains(PetTagObject.TRAIL)
         )) {
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
+        }
+    }
+
+    /// Clover = max luck, anchor = max scale, combined icon = both (climate AND location base at 100%).
+    /// Ported from FOECollab's ItemMarkerHandler.
+    public void drawMaxPetStats(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
+        if(!Configs.rendererConfig.showMaxPetStatsMarker.get()) {
+            return;
+        }
+
+        Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
+        if(!validatedPet.value1()) {
+            return;
+        }
+        PetTagObject pet = validatedPet.value2();
+        boolean maxLuck = pet.getClimatePercentMaxLuck() >= 1.0f && pet.getLocationPercentMaxLuck() >= 1.0f;
+        boolean maxScale = pet.getClimatePercentMaxScale() >= 1.0f && pet.getLocationPercentMaxScale() >= 1.0f;
+
+        Identifier marker = maxLuck && maxScale ? maxPerfectMarker
+                : maxLuck ? maxLuckMarker
+                : maxScale ? maxScaleMarker
+                : null;
+        if(marker != null) {
+            int iconSize = 7;
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, marker, x, y + 16 - iconSize, iconSize, iconSize, CommonColors.WHITE);
         }
     }
 
