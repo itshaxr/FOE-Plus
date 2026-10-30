@@ -384,6 +384,46 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat baitPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Equipment Bar")
+    @Desc("§7FOE's armor and rod-part boxes above the hotbar, underlined in their rarity colour")
+    public ConfigGroup equipmentBarGroup = new ConfigGroup("equipment_bar_group");
+
+    @Name("Show Equipment Bar")
+    public ValidatedBoolean showEquipmentBar = new ValidatedBoolean(true);
+
+    @Name("Distance from bottom")
+    public ValidatedInt equipmentBarOffsetFromBottom = new ValidatedInt(28, 300, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Background opacity in %")
+    public ValidatedInt equipmentBarOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat equipmentBarScale = ValidatedNumber.withIncrement(new ValidatedFloat(0.8f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Wrong Gear Warning")
+    @Desc("§7Warns while your pet or armor doesn't fit the location you're fishing in")
+    public ConfigGroup gearWarningGroup = new ConfigGroup("gear_warning_group");
+
+    @Name("Show Wrong Gear Warning")
+    public ValidatedBoolean showGearWarning = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt gearWarningXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt gearWarningYPosition = new ValidatedInt(35, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> gearWarningAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt gearWarningOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat gearWarningScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
     @Name("Top Bar")
     @Desc("§7FOE's bar across the top: name, level, location, weather, time, balance, catches")
     public ConfigGroup topBarGroup = new ConfigGroup("top_bar_group");

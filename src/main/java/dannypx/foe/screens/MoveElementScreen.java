@@ -94,6 +94,8 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.petPanelAlignment, hud.petPanelScale, Alignment.getCorners());
         addPanel(new BaitPanelElement(true), hud.showBaitPanel, hud.baitPanelXPosition, hud.baitPanelYPosition,
                 hud.baitPanelAlignment, hud.baitPanelScale, Alignment.getCorners());
+        addPanel(new GearWarningPanelElement(true), hud.showGearWarning, hud.gearWarningXPosition, hud.gearWarningYPosition,
+                hud.gearWarningAlignment, hud.gearWarningScale, Alignment.getCorners());
         addPanel(new CatchPopupElement(true), null, hud.catchPopupXPosition, hud.catchPopupYPosition,
                 null, hud.catchPopupScale, List.of(Alignment.TOP));
         addPanel(new NotifierElement(true), hud.showNotifierElement, hud.notifierElementXPosition, hud.notifierElementYPosition,

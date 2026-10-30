@@ -87,6 +87,8 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("catch_popup", new CatchPopupElement()));
             elements.add(Pair.of("pet_panel", new PetPanelElement()));
             elements.add(Pair.of("bait_panel", new BaitPanelElement()));
+            elements.add(Pair.of("equipment_bar", new EquipmentBarElement()));
+            elements.add(Pair.of("gear_warning", new GearWarningPanelElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
 
