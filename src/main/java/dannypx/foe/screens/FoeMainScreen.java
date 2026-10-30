@@ -98,7 +98,7 @@ public class FoeMainScreen extends Screen {
 
         guiGraphics.vLine(centerX, centerY - 36, centerY + 36, 0xFFFFFFFF);
 
-        Component welcome = Component.literal("Welcome to FishOnMC-Extras");
+        Component welcome = Component.literal("Welcome to FOE+");
         Component player = TabOverlayHandler.instance().getPlayerName();
         Component version = Component.literal(FishOnMCExtras.VERSION);
         guiGraphics.drawString(font, welcome, centerX - 4 - font.width(welcome), startY, 0xFFFFFFFF, true);
