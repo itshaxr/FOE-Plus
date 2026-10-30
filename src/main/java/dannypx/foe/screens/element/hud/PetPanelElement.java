@@ -91,9 +91,9 @@ public class PetPanelElement extends PanelElement {
         lines.add(Component.empty()
                 .append(Component.literal("xᴘ ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal("(").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(String.valueOf(Math.round(current))).withStyle(ChatFormatting.AQUA))
+                .append(Component.literal(compact(current)).withStyle(ChatFormatting.AQUA))
                 .append(Component.literal("/").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(max ? "MAX" : String.valueOf(Math.round(needed))).withStyle(ChatFormatting.BLUE))
+                .append(Component.literal(max ? "MAX" : compact(needed)).withStyle(ChatFormatting.BLUE))
                 .append(Component.literal(") ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(String.format("%.1f%%", percent)).withStyle(progressColor(percent))));
 
@@ -107,6 +107,19 @@ public class PetPanelElement extends PanelElement {
                     .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY)));
         }
         return lines;
+    }
+
+    /// 950 → "950", 23500 → "23.5k", 201000 → "201k", 1500000 → "1.5m".
+    static String compact(float value) {
+        double v = Math.round(value);
+        String suffix = "";
+        if (Math.abs(v) >= 1_000_000_000) { v /= 1_000_000_000; suffix = "b"; }
+        else if (Math.abs(v) >= 1_000_000) { v /= 1_000_000; suffix = "m"; }
+        else if (Math.abs(v) >= 1_000) { v /= 1_000; suffix = "k"; }
+        if (suffix.isEmpty()) return String.valueOf((long) v);
+        String text = v >= 100 ? String.valueOf((long) Math.floor(v)) : String.format(java.util.Locale.ROOT, "%.1f", Math.floor(v * 10) / 10);
+        if (text.endsWith(".0")) text = text.substring(0, text.length() - 2);
+        return text + suffix;
     }
 
     @Override

@@ -19,12 +19,12 @@ import java.util.List;
 /// FOECollab's FishTrackerHudHandler (AGPL-3.0); the numbers come from FOE-R's stats tracker.
 public class StatsPanelElement extends PanelElement {
     private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
-    /// White label on a filled box, drawn to match the server's rarity badges: a lighter top edge
-    /// and a darker drop shadow underneath.
-    private static final Component GIGANTIC_BADGE = Component.literal("GIGANTIC").withStyle(ChatFormatting.WHITE);
-    private static final int GIGANTIC_COLOR = 0xFFAF3333;
-    private static final int GIGANTIC_LIGHT = 0xFFCC5050;
-    private static final int GIGANTIC_SHADOW = 0xFF4A1010;
+    /// The GIGANTIC badge: a glyph image in this mod's tag font, drawn like the server's rarity
+    /// badges (the text shadow gives it the same dark drop shadow).
+    private static final Component GIGANTIC_BADGE = Component.literal("\uE910").withStyle(style -> style
+            .withColor(ChatFormatting.WHITE)
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "tags"))));
     private Component giganticLine = null;
 
     private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
@@ -86,11 +86,9 @@ public class StatsPanelElement extends PanelElement {
             StatsDataHandler.Stat<Integer, Integer> gigantic = stats.fishData
                     .getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
             int amount = gigantic == null ? 0 : gigantic.amount();
-            int dryStreak = gigantic == null ? fishTotal : fishTotal - gigantic.caughtOn();
             giganticLine = join(GIGANTIC_BADGE,
                     white(" " + amount + " "),
-                    label("(" + percent(amount, fishTotal) + "%) "),
-                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY));
+                    label("(" + percent(amount, fishTotal) + "%)"));
             lines.add(giganticLine);
         }
         lines.add(Component.empty());
@@ -107,19 +105,6 @@ public class StatsPanelElement extends PanelElement {
         }
 
         return lines;
-    }
-
-    @Override
-    protected void beforeLine(net.minecraft.client.gui.GuiGraphics guiGraphics, net.minecraft.client.gui.Font font, Component line, int x, int y) {
-        if (line != giganticLine) return;
-        int width = font.width(GIGANTIC_BADGE);
-        int left = x - 2;
-        int right = x + width + 1;
-        int top = y - 1;
-        int bottom = y + 8;
-        guiGraphics.fill(left + 1, top + 1, right + 1, bottom + 1, GIGANTIC_SHADOW); // drop shadow
-        guiGraphics.fill(left, top, right, bottom, GIGANTIC_COLOR);
-        guiGraphics.fill(left, top, right, top + 1, GIGANTIC_LIGHT);
     }
 
     private static Component white(String text) {

@@ -20,6 +20,7 @@
     {"type":"bitmap","file":"fishonmcextras:font/tag/special.png","ascent":7,"height":7,"chars":["\uF092"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/alternate.png","ascent":7,"height":7,"chars":["\uF098"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/spooky.png","ascent":7,"height":7,"chars":["\uF102"]},
-    {"type":"bitmap","file":"fishonmcextras:font/tag/frozen.png","ascent":7,"height":7,"chars":["\uF179"]}
+    {"type":"bitmap","file":"fishonmcextras:font/tag/frozen.png","ascent":7,"height":7,"chars":["\uF179"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/gigantic_badge.png","ascent":7,"height":7,"chars":["\uE910"]}
   ]
 }
