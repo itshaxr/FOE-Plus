@@ -64,6 +64,7 @@ public class FoeTitleScreen extends Screen {
 
     private final ServerStatusPinger pinger = new ServerStatusPinger();
     private ServerData serverData;
+    private long pingStarted = 0L;
 
     public FoeTitleScreen() {
         super(Component.literal("Title Screen"));
@@ -80,10 +81,17 @@ public class FoeTitleScreen extends Screen {
         if (background == null) background = BACKGROUNDS.get(new Random().nextInt(BACKGROUNDS.size()));
 
         serverData = new ServerData("FishOnMC", SERVER_ADDRESS, ServerData.Type.OTHER);
+        serverData.setState(ServerData.State.PINGING);
+        pingStarted = System.currentTimeMillis();
         boolean nativeTransport = this.minecraft.options.useNativeTransport();
         Thread pingThread = new Thread(() -> {
             try {
-                pinger.pingServer(serverData, () -> {}, () -> {}, EventLoopGroupHolder.remote(nativeTransport));
+                // The pinger fills in players/ping but leaves the state to the caller (the server
+                // list sets it in these callbacks), so mark the ping as done here.
+                pinger.pingServer(serverData,
+                        () -> serverData.setState(ServerData.State.SUCCESSFUL),
+                        () -> serverData.setState(ServerData.State.SUCCESSFUL),
+                        EventLoopGroupHolder.remote(nativeTransport));
             } catch (Exception e) {
                 serverData.setState(ServerData.State.UNREACHABLE);
                 serverData.ping = -1L;
@@ -166,8 +174,14 @@ public class FoeTitleScreen extends Screen {
         int centerX = Math.max(width / 4, 90 + 40);
         int textY = height / 2 - 11;
 
+        // Answered as soon as player counts arrive; give up after 10 seconds without an answer.
+        boolean answered = serverData.players != null;
+        boolean timedOut = !answered && System.currentTimeMillis() - pingStarted > 10_000L;
+        if (answered && serverData.state() != ServerData.State.SUCCESSFUL) serverData.setState(ServerData.State.SUCCESSFUL);
+        if (timedOut) serverData.setState(ServerData.State.UNREACHABLE);
+
         Component line;
-        if (serverData.state() == ServerData.State.SUCCESSFUL && serverData.players != null) {
+        if (answered) {
             line = Component.literal("There are ")
                     .append(Component.literal(String.valueOf(serverData.players.online())).withStyle(ChatFormatting.BOLD, ChatFormatting.YELLOW))
                     .append(Component.literal(" players online."));
