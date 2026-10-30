@@ -41,6 +41,15 @@ public class FoeMainScreen extends Screen {
                 b -> this.minecraft.setScreen(new AutotipScreen(this)), "Tip reaction winners and chummers automatically");
         addIconButton("Pet Prices", x, height / 2 + (BUTTON_HEIGHT + 8) * 3,
                 b -> this.minecraft.setScreen(new PetPriceScreen(this)), "Pet price table from the price sheet (U)");
+        // Stats tools
+        this.addRenderableWidget(Button.builder(Component.literal("Import FOE stats"), b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false))
+                .bounds(width / 2 - 4 - 130, height / 2 + (BUTTON_HEIGHT + 8) * 3, 130, 20)
+                .tooltip(Tooltip.create(Component.literal("Copy dry streaks, fish time and fish/hour from a previous FOE install")))
+                .build());
+        this.addRenderableWidget(Button.builder(Component.literal("Reset fish timer"), b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset())
+                .bounds(width / 2 - 4 - 130, height / 2 + (BUTTON_HEIGHT + 8) * 4, 130, 20)
+                .tooltip(Tooltip.create(Component.literal("Start fish time and fish/hour from zero")))
+                .build());
         this.addRenderableWidget(Button.builder(Component.literal("More (FOE-R)"), b -> this.minecraft.setScreen(new MainScreen(this)))
                 .bounds(x, height / 2 + (BUTTON_HEIGHT + 8) * 4, BUTTON_WIDTH, 20)
                 .tooltip(Tooltip.create(Component.literal("FOE-R's full menu: triggers, timers, notifications, snippets")))

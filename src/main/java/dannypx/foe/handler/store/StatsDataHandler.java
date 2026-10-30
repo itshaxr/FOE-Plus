@@ -194,6 +194,25 @@ public class StatsDataHandler extends Handler {
         this.needsUpdate = true;
     }
 
+    public void addFishTime(long ms, int fish) {
+        statsData.fishTimeMs += ms;
+        statsData.fishTimeFish += fish;
+        this.needsUpdate = true;
+    }
+
+    /// Sets how many fish ago a category was last caught (FOE's dry streak) without changing its count.
+    public void setDryStreak(String category, String field, int dryStreak) {
+        Map<String, Stat<Integer, Integer>> categoryMap = statsData.fishData.getOrDefault(category, new HashMap<>());
+        Stat<Integer, Integer> stat = categoryMap.getOrDefault(field, Stat.of(0, 0));
+        categoryMap.put(field, Stat.of(stat.amount(), Math.max(0, statsData.fishTotal - Math.max(0, dryStreak))));
+        statsData.fishData.put(category, categoryMap);
+        this.needsUpdate = true;
+    }
+
+    public void markChanged() {
+        this.needsUpdate = true;
+    }
+
     public void addQuestCompleted() {
         statsData.questsCompleted++;
         this.needsUpdate = true;
@@ -334,6 +353,13 @@ public class StatsDataHandler extends Handler {
 
         /// Quests completed (counted from chat, used by the All-Time Stats panel)
         public int questsCompleted = 0;
+
+        /// FOE-style fish timer: time spent fishing and fish caught during it (for fish/hour)
+        public long fishTimeMs = 0L;
+        public int fishTimeFish = 0;
+
+        /// Set once stats from a previous FOE install have been imported
+        public boolean importedFoeStats = false;
 
         public StatsDataModel() {
             super(STATS_DATA_MODEL_VERSION, null);
