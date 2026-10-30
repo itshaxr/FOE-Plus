@@ -401,13 +401,13 @@ public class HUDConfig extends Config {
     public ValidatedFloat baitPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Luck & Scale Panel")
-    @Desc("§7Your current Luck and Scale from your pet and armor at this location")
+    @Desc("§7Your current Luck and Scale as shown on your profile in /menu (boosters included)")
     public ConfigGroup luckScalePanelGroup = new ConfigGroup("luck_scale_panel_group");
 
     @Name("Show Luck & Scale Panel")
     public ValidatedBoolean showLuckScalePanel = new ValidatedBoolean(true);
 
-    @Name("Show where it comes from (pet / armor)")
+    @Name("Show when the numbers were read from /menu")
     public ValidatedBoolean luckScalePanelBreakdown = new ValidatedBoolean(true);
 
     @Name("X Position in %")

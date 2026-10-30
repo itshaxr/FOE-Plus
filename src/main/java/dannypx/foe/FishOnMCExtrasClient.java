@@ -208,6 +208,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 FullInventoryHandler.instance().tick();
                 PetPriceSheetHandler.instance().tick();
                 DailyQuestHandler.instance().tick();
+                dannypx.foe.handler.logic.ProfileStatsHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 dannypx.foe.handler.io.FoerStatsImporter.tick();
                 dannypx.foe.handler.io.FoeStatsImporter.tick();
