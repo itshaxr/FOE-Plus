@@ -85,6 +85,19 @@ public class StatsPanelElement extends PanelElement {
                     label("(" + percent(amount, fishTotal) + "%) "),
                     Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY)));
         }
+
+        // Gigantic size: count, share and dry streak, like the variants.
+        if (Configs.hudConfig.statsPanelShowGigantic.get()) {
+            StatsDataHandler.Stat<Integer, Integer> gigantic = stats.fishData
+                    .getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
+            int amount = gigantic == null ? 0 : gigantic.amount();
+            int dryStreak = gigantic == null ? fishTotal : fishTotal - gigantic.caughtOn();
+            lines.add(Component.empty());
+            lines.add(join(ConstantDataHandler.instance().getConstantFishComponent("gigantic"),
+                    white(" " + amount + " "),
+                    label("(" + percent(amount, fishTotal) + "%) "),
+                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY)));
+        }
         return lines;
     }
 

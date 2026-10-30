@@ -318,6 +318,9 @@ public class HUDConfig extends Config {
     @Name("Background opacity in %")
     public ValidatedInt statsPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("Show gigantic fish")
+    public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
+
     @ConfigGroup.Pop
     @Name("Scale")
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
