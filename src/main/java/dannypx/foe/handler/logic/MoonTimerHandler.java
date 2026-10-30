@@ -39,7 +39,9 @@ public class MoonTimerHandler {
         String text = message.getString();
         for (Moon moon : Moon.values()) {
             if (text.startsWith(moon.chatPrefix)) {
-                this.currentMoon = text.contains(" has set") ? null : moon;
+                boolean set = text.contains(" has set");
+                if (set && this.currentMoon != null) AlertHandler.instance().onMoonSet();
+                this.currentMoon = set ? null : moon;
                 return;
             }
         }

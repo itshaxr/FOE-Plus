@@ -82,6 +82,8 @@ public class HudRenderHandler extends Handler {
             // The wrong-gear warning claims its spot first: it always stays exactly where you put
             // it, whatever its size, and the other panels make room while it is showing.
             elements.add(Pair.of("gear_warning", new GearWarningPanelElement()));
+            // Event / cryptid alerts also keep their spot.
+            elements.add(Pair.of("alert_panel", new AlertPanelElement()));
             // FOE-style info panels (ported from FOECollab)
             elements.add(Pair.of("contest_panel", new ContestPanelElement()));
             elements.add(Pair.of("daily_quest_panel", new DailyQuestPanelElement()));

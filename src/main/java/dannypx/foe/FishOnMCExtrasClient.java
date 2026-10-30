@@ -210,6 +210,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 DailyQuestHandler.instance().tick();
                 dannypx.foe.handler.logic.ProfileStatsHandler.instance().tick();
                 dannypx.foe.handler.logic.SilentMenuHandler.instance().tick();
+                dannypx.foe.handler.logic.AlertHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 dannypx.foe.handler.io.FoerStatsImporter.tick();
                 dannypx.foe.handler.io.FoeStatsImporter.tick();

@@ -408,6 +408,62 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat baitPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Alerts Panel")
+    @Desc("§7Witching Hour and cryptid windows (Titanoboa, Rougarou, Garaboncias, Bessie) with how long they have left")
+    public ConfigGroup alertPanelGroup = new ConfigGroup("alert_panel_group");
+
+    @Name("Show Alerts Panel")
+    public ValidatedBoolean showAlertPanel = new ValidatedBoolean(true);
+
+    @Name("Witching Hour (Cypress Lake, 12-3 AM)")
+    public ValidatedBoolean alertWitchingHour = new ValidatedBoolean(true);
+
+    @Name("Titanoboa (Amazon, 2-4 AM)")
+    public ValidatedBoolean alertTitanoboa = new ValidatedBoolean(true);
+
+    @Name("Rougarou (Toledo Bend, Moons)")
+    public ValidatedBoolean alertRougarou = new ValidatedBoolean(true);
+
+    @Name("Garaboncias (Danube, Rainbows)")
+    public ValidatedBoolean alertGaraboncias = new ValidatedBoolean(true);
+
+    @Name("Bessie (Great Lakes, 4-6 AM and Moons)")
+    public ValidatedBoolean alertBessie = new ValidatedBoolean(true);
+
+    @Name("Only alerts for the location you're at")
+    public ValidatedBoolean alertsOnlyHere = new ValidatedBoolean(false);
+
+    @Name("Show what starts soon (minutes ahead, 0 = off)")
+    public ValidatedInt alertUpcomingMinutes = new ValidatedInt(3, 15, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Show the drop / craft line")
+    public ValidatedBoolean alertShowDrops = new ValidatedBoolean(true);
+
+    @Name("Chat message when an alert starts")
+    public ValidatedBoolean alertChat = new ValidatedBoolean(true);
+
+    @Name("Sound when an alert starts")
+    public ValidatedBoolean alertSound = new ValidatedBoolean(true);
+
+    @Name("Alert sound")
+    public ValidatedEnum<WarningSound> alertSoundType = new ValidatedEnum<>(WarningSound.DIDGERIDOO, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("X Position in %")
+    public ValidatedInt alertPanelXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt alertPanelYPosition = new ValidatedInt(12, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> alertPanelAlignment = new ValidatedChoice<>(Alignment.TOP, Alignment.getCornersAndCenters(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt alertPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
     @Name("Luck & Scale Panel")
     @Desc("§7Your current Luck and Scale as shown on your profile in /menu (boosters included)")
     public ConfigGroup luckScalePanelGroup = new ConfigGroup("luck_scale_panel_group");
