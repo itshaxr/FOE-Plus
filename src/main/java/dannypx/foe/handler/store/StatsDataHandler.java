@@ -229,7 +229,8 @@ public class StatsDataHandler extends Handler {
     public void setDryStreak(String category, String field, int dryStreak) {
         Map<String, Stat<Integer, Integer>> categoryMap = statsData.fishData.getOrDefault(category, new HashMap<>());
         Stat<Integer, Integer> stat = categoryMap.getOrDefault(field, Stat.of(0, 0));
-        categoryMap.put(field, Stat.of(stat.amount(), Math.max(0, statsData.fishTotal - Math.max(0, dryStreak))));
+        // May go below 0: the streak started before this install counted any fish.
+        categoryMap.put(field, Stat.of(stat.amount(), statsData.fishTotal - Math.max(0, dryStreak)));
         statsData.fishData.put(category, categoryMap);
         this.needsUpdate = true;
     }
@@ -389,6 +390,9 @@ public class StatsDataHandler extends Handler {
         /// Stats file of the other FOE-R install these stats were imported from (null if none), so
         /// the automatic import never runs twice
         public String importedFoerFrom = null;
+
+        /// Set once FOE's dry streaks were imported with the corrected reading
+        public boolean foeStreaksFixed = false;
 
         public StatsDataModel() {
             super(STATS_DATA_MODEL_VERSION, null);

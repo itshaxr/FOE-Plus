@@ -45,11 +45,27 @@ public final class FoeStatsImporter {
         autoImport();
     }
 
-    /// Imports once per player, the first time they join with FOE's stats file present.
+    /// Imports once per player, the first time they join with FOE's stats file present. An earlier
+    /// build read FOE's dry streaks wrong; those imports are redone once (streaks only).
     public static void autoImport() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || StatsDataHandler.instance().getStatsData().importedFoeStats) return;
-        if (Files.exists(statsFile(mc.player.getUUID()))) importNow(true);
+        if (mc.player == null) return;
+        var data = StatsDataHandler.instance().getStatsData();
+        Path file = statsFile(mc.player.getUUID());
+        if (!Files.exists(file)) return;
+        if (!data.importedFoeStats) {
+            importNow(true);
+        } else if (!data.foeStreaksFixed) {
+            try {
+                JsonObject foe = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+                int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data);
+                data.foeStreaksFixed = true;
+                StatsDataHandler.instance().markChanged();
+                message(Component.literal("Re-imported " + streaks + " FOE dry streaks (fixed).").withStyle(ChatFormatting.GREEN));
+            } catch (Exception ignored) {
+                // unreadable file: leave the streaks as they are
+            }
+        }
     }
 
     /// Returns true when something was imported. Messages the player either way unless {@code quiet}.
@@ -67,10 +83,9 @@ public final class FoeStatsImporter {
             StatsDataHandler stats = StatsDataHandler.instance();
             var data = stats.getStatsData();
 
-            int streaks = 0;
-            streaks += importStreaks(foe, "rarityDryStreak", TagObject.RARITY);
-            streaks += importStreaks(foe, "variantDryStreak", FishTagObject.VARIANT);
-            streaks += importStreaks(foe, "fishSizeDryStreak", FishTagObject.FISH_SIZE);
+            // Dry streaks: FOE stores the fish count at each last catch, not the streak itself.
+            int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data);
+            data.foeStreaksFixed = true;
 
             long activeTime = getLong(foe, "activeTime");
             int timedFish = (int) getLong(foe, "timerFishCaughtCount");
@@ -93,19 +108,6 @@ public final class FoeStatsImporter {
             if (!quiet) message(Component.literal("Couldn't read the FOE stats file.").withStyle(ChatFormatting.RED));
             return false;
         }
-    }
-
-    private static int importStreaks(JsonObject foe, String key, String category) {
-        if (!foe.has(key) || !foe.get(key).isJsonObject()) return 0;
-        int count = 0;
-        for (Map.Entry<String, JsonElement> entry : foe.getAsJsonObject(key).entrySet()) {
-            if (!entry.getValue().isJsonPrimitive()) continue;
-            String field = entry.getKey().toLowerCase(java.util.Locale.ROOT);
-            if (field.equals("mythic")) field = "mythical";
-            StatsDataHandler.instance().setDryStreak(category, field, entry.getValue().getAsInt());
-            count++;
-        }
-        return count;
     }
 
     private static long getLong(JsonObject json, String key) {

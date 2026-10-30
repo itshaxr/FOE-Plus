@@ -93,6 +93,9 @@ public class StatsScreenHandler extends Handler {
                 Map<String, Map<String, StatsDataHandler.Stat<Integer, Integer>>> newData = StatsDataHandler.instance().getStatsData().fishData;
 
                 int totalFish = this.extractTotal(loreLines.get(6));
+                // The server only knows counts, not dry streaks: keep each streak you had
+                // (fish since its last catch) across the new fish total.
+                int oldTotal = StatsDataHandler.instance().getStatsData().fishTotal;
                 StatsDataHandler.instance().getStatsData().fishTotal = totalFish;
 
                 // Rarity
@@ -105,7 +108,7 @@ public class StatsScreenHandler extends Handler {
                         Map<String, StatsDataHandler.Stat<Integer, Integer>> newCategoryData = newData
                                 .getOrDefault(FishTagObject.RARITY, new HashMap<>());
 
-                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), totalFish));
+                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), keepStreak(newCategoryData.get(data.value2()), oldTotal, totalFish)));
 
                         newData.put(FishTagObject.RARITY, newCategoryData);
                     }
@@ -121,7 +124,7 @@ public class StatsScreenHandler extends Handler {
                         Map<String, StatsDataHandler.Stat<Integer, Integer>> newCategoryData = newData
                                 .getOrDefault(FishTagObject.FISH_SIZE, new HashMap<>());
 
-                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), totalFish));
+                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), keepStreak(newCategoryData.get(data.value2()), oldTotal, totalFish)));
 
                         newData.put(FishTagObject.FISH_SIZE, newCategoryData);
                     }
@@ -139,19 +142,27 @@ public class StatsScreenHandler extends Handler {
                                 .getOrDefault(FishTagObject.VARIANT, new HashMap<>());
 
                         normalCount.set(normalCount.get() - data.value3());
-                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), totalFish));
+                        newCategoryData.put(data.value2(), new StatsDataHandler.Stat<>(data.value3(), keepStreak(newCategoryData.get(data.value2()), oldTotal, totalFish)));
 
                         newData.put(FishTagObject.VARIANT, newCategoryData);
                     }
                 }
 
-                newData.getOrDefault(FishTagObject.VARIANT, new HashMap<>())
-                        .put("normal", new StatsDataHandler.Stat<>(normalCount.get(), totalFish));
+                Map<String, StatsDataHandler.Stat<Integer, Integer>> variants = newData.getOrDefault(FishTagObject.VARIANT, new HashMap<>());
+                variants.put("normal", new StatsDataHandler.Stat<>(normalCount.get(), keepStreak(variants.get("normal"), oldTotal, totalFish)));
 
                 return Pair.ofTrue(newData);
             }
         }
         return Pair.ofFalse(new HashMap<>());
+    }
+
+    /// The "caught on" value that keeps an existing dry streak with the new fish total; a field
+    /// you had no record of starts at 0 like before.
+    public static int keepStreak(StatsDataHandler.Stat<Integer, Integer> old, int oldTotal, int newTotal) {
+        if (old == null || old.caughtOn() == null) return newTotal;
+        int streak = Math.max(0, oldTotal - old.caughtOn());
+        return newTotal - streak;
     }
 
     private Triplet<Boolean, String, Integer> extractStat(Map<String, Component> constants, Component line) {
