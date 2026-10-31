@@ -20,8 +20,8 @@ import java.util.List;
 
 /**
  * The FOE+ menu (opened with O): the FOE+ logo and a welcome line on top, then two tidy columns
- * of equal buttons, each with an icon. General on the left (settings, HUDs, tools), Stats on
- * the right (imports, fish timer, inspect), and "More (FOE-R)" / "Done" along the bottom.
+ * of equal buttons, each with an icon: General on the left (settings, HUDs, tools, inspect),
+ * Stats on the right (dry streaks, imports, fish timer, FOE-R's menu), and Done below.
  */
 public class FoeMainScreen extends Screen {
     private static final Identifier LOGO = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "textures/gui/sprites/title/icon.png");
@@ -32,7 +32,7 @@ public class FoeMainScreen extends Screen {
     private static final int BUTTON_HEIGHT = 20;
     private static final int ROW = 24;
     private static final int COLUMN_GAP = 10;
-    private static final int ROWS = 5;
+    private static final int ROWS = 6;
 
     private final Screen parent;
     private final List<IconButton> icons = new ArrayList<>();
@@ -71,9 +71,9 @@ public class FoeMainScreen extends Screen {
     protected void init() {
         icons.clear();
 
-        // Vertical layout: logo, welcome line, column headers, 5 rows, gap, bottom row.
+        // Vertical layout: logo, welcome line, column headers, 6 rows, gap, Done.
         int fixed = 12 /*welcome*/ + 8 + 12 /*headers*/ + ROWS * ROW + 8 + BUTTON_HEIGHT;
-        logoH = Math.max(24, Math.min(60, height - fixed - 24));
+        logoH = Math.max(20, Math.min(60, height - fixed - 18));
         logoW = logoH * LOGO_W / LOGO_H;
         int total = logoH + 6 + fixed;
         int top = Math.max(6, (height - total) / 2);
@@ -99,17 +99,7 @@ public class FoeMainScreen extends Screen {
                 b -> this.minecraft.setScreen(new AutotipScreen(this)));
         add(leftX, rowsY + ROW * 4, "Pet Prices", Items.EMERALD, "Pet price table from the price sheet (U)",
                 b -> this.minecraft.setScreen(new PetPriceScreen(this)));
-
-        // Stats
-        add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
-                b -> dannypx.foe.handler.io.DryStreakImporter.importNow());
-        add(rightX, rowsY + ROW, "Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from a previous FOE install",
-                b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false));
-        add(rightX, rowsY + ROW * 2, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
-                b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
-        add(rightX, rowsY + ROW * 3, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
-                b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
-        Button inspect = add(rightX, rowsY + ROW * 4, "", Items.SPYGLASS,
+        Button inspect = add(leftX, rowsY + ROW * 5, "", Items.SPYGLASS,
                 "Always On: pet %, fish details and armor rolls show without holding the inspect key",
                 b -> {
                     dannypx.foe.handler.logic.KeyBindHandler.toggleInspectAlwaysOn();
@@ -117,12 +107,24 @@ public class FoeMainScreen extends Screen {
                 });
         inspect.setMessage(inspectLabel());
 
+        // Stats
+        add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
+                b -> dannypx.foe.handler.io.DryStreakImporter.importNow());
+        add(rightX, rowsY + ROW, "Edit Dry Streaks", Items.NAME_TAG, "Set your dry streaks by hand",
+                b -> this.minecraft.setScreen(new DryStreakEditScreen(this)));
+        add(rightX, rowsY + ROW * 2, "Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from a previous FOE install",
+                b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false));
+        add(rightX, rowsY + ROW * 3, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
+                b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
+        add(rightX, rowsY + ROW * 4, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
+                b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
+        add(rightX, rowsY + ROW * 5, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
+                b -> this.minecraft.setScreen(new MainScreen(this)));
+
         // Bottom row
         int bottomY = rowsY + ROWS * ROW + 8;
-        add(leftX, bottomY, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
-                b -> this.minecraft.setScreen(new MainScreen(this)));
         this.addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
-                .bounds(rightX, bottomY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+                .bounds((width - BUTTON_WIDTH) / 2, bottomY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
     private Button add(int x, int y, String label, net.minecraft.world.item.Item icon, String tooltip, Button.OnPress onPress) {

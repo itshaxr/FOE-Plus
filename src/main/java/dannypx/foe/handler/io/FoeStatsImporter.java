@@ -58,7 +58,7 @@ public final class FoeStatsImporter {
         } else if (!data.foeStreaksFixed) {
             try {
                 JsonObject foe = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-                int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data);
+                int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data).set();
                 data.foeStreaksFixed = true;
                 StatsDataHandler.instance().markChanged();
                 message(Component.literal("Re-imported " + streaks + " FOE dry streaks.").withStyle(ChatFormatting.GREEN));
@@ -84,7 +84,7 @@ public final class FoeStatsImporter {
             var data = stats.getStatsData();
 
             // Dry streaks: FOE stores the fish count at each last catch, not the streak itself.
-            int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data);
+            int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data).set();
             data.foeStreaksFixed = true;
 
             long activeTime = getLong(foe, "activeTime");

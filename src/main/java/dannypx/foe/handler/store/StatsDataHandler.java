@@ -115,6 +115,7 @@ public class StatsDataHandler extends Handler {
         Stat<Integer, Integer> newFieldStat = Stat.of(fieldStat.amount() + valueToAdd, statsData.fishTotal);
         categoryMapData.put(field, newFieldStat);
         statsData.fishData.put(category, categoryMapData);
+        markStreakKnown("fish:" + category + ":" + field);
         this.needsUpdate = true;
 
         return Pair.of(field, statsData.fishTotal - fieldStat.caughtOn());
@@ -161,6 +162,7 @@ public class StatsDataHandler extends Handler {
         Stat<Integer, Integer> newFieldStat = Stat.of(fieldStat.amount() + 1, statsData.fishTotal);
         categoryMapData.put(field, newFieldStat);
         statsData.petData.put(category, categoryMapData);
+        markStreakKnown("pet:" + category + ":" + field);
         this.needsUpdate = true;
 
         return Pair.of(field, statsData.fishTotal - fieldStat.caughtOn());
@@ -204,6 +206,7 @@ public class StatsDataHandler extends Handler {
 
         Stat<Integer, Integer> newItemStat = Stat.of(itemStat.amount() + valueToAdd, statsData.fishTotal);
         statsData.itemData.put(item, newItemStat);
+        markStreakKnown("item:" + item);
         this.needsUpdate = true;
 
         return Pair.of(item, statsData.fishTotal - itemStat.caughtOn());
@@ -241,6 +244,24 @@ public class StatsDataHandler extends Handler {
     }
 
     public void markChanged() {
+        this.needsUpdate = true;
+    }
+
+    /// Remembers that this install knows this dry streak first-hand (a catch here, or you set it),
+    /// so an import never replaces it with older numbers.
+    public void markStreakKnown(String key) {
+        if (statsData.streakKnownAt == null) statsData.streakKnownAt = new HashMap<>();
+        statsData.streakKnownAt.put(key, System.currentTimeMillis());
+    }
+
+    /// Sets a dry streak by hand (from the O menu), keeping the count.
+    public void setStreakManually(String set, String category, String field, int dryStreak) {
+        Map<String, Map<String, Stat<Integer, Integer>>> target = set.equals("pet") ? statsData.petData : statsData.fishData;
+        Map<String, Stat<Integer, Integer>> fields = target.computeIfAbsent(category, k -> new HashMap<>());
+        Stat<Integer, Integer> stat = fields.get(field);
+        int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
+        fields.put(field, Stat.of(amount, statsData.fishTotal - Math.max(0, dryStreak)));
+        markStreakKnown(set + ":" + category + ":" + field);
         this.needsUpdate = true;
     }
 
@@ -398,6 +419,11 @@ public class StatsDataHandler extends Handler {
 
         /// Set once FOE's dry streaks were imported with the corrected reading
         public boolean foeStreaksFixed = false;
+
+        /// When this install last learned each dry streak first-hand (a catch here, or set by
+        /// hand), keyed "fish:variant:albino", "pet:rarity:rare", "item:shard". Imports never
+        /// replace these with older numbers.
+        public Map<String, Long> streakKnownAt = new HashMap<>();
 
         public StatsDataModel() {
             super(STATS_DATA_MODEL_VERSION, null);

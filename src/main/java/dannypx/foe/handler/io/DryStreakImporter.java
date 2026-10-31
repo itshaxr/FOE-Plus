@@ -109,31 +109,58 @@ public final class DryStreakImporter {
     //endregion
 
     //region Applying
-    /// Sets every streak in {@code source} on {@code data}; counts are left alone. Returns how many were set.
-    static int apply(Source source, StatsDataHandler.StatsDataModel data) {
-        int set = 0;
-        for (var category : source.fish().entrySet()) set += applyMap(data.fishData, category.getKey(), category.getValue(), data.fishTotal);
-        for (var category : source.pets().entrySet()) set += applyMap(data.petData, category.getKey(), category.getValue(), data.fishTotal);
+    /// What an import did: streaks set, and streaks kept because this install's are newer.
+    public record Result(int set, int kept) {}
+
+    /**
+     * Sets the streaks in {@code source} on {@code data}; counts are left alone. A streak is kept
+     * as it is when this install knows better: it caught that rarity/variant/item (or you set it)
+     * after the source file was saved, or its streak is already lower than the source's (you
+     * caught one more recently). A streak of 0 means "not known yet" and is always filled in.
+     */
+    static Result apply(Source source, StatsDataHandler.StatsDataModel data) {
+        int[] counts = new int[2];
+        for (var category : source.fish().entrySet()) applyMap(source, data, "fish", data.fishData, category.getKey(), category.getValue(), counts);
+        for (var category : source.pets().entrySet()) applyMap(source, data, "pet", data.petData, category.getKey(), category.getValue(), counts);
         for (var item : source.items().entrySet()) {
             String key = itemKey(data, item.getKey());
             StatsDataHandler.Stat<Integer, Integer> stat = data.itemData.get(key);
+            if (keepCurrent(source, data, "item:" + key, stat, item.getValue())) {
+                counts[1]++;
+                continue;
+            }
             int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
             // Negative is fine: it means the streak started before this install counted any fish.
             data.itemData.put(key, StatsDataHandler.Stat.of(amount, data.fishTotal - item.getValue()));
-            set++;
+            counts[0]++;
         }
-        return set;
+        return new Result(counts[0], counts[1]);
     }
 
-    private static int applyMap(Map<String, Map<String, StatsDataHandler.Stat<Integer, Integer>>> target, String category,
-                                Map<String, Integer> streaks, int fishTotal) {
+    private static void applyMap(Source source, StatsDataHandler.StatsDataModel data, String set,
+                                 Map<String, Map<String, StatsDataHandler.Stat<Integer, Integer>>> target, String category,
+                                 Map<String, Integer> streaks, int[] counts) {
         Map<String, StatsDataHandler.Stat<Integer, Integer>> fields = target.computeIfAbsent(category, k -> new HashMap<>());
         for (var streak : streaks.entrySet()) {
             StatsDataHandler.Stat<Integer, Integer> stat = fields.get(streak.getKey());
+            if (keepCurrent(source, data, set + ":" + category + ":" + streak.getKey(), stat, streak.getValue())) {
+                counts[1]++;
+                continue;
+            }
             int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
-            fields.put(streak.getKey(), StatsDataHandler.Stat.of(amount, fishTotal - streak.getValue()));
+            fields.put(streak.getKey(), StatsDataHandler.Stat.of(amount, data.fishTotal - streak.getValue()));
+            counts[0]++;
         }
-        return streaks.size();
+    }
+
+    /// True when this install's streak is newer than the source's and must stay. Package-private for tests.
+    static boolean keepCurrent(Source source, StatsDataHandler.StatsDataModel data, String key,
+                               StatsDataHandler.Stat<Integer, Integer> current, int sourceStreak) {
+        Long knownAt = data.streakKnownAt == null ? null : data.streakKnownAt.get(key);
+        if (knownAt != null && knownAt > source.lastModified()) return true;
+        if (current == null || current.caughtOn() == null) return false;
+        int currentStreak = data.fishTotal - current.caughtOn();
+        return currentStreak > 0 && currentStreak < sourceStreak;
     }
 
     /// FOE calls it "shard"; use whatever shard key this install already has.
@@ -196,11 +223,12 @@ public final class DryStreakImporter {
                     return;
                 }
                 StatsDataHandler stats = StatsDataHandler.instance();
-                int set = apply(source.get(), stats.getStatsData());
+                Result result = apply(source.get(), stats.getStatsData());
                 stats.markChanged();
-                message(Component.literal("Imported " + set + " dry streaks from " + source.get().kind() + " (").withStyle(ChatFormatting.GREEN)
+                message(Component.literal("Imported " + result.set() + " dry streaks from " + source.get().kind() + " (").withStyle(ChatFormatting.GREEN)
                         .append(Component.literal(describe(source.get().file())).withStyle(ChatFormatting.GRAY))
-                        .append(Component.literal(").").withStyle(ChatFormatting.GREEN)));
+                        .append(Component.literal(")").withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(result.kept() > 0 ? " · kept " + result.kept() + " newer here" : "").withStyle(ChatFormatting.GRAY)));
             });
         }, "FOE+ dry streak import");
         thread.setDaemon(true);
