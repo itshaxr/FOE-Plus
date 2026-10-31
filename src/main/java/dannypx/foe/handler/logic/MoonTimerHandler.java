@@ -10,9 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Moon timer. Instead of guessing when moons rise, it waits for the first moonrise you see in
- * chat ("BLOOD MOON » A Blood Moon has risen!"), remembers that moment and counts from there.
- * It's saved, so after that one moon the timer always knows the next one, also after a restart.
+ * Moon timer, counted from a known moonrise (31 Oct 2026, 12:23 AM Eastern) every 160 minutes.
+ * Every moonrise you see in chat ("BLOOD MOON » A Blood Moon has risen!") re-syncs it to that
+ * exact moment, and it's saved, so it stays right across restarts.
  * <p>
  * Moons come every {@link #getCycleMs()} (160 minutes to start with, as FOE assumed). Each further
  * moonrise you see corrects the anchor, and the time between two of them corrects the cycle
@@ -28,9 +28,14 @@ public class MoonTimerHandler {
     /** The moon that is currently up, or null. */
     private Moon currentMoon = null;
 
+    /// A moonrise seen on the server: 31 Oct 2026, 12:23 AM Eastern (04:23 UTC). With the 160 minute
+    /// cycle this puts every moon on the right time from the start; each moonrise you see in chat
+    /// re-syncs it to the second.
+    static final long KNOWN_MOONRISE_MS = java.time.Instant.parse("2026-10-31T04:23:00Z").toEpochMilli();
+
     /// Saved: when a moon was last seen rising, and how long a cycle is.
     static final class Saved {
-        long lastRiseAt = 0L;
+        long lastRiseAt = KNOWN_MOONRISE_MS;
         long cycleMs = DEFAULT_CYCLE_MS;
     }
 
@@ -56,6 +61,7 @@ public class MoonTimerHandler {
                 LoggerHandler.error(e instanceof Exception ex ? ex : new RuntimeException(e));
             }
             if (saved.cycleMs < MIN_CYCLE_MS || saved.cycleMs > MAX_CYCLE_MS) saved.cycleMs = DEFAULT_CYCLE_MS;
+            if (saved.lastRiseAt <= 0L) saved.lastRiseAt = KNOWN_MOONRISE_MS;
         }
         return saved;
     }
