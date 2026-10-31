@@ -80,6 +80,9 @@ public class AlertHandler {
 
     public record Upcoming(String what, long msUntil) {}
 
+    private final java.util.Set<String> shownUpcoming = new java.util.HashSet<>();
+    private final java.util.Set<String> nowUpcoming = new java.util.HashSet<>();
+
     //region Learned timings (saved)
     private static final long DEFAULT_MS_PER_GAME_MINUTE = 50_000L / 60L; // vanilla: an in-game hour is 50 s
     static final class Learned {
@@ -174,36 +177,105 @@ public class AlertHandler {
     }
 
     public int gameMinute() {
-        return parseGameMinutes(BossEventHandler.instance().getTime().getString());
+        return testMinute != null ? testMinute.getAsInt() : parseGameMinutes(BossEventHandler.instance().getTime().getString());
     }
+
+    /// Clock and boss bar time, swappable in tests.
+    java.util.function.LongSupplier clock = System::currentTimeMillis;
+    java.util.function.IntSupplier testMinute = null;
+
+    private long now() {
+        return clock.getAsLong();
+    }
+
+    /// Test hook: the countdown shown for a window that ends at {@code endHour} (whole hours).
+    long countdownForTest(String key, int endHour) {
+        int left = Math.floorMod(endHour * 60 - gameMinute(), 1440);
+        return smooth(key, gameMinutesToMs(left));
+    }
+
+    /// Test hook: one update of the clock tracking.
+    void tickClockForTest() {
+        tickClock(now());
+        dropUnusedCountdowns();
+    }
+
+    /// The boss bar clock moves in steps of a few in-game minutes every couple of seconds, so the
+    /// speed is measured over a long stretch (all steps since joining, reset on any jump) instead
+    /// of step by step, which made it wobble.
+    private long baselineRealAt = 0L;
+    private int baselineMinutes = 0;
 
     private void tickClock(long now) {
         int minute = gameMinute();
         if (minute < 0) return;
-        if (minute != lastGameMinute) {
-            if (lastGameMinute >= 0) {
-                int delta = Math.floorMod(minute - lastGameMinute, 1440);
-                long realDelta = now - lastGameMinuteChangedAt;
-                // The first change after joining only covers part of a step; skip it.
-                if (clockSampleReady && delta > 0 && delta <= 60 && realDelta > 200 && realDelta < 10 * 60_000L) {
-                    double sample = (double) realDelta / delta;
-                    Learned l = learned();
-                    l.msPerGameMinute = l.msPerGameMinute * 0.8 + sample * 0.2;
+        if (minute == lastGameMinute) return;
+        if (lastGameMinute >= 0) {
+            int delta = Math.floorMod(minute - lastGameMinute, 1440);
+            long realDelta = now - lastGameMinuteChangedAt;
+            if (clockSampleReady && delta > 0 && delta <= 30 && realDelta < 60_000L) {
+                if (baselineRealAt == 0L) {
+                    baselineRealAt = lastGameMinuteChangedAt;
+                    baselineMinutes = 0;
+                }
+                baselineMinutes += delta;
+                long span = now - baselineRealAt;
+                if (span >= 30_000L && baselineMinutes >= 20) {
+                    learned().msPerGameMinute = (double) span / baselineMinutes;
                     if (now - lastClockSaveAt > 5 * 60_000L) {
                         lastClockSaveAt = now;
                         saveLearned();
                     }
                 }
-                clockSampleReady = delta > 0 && delta <= 60;
+            } else {
+                // Time skipped, the world changed or we just joined: start measuring again.
+                baselineRealAt = 0L;
             }
-            lastGameMinute = minute;
-            lastGameMinuteChangedAt = now;
+            clockSampleReady = true;
         }
+        lastGameMinute = minute;
+        lastGameMinuteChangedAt = now;
     }
 
+    /// Real time until {@code minutes} in-game minutes after the minute now on the boss bar.
+    /// Time since the bar last changed is taken off, so it counts down smoothly between steps.
     private long gameMinutesToMs(int minutes) {
-        return Math.round(minutes * learned().msPerGameMinute);
+        long sinceStep = lastGameMinuteChangedAt == 0L ? 0L : now() - lastGameMinuteChangedAt;
+        return Math.max(0L, Math.round(minutes * learned().msPerGameMinute) - sinceStep);
     }
+
+    //region Smooth countdowns
+    /// Each countdown keeps the moment it ends. A better estimate (the clock speed gets measured
+    /// as you play) moves that moment gently, at most a quarter second per second, so the timer
+    /// always ticks down smoothly and never jumps back up. Only a big change (a new window) snaps.
+    private static final long SNAP_MS = 60_000L;
+    private static final double MAX_DRIFT = 0.25;
+    private final java.util.Map<String, long[]> endsAt = new java.util.HashMap<>(); // {endAt, lastUpdate}
+    private final java.util.Set<String> seenThisFrame = new java.util.HashSet<>();
+
+    private long smooth(String key, long msFromNow) {
+        long now = now();
+        long target = now + msFromNow;
+        long[] entry = endsAt.get(key);
+        if (entry == null || Math.abs(entry[0] - target) > SNAP_MS) {
+            entry = new long[]{target, now};
+            endsAt.put(key, entry);
+        } else {
+            long maxStep = Math.round((now - entry[1]) * MAX_DRIFT);
+            long diff = target - entry[0];
+            entry[0] += Math.max(-maxStep, Math.min(maxStep, diff));
+            entry[1] = now;
+        }
+        seenThisFrame.add(key);
+        return Math.max(0L, entry[0] - now);
+    }
+
+    /// Forgets countdowns that weren't asked for in the last update.
+    private void dropUnusedCountdowns() {
+        endsAt.keySet().retainAll(seenThisFrame);
+        seenThisFrame.clear();
+    }
+    //endregion
     //endregion
 
     //region Moons and rainbows
@@ -227,7 +299,7 @@ public class AlertHandler {
     public void onReceiveMessage(Component message) {
         String text = message.getString();
         if (text.startsWith("RAINBOW »") && text.contains("appeared")) {
-            rainbowStartedAt = System.currentTimeMillis();
+            rainbowStartedAt = now();
             rainbowLocation = PetLocationHandler.currentLocation();
             rainbowWeather = null;
         }
@@ -278,17 +350,17 @@ public class AlertHandler {
                 case CLOCK -> {
                     if (minute < 0) continue;
                     int left = windowMinutes(minute, alert.startHour, alert.endHour);
-                    if (left > 0) out.add(new Active(alert, gameMinutesToMs(left)));
+                    if (left > 0) out.add(new Active(alert, smooth("end:" + alert.name(), gameMinutesToMs(left))));
                 }
                 case MOON -> {
                     if (!isMoonUp()) continue;
                     long known = learned().moonDurationMs;
-                    out.add(new Active(alert, known > 0 ? Math.max(0L, known - moonElapsedMs()) : -1L));
+                    out.add(new Active(alert, known > 0 ? smooth("end:" + alert.name(), Math.max(0L, known - moonElapsedMs())) : -1L));
                 }
                 case RAINBOW -> {
                     if (!isRainbowUp()) continue;
                     long known = learned().rainbowDurationMs;
-                    out.add(new Active(alert, known > 0 ? Math.max(0L, known - (System.currentTimeMillis() - rainbowStartedAt)) : -1L));
+                    out.add(new Active(alert, known > 0 ? smooth("end:" + alert.name(), Math.max(0L, known - (now() - rainbowStartedAt))) : -1L));
                 }
             }
         }
@@ -304,8 +376,13 @@ public class AlertHandler {
                 if (alert.kind != Kind.CLOCK || !enabled(alert)) continue;
                 int window = windowMinutes(minute, alert.startHour, alert.endHour);
                 if (window < 0) {
-                    long ms = gameMinutesToMs(-window);
-                    if (ms <= withinMs) out.add(new Upcoming(alert.displayName, ms));
+                    long ms = smooth("start:" + alert.name(), gameMinutesToMs(-window));
+                    // A little slack once it's listed, so it doesn't blink in and out at the edge.
+                    boolean listed = shownUpcoming.contains(alert.name());
+                    if (ms <= withinMs || (listed && ms <= withinMs + 15_000L)) {
+                        out.add(new Upcoming(alert.displayName, ms));
+                        nowUpcoming.add(alert.name());
+                    }
                 }
             }
         }
@@ -313,6 +390,9 @@ public class AlertHandler {
             long ms = MoonTimerHandler.instance().getTimeUntilNextMoon();
             if (ms <= withinMs) out.add(new Upcoming("Moon (Rougarou, Bessie)", ms));
         }
+        shownUpcoming.clear();
+        shownUpcoming.addAll(nowUpcoming);
+        nowUpcoming.clear();
         out.sort((a, b) -> Long.compare(a.msUntil(), b.msUntil()));
         return out;
     }
@@ -334,9 +414,10 @@ public class AlertHandler {
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        long now = System.currentTimeMillis();
+        long now = now();
         tickClock(now);
         tickRainbow(now);
+        dropUnusedCountdowns();
 
         // Chat line + sound when an alert starts.
         Set<Alert> current = EnumSet.noneOf(Alert.class);

@@ -61,6 +61,8 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 ContestTrackerHandler.instance().onChatMessageShown());
         ClientReceiveMessageEvents.GAME.register(this::receiveGameMessage);
         ClientSendMessageEvents.MODIFY_CHAT.register(this::modifyChatMessage);
+        ClientSendMessageEvents.COMMAND.register(command -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
+        ClientSendMessageEvents.CHAT.register(message -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
         ClientEntityEvents.ENTITY_UNLOAD.register(this::onEntityUnload);
         ScreenEvents.AFTER_INIT.register(this::onAfterInitScreen);
         ScreenEvents.BEFORE_INIT.register((minecraft, screen, w, h) -> {

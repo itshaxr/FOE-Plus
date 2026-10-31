@@ -30,6 +30,24 @@ public class SilentMenuHandler {
     private int containerId = -1;
     private long openedAt = 0L;
 
+    /// Your own commands/chat: a background /menu is never sent right after you did something, so
+    /// it can't collide with a menu you just asked for (like /s).
+    private static final long QUIET_AFTER_ACTIVITY_MS = 3_000L;
+    /// …nor right after you closed a screen (or the chat box).
+    private static final long QUIET_AFTER_SCREEN_MS = 1_500L;
+    private long lastUserActivity = 0L;
+    private long lastScreenSeen = 0L;
+    private boolean sendingOwn = false;
+    /// You sent a command while we were waiting for our /menu: the next menu may be yours.
+    private boolean userCommandDuringWait = false;
+
+    /// Called for every command or chat message sent; ours are ignored.
+    public void onMessageSent() {
+        if (sendingOwn) return;
+        lastUserActivity = System.currentTimeMillis();
+        if (lastUserActivity <= expectMenuUntil) userCommandDuringWait = true;
+    }
+
     public static SilentMenuHandler instance() {
         if (INSTANCE == null) {
             INSTANCE = new SilentMenuHandler();
@@ -53,6 +71,7 @@ public class SilentMenuHandler {
         }
         // The server never sent the contents: close the menu anyway.
         if (containerId != -1 && now - openedAt > ANSWER_MS) close(mc);
+        if (mc.screen != null) lastScreenSeen = now;
 
         if (dueAt == 0L || now < dueAt) return;
         if (now - dueAt > GIVE_UP_MS) {
@@ -60,16 +79,27 @@ public class SilentMenuHandler {
             return;
         }
         if (mc.screen != null || containerId != -1 || now <= expectMenuUntil || now - lastRequest < MIN_GAP_MS) return;
+        if (now - lastUserActivity < QUIET_AFTER_ACTIVITY_MS || now - lastScreenSeen < QUIET_AFTER_SCREEN_MS) return;
         dueAt = 0L;
         lastRequest = now;
         expectMenuUntil = now + ANSWER_MS;
-        mc.getConnection().sendCommand("menu");
+        userCommandDuringWait = false;
+        sendingOwn = true;
+        try {
+            mc.getConnection().sendCommand("menu");
+        } finally {
+            sendingOwn = false;
+        }
     }
 
     /// From the packet listener: true when this menu is our silent /menu and must not open.
-    public boolean onOpenScreen(int id) {
+    /// A menu titled like the main menu is ours; any other one only when you haven't sent a
+    /// command of your own in the meantime (then it's yours, e.g. /s, and opens normally).
+    public boolean onOpenScreen(int id, String title) {
         Minecraft mc = Minecraft.getInstance();
         if (System.currentTimeMillis() > expectMenuUntil || mc.screen != null) return false;
+        boolean mainMenu = DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER.equals(title);
+        if (!mainMenu && userCommandDuringWait) return false;
         expectMenuUntil = 0L;
         containerId = id;
         openedAt = System.currentTimeMillis();

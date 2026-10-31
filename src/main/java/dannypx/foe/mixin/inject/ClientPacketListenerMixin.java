@@ -89,7 +89,7 @@ public abstract class ClientPacketListenerMixin {
     @Inject(method = "handleOpenScreen", at = @At("HEAD"), cancellable = true)
     private void foe$silentMenuOpen(net.minecraft.network.protocol.game.ClientboundOpenScreenPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        if (dannypx.foe.handler.logic.SilentMenuHandler.instance().onOpenScreen(packet.getContainerId())) ci.cancel();
+        if (dannypx.foe.handler.logic.SilentMenuHandler.instance().onOpenScreen(packet.getContainerId(), packet.getTitle().getString())) ci.cancel();
     }
 
     @Inject(method = "handleContainerContent", at = @At("HEAD"))
