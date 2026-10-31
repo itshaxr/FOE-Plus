@@ -86,9 +86,11 @@ public class StatsPanelElement extends PanelElement {
             StatsDataHandler.Stat<Integer, Integer> gigantic = stats.fishData
                     .getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
             int amount = gigantic == null ? 0 : gigantic.amount();
+            int dryStreak = gigantic == null ? fishTotal : fishTotal - gigantic.caughtOn();
             giganticLine = join(GIGANTIC_BADGE,
                     white(" " + amount + " "),
-                    label("(" + percent(amount, fishTotal) + "%)"));
+                    label("(" + percent(amount, fishTotal) + "%) "),
+                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY));
             lines.add(giganticLine);
         }
         lines.add(Component.empty());

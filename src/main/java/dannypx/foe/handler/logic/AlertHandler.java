@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class AlertHandler {
     private static AlertHandler INSTANCE = new AlertHandler();
 
-    public enum Kind { CLOCK, MOON, RAINBOW }
+    public enum Kind { CLOCK, MOON, RAINBOW, FABLED }
 
     public enum Alert {
         WITCHING_HOUR("Witching Hour", 0xD23B3B, FoeLocations.Location.CYPRESS_LAKE, Kind.CLOCK, 0, 3,
@@ -52,7 +52,10 @@ public class AlertHandler {
         ROUGAROU("Rougarou", 0xB34A2E, FoeLocations.Location.TOLEDO_BEND, Kind.MOON, 0, 0,
                 "1/300: Blood or Claw (50/50)", "8 Claws + Fabled Shard: Moon Amulet"),
         GARABONCIAS("Garaboncias", 0xC77DFF, FoeLocations.Location.DANUBE_RIVER, Kind.RAINBOW, 0, 0,
-                "1/250: Concoction or Essence (50/50)", "4 + Infusion Capsule: Wizard's Infusion");
+                "1/250: Concoction or Essence (50/50)", "4 + Infusion Capsule: Wizard's Infusion"),
+        /// Location comes from the event's chat message.
+        FABLED("Fabled Fish", 0xFC3E35, null, Kind.FABLED, 0, 0,
+                "Fabled 1/3000 (better with Variant Chance)", "Fabled Shard · 30x value");
 
         public final String displayName;
         public final int color;
@@ -75,8 +78,13 @@ public class AlertHandler {
         }
     }
 
-    /// One alert as the panel shows it. {@code msLeft} is -1 when the end isn't known yet.
-    public record Active(Alert alert, long msLeft) {}
+    /// One alert as the panel shows it. {@code msLeft} is -1 when the end isn't known yet;
+    /// {@code msSince} is how long it has been going (-1 when unknown or not shown).
+    public record Active(Alert alert, long msLeft, long msSince) {
+        public Active(Alert alert, long msLeft) {
+            this(alert, msLeft, -1L);
+        }
+    }
 
     public record Upcoming(String what, long msUntil) {}
 
@@ -89,6 +97,19 @@ public class AlertHandler {
         double msPerGameMinute = DEFAULT_MS_PER_GAME_MINUTE;
         long moonDurationMs = 0L;
         long rainbowDurationMs = 0L;
+        // The most recent Fabled event (0 = not seen yet; start 0 with an end = start not seen)
+        long lastFabledStart = 0L;
+        long lastFabledEnd = 0L;
+        String lastFabledLocation = "";
+        String lastFabledCatcher = "";
+    }
+
+    /// The last Fabled event that was caught, or null if none has been seen.
+    public record FabledRecord(long startedAt, long endedAt, String location, String catcher) {}
+
+    public FabledRecord lastFabled() {
+        Learned l = learned();
+        return l.lastFabledEnd == 0L ? null : new FabledRecord(l.lastFabledStart, l.lastFabledEnd, l.lastFabledLocation, l.lastFabledCatcher);
     }
 
     private Learned learned = null;
@@ -102,8 +123,8 @@ public class AlertHandler {
                     Learned read = new Gson().fromJson(Files.readString(file), Learned.class);
                     if (read != null) learned = read;
                 }
-            } catch (Exception e) {
-                LoggerHandler.error(e);
+            } catch (Exception | LinkageError e) {
+                LoggerHandler.error(e instanceof Exception ex ? ex : new RuntimeException(e));
             }
             if (learned.msPerGameMinute < 100 || learned.msPerGameMinute > 60_000) learned.msPerGameMinute = DEFAULT_MS_PER_GAME_MINUTE;
         }
@@ -115,13 +136,17 @@ public class AlertHandler {
             Path file = learnedFile();
             Files.createDirectories(file.getParent());
             Files.writeString(file, new GsonBuilder().setPrettyPrinting().create().toJson(learned()));
-        } catch (Exception e) {
-            LoggerHandler.error(e);
+        } catch (Exception | LinkageError e) {
+            LoggerHandler.error(e instanceof Exception ex ? ex : new RuntimeException(e));
         }
     }
 
-    private static Path learnedFile() {
-        return FabricLoader.getInstance().getConfigDir().resolve(FishOnMCExtras.MOD_ID).resolve("alert_timings.json");
+    /// Where learned timings are saved (swappable in tests).
+    java.util.function.Supplier<Path> learnedLocation =
+            () -> FabricLoader.getInstance().getConfigDir().resolve(FishOnMCExtras.MOD_ID).resolve("alert_timings.json");
+
+    private Path learnedFile() {
+        return learnedLocation.get();
     }
     //endregion
 
@@ -296,8 +321,90 @@ public class AlertHandler {
         }
     }
 
+    //region Fabled events
+    private static final Pattern FABLED_VISIT = Pattern.compile("^Visit the (.+?) to\\b.*$");
+    private static final Pattern FABLED_ACTIVE = Pattern.compile("^FABLED » A Fabled Event is active at (.+?)\\.?$");
+    private static final Pattern FABLED_CAUGHT = Pattern.compile("^Caught by (\\S+).*$");
+    /// A Fabled event nobody seems to catch is dropped after this (we missed the end).
+    private static final long FABLED_MAX_MS = 2L * 60L * 60L * 1000L;
+
+    private boolean fabledActive = false;
+    private long fabledStartedAt = 0L;
+    private String fabledLocationName = "";
+
+    public boolean isFabledActive() {
+        return fabledActive;
+    }
+
+    public String fabledLocationName() {
+        return fabledLocationName;
+    }
+
+    /// Reads the Fabled event messages. Package-private parts are kept static for tests.
+    void onFabledMessage(String text, long now) {
+        Matcher visit = FABLED_VISIT.matcher(text);
+        Matcher active = FABLED_ACTIVE.matcher(text);
+        if (visit.matches() || active.matches()) {
+            String location = (visit.matches() ? visit.group(1) : active.group(1)).trim();
+            if (!fabledActive) {
+                fabledActive = true;
+                // "Visit the X to ..." is the announcement itself; "is active at" is the reminder
+                // you get when you join while one is going (start time unknown then).
+                fabledStartedAt = visit.matches() ? now : 0L;
+                fabledLocationName = location;
+            } else if (fabledLocationName.isEmpty()) {
+                fabledLocationName = location;
+            }
+            return;
+        }
+        Matcher caught = FABLED_CAUGHT.matcher(text);
+        if (fabledActive && caught.matches()) {
+            String catcher = caught.group(1);
+            Learned l = learned();
+            l.lastFabledStart = fabledStartedAt;
+            l.lastFabledEnd = now;
+            l.lastFabledLocation = fabledLocationName;
+            l.lastFabledCatcher = catcher;
+            saveLearned();
+            fabledActive = false;
+            announceFabledCaught(new FabledRecord(fabledStartedAt, now, fabledLocationName, catcher));
+        }
+    }
+
+    private void announceFabledCaught(FabledRecord record) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.player == null || !Configs.hudConfig.alertChat.get() || !Configs.hudConfig.alertFabled.get()) return;
+        net.minecraft.network.chat.MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("Fabled Fish").withColor(Alert.FABLED.color).withStyle(ChatFormatting.BOLD))
+                .append(Component.literal(record.location().isEmpty() ? "" : " at " + record.location()).withStyle(ChatFormatting.AQUA))
+                .append(Component.literal(" was caught by ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(record.catcher()).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" (" + fabledSpan(record) + ")").withStyle(ChatFormatting.GRAY));
+        mc.player.displayClientMessage(line, false);
+    }
+
+    /// "2:05 PM - 2:09 PM, 4:12", or "? - 2:09 PM" when the start wasn't seen.
+    public static String fabledSpan(FabledRecord record) {
+        String start = record.startedAt() > 0 ? clockTime(record.startedAt()) : "?";
+        String span = start + " - " + clockTime(record.endedAt());
+        if (record.startedAt() > 0) span += ", " + clock(record.endedAt() - record.startedAt());
+        return span;
+    }
+
+    /// Local time of day like "2:05 PM" (with the date when it isn't today).
+    public static String clockTime(long epochMs) {
+        java.time.ZonedDateTime time = java.time.Instant.ofEpochMilli(epochMs).atZone(java.time.ZoneId.systemDefault());
+        String text = time.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.US));
+        if (!time.toLocalDate().equals(java.time.LocalDate.now(java.time.ZoneId.systemDefault()))) {
+            text = time.format(java.time.format.DateTimeFormatter.ofPattern("MMM d", Locale.US)) + " " + text;
+        }
+        return text;
+    }
+    //endregion
+
     public void onReceiveMessage(Component message) {
         String text = message.getString();
+        onFabledMessage(text.strip(), now());
         if (text.startsWith("RAINBOW »") && text.contains("appeared")) {
             rainbowStartedAt = now();
             rainbowLocation = PetLocationHandler.currentLocation();
@@ -363,6 +470,10 @@ public class AlertHandler {
                     long known = learned().rainbowDurationMs;
                     out.add(new Active(alert, known > 0 ? smooth("end:" + alert.name(), Math.max(0L, known - (now() - rainbowStartedAt))) : -1L));
                 }
+                case FABLED -> {
+                    if (!fabledActive) continue;
+                    out.add(new Active(alert, -1L, fabledStartedAt > 0 ? now() - fabledStartedAt : -1L));
+                }
             }
         }
         return out;
@@ -406,9 +517,21 @@ public class AlertHandler {
             case BESSIE_NIGHT, BESSIE_MOON -> hud.alertBessie.get();
             case ROUGAROU -> hud.alertRougarou.get();
             case GARABONCIAS -> hud.alertGaraboncias.get();
+            case FABLED -> hud.alertFabled.get();
         };
         if (!on) return false;
-        return !hud.alertsOnlyHere.get() || alert.location == PetLocationHandler.currentLocation();
+        return !hud.alertsOnlyHere.get() || instance().locationOf(alert) == PetLocationHandler.currentLocation();
+    }
+
+    /// Where an alert is (a Fabled event's location comes from its chat message; may be null).
+    public FoeLocations.Location locationOf(Alert alert) {
+        return alert == Alert.FABLED ? FoeLocations.fromName(fabledLocationName) : alert.location;
+    }
+
+    /// Location name for the panel and chat.
+    public String locationLabel(Alert alert) {
+        if (alert == Alert.FABLED) return fabledLocationName.isEmpty() ? "Unknown location" : fabledLocationName;
+        return locationName(alert.location);
     }
     //endregion
 
@@ -419,6 +542,7 @@ public class AlertHandler {
         tickClock(now);
         tickRainbow(now);
         dropUnusedCountdowns();
+        if (fabledActive && fabledStartedAt > 0 && now - fabledStartedAt > FABLED_MAX_MS) fabledActive = false;
 
         // Chat line + sound when an alert starts.
         Set<Alert> current = EnumSet.noneOf(Alert.class);
@@ -429,9 +553,9 @@ public class AlertHandler {
             if (Configs.hudConfig.alertChat.get()) {
                 mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
                         .append(Component.literal(active.alert().displayName.toUpperCase(Locale.ROOT) + "! ").withColor(active.alert().color).withStyle(ChatFormatting.BOLD))
-                        .append(Component.literal(locationName(active.alert().location)).withStyle(ChatFormatting.AQUA))
+                        .append(Component.literal(locationLabel(active.alert())).withStyle(ChatFormatting.AQUA))
                         .append(Component.literal(" · " + active.alert().odds).withStyle(ChatFormatting.GRAY))
-                        .append(Component.literal(" · " + timeLeft(active.msLeft())).withStyle(ChatFormatting.GREEN)), false);
+                        .append(Component.literal(" · " + (active.alert() == Alert.FABLED ? "until someone catches it" : timeLeft(active.msLeft()))).withStyle(ChatFormatting.GREEN)), false);
             }
             if (Configs.hudConfig.alertSound.get()) {
                 var sound = Configs.hudConfig.alertSoundType.get().sound.value();

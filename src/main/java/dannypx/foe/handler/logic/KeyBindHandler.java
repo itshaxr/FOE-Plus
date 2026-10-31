@@ -25,6 +25,7 @@ public class KeyBindHandler extends Handler {
     //region Fields
     private boolean isPressingInspect = false;
     private boolean wasInspectKeyDown = false;
+    private boolean wasDismissKeyDown = false;
 
     /// Inspect info is shown: the key is held (or toggled on), or "Inspect always on" is set.
     public boolean isPressingInspect() {
@@ -57,6 +58,11 @@ public class KeyBindHandler extends Handler {
         ) {
             minecraft.setScreen(new dannypx.foe.screens.PetPriceScreen(minecraft.screen));
         }
+
+        // Hide/show the warning box until you move to another location.
+        boolean dismissDown = minecraft.screen == null && KeyBindHelper.isPressed(Configs.keyBindConfig.dismissWarningKeybind);
+        if (dismissDown && !wasDismissKeyDown) WarningDismissHandler.instance().toggle();
+        wasDismissKeyDown = dismissDown;
 
         switch (Configs.keyBindConfig.inspectMode.get()) {
             case HOLD -> isPressingInspect = KeyBindHelper.isPressed(Configs.keyBindConfig.inspectKeybind);

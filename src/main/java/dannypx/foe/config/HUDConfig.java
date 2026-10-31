@@ -430,6 +430,12 @@ public class HUDConfig extends Config {
     @Name("Bessie (Great Lakes, 4-6 AM and Moons)")
     public ValidatedBoolean alertBessie = new ValidatedBoolean(true);
 
+    @Name("Fabled events (any location)")
+    public ValidatedBoolean alertFabled = new ValidatedBoolean(true);
+
+    @Name("Show the last Fabled event (times, place, who caught it)")
+    public ValidatedBoolean alertShowLastFabled = new ValidatedBoolean(true);
+
     @Name("Only alerts for the location you're at")
     public ValidatedBoolean alertsOnlyHere = new ValidatedBoolean(false);
 

@@ -64,6 +64,8 @@ public class GearWarningPanelElement extends PanelElement {
         List<Component> lines = new ArrayList<>();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return lines;
+        // Hidden with the dismiss key (default -) until you change location.
+        if (!isCopy && dannypx.foe.handler.logic.WarningDismissHandler.instance().isDismissed()) return lines;
 
         // Inventory almost full (FOE's FullInventoryHandler warning)
         dannypx.foe.handler.logic.FullInventoryHandler inventory = dannypx.foe.handler.logic.FullInventoryHandler.instance();

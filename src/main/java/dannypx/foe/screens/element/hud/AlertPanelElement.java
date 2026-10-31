@@ -3,6 +3,7 @@ package dannypx.foe.screens.element.hud;
 import dannypx.foe.config.Configs;
 import dannypx.foe.handler.logic.AlertHandler;
 import dannypx.foe.handler.logic.PetLocationHandler;
+import dannypx.foe.helper.FoeLocations;
 import dannypx.foe.type.Alignment;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -50,15 +51,31 @@ public class AlertPanelElement extends PanelElement {
         for (AlertHandler.Active active : alerts.active()) {
             AlertHandler.Alert alert = active.alert();
             if (!lines.isEmpty()) lines.add(Component.empty());
-            boolean here = alert.location == PetLocationHandler.currentLocation();
+            FoeLocations.Location where = alerts.locationOf(alert);
+            boolean here = where != null && where == PetLocationHandler.currentLocation();
             lines.add(join(Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                     Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                    Component.literal(AlertHandler.locationName(alert.location)).withStyle(ChatFormatting.AQUA),
+                    Component.literal(alerts.locationLabel(alert)).withStyle(ChatFormatting.AQUA),
                     here ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty()));
-            lines.add(join(label(alert.odds),
-                    Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                    Component.literal(AlertHandler.timeLeft(active.msLeft())).withStyle(timerColor(active.msLeft()))));
+            if (alert == AlertHandler.Alert.FABLED) {
+                lines.add(join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
+                        active.msSince() >= 0
+                                ? Component.literal("up " + AlertHandler.clock(active.msSince())).withStyle(ChatFormatting.YELLOW)
+                                : Component.literal("until caught").withStyle(ChatFormatting.YELLOW)));
+            } else {
+                lines.add(join(label(alert.odds),
+                        Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
+                        Component.literal(AlertHandler.timeLeft(active.msLeft())).withStyle(timerColor(active.msLeft()))));
+            }
             if (Configs.hudConfig.alertShowDrops.get()) lines.add(Component.literal(alert.drop).withStyle(ChatFormatting.DARK_GRAY));
+        }
+        // The most recent Fabled event, when one isn't going on right now.
+        AlertHandler.FabledRecord last = alerts.lastFabled();
+        if (last != null && !alerts.isFabledActive() && Configs.hudConfig.alertFabled.get() && Configs.hudConfig.alertShowLastFabled.get()) {
+            if (!lines.isEmpty()) lines.add(Component.empty());
+            lines.add(join(label("ʟᴀѕᴛ ꜰᴀʙʟᴇᴅ: "), Component.literal(AlertHandler.fabledSpan(last)).withStyle(ChatFormatting.WHITE)));
+            lines.add(join(Component.literal(last.location().isEmpty() ? "?" : last.location()).withStyle(ChatFormatting.AQUA),
+                    label(" · ᴄᴀᴜɢʜᴛ ʙʏ "), Component.literal(last.catcher()).withStyle(ChatFormatting.WHITE)));
         }
         int ahead = Configs.hudConfig.alertUpcomingMinutes.get();
         if (ahead > 0) {
