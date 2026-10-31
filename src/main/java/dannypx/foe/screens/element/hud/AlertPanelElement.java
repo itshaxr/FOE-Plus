@@ -83,7 +83,7 @@ public class AlertPanelElement extends PanelElement {
             if (!soon.isEmpty() && !lines.isEmpty()) lines.add(Component.empty());
             for (AlertHandler.Upcoming next : soon) {
                 lines.add(join(label("ɴᴇxᴛ: "), Component.literal(next.what()).withStyle(ChatFormatting.WHITE),
-                        label(" ɪɴ "), Component.literal("~" + AlertHandler.clock(next.msUntil())).withStyle(ChatFormatting.YELLOW)));
+                        label(" ɪɴ "), Component.literal(AlertHandler.clock(next.msUntil())).withStyle(ChatFormatting.YELLOW)));
             }
         }
         return lines;
@@ -104,8 +104,8 @@ public class AlertPanelElement extends PanelElement {
                         Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                         Component.literal("Cypress Lake").withStyle(ChatFormatting.AQUA)),
                 join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                        Component.literal("~2:10 left").withStyle(ChatFormatting.GREEN)),
+                        Component.literal("2:10 left").withStyle(ChatFormatting.GREEN)),
                 join(label("ɴᴇxᴛ: "), Component.literal("Titanoboa").withStyle(ChatFormatting.WHITE),
-                        label(" ɪɴ "), Component.literal("~1:40").withStyle(ChatFormatting.YELLOW)));
+                        label(" ɪɴ "), Component.literal("1:40").withStyle(ChatFormatting.YELLOW)));
     }
 }

@@ -582,10 +582,10 @@ public class AlertHandler {
         };
     }
 
-    /// "~12:34 left", or "until it ends" when the end isn't known yet.
+    /// "12:34 left", or "until it ends" when the end isn't known yet.
     public static String timeLeft(long ms) {
         if (ms < 0) return "until it ends";
-        return "~" + clock(ms) + " left";
+        return clock(ms) + " left";
     }
 
     public static String clock(long ms) {
