@@ -1,116 +1,169 @@
 package dannypx.foe.screens;
 
 import dannypx.foe.FishOnMCExtras;
+import dannypx.foe.config.Configs;
 import dannypx.foe.handler.fetch.TabOverlayHandler;
+import dannypx.foe.helper.KeyBindHelper;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * FOE's main menu (opened with O): "Welcome to FishOnMC-Extras" on the left, and buttons for the
- * config, the HUD editor and custom HUDs on the right. Ported from FOECollab's MainScreen (AGPL-3.0).
- * "More (FOE-R)" opens FOE-R's full menu for its triggers, timers and other creators.
+ * The FOE+ menu (opened with O): the FOE+ logo and a welcome line on top, then two tidy columns
+ * of equal buttons, each with an icon. General on the left (settings, HUDs, tools), Stats on
+ * the right (imports, fish timer, inspect), and "More (FOE-R)" / "Done" along the bottom.
  */
 public class FoeMainScreen extends Screen {
-    private static final int BUTTON_WIDTH = 130;
-    private static final int BUTTON_HEIGHT = 24;
+    private static final Identifier LOGO = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "textures/gui/sprites/title/icon.png");
+    // Where "FOE+" sits inside the 500x500 logo image.
+    private static final int LOGO_U = 30, LOGO_V = 184, LOGO_W = 440, LOGO_H = 132, LOGO_TEX = 500;
+
+    private static final int BUTTON_WIDTH = 150;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int ROW = 24;
+    private static final int COLUMN_GAP = 10;
+    private static final int ROWS = 5;
 
     private final Screen parent;
+    private final List<IconButton> icons = new ArrayList<>();
+    private int logoX, logoY, logoW, logoH;
+    private int welcomeY, headerY;
+    private int leftX, rightX;
+
+    private record IconButton(Button button, ItemStack icon) {}
 
     public FoeMainScreen(Screen parent) {
-        super(Component.literal("FoE Main Screen"));
+        super(Component.literal("FOE+"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
-        int x = width / 2 + 4;
+        icons.clear();
 
-        addIconButton("FoE Config", x, height / 2 - BUTTON_HEIGHT - 8,
-                b -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID), "Open the mod settings");
-        addIconButton("Move HUD Elements", x, height / 2,
-                b -> this.minecraft.setScreen(new MoveElementScreen(this)), "Move, anchor and resize your HUDs");
-        addIconButton("Custom HUDs", x, height / 2 + BUTTON_HEIGHT + 8,
-                b -> this.minecraft.setScreen(new CustomHudMakerScreen(this)), "Create your own HUD text");
-        addIconButton("Auto Tip", x, height / 2 + (BUTTON_HEIGHT + 8) * 2,
-                b -> this.minecraft.setScreen(new AutotipScreen(this)), "Tip reaction winners and chummers automatically");
-        addIconButton("Pet Prices", x, height / 2 + (BUTTON_HEIGHT + 8) * 3,
-                b -> this.minecraft.setScreen(new PetPriceScreen(this)), "Pet price table from the price sheet (U)");
-        // Inspect: off (hold the key) or always on
-        this.addRenderableWidget(Button.builder(inspectLabel(), b -> {
+        // Vertical layout: logo, welcome line, column headers, 5 rows, gap, bottom row.
+        int fixed = 12 /*welcome*/ + 8 + 12 /*headers*/ + ROWS * ROW + 8 + BUTTON_HEIGHT;
+        logoH = Math.max(24, Math.min(60, height - fixed - 24));
+        logoW = logoH * LOGO_W / LOGO_H;
+        int total = logoH + 6 + fixed;
+        int top = Math.max(6, (height - total) / 2);
+
+        logoX = (width - logoW) / 2;
+        logoY = top;
+        welcomeY = logoY + logoH + 6;
+        headerY = welcomeY + 12 + 8;
+        int rowsY = headerY + 12;
+
+        int columnsWidth = BUTTON_WIDTH * 2 + COLUMN_GAP;
+        leftX = (width - columnsWidth) / 2;
+        rightX = leftX + BUTTON_WIDTH + COLUMN_GAP;
+
+        // General
+        add(leftX, rowsY, "Settings", Items.COMMAND_BLOCK, "All FOE+ settings",
+                b -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID));
+        add(leftX, rowsY + ROW, "Move HUD Elements", Items.STRUCTURE_VOID, "Move, anchor and resize your HUD panels",
+                b -> this.minecraft.setScreen(new MoveElementScreen(this)));
+        add(leftX, rowsY + ROW * 2, "Custom HUDs", Items.OAK_SIGN, "Make your own HUD text, or turn the built-in ones on",
+                b -> this.minecraft.setScreen(new CustomHudMakerScreen(this)));
+        add(leftX, rowsY + ROW * 3, "Auto Tip", Items.GOLD_NUGGET, "Tip reaction winners and chummers automatically (M)",
+                b -> this.minecraft.setScreen(new AutotipScreen(this)));
+        add(leftX, rowsY + ROW * 4, "Pet Prices", Items.EMERALD, "Pet price table from the price sheet (U)",
+                b -> this.minecraft.setScreen(new PetPriceScreen(this)));
+
+        // Stats
+        add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
+                b -> dannypx.foe.handler.io.DryStreakImporter.importNow());
+        add(rightX, rowsY + ROW, "Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from a previous FOE install",
+                b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false));
+        add(rightX, rowsY + ROW * 2, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
+                b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
+        add(rightX, rowsY + ROW * 3, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
+                b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
+        Button inspect = add(rightX, rowsY + ROW * 4, "", Items.SPYGLASS,
+                "Always On: pet %, fish details and armor rolls show without holding the inspect key",
+                b -> {
                     dannypx.foe.handler.logic.KeyBindHandler.toggleInspectAlwaysOn();
                     b.setMessage(inspectLabel());
-                })
-                .bounds(width / 2 - 4 - 130, height / 2 - 50, 130, 20)
-                .tooltip(Tooltip.create(Component.literal("Always On: pet %, fish details and armor rolls show without holding the inspect key. Off: hold the key to inspect.")))
-                .build());
-        // Stats tools
-        this.addRenderableWidget(Button.builder(Component.literal("Import FOE stats"), b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false))
-                .bounds(width / 2 - 4 - 130, height / 2 + 26, 130, 20)
-                .tooltip(Tooltip.create(Component.literal("Copy dry streaks, fish time and fish/hour from a previous FOE install")))
-                .build());
-        this.addRenderableWidget(Button.builder(Component.literal("Import FOE-R stats"), b -> dannypx.foe.handler.io.FoerStatsImporter.importNow())
-                .bounds(width / 2 - 4 - 130, height / 2 + 48, 130, 20)
-                .tooltip(Tooltip.create(Component.literal("Use the stats of another FOE-R install (another profile or .minecraft) if it has more fish. Your current file is backed up first.")))
-                .build());
-        this.addRenderableWidget(Button.builder(Component.literal("Import dry streaks"), b -> dannypx.foe.handler.io.DryStreakImporter.importNow())
-                .bounds(width / 2 - 4 - 130, height / 2 + 70, 130, 20)
-                .tooltip(Tooltip.create(Component.literal("Take your dry streaks from your newest FOE or FOE-R install (this or another Minecraft profile). Nothing else changes.")))
-                .build());
-        this.addRenderableWidget(Button.builder(Component.literal("Reset fish timer"), b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset())
-                .bounds(width / 2 - 4 - 130, height / 2 + 92, 130, 20)
-                .tooltip(Tooltip.create(Component.literal("Start fish time and fish/hour from zero")))
-                .build());
-        this.addRenderableWidget(Button.builder(Component.literal("More (FOE-R)"), b -> this.minecraft.setScreen(new MainScreen(this)))
-                .bounds(x, height / 2 + (BUTTON_HEIGHT + 8) * 4, BUTTON_WIDTH, 20)
-                .tooltip(Tooltip.create(Component.literal("FOE-R's full menu: triggers, timers, notifications, snippets")))
-                .build());
+                });
+        inspect.setMessage(inspectLabel());
+
+        // Bottom row
+        int bottomY = rowsY + ROWS * ROW + 8;
+        add(leftX, bottomY, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
+                b -> this.minecraft.setScreen(new MainScreen(this)));
+        this.addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
+                .bounds(rightX, bottomY, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+    }
+
+    private Button add(int x, int y, String label, net.minecraft.world.item.Item icon, String tooltip, Button.OnPress onPress) {
+        Button button = Button.builder(Component.literal(label), onPress)
+                .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .tooltip(Tooltip.create(Component.literal(tooltip)))
+                .build();
+        this.addRenderableWidget(button);
+        icons.add(new IconButton(button, new ItemStack(icon)));
+        return button;
     }
 
     private static Component inspectLabel() {
-        boolean on = dannypx.foe.config.Configs.keyBindConfig.inspectAlwaysOn.get();
+        boolean on = Configs.keyBindConfig.inspectAlwaysOn.get();
+        String key = KeyBindHelper.getKeyString(Configs.keyBindConfig.inspectKeybind);
         return Component.literal("Inspect: ").append(on
-                ? Component.literal("Always On").withStyle(net.minecraft.ChatFormatting.GREEN)
-                : Component.literal("Hold " + dannypx.foe.helper.KeyBindHelper.getKeyString(dannypx.foe.config.Configs.keyBindConfig.inspectKeybind)).withStyle(net.minecraft.ChatFormatting.GRAY));
+                ? Component.literal("Always On").withStyle(ChatFormatting.GREEN)
+                : Component.literal("Hold " + capitalize(key.replaceFirst("(?i)^(left|right) ", ""))).withStyle(ChatFormatting.GRAY));
     }
 
-    private void addIconButton(String label, int x, int y, Button.OnPress onPress, String tooltip) {
-        // Leading spaces leave room for the item icon drawn in render().
-        this.addRenderableWidget(Button.builder(Component.literal("     " + label), onPress)
-                .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
-                .tooltip(Tooltip.create(Component.literal(tooltip)))
-                .build());
+    private static String capitalize(String text) {
+        StringBuilder out = new StringBuilder();
+        for (String word : text.split(" ")) {
+            if (word.isEmpty()) continue;
+            if (!out.isEmpty()) out.append(' ');
+            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return out.toString();
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         super.render(guiGraphics, mouseX, mouseY, delta);
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int lineHeight = font.lineHeight + 1;
-        int startY = centerY - (4 * lineHeight) / 2;
+        // Logo
+        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_U, LOGO_V, logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX, LOGO_TEX);
 
-        guiGraphics.vLine(centerX, centerY - 36, centerY + 36, 0xFFFFFFFF);
+        // Welcome, <rank badge> Name
+        Component welcome = Component.literal("Welcome, ").withStyle(ChatFormatting.GRAY).append(TabOverlayHandler.instance().getPlayerName());
+        guiGraphics.drawCenteredString(font, welcome, width / 2, welcomeY, 0xFFFFFFFF);
 
-        Component welcome = Component.literal("Welcome to FOE+");
-        Component player = TabOverlayHandler.instance().getPlayerName();
-        Component version = Component.literal(FishOnMCExtras.VERSION);
-        guiGraphics.drawString(font, welcome, centerX - 4 - font.width(welcome), startY, 0xFFFFFFFF, true);
-        guiGraphics.drawString(font, player, centerX - 4 - font.width(player), startY + lineHeight, 0xFFFFFFFF, true);
-        guiGraphics.drawString(font, version, centerX - 4 - font.width(version), startY + lineHeight * 3, 0xFFAAAAAA, true);
+        // Column headers with a thin rule under each
+        drawHeader(guiGraphics, "ɢᴇɴᴇʀᴀʟ", leftX);
+        drawHeader(guiGraphics, "ѕᴛᴀᴛѕ", rightX);
 
-        int x = centerX + 4 + 6;
-        guiGraphics.renderItem(new ItemStack(Items.COMMAND_BLOCK), x, height / 2 - BUTTON_HEIGHT - 8 + 4);
-        guiGraphics.renderItem(new ItemStack(Items.STRUCTURE_VOID), x, height / 2 + 4);
-        guiGraphics.renderItem(new ItemStack(Items.OAK_SIGN), x, height / 2 + BUTTON_HEIGHT + 8 + 4);
-        guiGraphics.renderItem(new ItemStack(Items.GOLD_NUGGET), x, height / 2 + (BUTTON_HEIGHT + 8) * 2 + 4);
-        guiGraphics.renderItem(new ItemStack(Items.EMERALD), x, height / 2 + (BUTTON_HEIGHT + 8) * 3 + 4);
+        // Icons inside the buttons
+        for (IconButton icon : icons) {
+            Button b = icon.button();
+            guiGraphics.renderItem(icon.icon(), b.getX() + 3, b.getY() + (b.getHeight() - 16) / 2);
+        }
+
+        // Version, bottom right
+        Component version = Component.literal("FOE+ " + FishOnMCExtras.VERSION).withStyle(ChatFormatting.DARK_GRAY);
+        guiGraphics.drawString(font, version, width - font.width(version) - 4, height - font.lineHeight - 3, 0xFFFFFFFF, false);
+    }
+
+    private void drawHeader(GuiGraphics guiGraphics, String text, int x) {
+        Component header = Component.literal(text).withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD);
+        guiGraphics.drawCenteredString(font, header, x + BUTTON_WIDTH / 2, headerY, 0xFFFFFFFF);
+        guiGraphics.fill(x, headerY + font.lineHeight + 1, x + BUTTON_WIDTH, headerY + font.lineHeight + 2, 0x60FFFFFF);
     }
 
     @Override
