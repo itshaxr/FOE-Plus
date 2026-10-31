@@ -76,6 +76,13 @@ public class ContestTrackerHandler {
 
     public void tick() {
         this.flushHeldSeparator(false);
+        if (refreshDueAt != 0L && System.currentTimeMillis() >= refreshDueAt) {
+            long sinceLast = System.currentTimeMillis() - lastRefresh;
+            if (sinceLast >= MIN_REFRESH_GAP_MS) {
+                refreshDueAt = 0L;
+                refresh(false);
+            }
+        }
         this.refreshOnAreaChange();
         this.autoRefresh();
         long hourMs = System.currentTimeMillis() % (2 * HALF_HOUR);
@@ -294,8 +301,24 @@ public class ContestTrackerHandler {
                 || c == '─' || c == '━' || c == '▬' || c == '▭' || Character.isWhitespace(c));
     }
 
+    /// "CONTESTS » 26.85lb → 27.45lb (+0.6lb)": the server telling you your contest catch improved.
+    private static final java.util.regex.Pattern IMPROVED = java.util.regex.Pattern.compile("^CONTESTS?\\s*».*?→\\s*([0-9][0-9.,]*\\s*[A-Za-z\"]*)");
+    /// A refresh we owe after an improvement that came too soon after the last one.
+    private long refreshDueAt = 0L;
+
     public void onReceiveMessage(Component message) {
         String text = message.getString();
+
+        // Your contest catch improved: show the new number right away, then quietly re-read the
+        // rankings (your rank may have changed too).
+        java.util.regex.Matcher improved = IMPROVED.matcher(text.strip());
+        if (improved.find()) {
+            String value = improved.group(1).trim();
+            this.rankStat = value;
+            this.personalBest = Math.max(this.personalBest, parseNumber(value));
+            if (this.isContest) this.refreshDueAt = System.currentTimeMillis() + 1_000L;
+            return;
+        }
 
         if (text.contains("FISHING CONTEST RANKINGS")) {
             this.lastUpdated = System.currentTimeMillis();
