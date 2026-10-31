@@ -190,30 +190,36 @@ public class NotifierHandler extends Handler {
     /// (fish since your last pet, and since your last pet of this rarity).
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
         if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
-        String rarity = pet.getRarity();
-        String rarityName = rarity.isEmpty() ? "" : Character.toUpperCase(rarity.charAt(0)) + rarity.substring(1).toLowerCase(java.util.Locale.ROOT);
-        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(rarity);
-        net.minecraft.network.chat.MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+        // [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) Dry streak: 164
+        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("PET PULLED! ").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
-                .append(pet.getRarityComponent())
+                .append(rarityBadge(pet))
                 .append(Component.literal(" "))
                 .append(pet.getName())
                 .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
         Component rating = pet.getRatingComponent();
-        if (!rating.getString().isBlank()) line.append(Component.literal(" ").withStyle(ChatFormatting.DARK_GRAY)).append(rating);
-        line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(" · Dry streak: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, petDryStreak))).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" fish").withStyle(ChatFormatting.GRAY));
-        if (!rarityName.isEmpty()) {
-            line.append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(rarityColor >= 0 ? Component.literal(rarityName).withColor(rarityColor) : Component.literal(rarityName).withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, rarityDryStreak))).withStyle(ChatFormatting.YELLOW))
-                    .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        if (!rating.getString().isBlank()) {
+            line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
         }
+        line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY))
+                .append(Component.literal(" Dry streak: ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, petDryStreak))).withStyle(ChatFormatting.YELLOW));
         minecraft.player.displayClientMessage(line, false);
+    }
+
+    /// The server's rarity badge for the pet (the same glyphs as on items and in chat).
+    private static Component rarityBadge(PetTagObject pet) {
+        String glyph = switch (pet.getRarity().toLowerCase(java.util.Locale.ROOT)) {
+            case "common" -> "\uF033";
+            case "rare" -> "\uF034";
+            case "epic" -> "\uF035";
+            case "legendary" -> "\uF036";
+            case "mythical", "mythic" -> "\uF037";
+            case "special" -> "\uF092";
+            default -> null;
+        };
+        return glyph != null ? Component.literal(glyph).withStyle(ChatFormatting.WHITE) : pet.getRarityComponent();
     }
 
     public void notifyItem(TagObject item, int count, Pair<String, Integer> itemDrystreak) {
