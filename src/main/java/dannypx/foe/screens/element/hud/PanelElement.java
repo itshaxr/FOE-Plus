@@ -65,6 +65,11 @@ public abstract class PanelElement extends Element {
         return true;
     }
 
+    /// Every line centred in the panel (the warning box uses this).
+    protected boolean centerText() {
+        return false;
+    }
+
     /// An item box drawn beside the text. An empty stack draws an empty box (the "nothing here" state).
     public record PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor) {}
 
@@ -234,7 +239,8 @@ public abstract class PanelElement extends Element {
         boolean textRight = right && alignTextToAnchor();
         int y = top + PADDING;
         for (Component line : lines) {
-            int x = textRight ? textRightEdge - font.width(line) : textLeft;
+            int x = centerText() ? textLeft + (textRightEdge - textLeft - font.width(line)) / 2
+                    : textRight ? textRightEdge - font.width(line) : textLeft;
             this.beforeLine(guiGraphics, font, line, x, y);
             guiGraphics.drawString(font, line, x, y, 0xFFFFFFFF, true);
             y += lineHeight;

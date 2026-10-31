@@ -55,6 +55,11 @@ public class GearWarningPanelElement extends PanelElement {
     }
 
     @Override
+    protected boolean centerText() {
+        return true;
+    }
+
+    @Override
     protected Component title() {
         return Component.literal("⚠ ᴡᴀʀɴɪɴɢ").withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
     }
