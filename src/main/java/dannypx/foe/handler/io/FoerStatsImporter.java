@@ -98,10 +98,10 @@ public final class FoerStatsImporter {
                 Optional<Candidate> best = best(found);
                 StatsDataHandler.StatsDataModel current = StatsDataHandler.instance().getStatsData();
                 if (best.isEmpty()) {
-                    message(Component.literal("No other FOE-R install with your stats was found.").withStyle(ChatFormatting.RED));
+                    message(Component.literal("No other FOE-R install with your stats found.").withStyle(ChatFormatting.RED));
                 } else if (best.get().fishTotal() <= current.fishTotal) {
-                    message(Component.literal("Your stats here are already the newest (" + current.fishTotal + " fish; the other install has "
-                            + best.get().fishTotal() + "). Nothing was changed.").withStyle(ChatFormatting.YELLOW));
+                    message(Component.literal("Stats here are already the newest (" + current.fishTotal + " vs " + best.get().fishTotal()
+                            + " fish). Nothing changed.").withStyle(ChatFormatting.YELLOW));
                 } else {
                     apply(best.get(), true);
                 }
@@ -141,11 +141,11 @@ public final class FoerStatsImporter {
             stats.markChanged();
 
             LoggerHandler.info("Imported FOE-R stats from " + candidate.file());
-            message(Component.literal("Imported your FOE-R stats from another install: ").withStyle(ChatFormatting.GREEN)
+            message(Component.literal("Imported FOE-R stats: ").withStyle(ChatFormatting.GREEN)
                     .append(Component.literal(imported.fishTotal + " fish, " + imported.petTotal + " pets.").withStyle(ChatFormatting.GRAY)));
         } catch (Exception e) {
             LoggerHandler.error(e);
-            message(Component.literal("Couldn't read the FOE-R stats from " + candidate.file()).withStyle(ChatFormatting.RED));
+            message(Component.literal("Couldn't read the FOE-R stats at " + candidate.file()).withStyle(ChatFormatting.RED));
         }
     }
 
@@ -249,7 +249,7 @@ public final class FoerStatsImporter {
     private static void message(Component text) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA).append(text), false);
+            mc.player.displayClientMessage(dannypx.foe.helper.FoeChat.line("STATS", dannypx.foe.helper.FoeChat.AQUA).append(text), false);
         }
     }
 }

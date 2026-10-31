@@ -93,11 +93,14 @@ public class PetLocationHandler {
             checkAt = 0L;
             if (Configs.hudConfig.showGearWarning.get() && isWrongPet(here)) {
                 PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-                mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
-                        .append(Component.literal("Wrong pet for " + displayName(here) + ": ").withStyle(ChatFormatting.RED))
+                // [FOE+] WRONG PET Eagle Pet · Danube River needs a Wolf Pet (in inventory)
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("WRONG PET", dannypx.foe.helper.FoeChat.RED)
                         .append(pet.getName())
-                        .append(Component.literal(" is not this location's pet. ").withStyle(ChatFormatting.RED))
-                        .append(suggestion(here)), false);
+                        .append(dannypx.foe.helper.FoeChat.sep())
+                        .append(dannypx.foe.helper.FoeChat.place(displayName(here)))
+                        .append(dannypx.foe.helper.FoeChat.text(" needs a "))
+                        .append(Component.literal(here.petName + " Pet").withStyle(ChatFormatting.GOLD))
+                        .append(dannypx.foe.helper.FoeChat.text(hasPetFor(here) ? " (in inventory)" : " (not in inventory)")));
             }
         }
     }

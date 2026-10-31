@@ -261,11 +261,15 @@ public class ContestTrackerHandler {
             hideUntil = 0L;
             hideTailUntil = now + 1500L;
             if (announcePersonalBest && Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.displayClientMessage(Component.literal("[Contest] ").withStyle(ChatFormatting.GOLD)
-                        .append(Component.literal("New personal best! ").withStyle(ChatFormatting.YELLOW))
-                        .append(Component.literal("Rank: ").withStyle(ChatFormatting.GRAY))
-                        .append(Component.literal(rank).withStyle(ChatFormatting.WHITE))
-                        .append(rankStat.isEmpty() ? Component.empty() : Component.literal(" (" + rankStat + ")").withStyle(ChatFormatting.GRAY)), false);
+                // [FOE+] CONTEST New personal best · Rank #4 · 8.0 lb
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CONTEST", dannypx.foe.helper.FoeChat.GOLD)
+                        .append(dannypx.foe.helper.FoeChat.white("New personal best"))
+                        .append(dannypx.foe.helper.FoeChat.sep())
+                        .append(dannypx.foe.helper.FoeChat.text("Rank "))
+                        .append(dannypx.foe.helper.FoeChat.highlight(rank))
+                        .append(rankStat.isEmpty() ? Component.empty() : Component.empty()
+                                .append(dannypx.foe.helper.FoeChat.sep())
+                                .append(dannypx.foe.helper.FoeChat.white(rankStat))));
             }
             announcePersonalBest = false;
         }

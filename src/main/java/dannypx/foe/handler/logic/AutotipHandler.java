@@ -119,8 +119,11 @@ public class AutotipHandler {
         int limit = Configs.autotipConfig.sessionLimit.get();
         if (limit > 0 && sessionTotal + tip.amount() > limit) {
             if (Configs.autotipConfig.announceTips.get()) {
-                mc.player.displayClientMessage(Component.literal("[Auto Tip] ").withStyle(ChatFormatting.GOLD)
-                        .append(Component.literal("Session limit reached, skipped tipping " + tip.player() + ".").withStyle(ChatFormatting.GRAY)), false);
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("AUTO TIP", dannypx.foe.helper.FoeChat.GOLD)
+                        .append(dannypx.foe.helper.FoeChat.text("Session limit reached"))
+                        .append(dannypx.foe.helper.FoeChat.sep())
+                        .append(dannypx.foe.helper.FoeChat.text("skipped "))
+                        .append(dannypx.foe.helper.FoeChat.white(tip.player())));
             }
             return;
         }
@@ -132,10 +135,13 @@ public class AutotipHandler {
         mc.getConnection().sendCommand("pay " + tip.player() + " " + tip.amount());
 
         if (Configs.autotipConfig.announceTips.get()) {
-            mc.player.displayClientMessage(Component.literal("[Auto Tip] ").withStyle(ChatFormatting.GOLD)
-                    .append(Component.literal("Tipped " + tip.player() + " ").withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal("$" + tip.amount()).withStyle(ChatFormatting.GREEN))
-                    .append(Component.literal(" (" + tip.reason().toLowerCase(Locale.ROOT) + ")").withStyle(ChatFormatting.DARK_GRAY)), false);
+            // [FOE+] AUTO TIP Tipped Steve $500 · reaction
+            dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("AUTO TIP", dannypx.foe.helper.FoeChat.GOLD)
+                    .append(dannypx.foe.helper.FoeChat.text("Tipped "))
+                    .append(dannypx.foe.helper.FoeChat.white(tip.player()))
+                    .append(Component.literal(" $" + String.format(Locale.ROOT, "%,d", (long) tip.amount())).withStyle(ChatFormatting.GREEN))
+                    .append(dannypx.foe.helper.FoeChat.sep())
+                    .append(dannypx.foe.helper.FoeChat.text(tip.reason().toLowerCase(Locale.ROOT))));
         }
     }
 }

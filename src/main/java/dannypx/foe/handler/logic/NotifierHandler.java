@@ -172,52 +172,38 @@ public class NotifierHandler extends Handler {
     public void chatVariant(FishTagObject fish, int dryStreak) {
         String variant = fish.getVariant().toLowerCase(java.util.Locale.ROOT);
         if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
-        String variantName = Character.toUpperCase(variant.charAt(0)) + variant.substring(1);
-        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
-                .append(Component.literal(variantName.toUpperCase(java.util.Locale.ROOT) + "! ").withColor(VARIANT_COLORS.get(variant)).withStyle(ChatFormatting.BOLD))
+        // [FOE+] <variant badge> Largemouth Bass · Dry streak 1,234
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(fish.getVariantComponent())
                 .append(Component.literal(" "))
-                .append(fish.getRarityComponent())
-                .append(Component.literal(" "))
                 .append(fish.getName())
-                .append(Component.literal(" · " + variantName + " dry streak: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, dryStreak))).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(" fish").withStyle(ChatFormatting.GRAY));
-        minecraft.player.displayClientMessage(line, false);
+                .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
     }
 
-    /// Chat line for every Gigantic: [FOE+] <GIGANTIC badge> Largemouth Bass Dry streak: 1,234
+    /// [FOE+] <GIGANTIC badge> Largemouth Bass · Dry streak 1,234
     public void chatGigantic(FishTagObject fish, int dryStreak) {
         if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
-        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(dannypx.foe.screens.element.hud.StatsPanelElement.GIGANTIC_BADGE)
                 .append(Component.literal(" "))
                 .append(fish.getName())
-                .append(Component.literal(" Dry streak: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, dryStreak))).withStyle(ChatFormatting.YELLOW));
-        minecraft.player.displayClientMessage(line, false);
+                .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
     }
 
-    /// Chat line for every pet you pull: rarity, name, rating with its %, and the dry streaks
-    /// (fish since your last pet, and since your last pet of this rarity).
+    /// [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) · Dry streak 164
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
         if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
-        // [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) Dry streak: 164
-        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
-                .append(Component.literal("PET PULLED! ").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD))
+        MutableComponent line = dannypx.foe.helper.FoeChat.line("PET PULLED!", dannypx.foe.helper.FoeChat.PURPLE)
                 .append(rarityBadge(pet))
                 .append(Component.literal(" "))
                 .append(pet.getName())
                 .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
         Component rating = pet.getRatingComponent();
-        if (!rating.getString().isBlank()) {
-            line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
-        }
+        if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
         line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(" Dry streak: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, petDryStreak))).withStyle(ChatFormatting.YELLOW));
-        minecraft.player.displayClientMessage(line, false);
+                .append(dannypx.foe.helper.FoeChat.dryStreak(petDryStreak));
+        dannypx.foe.helper.FoeChat.send(line);
     }
 
     /// The server's rarity badge for the pet (the same glyphs as on items and in chat).

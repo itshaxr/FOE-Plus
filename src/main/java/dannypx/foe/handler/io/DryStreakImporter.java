@@ -192,7 +192,7 @@ public final class DryStreakImporter {
             mc.execute(() -> {
                 Optional<Source> source = newest(sources);
                 if (source.isEmpty()) {
-                    message(Component.literal("No FOE or FOE-R dry streaks were found in this or your other Minecraft folders.").withStyle(ChatFormatting.RED));
+                    message(Component.literal("No FOE or FOE-R dry streaks found on this computer.").withStyle(ChatFormatting.RED));
                     return;
                 }
                 StatsDataHandler stats = StatsDataHandler.instance();
@@ -236,7 +236,7 @@ public final class DryStreakImporter {
     private static void message(Component text) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA).append(text), false);
+            mc.player.displayClientMessage(dannypx.foe.helper.FoeChat.line("STATS", dannypx.foe.helper.FoeChat.AQUA).append(text), false);
         }
     }
     //endregion

@@ -374,13 +374,15 @@ public class AlertHandler {
     private void announceFabledCaught(FabledRecord record) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null || !Configs.hudConfig.alertChat.get() || !Configs.hudConfig.alertFabled.get()) return;
-        net.minecraft.network.chat.MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
-                .append(Component.literal("Fabled Fish").withColor(Alert.FABLED.color).withStyle(ChatFormatting.BOLD))
-                .append(Component.literal(record.location().isEmpty() ? "" : " at " + record.location()).withStyle(ChatFormatting.AQUA))
-                .append(Component.literal(" was caught by ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(record.catcher()).withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(" (" + fabledSpan(record) + ")").withStyle(ChatFormatting.GRAY));
-        mc.player.displayClientMessage(line, false);
+        // [FOE+] FABLED CAUGHT Danube River · by Steve · 2:05 PM - 2:09 PM, 4:12
+        net.minecraft.network.chat.MutableComponent line = dannypx.foe.helper.FoeChat.line("FABLED CAUGHT", Alert.FABLED.color)
+                .append(dannypx.foe.helper.FoeChat.place(record.location().isEmpty() ? "Unknown location" : record.location()))
+                .append(dannypx.foe.helper.FoeChat.sep())
+                .append(dannypx.foe.helper.FoeChat.text("by "))
+                .append(dannypx.foe.helper.FoeChat.white(record.catcher()))
+                .append(dannypx.foe.helper.FoeChat.sep())
+                .append(dannypx.foe.helper.FoeChat.text(fabledSpan(record)));
+        dannypx.foe.helper.FoeChat.send(line);
     }
 
     /// "2:05 PM - 2:09 PM, 4:12", or "? - 2:09 PM" when the start wasn't seen.
@@ -551,11 +553,13 @@ public class AlertHandler {
             if (announced.contains(active.alert())) continue;
             announced.add(active.alert());
             if (Configs.hudConfig.alertChat.get()) {
-                mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
-                        .append(Component.literal(active.alert().displayName.toUpperCase(Locale.ROOT) + "! ").withColor(active.alert().color).withStyle(ChatFormatting.BOLD))
-                        .append(Component.literal(locationLabel(active.alert())).withStyle(ChatFormatting.AQUA))
-                        .append(Component.literal(" · " + active.alert().odds).withStyle(ChatFormatting.GRAY))
-                        .append(Component.literal(" · " + (active.alert() == Alert.FABLED ? "until someone catches it" : timeLeft(active.msLeft()))).withStyle(ChatFormatting.GREEN)), false);
+                // [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · ~2:10 left
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line(active.alert().displayName.toUpperCase(Locale.ROOT), active.alert().color)
+                        .append(dannypx.foe.helper.FoeChat.place(locationLabel(active.alert())))
+                        .append(dannypx.foe.helper.FoeChat.sep())
+                        .append(dannypx.foe.helper.FoeChat.text(active.alert().odds))
+                        .append(dannypx.foe.helper.FoeChat.sep())
+                        .append(dannypx.foe.helper.FoeChat.highlight(active.alert() == Alert.FABLED ? "until caught" : timeLeft(active.msLeft()))));
             }
             if (Configs.hudConfig.alertSound.get()) {
                 var sound = Configs.hudConfig.alertSoundType.get().sound.value();

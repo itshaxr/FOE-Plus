@@ -61,7 +61,7 @@ public final class FoeStatsImporter {
                 int streaks = DryStreakImporter.apply(DryStreakImporter.readFoe(file, 0L, foe), data);
                 data.foeStreaksFixed = true;
                 StatsDataHandler.instance().markChanged();
-                message(Component.literal("Re-imported " + streaks + " FOE dry streaks (fixed).").withStyle(ChatFormatting.GREEN));
+                message(Component.literal("Re-imported " + streaks + " FOE dry streaks.").withStyle(ChatFormatting.GREEN));
             } catch (Exception ignored) {
                 // unreadable file: leave the streaks as they are
             }
@@ -74,7 +74,7 @@ public final class FoeStatsImporter {
         if (mc.player == null) return false;
         Path file = statsFile(mc.player.getUUID());
         if (!Files.exists(file)) {
-            if (!quiet) message(Component.literal("No FOE stats found for you in config/foe/stats.").withStyle(ChatFormatting.RED));
+            if (!quiet) message(Component.literal("No FOE stats file found (config/foe/stats).").withStyle(ChatFormatting.RED));
             return false;
         }
 
@@ -126,7 +126,7 @@ public final class FoeStatsImporter {
     private static void message(Component text) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            mc.player.displayClientMessage(Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA).append(text), false);
+            mc.player.displayClientMessage(dannypx.foe.helper.FoeChat.line("STATS", dannypx.foe.helper.FoeChat.AQUA).append(text), false);
         }
     }
 }
