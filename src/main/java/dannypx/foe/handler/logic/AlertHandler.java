@@ -284,13 +284,13 @@ public class AlertHandler {
     }
 
     private long moonElapsedMs() {
-        return MoonTimerHandler.CYCLE_MS - MoonTimerHandler.instance().getTimeUntilNextMoon();
+        return MoonTimerHandler.instance().getTimeSinceMoonrise();
     }
 
     /// Called when chat says the moon has set: remembers how long moons last.
     public void onMoonSet() {
         long elapsed = moonElapsedMs();
-        if (elapsed > 30_000L && elapsed < MoonTimerHandler.CYCLE_MS) {
+        if (elapsed > 30_000L && elapsed < MoonTimerHandler.instance().getCycleMs()) {
             learned().moonDurationMs = elapsed;
             saveLearned();
         }
@@ -355,7 +355,8 @@ public class AlertHandler {
                 case MOON -> {
                     if (!isMoonUp()) continue;
                     long known = learned().moonDurationMs;
-                    out.add(new Active(alert, known > 0 ? smooth("end:" + alert.name(), Math.max(0L, known - moonElapsedMs())) : -1L));
+                    long since = moonElapsedMs();
+                    out.add(new Active(alert, known > 0 && since >= 0 ? smooth("end:" + alert.name(), Math.max(0L, known - since)) : -1L));
                 }
                 case RAINBOW -> {
                     if (!isRainbowUp()) continue;
@@ -388,7 +389,7 @@ public class AlertHandler {
         }
         if (!isMoonUp() && (enabled(Alert.ROUGAROU) || enabled(Alert.BESSIE_MOON))) {
             long ms = MoonTimerHandler.instance().getTimeUntilNextMoon();
-            if (ms <= withinMs) out.add(new Upcoming("Moon (Rougarou, Bessie)", ms));
+            if (ms >= 0 && ms <= withinMs) out.add(new Upcoming("Moon (Rougarou, Bessie)", ms));
         }
         shownUpcoming.clear();
         shownUpcoming.addAll(nowUpcoming);

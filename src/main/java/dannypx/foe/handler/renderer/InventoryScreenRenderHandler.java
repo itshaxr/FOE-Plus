@@ -104,19 +104,25 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             lines.add(Component.literal(current.displayName + " is up").withColor(current.color));
         }
 
-        lines.add(Component.literal("ɴᴇxᴛ ᴍᴏᴏɴ: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.format("%02d:%02d:%02d", totalSeconds / 3600, (totalSeconds / 60) % 60, totalSeconds % 60))
-                        .withStyle(ChatFormatting.WHITE)));
+        if (!moonTimer.isKnown()) {
+            // Starts counting at the first moonrise seen in chat (remembered after that).
+            lines.add(Component.literal("ᴡᴀɪᴛɪɴɢ ꜰᴏʀ ᴛʜᴇ").withStyle(ChatFormatting.GRAY));
+            lines.add(Component.literal("ꜰɪʀѕᴛ ᴍᴏᴏɴʀɪѕᴇ...").withStyle(ChatFormatting.GRAY));
+        } else {
+            lines.add(Component.literal("ɴᴇxᴛ ᴍᴏᴏɴ: ").withStyle(ChatFormatting.GRAY)
+                    .append(Component.literal(String.format("%02d:%02d:%02d", totalSeconds / 3600, (totalSeconds / 60) % 60, totalSeconds % 60))
+                            .withStyle(ChatFormatting.WHITE)));
 
-        // Progress bar: fills up as the next moon gets closer.
-        int dashes = 14;
-        float remaining = (float) timeLeft / (float) dannypx.foe.handler.logic.MoonTimerHandler.CYCLE_MS;
-        int grayDashes = Math.round(dashes * remaining);
-        int greenDashes = dashes - grayDashes;
-        lines.add(Component.literal("|").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(" ".repeat(greenDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GREEN))
-                .append(Component.literal(" ".repeat(grayDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GRAY))
-                .append(Component.literal("|").withStyle(ChatFormatting.WHITE)));
+            // Progress bar: fills up as the next moon gets closer.
+            int dashes = 14;
+            float remaining = (float) timeLeft / (float) moonTimer.getCycleMs();
+            int grayDashes = Math.round(dashes * remaining);
+            int greenDashes = dashes - grayDashes;
+            lines.add(Component.literal("|").withStyle(ChatFormatting.WHITE)
+                    .append(Component.literal(" ".repeat(greenDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GREEN))
+                    .append(Component.literal(" ".repeat(grayDashes)).withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GRAY))
+                    .append(Component.literal("|").withStyle(ChatFormatting.WHITE)));
+        }
 
         int padding = 5;
         int lineHeight = font.lineHeight + 2;
