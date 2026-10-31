@@ -37,11 +37,31 @@ public class FoeMainScreen extends Screen {
 
     private final Screen parent;
     private final List<IconButton> icons = new ArrayList<>();
+    /// Room the icon takes on the left of a button (3 px margin, 16 px icon, 5 px gap).
+    private static final int ICON_SPACE = 24;
     private int logoX, logoY, logoW, logoH;
     private int welcomeY, headerY;
     private int leftX, rightX;
 
     private record IconButton(Button button, ItemStack icon) {}
+
+    /// A button whose label is centred in the space right of its icon, so the two never touch.
+    private static final class LabelledButton extends Button {
+        LabelledButton(int x, int y, int width, int height, Component message, OnPress onPress) {
+            super(x, y, width, height, message, onPress, supplier -> supplier.get());
+        }
+
+        @Override
+        protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+            this.renderDefaultSprite(guiGraphics);
+            var font = net.minecraft.client.Minecraft.getInstance().font;
+            int left = getX() + ICON_SPACE;
+            int right = getX() + getWidth() - 4;
+            int color = this.active ? 0xFFFFFFFF : 0xFFA0A0A0;
+            int textX = left + Math.max(0, (right - left - font.width(getMessage())) / 2);
+            guiGraphics.drawString(font, getMessage(), textX, getY() + (getHeight() - font.lineHeight) / 2 + 1, color, true);
+        }
+    }
 
     public FoeMainScreen(Screen parent) {
         super(Component.literal("FOE+"));
@@ -107,10 +127,8 @@ public class FoeMainScreen extends Screen {
     }
 
     private Button add(int x, int y, String label, net.minecraft.world.item.Item icon, String tooltip, Button.OnPress onPress) {
-        Button button = Button.builder(Component.literal(label), onPress)
-                .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
-                .tooltip(Tooltip.create(Component.literal(tooltip)))
-                .build();
+        Button button = new LabelledButton(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, Component.literal(label), onPress);
+        button.setTooltip(Tooltip.create(Component.literal(tooltip)));
         this.addRenderableWidget(button);
         icons.add(new IconButton(button, new ItemStack(icon)));
         return button;
