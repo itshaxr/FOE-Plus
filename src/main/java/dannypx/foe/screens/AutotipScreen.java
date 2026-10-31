@@ -47,8 +47,16 @@ public class AutotipScreen extends Screen {
         this.parent = parent;
     }
 
+    /// The server's rarity badge (same glyphs as on items and in chat), then "Chummer".
     private static Component chummer(String rarity, String name) {
-        return Component.literal(name).withColor(FoeLocations.rarityColor(rarity))
+        String glyph = switch (rarity) {
+            case "common" -> "\uF033";
+            case "rare" -> "\uF034";
+            case "epic" -> "\uF035";
+            case "legendary" -> "\uF036";
+            default -> "\uF037";
+        };
+        return Component.literal(glyph).withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(" Chummer").withStyle(ChatFormatting.GRAY));
     }
 
