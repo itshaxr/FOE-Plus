@@ -93,7 +93,7 @@ public class ContestPanelElement extends PanelElement {
         boolean atLocation = normalizeLocation(contest.location)
                 .equals(normalizeLocation(BossEventHandler.instance().getLocation().getString()));
 
-        lines.add(join(label("ᴛʏᴘᴇ: "), Component.literal(contest.type).withStyle(ChatFormatting.WHITE)));
+        lines.add(join(label("ᴛʏᴘᴇ: "), Component.literal(contest.type).withStyle(ChatFormatting.WHITE), targetFish(contest)));
         if (Configs.hudConfig.showContestBestBait.get()) lines.addAll(bestBaitLines(contest));
         // Where the contest is, with a warning when you are fishing somewhere else. The rankings
         // below always show (they belong to the contest, not to where you are standing).
@@ -133,6 +133,20 @@ public class ContestPanelElement extends PanelElement {
                     label(" ᴀɢᴏ")));
         }
         return lines;
+    }
+
+    /// " (Walleye)": the fish this contest wants at its location, from the bait sheet's Fish
+    /// column. Empty when the sheet doesn't know, or the type already names a single fish.
+    private static Component targetFish(ContestTrackerHandler contest) {
+        List<String> fish = new ArrayList<>();
+        for (var row : dannypx.foe.handler.logic.ContestBaitSheetHandler.instance().lookup(contest.location, contest.type)) {
+            String name = row.fish().trim();
+            if (!name.isEmpty() && !fish.contains(name) && !contest.type.toLowerCase(Locale.ROOT).contains(name.toLowerCase(Locale.ROOT))) fish.add(name);
+        }
+        if (fish.isEmpty()) return Component.empty();
+        return join(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY),
+                Component.literal(String.join(", ", fish)).withStyle(ChatFormatting.AQUA),
+                Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     private static String currentArea() {
