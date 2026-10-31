@@ -2,7 +2,6 @@ package dannypx.foe.screens;
 
 import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.config.Configs;
-import dannypx.foe.handler.fetch.TabOverlayHandler;
 import dannypx.foe.helper.KeyBindHelper;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import net.minecraft.ChatFormatting;
@@ -159,8 +158,10 @@ public class FoeMainScreen extends Screen {
         // Logo
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_U, LOGO_V, logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX, LOGO_TEX);
 
-        // Welcome, <rank badge> Name
-        Component welcome = Component.literal("Welcome, ").withStyle(ChatFormatting.GRAY).append(TabOverlayHandler.instance().getPlayerName());
+        // Welcome, <player name>
+        String name = this.minecraft.player != null ? this.minecraft.player.getName().getString() : this.minecraft.getUser().getName();
+        Component welcome = Component.literal("Welcome, ").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(name).withStyle(ChatFormatting.WHITE));
         guiGraphics.drawCenteredString(font, welcome, width / 2, welcomeY, 0xFFFFFFFF);
 
         // Column headers with a thin rule under each
