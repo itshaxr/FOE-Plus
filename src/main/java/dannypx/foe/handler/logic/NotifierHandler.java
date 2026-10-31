@@ -186,6 +186,18 @@ public class NotifierHandler extends Handler {
         minecraft.player.displayClientMessage(line, false);
     }
 
+    /// Chat line for every Gigantic: [FOE+] <GIGANTIC badge> Largemouth Bass Dry streak: 1,234
+    public void chatGigantic(FishTagObject fish, int dryStreak) {
+        if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
+        MutableComponent line = Component.literal("[FOE+] ").withStyle(ChatFormatting.AQUA)
+                .append(dannypx.foe.screens.element.hud.StatsPanelElement.GIGANTIC_BADGE)
+                .append(Component.literal(" "))
+                .append(fish.getName())
+                .append(Component.literal(" Dry streak: ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%,d", Math.max(0, dryStreak))).withStyle(ChatFormatting.YELLOW));
+        minecraft.player.displayClientMessage(line, false);
+    }
+
     /// Chat line for every pet you pull: rarity, name, rating with its %, and the dry streaks
     /// (fish since your last pet, and since your last pet of this rarity).
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {

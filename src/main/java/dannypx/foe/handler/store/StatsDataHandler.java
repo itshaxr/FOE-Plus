@@ -84,6 +84,10 @@ public class StatsDataHandler extends Handler {
         Stat<Integer, Integer> lastOfVariant = variants.get(fish.getVariant());
         int variantDryStreak = lastOfVariant == null || lastOfVariant.amount() == null || lastOfVariant.amount() == 0
                 ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastOfVariant.caughtOn();
+        // Same for Gigantic size.
+        Stat<Integer, Integer> lastGigantic = statsData.fishData.getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
+        int giganticDryStreak = lastGigantic == null || lastGigantic.amount() == null || lastGigantic.amount() == 0
+                ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastGigantic.caughtOn();
         statsData.fishTotal++;
 
         Pair<String, Integer> rarityDrystreak = this.updateFishData(statsData, FishTagObject.RARITY, fish.getRarity(), 1);
@@ -96,6 +100,7 @@ public class StatsDataHandler extends Handler {
         ConstantDataHandler.instance().updateFishData(FishTagObject.FISH_SIZE, fish.getFishSize(), fish.getFishSizeComponent());
 
         NotifierHandler.instance().chatVariant(fish, variantDryStreak);
+        if ("gigantic".equalsIgnoreCase(fish.getFishSize())) NotifierHandler.instance().chatGigantic(fish, giganticDryStreak);
 
         return Triplet.of(rarityDrystreak, variantDrystreak, sizeDryStreak);
     }

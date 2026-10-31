@@ -21,7 +21,7 @@ public class StatsPanelElement extends PanelElement {
     private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
     /// The GIGANTIC badge: a glyph image in this mod's tag font, drawn like the server's rarity
     /// badges (the text shadow gives it the same dark drop shadow).
-    private static final Component GIGANTIC_BADGE = Component.literal("\uE910").withStyle(style -> style
+    public static final Component GIGANTIC_BADGE = Component.literal("\uE910").withStyle(style -> style
             .withColor(ChatFormatting.WHITE)
             .withFont(new net.minecraft.network.chat.FontDescription.Resource(
                     net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "tags"))));

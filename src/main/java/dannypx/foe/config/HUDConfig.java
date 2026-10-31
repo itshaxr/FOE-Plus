@@ -178,6 +178,10 @@ public class HUDConfig extends Config {
     @Desc("§7Albino, Melanistic, Trophy and Fabled catches with the fish and its dry streak, in chat")
     public ValidatedBoolean showVariantCatchChat = new ValidatedBoolean(true);
 
+    @Name("Chat message when you catch a Gigantic")
+    @Desc("§7The fish and your Gigantic dry streak, in chat")
+    public ValidatedBoolean showGiganticCatchChat = new ValidatedBoolean(true);
+
     @Name("Chat message when you pull a pet")
     @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
     public ValidatedBoolean showPetCatchChat = new ValidatedBoolean(true);
