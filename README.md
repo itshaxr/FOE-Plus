@@ -1,35 +1,57 @@
-FOER (FishOnMC-Extras-R) is a QOL mod for play.fishonmc.net. It has many QOL and other immersive features to improve the player experience on the server.
+# FOE+
 
-# 📋 Features
-- Profile HUD element
-- Equipped pet HUD element
-- Location HUD element
-- Notifier HUD element
-  - Shows caught fish
-  - Shows caught items
-  - Shows completed quests
-  - Shows when nearing full inventory
-- New Sidebar HUD
-  - Shows quests
-- New Hotbar HUD
-  - Shows armor
-  - Shows fishing rod parts
-  - Shows bait
-- Rarity markers on items
-- New smaller stack counter
-  - Also shows count on baits
-- Full real-time statistics tracker
-  - Can import stats from your server profile
-- New 3D model for fish fishing hook
-- And more...
+FOE+ is a quality-of-life mod for **play.fishonmc.net** (Fabric, Minecraft 1.21.11).
+It is built on [FishonMC-Extras-R](https://github.com/FishOnExtras/FishonMC-Extras-R) (FOE-R) and brings in the features of
+[FOECollab](https://github.com/Kimberlyow/FOECollab) (FOE) and [FishOnAutotip](https://github.com/Kimberlyow/FishOnAutotip),
+plus new features of its own.
 
-# 🔨 Configuration
-Configuration of the mod is easily done by pressing `O`.
-You can access the config directly.
-Can also move the HUD elements position!
+Press **O** in game to open the FOE+ menu.
+
+## Features
+
+**HUD panels** (move, anchor and resize them in *O → Move HUD Elements*; they never leave the screen or cover each other)
+- Contest: timer, type with the fish you need, best bait from a bait sheet, top 3 and your rank. Updates every minute, on a new personal best and when you change area.
+- Daily Quests: exact progress after every catch.
+- All-Time Stats: fish, fish/hour, fish time, rarities, Gigantic and variants with dry streaks.
+- Quests, Pet (with held item), Bait, Luck & Scale (read from your /menu profile, boosters included).
+- Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers. Remembers the last Fabled event.
+- Warning box: wrong pet for the location (names the right one), wrong armor climate, inventory almost full. Hide it with `-` until you move.
+- Top bar, equipment bar, catch popup, moon timer (inventory screen).
+
+**Chat**
+- Clean `[FOE+]` lines for pets, variants, Gigantic catches, alerts, Fabled catches, wrong pet, contest best and tips.
+- Contest auto-refresh output is hidden; contest messages get proper spacing.
+
+**Tools**
+- Bait sorter (`B`), Personal Vault page buttons and sorting (amount / rarity).
+- Auto Tip (`M`): tip reaction winners and chummers automatically.
+- Pet Prices (`U`): price table from a Google Sheet, plus an estimated price in pet tooltips.
+- Inspect always-on toggle, rating letter and max luck/scale markers on pets.
+- `+` after the names of nearby FOE+ users.
+
+**Stats**
+- Import stats from previous FOE / FOE-R installs (other profiles too), import dry streaks (newer streaks are never overwritten), edit dry streaks by hand.
+
+## Building
+
+Requires Java 21.
+
+```
+./gradlew build
+```
+
+The mod jar is written to `build/libs/`.
+
+## Credits
+
+- **FishonMC-Extras-R** by DannyPX and contributors (GPL-3.0): the base of this mod.
+- **FOECollab** by Kimberlyow and contributors (AGPL-3.0): many features were ported; see [CREDITS-FOECollab.md](CREDITS-FOECollab.md) for the list.
+- **FishOnAutotip** by Kimberlyow (GPL-3.0): Auto Tip.
 
 ## License
-This project is licensed under the GNU General Public License v3.0.
-See [LICENSE](https://github.com/DannyPX/FishOnMC-Extras-R/blob/1.21.4/LICENSE) for full terms.
 
-**Disclaimer**: Not affilliated with Mojang, Microsoft or the FishOnMC Server. This is a player made mod.
+FOE+ contains code under the GNU GPL-3.0 (from FOE-R and FishOnAutotip) and the GNU AGPL-3.0 (from FOECollab).
+GPL-3.0 section 13 allows combining them; the combined work is distributed under the terms of the
+**GNU Affero General Public License v3.0** ([LICENSE-AGPL-3.0](LICENSE-AGPL-3.0)), and the original GPL-3.0 text is kept in [LICENSE](LICENSE).
+
+**Disclaimer:** Not affiliated with Mojang, Microsoft or the FishOnMC server. This is a player-made mod.
