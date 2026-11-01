@@ -52,6 +52,6 @@ The mod jar is written to `build/libs/`.
 
 FOE+ contains code under the GNU GPL-3.0 (from FOE-R and FishOnAutotip) and the GNU AGPL-3.0 (from FOECollab).
 GPL-3.0 section 13 allows combining them; the combined work is distributed under the terms of the
-**GNU Affero General Public License v3.0** ([LICENSE-AGPL-3.0](LICENSE-AGPL-3.0)), and the original GPL-3.0 text is kept in [LICENSE](LICENSE).
+**GNU Affero General Public License v3.0** ([LICENSE-AGPL-3.0](LICENSE-AGPL-3.0)), and FOE-R's original GPL-3.0 [LICENSE](LICENSE) file is kept.
 
 **Disclaimer:** Not affiliated with Mojang, Microsoft or the FishOnMC server. This is a player-made mod.
