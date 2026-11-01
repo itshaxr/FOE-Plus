@@ -2,16 +2,20 @@
 	"schemaVersion": 1,
 	"id": "fishonmcextras",
 	"version": "${version}",
-	"name": "FishOnMCExtras",
-	"description": "FishOnMC-Extras-Reborn/Rework/Rebirth. Ultimately a new FoE mod from scratch. Clutter free, modern code, easy to contribute and no stress on server updates",
+	"name": "FOE+",
+	"description": "FOE+: FishOnMC-Extras-R with the features of FOECollab and FishOnAutotip merged in. A quality-of-life mod for play.fishonmc.net.",
 	"authors": [
 		"DannyPX"
+	],
+	"contributors": [
+		"FOECollab contributors (Kimberlyow)",
+		"FishOnAutotip (Kimberlyow)"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"license": "CC0-1.0",
+	"license": "AGPL-3.0",
 	"icon": "assets/fishonmcextras/icon.png",
 	"environment": "*",
 	"entrypoints": {
