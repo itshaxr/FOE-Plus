@@ -85,19 +85,17 @@ public final class HudLayout {
         Rect start = clamp(wanted, screenW, screenH);
         if (firstHit(start, taken) == null) return start;
 
-        // 1. Away from the anchored edge (down for top boxes, up for bottom boxes).
-        Rect r = pushVertical(start, !fromBottom, screenH, taken);
+        // 1. Same x, the closest free height above or below: the box keeps its place and only
+        //    moves up or down as little as it takes to clear what's in the way.
+        Rect r = nearestVertical(start, fromBottom, screenH, taken);
         if (r != null) return r;
-        // 2. Sideways, towards the middle of the screen.
+        // 2. No free height in this column: sideways, towards the middle of the screen.
         r = pushHorizontal(start, !fromRight, screenW, taken);
         if (r != null) return r;
-        // 3. The other vertical direction.
-        r = pushVertical(start, fromBottom, screenH, taken);
-        if (r != null) return r;
-        // 4. The other sideways direction.
+        // 3. The other sideways direction.
         r = pushHorizontal(start, fromRight, screenW, taken);
         if (r != null) return r;
-        // 5. Crowded screen: the free spot nearest to where the box wants to be.
+        // 4. Crowded screen: the free spot nearest to where the box wants to be.
         r = nearestFreeSpot(start, screenW, screenH, taken);
         if (r != null) return r;
         // No free spot big enough (tiny window or huge boxes): stay on screen at least.
@@ -133,14 +131,29 @@ public final class HudLayout {
         return Math.min(value + step, max);
     }
 
-    private static Rect pushVertical(Rect r, boolean down, int screenH, List<Rect> taken) {
-        for (int i = 0; i < MAX_STEPS; i++) {
-            Rect hit = firstHit(r, taken);
-            if (hit == null) return r;
-            r = r.withY(down ? hit.bottom() + GAP : hit.y() - GAP - r.h());
-            if (r.y() < 0 || r.bottom() > screenH) return null;
+    /**
+     * The free position with the same x whose height is closest to {@code r}'s. The closest free
+     * height is always right under or right over one of the boxes in this column, so only those
+     * heights are tried. On a tie it moves away from its anchored edge (down for top boxes).
+     */
+    private static Rect nearestVertical(Rect r, boolean fromBottom, int screenH, List<Rect> taken) {
+        Rect best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (Rect t : taken) {
+            if (!(r.x() < t.right() + GAP && t.x() < r.right() + GAP)) continue; // not in this column
+            for (int y : new int[]{t.bottom() + GAP, t.y() - GAP - r.h()}) {
+                if (y < 0 || y + r.h() > screenH) continue;
+                int distance = Math.abs(y - r.y());
+                boolean awayFromEdge = fromBottom ? y < r.y() : y > r.y();
+                if (distance > bestDistance) continue;
+                if (distance == bestDistance && !awayFromEdge) continue;
+                Rect candidate = r.withY(y);
+                if (firstHit(candidate, taken) != null) continue;
+                best = candidate;
+                bestDistance = distance;
+            }
         }
-        return null;
+        return best;
     }
 
     private static Rect pushHorizontal(Rect r, boolean right, int screenW, List<Rect> taken) {

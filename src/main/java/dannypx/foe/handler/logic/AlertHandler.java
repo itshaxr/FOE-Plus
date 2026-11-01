@@ -202,7 +202,44 @@ public class AlertHandler {
     }
 
     public int gameMinute() {
-        return testMinute != null ? testMinute.getAsInt() : parseGameMinutes(BossEventHandler.instance().getTime().getString());
+        if (testMinute != null) return testMinute.getAsInt(); // tests drive the clock directly
+        return filterMinute(parseGameMinutes(BossEventHandler.instance().getTime().getString()), now());
+    }
+
+    /// The boss bar can show a wrong time for a moment (a glitched update read as midnight made the
+    /// Witching Hour pop up at noon). A reading that jumps more than a few in-game minutes from the
+    /// trusted one is only believed once it has held, still moving normally, for a few seconds.
+    static final long JUMP_CONFIRM_MS = 3_000L;
+    private static final int NORMAL_STEP_MINUTES = 30;
+    private int trustedMinute = -1;
+    private int jumpMinute = -1;
+    private long jumpSince = 0L;
+
+    int filterMinute(int raw, long now) {
+        if (raw < 0) return trustedMinute;
+        if (trustedMinute < 0 || isNormalStep(trustedMinute, raw)) {
+            trustedMinute = raw;
+            jumpMinute = -1;
+            return raw;
+        }
+        // A jump: keep the trusted time until the new one has held for a while.
+        if (jumpMinute < 0 || !isNormalStep(jumpMinute, raw)) {
+            jumpMinute = raw;
+            jumpSince = now;
+        } else {
+            jumpMinute = raw;
+            if (now - jumpSince >= JUMP_CONFIRM_MS) {
+                trustedMinute = raw;
+                jumpMinute = -1;
+                return raw;
+            }
+        }
+        return trustedMinute;
+    }
+
+    /// Same minute or a little later (the clock moves forward a few minutes at a time).
+    private static boolean isNormalStep(int from, int to) {
+        return Math.floorMod(to - from, 1440) <= NORMAL_STEP_MINUTES;
     }
 
     /// Clock and boss bar time, swappable in tests.
@@ -551,6 +588,9 @@ public class AlertHandler {
         for (Active active : active()) {
             current.add(active.alert());
             if (announced.contains(active.alert())) continue;
+            // Only announce once it has really started (held for a moment), never for a blip.
+            long since = activeSince.computeIfAbsent(active.alert(), a -> now);
+            if (now - since < ANNOUNCE_AFTER_MS) continue;
             announced.add(active.alert());
             if (Configs.hudConfig.alertChat.get()) {
                 // [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · ~2:10 left
@@ -568,7 +608,11 @@ public class AlertHandler {
             }
         }
         announced.retainAll(current);
+        activeSince.keySet().retainAll(current);
     }
+
+    private static final long ANNOUNCE_AFTER_MS = 2_000L;
+    private final java.util.Map<Alert, Long> activeSince = new java.util.EnumMap<>(Alert.class);
 
     //region Text helpers
     public static String locationName(FoeLocations.Location location) {
