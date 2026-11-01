@@ -73,6 +73,7 @@ public class StatsDataHandler extends Handler {
         if(statsData.fishData == null) statsData.fishData = new HashMap<>();
         if(statsData.petData == null) statsData.petData = new HashMap<>();
         if(statsData.itemData == null) statsData.itemData = new HashMap<>();
+        if(statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
 
         if(statsData.questItemData == null) statsData.questItemData = new HashMap<>();
         if(statsData.questPetData == null) statsData.questItemData = new HashMap<>();
@@ -212,6 +213,26 @@ public class StatsDataHandler extends Handler {
         return Pair.of(item, statsData.fishTotal - itemStat.caughtOn());
     }
 
+    /// A rare pull announced in chat ("RARE CATCH! You pulled 1x Infusion Capsule"), keyed like
+    /// "infusion_capsule". Returns the dry streak (fish since the last one), or -1 when this is the
+    /// first one this install has seen.
+    public int onRareCatch(String key, int count) {
+        if (statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
+        Stat<Integer, Integer> old = statsData.rareCatchData.get(key);
+        int streak = old == null || old.caughtOn() == null ? -1 : Math.max(0, statsData.fishTotal - old.caughtOn());
+        int amount = (old == null || old.amount() == null ? 0 : old.amount()) + Math.max(1, count);
+        statsData.rareCatchData.put(key, Stat.of(amount, statsData.fishTotal));
+        markStreakKnown("rare:" + key);
+        this.needsUpdate = true;
+        return streak;
+    }
+
+    /// Fish since the last rare pull of this kind, or -1 if none has been seen (or set by hand).
+    public int rareCatchStreak(String key) {
+        Stat<Integer, Integer> stat = statsData.rareCatchData == null ? null : statsData.rareCatchData.get(key);
+        return stat == null || stat.caughtOn() == null ? -1 : Math.max(0, statsData.fishTotal - stat.caughtOn());
+    }
+
     public void setQuestItem(TagObject item, int count) {
         this.updateQuestItemData(statsData, item.getType(), count);
         ConstantDataHandler.instance().updateItemData(item.getType(), item.getItemStack());
@@ -256,6 +277,15 @@ public class StatsDataHandler extends Handler {
 
     /// Sets a dry streak by hand (from the O menu), keeping the count.
     public void setStreakManually(String set, String category, String field, int dryStreak) {
+        if (set.equals("rare")) {
+            if (statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
+            Stat<Integer, Integer> stat = statsData.rareCatchData.get(field);
+            int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
+            statsData.rareCatchData.put(field, Stat.of(amount, statsData.fishTotal - Math.max(0, dryStreak)));
+            markStreakKnown("rare:" + field);
+            this.needsUpdate = true;
+            return;
+        }
         Map<String, Map<String, Stat<Integer, Integer>>> target = set.equals("pet") ? statsData.petData : statsData.fishData;
         Map<String, Stat<Integer, Integer>> fields = target.computeIfAbsent(category, k -> new HashMap<>());
         Stat<Integer, Integer> stat = fields.get(field);
@@ -387,6 +417,10 @@ public class StatsDataHandler extends Handler {
          * Other items
          */
         public Map<String, Stat<Integer, Integer>> itemData = new HashMap<>();
+
+        /// Rare pulls announced in chat ("RARE CATCH! You pulled 1x Infusion Capsule"), keyed like
+        /// "infusion_capsule": how many and the fish count at the last one (for the dry streak)
+        public Map<String, Stat<Integer, Integer>> rareCatchData = new HashMap<>();
 
         /// QUESTS
 

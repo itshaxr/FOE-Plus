@@ -72,6 +72,14 @@ public class StatsPanelElement extends PanelElement {
         lines.add(join(label("ꞯᴜᴇѕᴛѕ: "), white(String.valueOf(stats.questsCompleted))));
         lines.add(join(label("ᴘᴇᴛѕ: "), white(String.valueOf(stats.petTotal))));
         lines.add(join(label("ѕʜᴀʀᴅѕ: "), white(String.valueOf(shards))));
+        // Infusion Capsules (counted from the server's RARE CATCH line) with their dry streak.
+        if (Configs.hudConfig.statsPanelShowCapsules.get()) {
+            StatsDataHandler.Stat<Integer, Integer> capsules = stats.rareCatchData == null ? null : stats.rareCatchData.get("infusion_capsule");
+            int amount = capsules == null || capsules.amount() == null ? 0 : capsules.amount();
+            int dryStreak = StatsDataHandler.instance().rareCatchStreak("infusion_capsule");
+            lines.add(join(label("ᴄᴀᴘѕᴜʟᴇѕ: "), white(amount + " "),
+                    Component.literal("(" + (dryStreak < 0 ? "?" : String.valueOf(dryStreak)) + ")").withStyle(ChatFormatting.DARK_GRAY)));
+        }
         lines.add(Component.empty());
 
         Map<String, StatsDataHandler.Stat<Integer, Integer>> rarities = stats.fishData.getOrDefault(TagObject.RARITY, Map.of());

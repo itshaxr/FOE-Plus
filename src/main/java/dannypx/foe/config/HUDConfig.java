@@ -182,6 +182,10 @@ public class HUDConfig extends Config {
     @Desc("§7The fish and your Gigantic dry streak, in chat")
     public ValidatedBoolean showGiganticCatchChat = new ValidatedBoolean(true);
 
+    @Name("Chat message when you pull an Infusion Capsule")
+    @Desc("§7The capsule and your Infusion Capsule dry streak, in chat")
+    public ValidatedBoolean showInfusionCapsuleChat = new ValidatedBoolean(true);
+
     @Name("Chat message when you pull a pet")
     @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
     public ValidatedBoolean showPetCatchChat = new ValidatedBoolean(true);
@@ -336,6 +340,10 @@ public class HUDConfig extends Config {
 
     @Name("Show gigantic fish")
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
+
+    @Name("Show Infusion Capsules")
+    @Desc("§7How many you've pulled, with your dry streak in brackets")
+    public ValidatedBoolean statsPanelShowCapsules = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Scale")

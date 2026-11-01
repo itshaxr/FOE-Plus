@@ -45,7 +45,11 @@ public class DryStreakEditScreen extends Screen {
             new Entry("variant", "melanistic", badge("")),
             new Entry("variant", "trophy", badge("")),
             new Entry("variant", "fabled", badge("")),
-            new Entry("size", "gigantic", StatsPanelElement.GIGANTIC_BADGE));
+            new Entry("size", "gigantic", StatsPanelElement.GIGANTIC_BADGE),
+            new Entry("rare", "infusion_capsule", Component.literal("Infusion Capsule").withStyle(ChatFormatting.AQUA)));
+
+    /// Rows in the taller of the two panels.
+    private static final int ROWS = Math.max(5, Math.max(RARITIES.size(), SPECIAL.size()));
 
     private static Component badge(String glyph) {
         return Component.literal(glyph).withStyle(ChatFormatting.WHITE);
@@ -59,12 +63,12 @@ public class DryStreakEditScreen extends Screen {
     @Override
     protected void init() {
         int contentW = (PANEL_W + PAD * 2) * 2 + GAP;
-        int contentH = 14 + 10 + 14 + PAD + 5 * ROW + PAD + 8 + H;
+        int contentH = 14 + 10 + 14 + PAD + ROWS * ROW + PAD + 8 + H;
         leftX = (width - contentW) / 2 + PAD;
         rightX = leftX + PANEL_W + PAD + GAP + PAD;
         top = Math.max(6, (height - contentH) / 2);
         tableY = top + 14 + 10 + 14 + PAD;
-        panelBottom = tableY + 5 * ROW - 2 + PAD;
+        panelBottom = tableY + ROWS * ROW - 2 + PAD;
 
         int y = tableY;
         for (Entry entry : RARITIES) {
@@ -82,6 +86,7 @@ public class DryStreakEditScreen extends Screen {
     }
 
     private static int currentStreak(Entry entry) {
+        if (entry.category().equals("rare")) return StatsDataHandler.instance().rareCatchStreak(entry.field());
         StatsDataHandler.StatsDataModel data = StatsDataHandler.instance().getStatsData();
         StatsDataHandler.Stat<Integer, Integer> stat = data.fishData.getOrDefault(entry.category(), Map.of()).get(entry.field());
         if (stat == null || stat.caughtOn() == null) return data.fishTotal;
@@ -92,13 +97,15 @@ public class DryStreakEditScreen extends Screen {
         EditBox box = new EditBox(this.font, x, y, BOX_W, H, Component.literal("Dry streak"));
         box.setMaxLength(9);
         box.setFilter(text -> text.matches("\\d*"));
-        box.setValue(String.valueOf(currentStreak(entry)));
+        int current = currentStreak(entry);
+        box.setValue(current < 0 ? "" : String.valueOf(current));
+        if (current < 0) box.setHint(Component.literal("not tracked yet").withStyle(ChatFormatting.DARK_GRAY));
         box.setTooltip(Tooltip.create(Component.literal("Fish since your last one. Type a number to set it.")));
         box.setResponder(text -> {
             if (text.isEmpty()) return;
             try {
                 int value = Integer.parseInt(text);
-                StatsDataHandler.instance().setStreakManually("fish", entry.category(), entry.field(), value);
+                StatsDataHandler.instance().setStreakManually(entry.category().equals("rare") ? "rare" : "fish", entry.category(), entry.field(), value);
                 box.setTextColor(0xFFE0E0E0);
             } catch (NumberFormatException e) {
                 box.setTextColor(0xFFFF5555);

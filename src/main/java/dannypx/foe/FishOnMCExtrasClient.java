@@ -111,6 +111,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
 
     private void receiveGameMessage(Component message, boolean overlay) {
         ChatHandler.instance().onReceiveMessage(message);
+        if (!overlay) dannypx.foe.handler.logic.RareCatchHandler.onGameMessage(message.getString());
     }
 
     private String modifyChatMessage(String text) {
