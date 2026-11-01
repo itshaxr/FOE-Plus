@@ -7,6 +7,8 @@ plus new features of its own.
 
 Press **O** in game to open the FOE+ menu.
 
+**[See the full feature list →](FEATURES.md)**
+
 ## Features
 
 **HUD panels** (move, anchor and resize them in *O → Move HUD Elements*; they never leave the screen or cover each other)
