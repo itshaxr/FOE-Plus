@@ -24,7 +24,7 @@ Panels always stay on screen, and they push each other aside so they never overl
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count. Refreshes automatically when you change location. |
 | **Pet** | Your equipped pet and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
-| **Alerts** | Active and upcoming cryptid windows with live timers, plus the last Fabled event. |
+| **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Its text is centred and it stays where you put it. |
 | **Top bar** | Wallet and other key info in one clean bar. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
@@ -48,7 +48,7 @@ The Alerts panel and chat tell you when a rare catch is possible and how long th
 | **Garaboncias** (Concoction / Essence) | Danube River | During a rainbow | 1 in 250 |
 | **Fabled event** | Announced in chat | Until someone catches it | — |
 
-- **Fabled tracker:** starts when the event appears in chat and ends when the fish is caught. FOE+ tells you who caught it and how long it lasted, and remembers the last event (for example "2:05 PM – 2:09 PM, caught by Steve").
+- **Fabled tracker:** starts when the event appears in chat and ends when the fish is caught, and FOE+ tells you who caught it.
 - **Moon timer:** counts down to the next moon on its 2 h 40 min cycle, and re-syncs itself every time a moon starts.
 - **Optional:** chat lines, sounds, "only alerts for where I am", and how far ahead to show upcoming windows.
 
@@ -64,7 +64,7 @@ All FOE+ messages share one clean style, starting with a bold **[FOE+]** tag:
 [FOE+] GIGANTIC Walleye · Dry streak 5,321
 [FOE+] RARE CATCH! Infusion Capsule · Dry streak 2,410
 [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · 2:10 left
-[FOE+] FABLED CAUGHT Danube River · by Steve · 2:05 PM - 2:09 PM, 4:12
+[FOE+] FABLED CAUGHT Danube River · by Steve
 [FOE+] WRONG PET Eagle Pet · Danube River needs a Wolf Pet (in inventory)
 [FOE+] CONTEST New personal best · Rank #4 · 8.0 lb
 ```

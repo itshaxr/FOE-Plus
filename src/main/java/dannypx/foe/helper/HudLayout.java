@@ -52,7 +52,16 @@ public final class HudLayout {
         placed.clear();
         screenW = screenWidth;
         screenH = screenHeight;
+        previousFrame = currentFrame;
+        currentFrame = new ArrayList<>();
     }
+
+    /// One placement: what was asked, what was already on screen, and where it went. Frames are
+    /// nearly always the same as the one before, so a placement is reused when nothing changed
+    /// and the (sometimes slow) search only runs when a box really moves or changes size.
+    private record Placement(Rect wanted, boolean fromBottom, boolean fromRight, int screenW, int screenH, List<Rect> taken, Rect result) {}
+    private List<Placement> previousFrame = new ArrayList<>();
+    private List<Placement> currentFrame = new ArrayList<>();
 
     /// A fixed area other boxes must stay out of (it is never moved).
     public void reserve(Rect rect) {
@@ -69,7 +78,17 @@ public final class HudLayout {
      * top moves down past whatever is in the way, one at the bottom moves up).
      */
     public Rect place(Rect wanted, boolean fromBottom, boolean fromRight) {
-        Rect result = resolve(wanted, fromBottom, fromRight, screenW, screenH, placed);
+        int index = currentFrame.size();
+        Rect result = null;
+        if (index < previousFrame.size()) {
+            Placement last = previousFrame.get(index);
+            if (last.wanted().equals(wanted) && last.fromBottom() == fromBottom && last.fromRight() == fromRight
+                    && last.screenW() == screenW && last.screenH() == screenH && last.taken().equals(placed)) {
+                result = last.result();
+            }
+        }
+        if (result == null) result = resolve(wanted, fromBottom, fromRight, screenW, screenH, placed);
+        currentFrame.add(new Placement(wanted, fromBottom, fromRight, screenW, screenH, List.copyOf(placed), result));
         placed.add(result);
         return result;
     }

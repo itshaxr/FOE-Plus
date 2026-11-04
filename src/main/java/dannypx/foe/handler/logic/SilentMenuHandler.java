@@ -15,12 +15,16 @@ import java.util.List;
 public class SilentMenuHandler {
     private static SilentMenuHandler INSTANCE = new SilentMenuHandler();
 
-    /// Never ask more often than this.
-    private static final long MIN_GAP_MS = 5_000L;
+    /// Never ask more often than this. Every read opens a menu on the server for a moment, and
+    /// while it is open the server ignores clicks and casting, so reads are kept rare.
+    private static final long MIN_GAP_MS = 60_000L;
+    /// Nor within this long of your last catch or cast (you're fishing: don't get in the way).
+    private static final long QUIET_AFTER_FISHING_MS = 20_000L;
+    private long lastFishingSeen = 0L;
     /// How long to wait for the server to answer /menu.
     private static final long ANSWER_MS = 4_000L;
-    /// A request that couldn't run (you were in a menu the whole time) is dropped after this.
-    private static final long GIVE_UP_MS = 60_000L;
+    /// A request that couldn't run (you were busy the whole time) waits up to this long.
+    private static final long GIVE_UP_MS = 10 * 60_000L;
 
     private long dueAt = 0L;
     private long lastRequest = 0L;
@@ -72,6 +76,7 @@ public class SilentMenuHandler {
         // The server never sent the contents: close the menu anyway.
         if (containerId != -1 && now - openedAt > ANSWER_MS) close(mc);
         if (mc.screen != null) lastScreenSeen = now;
+        if (mc.player.fishing != null) lastFishingSeen = now;
 
         if (dueAt == 0L || now < dueAt) return;
         if (now - dueAt > GIVE_UP_MS) {
@@ -80,6 +85,7 @@ public class SilentMenuHandler {
         }
         if (mc.screen != null || containerId != -1 || now <= expectMenuUntil || now - lastRequest < MIN_GAP_MS) return;
         if (now - lastUserActivity < QUIET_AFTER_ACTIVITY_MS || now - lastScreenSeen < QUIET_AFTER_SCREEN_MS) return;
+        if (now - lastFishingSeen < QUIET_AFTER_FISHING_MS) return;
         dueAt = 0L;
         lastRequest = now;
         expectMenuUntil = now + ANSWER_MS;
@@ -93,13 +99,14 @@ public class SilentMenuHandler {
     }
 
     /// From the packet listener: true when this menu is our silent /menu and must not open.
-    /// A menu titled like the main menu is ours; any other one only when you haven't sent a
-    /// command of your own in the meantime (then it's yours, e.g. /s, and opens normally).
+    /// Only a menu titled exactly like the main menu is ever held back. Any other menu (the
+    /// Auction House from an NPC, /s, a crate) always opens: hiding it left the server thinking
+    /// it was open, so clicks, casting and NPCs stopped working until another menu was opened.
     public boolean onOpenScreen(int id, String title) {
         Minecraft mc = Minecraft.getInstance();
         if (System.currentTimeMillis() > expectMenuUntil || mc.screen != null) return false;
-        boolean mainMenu = DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER.equals(title);
-        if (!mainMenu && userCommandDuringWait) return false;
+        if (!DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER.equals(title)) return false;
+        if (userCommandDuringWait) return false; // you asked for /menu yourself: show it
         expectMenuUntil = 0L;
         containerId = id;
         openedAt = System.currentTimeMillis();

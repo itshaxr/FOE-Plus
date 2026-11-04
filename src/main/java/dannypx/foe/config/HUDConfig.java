@@ -445,9 +445,6 @@ public class HUDConfig extends Config {
     @Name("Fabled events (any location)")
     public ValidatedBoolean alertFabled = new ValidatedBoolean(true);
 
-    @Name("Show the last Fabled event (times, place, who caught it)")
-    public ValidatedBoolean alertShowLastFabled = new ValidatedBoolean(true);
-
     @Name("Only alerts for the location you're at")
     public ValidatedBoolean alertsOnlyHere = new ValidatedBoolean(false);
 

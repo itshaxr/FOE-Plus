@@ -69,14 +69,6 @@ public class AlertPanelElement extends PanelElement {
             }
             if (Configs.hudConfig.alertShowDrops.get()) lines.add(Component.literal(alert.drop).withStyle(ChatFormatting.DARK_GRAY));
         }
-        // The most recent Fabled event, when one isn't going on right now.
-        AlertHandler.FabledRecord last = alerts.lastFabled();
-        if (last != null && !alerts.isFabledActive() && Configs.hudConfig.alertFabled.get() && Configs.hudConfig.alertShowLastFabled.get()) {
-            if (!lines.isEmpty()) lines.add(Component.empty());
-            lines.add(join(label("ʟᴀѕᴛ ꜰᴀʙʟᴇᴅ: "), Component.literal(AlertHandler.fabledSpan(last)).withStyle(ChatFormatting.WHITE)));
-            lines.add(join(Component.literal(last.location().isEmpty() ? "?" : last.location()).withStyle(ChatFormatting.AQUA),
-                    label(" · ᴄᴀᴜɢʜᴛ ʙʏ "), Component.literal(last.catcher()).withStyle(ChatFormatting.WHITE)));
-        }
         int ahead = Configs.hudConfig.alertUpcomingMinutes.get();
         if (ahead > 0) {
             List<AlertHandler.Upcoming> soon = alerts.upcoming(ahead * 60_000L);

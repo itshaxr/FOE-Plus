@@ -16,7 +16,7 @@ Press **O** in game to open the FOE+ menu.
 - Daily Quests: exact progress after every catch.
 - All-Time Stats: fish, fish/hour, fish time, rarities, Gigantic and variants with dry streaks.
 - Quests, Pet (with held item), Bait, Luck & Scale (read from your /menu profile, boosters included).
-- Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers. Remembers the last Fabled event.
+- Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers.
 - Warning box: wrong pet for the location (names the right one), wrong armor climate, inventory almost full. Hide it with `-` until you move.
 - Top bar, equipment bar, catch popup, moon timer (inventory screen).
 

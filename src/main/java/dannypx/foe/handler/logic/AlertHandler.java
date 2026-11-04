@@ -411,14 +411,12 @@ public class AlertHandler {
     private void announceFabledCaught(FabledRecord record) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null || !Configs.hudConfig.alertChat.get() || !Configs.hudConfig.alertFabled.get()) return;
-        // [FOE+] FABLED CAUGHT Danube River · by Steve · 2:05 PM - 2:09 PM, 4:12
+        // [FOE+] FABLED CAUGHT Danube River · by Steve
         net.minecraft.network.chat.MutableComponent line = dannypx.foe.helper.FoeChat.line("FABLED CAUGHT", Alert.FABLED.color)
                 .append(dannypx.foe.helper.FoeChat.place(record.location().isEmpty() ? "Unknown location" : record.location()))
                 .append(dannypx.foe.helper.FoeChat.sep())
                 .append(dannypx.foe.helper.FoeChat.text("by "))
-                .append(dannypx.foe.helper.FoeChat.white(record.catcher()))
-                .append(dannypx.foe.helper.FoeChat.sep())
-                .append(dannypx.foe.helper.FoeChat.text(fabledSpan(record)));
+                .append(dannypx.foe.helper.FoeChat.white(record.catcher()));
         dannypx.foe.helper.FoeChat.send(line);
     }
 
@@ -515,6 +513,9 @@ public class AlertHandler {
                 }
             }
         }
+        // Bessie during a moon that falls in her 4-6 AM window: one Bessie line, with the moon's
+        // better odds (1/500), not two.
+        if (out.stream().anyMatch(a -> a.alert() == Alert.BESSIE_MOON)) out.removeIf(a -> a.alert() == Alert.BESSIE_NIGHT);
         return out;
     }
 

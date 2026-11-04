@@ -82,6 +82,11 @@ public abstract class PanelElement extends Element {
     protected void beforeLine(GuiGraphics guiGraphics, Font font, Component line, int x, int y) {
     }
 
+    private static final long LINES_REFRESH_NS = 50_000_000L;
+    private List<Component> cachedLines = null;
+    private long cachedAtNs = 0L;
+    private int cachedOuterWidth = 0, cachedOuterHeight = 0;
+
     private static final int ICON_SIZE = 18;
     private static final int ICON_GAP = 3;
 
@@ -137,15 +142,25 @@ public abstract class PanelElement extends Element {
             alignment = configAlignment();
         }
 
-        List<Component> lines = this.buildLines();
-        this.updateSize(lines, font);
+        // The text is rebuilt 20 times a second (as often as the game updates), not every frame:
+        // at high frame rates building and measuring every panel's lines each frame cost a lot.
+        long nowNs = System.nanoTime();
+        if (cachedLines == null || nowNs - cachedAtNs >= LINES_REFRESH_NS) {
+            cachedLines = this.buildLines();
+            cachedOuterWidth = outerWidth(cachedLines, font);
+            cachedOuterHeight = outerHeight(cachedLines, font);
+            cachedAtNs = nowNs;
+        }
+        List<Component> lines = cachedLines;
+        float scale = scale();
+        this.width = Math.round(cachedOuterWidth * scale);
+        this.height = Math.round(cachedOuterHeight * scale);
         if (lines.isEmpty()) return;
 
-        float scale = scale();
         int screenWidth = (int) (minecraft.getWindow().getGuiScaledWidth() / scale);
         int screenHeight = (int) (minecraft.getWindow().getGuiScaledHeight() / scale);
-        int outerWidth = outerWidth(lines, font);
-        int outerHeight = outerHeight(lines, font);
+        int outerWidth = cachedOuterWidth;
+        int outerHeight = cachedOuterHeight;
 
         boolean right = alignment == Alignment.TOP_RIGHT || alignment == Alignment.BOTTOM_RIGHT || alignment == Alignment.RIGHT;
         boolean bottom = alignment == Alignment.BOTTOM_LEFT || alignment == Alignment.BOTTOM_RIGHT || alignment == Alignment.BOTTOM;

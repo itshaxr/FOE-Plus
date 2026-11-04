@@ -22,10 +22,26 @@ import net.minecraft.world.item.component.CustomData;
 public class ItemStackHelper {
     private static final GsonBuilder gson = new GsonBuilder();
 
+    /// The item's custom data. Every item on screen is checked several times a frame (rarity
+    /// marker, stack count, pet markers...), and copying its data each time made menus full of
+    /// items very slow, so one copy is kept per data object (they never change; a changed item
+    /// gets a new one). The returned tag is shared: read it, never modify it.
     public static CompoundTag getTag(ItemStack stack) {
         CustomData component = stack.get(DataComponents.CUSTOM_DATA);
-        return component != null ? component.copyTag() : new CompoundTag();
+        if (component == null) return new CompoundTag();
+        synchronized (TAG_CACHE) {
+            CompoundTag cached = TAG_CACHE.get(component);
+            if (cached != null) return cached;
+            if (TAG_CACHE.size() >= TAG_CACHE_MAX) TAG_CACHE.clear();
+            CompoundTag copy = component.copyTag();
+            TAG_CACHE.put(component, copy);
+            return copy;
+        }
     }
+
+    private static final int TAG_CACHE_MAX = 4096;
+    /// Keyed by identity: comparing custom data by value would walk the whole tag every lookup.
+    private static final java.util.Map<CustomData, CompoundTag> TAG_CACHE = new java.util.IdentityHashMap<>();
 
     public static ItemStack jsonToItemStack(String json) {
         return ItemStack.CODEC

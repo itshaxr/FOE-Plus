@@ -120,6 +120,8 @@ public class DailyQuestHandler {
                 && dannypx.foe.config.Configs.hudConfig.dailyQuestAutoRefresh.get();
     }
 
+    /// Catches are counted on the panel straight away; the real numbers from /menu are only
+    /// fetched now and then (when you've stopped fishing for a bit), never after every catch.
     private static void requestRefresh() {
         if (autoRefreshOn()) SilentMenuHandler.instance().request(AFTER_CATCH_DELAY_MS);
     }
