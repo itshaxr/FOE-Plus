@@ -43,12 +43,6 @@ public class ChangelogFetcherHandler extends Handler {
         this.needsUpdate = needsUpdate;
     }
 
-    private static final String API_URL = "https://api.modrinth.com/v2/project/" + FishOnMCExtras.SLUG + "/version";
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
-
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
 
     private volatile List<ChangelogEntry> entries;
@@ -147,35 +141,40 @@ public class ChangelogFetcherHandler extends Handler {
             return;
         }
 
-        LoggerHandler.info("Fetch changelog from Modrinth");
-
+        // FOE+'s changelog ships inside the mod (assets/fishonmcextras/changelog.json), so it
+        // always matches the version you have. It used to be FOE-R's, downloaded from Modrinth.
         this.fetching = true;
         this.error = null;
+        try (java.io.InputStream in = ChangelogFetcherHandler.class.getResourceAsStream(CHANGELOG_RESOURCE)) {
+            if (in == null) {
+                this.finishWithError("Changelog missing from the mod");
+                return;
+            }
+            String json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            this.finishWithSuccess(parseBundled(json));
+        } catch (Exception e) {
+            this.finishWithError("Couldn't read the changelog: " + e.getMessage());
+        }
+    }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
-                .header("User-Agent", "fishonmcextras/changelog-fetcher")
-                .timeout(Duration.ofSeconds(10))
-                .GET()
-                .build();
+    private static final String CHANGELOG_RESOURCE = "/assets/" + FishOnMCExtras.MOD_ID + "/changelog.json";
 
-        this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> {
-                    if (response.statusCode() != 200) {
-                        this.finishWithError("Modrinth returned HTTP " + response.statusCode());
-                        return;
-                    }
-                    try {
-                        List<ChangelogEntry> parsed = parseChangelog(response.body());
-                        this.finishWithSuccess(parsed);
-                    } catch (Exception e) {
-                        this.finishWithError("Failed to parse response: " + e.getMessage());
-                    }
-                })
-                .exceptionally(throwable -> {
-                    this.finishWithError("Request failed: " + throwable.getMessage());
-                    return null;
-                });
+    /// {"entries": [{versionNumber, name, datePublished, changelog}, ...]}, newest first.
+    static List<ChangelogEntry> parseBundled(String json) {
+        List<ChangelogEntry> result = new ArrayList<>();
+        JsonArray array = JsonParser.parseString(json).getAsJsonObject().getAsJsonArray("entries");
+        if (array == null) return result;
+        for (JsonElement element : array) {
+            JsonObject obj = element.getAsJsonObject();
+            String changelog = getAsStringOrNull(obj, "changelog");
+            if (changelog == null || changelog.isBlank()) continue;
+            String versionNumber = getAsStringOrNull(obj, "versionNumber");
+            String name = getAsStringOrNull(obj, "name");
+            String date = getAsStringOrNull(obj, "datePublished");
+            result.add(new ChangelogEntry(versionNumber != null ? versionNumber : "unknown", name != null ? name : "",
+                    date != null ? date : "", changelog));
+        }
+        return result;
     }
 
     private void finishWithSuccess(List<ChangelogEntry> parsed) {
@@ -207,43 +206,6 @@ public class ChangelogFetcherHandler extends Handler {
         for (Listener listener : this.listeners) {
             listener.onChangelogUpdated();
         }
-    }
-
-    private List<ChangelogEntry> parseChangelog(String json) {
-        String currentVersion = FishOnMCExtras.getMinecraftVersion();
-
-        JsonArray array = JsonParser.parseString(json).getAsJsonArray();
-        List<ChangelogEntry> result = new ArrayList<>();
-        for (JsonElement el : array) {
-            JsonObject obj = el.getAsJsonObject();
-            String versionNumber = getAsStringOrNull(obj, "version_number");
-            String name = getAsStringOrNull(obj, "name");
-            String changelog = getAsStringOrNull(obj, "changelog");
-            String datePublished = getAsStringOrNull(obj, "date_published");
-            if (changelog == null || changelog.isBlank()) {
-                continue;
-            }
-
-            List<String> gameVersions = new ArrayList<>();
-            JsonElement gameVersionElement = obj.get("game_versions");
-            if (gameVersionElement != null && gameVersionElement.isJsonArray()) {
-                for (JsonElement gv : gameVersionElement.getAsJsonArray()) {
-                    gameVersions.add(gv.getAsString());
-                }
-            }
-
-            if (currentVersion != null && !gameVersions.isEmpty() && !gameVersions.contains(currentVersion)) {
-                continue;
-            }
-
-            result.add(new ChangelogEntry(
-                    versionNumber != null ? versionNumber : "unknown",
-                    name != null ? name : "",
-                    datePublished != null ? datePublished.substring(0, Math.min(10, datePublished.length())) : "",
-                    changelog
-            ));
-        }
-        return result;
     }
 
     private static String getAsStringOrNull(JsonObject obj, String key) {

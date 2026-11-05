@@ -1,0 +1,52 @@
+{
+  "entries": [
+    {
+      "versionNumber": "1.0.7+1.21.11",
+      "name": "FOE+ 1.0.7+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- The changelog now shows FOE+'s own updates by @phckd\n- Fix \"Wait 5 seconds.\" in chat: background commands keep 6 s away from yours and from each other by @phckd\n- If the server still says to wait, FOE+ hides that line and tries again after the wait by @phckd"
+    },
+    {
+      "versionNumber": "1.0.6+1.21.11",
+      "name": "FOE+ 1.0.6+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Background commands (contest refresh, silent /menu) wait until no menu is open by @phckd\n- Contest refresh no longer runs while the Auction House or your inventory is open by @phckd\n- Fix FPS drops while fishing: the bobber light no longer rebuilds chunks every tick by @phckd"
+    },
+    {
+      "versionNumber": "1.0.5+1.21.11",
+      "name": "FOE+ 1.0.5+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Variant and Gigantic chat lines start with \"You caught\" by @phckd"
+    },
+    {
+      "versionNumber": "1.0.4+1.21.11",
+      "name": "FOE+ 1.0.4+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Variant chat lines always show the variant badge instead of the word by @phckd"
+    },
+    {
+      "versionNumber": "1.0.3+1.21.11",
+      "name": "FOE+ 1.0.3+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Add a picture of the caught fish to Albino, Melanistic, Trophy, Fabled and Gigantic chat lines by @phckd"
+    },
+    {
+      "versionNumber": "1.0.2+1.21.11",
+      "name": "FOE+ 1.0.2+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Remove FOE-R's leftover variant chat line, so a variant catch posts one FOE+ line by @phckd"
+    },
+    {
+      "versionNumber": "1.0.1+1.21.11",
+      "name": "FOE+ 1.0.1+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Fix a memory leak that slowed the game down over long sessions and could crash it by @phckd\n- Bait and pet price sheets retry every 2 minutes when they can't load, instead of nonstop by @phckd"
+    },
+    {
+      "versionNumber": "1.0.0+1.21.11",
+      "name": "FOE+ 1.0.0+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- First FOE+ release, renamed from FOE-R (settings, stats and dry streaks carry over) by @phckd\n- Fix menus freezing, where you could move but clicks, casting and NPCs stopped working by @phckd\n- Fix FPS drops in menus and with many HUD panels by @phckd\n- Bessie shows once during a moon, with the moon odds by @phckd\n- Remove the Last Fabled record until it's reworked by @phckd\n- Infusion Capsule chat alert, dry streak and All-Time Stats row by @phckd\n- Witching Hour no longer pops up at noon by @phckd\n- HUD panels keep their spot and only move up or down to avoid another panel by @phckd\n- Alerts panel: Witching Hour, Titanoboa, Bessie, Rougarou, Garaboncias and Fabled events with timers by @phckd\n- Moon timer synced to the server's moon cycle by @phckd\n- Luck & Scale panel read from your /menu profile, boosters included by @phckd\n- Daily Quests panel updates on every catch by @phckd\n- Contest panel always shows the top 3, the fish you need, and updates on a new personal best by @phckd\n- Exact pet per location, with a wrong-pet warning you can hide with - by @phckd\n- Pet panel shows your pet's held item by @phckd\n- Chat lines for pet pulls, variants and Gigantic catches with dry streaks by @phckd\n- Import dry streaks and stats from old FOE and FOE-R installs, newer streaks are never overwritten by @phckd\n- Edit Dry Streaks screen in the O menu by @phckd\n- Personal Vault sorting by amount or rarity, and rank badges on locked pages by @phckd\n- Auto Tip with badges, Inspect always-on toggle, and a + after other FOE+ users' names by @phckd\n- New O menu with the FOE+ logo by @phckd\n\nFOE+ is built on FishonMC-Extras-R, with features from FOECollab and FishOnAutotip."
+    }
+  ]
+}

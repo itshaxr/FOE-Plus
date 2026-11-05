@@ -137,7 +137,15 @@ public class ContestTrackerHandler {
         hidingOutput = false;
         announcePersonalBest = personalBestRefresh || pendingPersonalBest;
         pendingPersonalBest = false;
+        SilentMenuHandler.instance().noteBackgroundCommand("contest");
         mc.getConnection().sendCommand("contest");
+    }
+
+    /// The server said to wait: try the refresh again after that (keeping a personal best to announce).
+    public void retryRefreshIn(long ms) {
+        pendingPersonalBest |= announcePersonalBest;
+        lastRefresh = 0L;
+        refreshDueAt = System.currentTimeMillis() + ms;
     }
 
     /// A personal-best refresh that had to wait still announces the new best when it runs.

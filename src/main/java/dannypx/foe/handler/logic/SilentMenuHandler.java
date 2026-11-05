@@ -36,7 +36,12 @@ public class SilentMenuHandler {
 
     /// Your own commands/chat: a background /menu is never sent right after you did something, so
     /// it can't collide with a menu you just asked for (like /s).
-    private static final long QUIET_AFTER_ACTIVITY_MS = 3_000L;
+    /// The server makes you wait 5 s between some commands ("Wait 5 seconds."), so background
+    /// commands keep at least this far from your own commands and from each other.
+    private static final long QUIET_AFTER_ACTIVITY_MS = 6_000L;
+    private static final long BACKGROUND_COMMAND_GAP_MS = 6_000L;
+    private long lastBackgroundCommandAt = 0L;
+    private String lastBackgroundCommand = "";
     /// …nor right after you closed a screen (or the chat box).
     private static final long QUIET_AFTER_SCREEN_MS = 1_500L;
     private long lastUserActivity = 0L;
@@ -68,7 +73,34 @@ public class SilentMenuHandler {
         long now = System.currentTimeMillis();
         if (mc.player == null || mc.getConnection() == null || mc.screen != null) return false;
         if (now - lastScreenSeen < QUIET_AFTER_SCREEN_MS || now - lastUserActivity < QUIET_AFTER_ACTIVITY_MS) return false;
+        if (now - lastBackgroundCommandAt < BACKGROUND_COMMAND_GAP_MS) return false;
         return containerId == -1 && now > expectMenuUntil;
+    }
+
+    /// Called just before a background command is sent.
+    public void noteBackgroundCommand(String command) {
+        lastBackgroundCommandAt = System.currentTimeMillis();
+        lastBackgroundCommand = command;
+    }
+
+    private static final java.util.regex.Pattern COOLDOWN = java.util.regex.Pattern.compile("^\\s*Wait (\\d+) seconds?\\.?\\s*$");
+
+    /// The server's "Wait 5 seconds." answer to one of our background commands: hidden from chat,
+    /// and the command is tried again once the wait is over. Your own commands' answers show.
+    public boolean hideCooldownReply(String text) {
+        if (System.currentTimeMillis() - lastBackgroundCommandAt > 3_000L) return false;
+        if (lastUserActivity >= lastBackgroundCommandAt) return false; // the reply may be to your own command
+        java.util.regex.Matcher m = COOLDOWN.matcher(net.minecraft.ChatFormatting.stripFormatting(text) == null ? "" : net.minecraft.ChatFormatting.stripFormatting(text));
+        if (!m.matches()) return false;
+        long retryMs = Long.parseLong(m.group(1)) * 1000L + 1_500L;
+        if (lastBackgroundCommand.equals("menu")) {
+            expectMenuUntil = 0L;
+            request(retryMs);
+        } else if (lastBackgroundCommand.equals("contest")) {
+            ContestTrackerHandler.instance().retryRefreshIn(retryMs);
+        }
+        lastBackgroundCommandAt = 0L;
+        return true;
     }
 
     /// Asks for a read {@code delayMs} from now (or sooner, if one is already due earlier).
@@ -97,12 +129,14 @@ public class SilentMenuHandler {
         }
         if (mc.screen != null || containerId != -1 || now <= expectMenuUntil || now - lastRequest < MIN_GAP_MS) return;
         if (now - lastUserActivity < QUIET_AFTER_ACTIVITY_MS || now - lastScreenSeen < QUIET_AFTER_SCREEN_MS) return;
+        if (now - lastBackgroundCommandAt < BACKGROUND_COMMAND_GAP_MS) return;
         if (now - lastFishingSeen < QUIET_AFTER_FISHING_MS) return;
         dueAt = 0L;
         lastRequest = now;
         expectMenuUntil = now + ANSWER_MS;
         userCommandDuringWait = false;
         sendingOwn = true;
+        noteBackgroundCommand("menu");
         try {
             mc.getConnection().sendCommand("menu");
         } finally {
