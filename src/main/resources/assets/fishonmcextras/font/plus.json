@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/plus.png",
+      "height": 6,
+      "ascent": 6,
+      "chars": [
+        ""
+      ]
+    }
+  ]
+}

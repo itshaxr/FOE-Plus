@@ -16,7 +16,18 @@ public final class NameTagMarker {
             .withFont(new net.minecraft.network.chat.FontDescription.Resource(
                     net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gap"))));
 
-    private static final Component FOE_PLUS_MARKER = Component.literal("+").withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD);
+    /// FOE+'s own + : 6x6 pixels with both strokes 2 px thick. The font's bold + was uneven (bold
+    /// doubles the glyph sideways, so the upright stroke came out twice as thick as the flat one).
+    /// The glyph is white, so it takes whatever colour the style gives it.
+    private static final net.minecraft.network.chat.FontDescription PLUS_FONT = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "plus"));
+    public static final String PLUS_GLYPH = "\uE002";
+
+    private static Component plus(int rgb) {
+        return Component.literal(PLUS_GLYPH).withStyle(style -> style.withFont(PLUS_FONT).withColor(rgb));
+    }
+
+    private static final Component FOE_PLUS_MARKER = plus(0xFFAA00);
 
     /// Puts a + right after the first FOE+ user's name in the name tag, keeping every other part
     /// (colours, fonts, the line below) exactly as the server sent it. 
@@ -30,7 +41,7 @@ public final class NameTagMarker {
     public static Component devMarker(long nowMs) {
         float hue = (nowMs % 3000L) / 3000f;
         int rgb = net.minecraft.util.Mth.hsvToRgb(hue, 0.85f, 1f);
-        return Component.literal("+").withStyle(style -> style.withColor(rgb).withBold(true));
+        return plus(rgb);
     }
 
     /// Puts the developer's rainbow + right after their name (a whole-word match), or returns the
@@ -65,11 +76,11 @@ public final class NameTagMarker {
     /// A FOE+ user's + in their chosen colour.
     public static Component colorMarker(int index) {
         int rgb = plusColor(index).rgb();
-        return Component.literal("+").withStyle(style -> style.withColor(rgb).withBold(true));
+        return plus(rgb);
     }
 
     /// A beta tester's + : bold green.
-    public static final Component BETA_MARKER = Component.literal("+").withStyle(net.minecraft.ChatFormatting.GREEN, net.minecraft.ChatFormatting.BOLD);
+    public static final Component BETA_MARKER = plus(0x55FF55);
 
     /// Puts {@code marker} right after {@code name} (a whole-word match), or returns the tag
     /// unchanged when the name isn't in it.
