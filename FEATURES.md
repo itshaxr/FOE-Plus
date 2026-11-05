@@ -60,8 +60,8 @@ All FOE+ messages share one clean style, starting with a bold **[FOE+]** tag:
 
 ```
 [FOE+] PET PULLED! Eagle Pet (87.0% A) · Dry streak 164
-[FOE+] Largemouth Bass · Dry streak 1,234
-[FOE+] GIGANTIC Walleye · Dry streak 5,321
+[FOE+] You caught MELANISTIC 🐟 Largemouth Bass · Dry streak 1,234
+[FOE+] You caught GIGANTIC 🐟 Walleye · Dry streak 5,321
 [FOE+] RARE CATCH! Infusion Capsule · Dry streak 2,410
 [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · 2:10 left
 [FOE+] FABLED CAUGHT Danube River · by Steve
