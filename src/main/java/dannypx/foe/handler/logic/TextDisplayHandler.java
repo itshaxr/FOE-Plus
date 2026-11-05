@@ -34,7 +34,41 @@ public class TextDisplayHandler extends Handler {
     private final Map<Display.TextDisplay, Entry> CACHE = new WeakHashMap<>();
     private volatile Pattern pattern = build();
 
-    public record Entry(Component source, int lineWidth, Component prefixed, Display.TextDisplay.CachedInfo info) {}
+    public record Entry(Component source, int lineWidth, Component prefixed, Display.TextDisplay.CachedInfo info,
+                        boolean animated, long builtAt) {}
+
+    /// The FOE+ developer (@phckd): their name tag gets a rainbow + instead of the gold one.
+    public static final UUID DEV_UUID = UUID.fromString("2ec73f99-8e46-49ca-993a-618df38d6171");
+    /// How often the developer's rainbow + changes colour.
+    private static final long DEV_MARKER_FRAME_MS = 50L;
+    private String lastSpecialNames = null;
+
+    /// FOE+ beta testers: their name tag gets a green + instead of the gold one.
+    public static final java.util.List<UUID> BETA_TESTERS = java.util.List.of(
+            UUID.fromString("1444eb9a-fc24-47ac-8962-63160df55dcd"));
+
+    /// A player's current name, from the server's player list (or yours, if it's you).
+    private static String nameOf(UUID uuid) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && uuid.equals(mc.player.getUUID())) return mc.player.getGameProfile().name();
+        if (mc.getConnection() == null) return null;
+        var info = mc.getConnection().getPlayerInfo(uuid);
+        return info == null ? null : info.getProfile().name();
+    }
+
+    private static String devName() {
+        return nameOf(DEV_UUID);
+    }
+
+    /// Names of the beta testers who are online.
+    private static java.util.List<String> betaNames() {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (UUID uuid : BETA_TESTERS) {
+            String name = nameOf(uuid);
+            if (name != null && !name.isEmpty()) names.add(name);
+        }
+        return names;
+    }
 
     //endregion
 
@@ -93,25 +127,55 @@ public class TextDisplayHandler extends Handler {
     }
 
     public Component apply(Component original) {
+        return applyFor(original, devName(), betaNames(), System.currentTimeMillis());
+    }
+
+    /// Package-private for tests: the developer's and beta testers' names if they're online.
+    Component applyFor(Component original, String devName, java.util.List<String> betaNames, long nowMs) {
         String s = original.getString();
         if (!s.contains(MARKER)) return original;
-        if (!this.matches(s)) return original;
-        Component named = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get()
-                ? dannypx.foe.helper.NameTagMarker.insertAfterName(original, this.foePlusPattern) : original;
+        boolean dev = isDevTag(s, devName);
+        String beta = dev ? null : betaNames.stream().filter(n -> isDevTag(s, n)).findFirst().orElse(null);
+        if (!dev && beta == null && !this.matches(s)) return original;
+        boolean markers = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
+        Component named;
+        if (!markers) named = original;
+        else if (dev) named = dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
+        else if (beta != null) named = dannypx.foe.helper.NameTagMarker.insertAfter(original, beta, dannypx.foe.helper.NameTagMarker.BETA_MARKER);
+        else named = dannypx.foe.helper.NameTagMarker.insertAfterName(original, this.foePlusPattern);
         return Component.empty().append(ICON_CHAR).append(" ").append(named);
     }
 
+    private static boolean isDevTag(String text, String devName) {
+        if (devName == null || devName.isEmpty()) return false;
+        return Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(devName) + "(?![A-Za-z0-9_])").matcher(text).find();
+    }
+
     public Entry get(Display.TextDisplay display, Component source, int lineWidth, BiFunction<Component, Integer, Display.TextDisplay.CachedInfo> splitter) {
+        // The developer or a beta tester joining or leaving changes their tag: build the tags again.
+        String devName = devName();
+        java.util.List<String> betaNames = betaNames();
+        String special = devName + "|" + betaNames;
+        if (!special.equals(lastSpecialNames)) {
+            lastSpecialNames = special;
+            this.CACHE.clear();
+        }
         Entry e = this.CACHE.get(display);
-        if (e != null && e.source() == source && e.lineWidth() == lineWidth) {
+        long now = System.currentTimeMillis();
+        if (e != null && e.source() == source && e.lineWidth() == lineWidth
+                && (!e.animated() || now - e.builtAt() < DEV_MARKER_FRAME_MS)) {
             return e;
         }
 
-        Component prefixed = this.apply(source);
+        Component prefixed = this.applyFor(source, devName, betaNames, now);
         Display.TextDisplay.CachedInfo info =
                 prefixed == source ? null : splitter.apply(prefixed, lineWidth);
+        // Only the developer's tag animates (and is rebuilt a few times a second); every other
+        // tag is built once and kept.
+        boolean animated = prefixed != source && isDevTag(source.getString(), devName)
+                && dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
 
-        e = new Entry(source, lineWidth, prefixed, info);
+        e = new Entry(source, lineWidth, prefixed, info, animated, now);
         this.CACHE.put(display, e);
         return e;
     }
