@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.16+1.21.11",
+      "name": "FOE+ 1.0.16+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Pick your + colour in the O menu (16 colours); everyone with FOE+ sees it by @phckd\n- Shorter community event on the top bar: COM 88.9K/100K (352) by @phckd"
+    },
+    {
       "versionNumber": "1.0.15+1.21.11",
       "name": "FOE+ 1.0.15+1.21.11",
       "datePublished": "2026-11-05",

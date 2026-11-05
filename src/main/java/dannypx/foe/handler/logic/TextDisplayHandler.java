@@ -62,6 +62,11 @@ public class TextDisplayHandler extends Handler {
         return info == null ? null : info.getProfile().name();
     }
 
+    private static String ownName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc == null ? null : mc.getUser().getName();
+    }
+
     private static String devName() {
         return nameOf(DEV_UUID);
     }
@@ -92,6 +97,7 @@ public class TextDisplayHandler extends Handler {
     public void removeModUser(UUID uuid) {
         boolean changed = this.USERS.remove(uuid) != null;
         changed |= this.FOE_PLUS_USERS.remove(uuid) != null;
+        this.FOE_PLUS_COLORS.remove(uuid);
         if (changed) this.rebuild();
     }
 
@@ -115,6 +121,27 @@ public class TextDisplayHandler extends Handler {
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
                 .append(dannypx.foe.helper.FoeChat.text("FOE+ (" + plus.size() + "): "))
                 .append(dannypx.foe.helper.FoeChat.white(plus.isEmpty() ? "none seen yet" : String.join(", ", plus))));
+    }
+
+    /// The + colour other FOE+ users picked (index into NameTagMarker.PLUS_COLORS).
+    private final Map<UUID, Integer> FOE_PLUS_COLORS = new ConcurrentHashMap<>();
+
+    public void setFoePlusColor(UUID uuid, int index) {
+        Integer old = this.FOE_PLUS_COLORS.put(uuid, index);
+        if (old == null || old != index) this.rebuild();
+    }
+
+    /// You picked a new colour for your own +: build the tags again.
+    public void onOwnColorChanged() {
+        this.clearCache();
+    }
+
+    private int colorOf(String name, String ownName, int ownColor) {
+        if (ownName != null && ownName.equalsIgnoreCase(name)) return ownColor;
+        for (Map.Entry<UUID, String> e : this.FOE_PLUS_USERS.entrySet()) {
+            if (e.getValue().equalsIgnoreCase(name)) return this.FOE_PLUS_COLORS.getOrDefault(e.getKey(), 0);
+        }
+        return 0;
     }
 
     public boolean isFoePlusUser(UUID uuid) {
@@ -144,6 +171,7 @@ public class TextDisplayHandler extends Handler {
     public void clear() {
         USERS.clear();
         FOE_PLUS_USERS.clear();
+        FOE_PLUS_COLORS.clear();
         rebuild();
     }
 
@@ -153,11 +181,13 @@ public class TextDisplayHandler extends Handler {
 
     public Component apply(Component original) {
         return applyFor(original, devName(), betaNames(), System.currentTimeMillis(),
-                dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get());
+                dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get(), ownName(),
+                dannypx.foe.config.Configs.rendererConfig.foePlusColor.get());
     }
 
     /// Package-private for tests: the developer's and beta testers' names if they're online.
-    Component applyFor(Component original, String devName, java.util.List<String> betaNames, long nowMs, boolean markers) {
+    Component applyFor(Component original, String devName, java.util.List<String> betaNames, long nowMs, boolean markers,
+                       String ownName, int ownColor) {
         String s = original.getString();
         if (!s.contains(MARKER)) return original;
         boolean dev = isDevTag(s, devName);
@@ -167,7 +197,14 @@ public class TextDisplayHandler extends Handler {
         if (!markers) named = original;
         else if (dev) named = dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
         else if (beta != null) named = dannypx.foe.helper.NameTagMarker.insertAfter(original, beta, dannypx.foe.helper.NameTagMarker.BETA_MARKER);
-        else named = dannypx.foe.helper.NameTagMarker.insertAfterName(original, this.foePlusPattern);
+        else {
+            // Everyone else: the + in the colour they picked (gold until they pick one).
+            java.util.regex.Matcher m = this.foePlusPattern.matcher(s);
+            named = m.find()
+                    ? dannypx.foe.helper.NameTagMarker.insertAfter(original, m.group(),
+                            dannypx.foe.helper.NameTagMarker.colorMarker(colorOf(m.group(), ownName, ownColor)))
+                    : original;
+        }
         // FOE+ users (you, the developer, beta testers, anyone seen running FOE+) get the FOE+
         // logo; FOE-R users keep FOE-R's.
         boolean foePlus = dev || beta != null || this.foePlusPattern.matcher(s).find();
@@ -197,7 +234,8 @@ public class TextDisplayHandler extends Handler {
         }
 
         boolean markers = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
-        Component prefixed = this.applyFor(source, devName, betaNames, now, markers);
+        Component prefixed = this.applyFor(source, devName, betaNames, now, markers, ownName(),
+                dannypx.foe.config.Configs.rendererConfig.foePlusColor.get());
         Display.TextDisplay.CachedInfo info =
                 prefixed == source ? null : splitter.apply(prefixed, lineWidth);
         // Only the developer's tag animates (and is rebuilt a few times a second); every other

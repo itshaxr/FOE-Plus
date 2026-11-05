@@ -16,6 +16,9 @@ public class ModUserType {
     /// plain FOE-R. Older FOE-R clients ignore types they don't know.
     private static final int FOE_PLUS_TYPE = 43;
     private static final byte[] FOE_PLUS_PAYLOAD = {'F', '+'};
+    /// The colour you picked for your + ({'C', index}). Its own type, so older FOE+ versions,
+    /// which only know type 43, still see you as a FOE+ user.
+    private static final int COLOR_TYPE = 44;
 
     private static final double NEARBY_RANGE = 24.0;
     private static final int NEWCOMER_DELAY_TICKS = 10;
@@ -26,6 +29,7 @@ public class ModUserType {
     public static void init() {
         NearbyDispatcher.register(PACKET_TYPE, ModUserType::onReceive);
         NearbyDispatcher.register(FOE_PLUS_TYPE, ModUserType::onReceiveFoePlus);
+        NearbyDispatcher.register(COLOR_TYPE, ModUserType::onReceiveColor);
         ClientTickEvents.END_CLIENT_TICK.register(ModUserType::tick);
     }
 
@@ -62,6 +66,22 @@ public class ModUserType {
 
         NearbyDispatcher.queue(PACKET_TYPE, new byte[]{1});
         NearbyDispatcher.queue(FOE_PLUS_TYPE, FOE_PLUS_PAYLOAD);
+        NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+    }
+
+    private static byte[] colorPayload() {
+        return new byte[]{'C', (byte) (int) dannypx.foe.config.Configs.rendererConfig.foePlusColor.get()};
+    }
+
+    /// You picked a new colour: tell the players around you (new arrivals get it anyway).
+    public static void announceColor() {
+        if (!ConnectionHandler.instance().isOnServer()) return;
+        NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+    }
+
+    private static void onReceiveColor(UUID sender, byte[] payload) {
+        if (payload.length != 2 || payload[0] != 'C') return;
+        TextDisplayHandler.instance().setFoePlusColor(sender, payload[1] & 0xFF);
     }
 
     private static void onReceiveFoePlus(UUID sender, byte[] payload) {

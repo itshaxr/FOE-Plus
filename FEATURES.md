@@ -130,7 +130,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Personal Vault:** page buttons 1–7, sorting by amount or rarity (Shift-click to reverse), and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On** in the O menu.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
-- **FOE+ users:** a gold **+** appears after the name of nearby players who use FOE+.
+- **FOE+ users:** a **+** after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).
 
 ---
 

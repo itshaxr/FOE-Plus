@@ -131,6 +131,21 @@ public class CommunityEventHandler {
         return v;
     }
 
+    /// Short form for the top bar: "88.91K" -> "88.9K", "100k" -> "100K", "1204" -> "1.2K",
+    /// "352" -> "352". Unreadable values are shown as they are.
+    public static String shortNumber(String value) {
+        long n = parse(value);
+        if (n < 0) return value;
+        if (n < 1_000) return String.valueOf(n);
+        String[] units = {"K", "M", "B"};
+        double v = n;
+        int u = -1;
+        while (v >= 1_000 && u < units.length - 1) { v /= 1_000; u++; }
+        String s = v >= 100 ? String.valueOf(Math.round(v)) : String.format(Locale.ROOT, "%.1f", v);
+        if (s.endsWith(".0")) s = s.substring(0, s.length() - 2);
+        return s + units[u];
+    }
+
     /// "352" -> 352, "1,204" -> 1204, "1.2K" -> 1200; -1 when unreadable.
     static long parse(String value) {
         String v = value.replace(",", "").replace(" ", "").toUpperCase(Locale.ROOT);

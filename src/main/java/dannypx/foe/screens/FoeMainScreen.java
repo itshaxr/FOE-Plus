@@ -32,7 +32,7 @@ public class FoeMainScreen extends Screen {
     private static final int BUTTON_HEIGHT = 20;
     private static final int ROW = 24;
     private static final int COLUMN_GAP = 10;
-    private static final int ROWS = 6;
+    private static final int ROWS = 7;
 
     private final Screen parent;
     private final List<IconButton> icons = new ArrayList<>();
@@ -106,6 +106,20 @@ public class FoeMainScreen extends Screen {
                     b.setMessage(inspectLabel());
                 });
         inspect.setMessage(inspectLabel());
+        Button plus = add(leftX, rowsY + ROW * 6, "", Items.MAGENTA_DYE,
+                "The colour of the + after your name, for everyone with FOE+. Click for the next colour, Shift-click for the previous one.",
+                b -> {
+                    if (isSpecialPlayer()) return;
+                    int n = dannypx.foe.helper.NameTagMarker.PLUS_COLORS.size();
+                    int step = this.minecraft.hasShiftDown() ? -1 : 1;
+                    int next = Math.floorMod(Configs.rendererConfig.foePlusColor.get() + step, n);
+                    Configs.rendererConfig.foePlusColor.accept(next);
+                    Configs.rendererConfig.save();
+                    dannypx.foe.handler.logic.TextDisplayHandler.instance().onOwnColorChanged();
+                    dannypx.foe.nearby_dispatcher.types.ModUserType.announceColor();
+                    b.setMessage(plusLabel());
+                });
+        plus.setMessage(plusLabel());
 
         // Stats
         add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
@@ -141,6 +155,32 @@ public class FoeMainScreen extends Screen {
         return Component.literal("Inspect: ").append(on
                 ? Component.literal("Always On").withStyle(ChatFormatting.GREEN)
                 : Component.literal("Hold " + capitalize(key.replaceFirst("(?i)^(left|right) ", ""))).withStyle(ChatFormatting.GRAY));
+    }
+
+    /// "+ Colour: +" with the + in your colour (rainbow for the developer, green for beta testers,
+    /// who can't change theirs).
+    private Component plusLabel() {
+        java.util.UUID me = this.minecraft != null && this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
+        Component sign;
+        String name;
+        if (me != null && me.equals(dannypx.foe.handler.logic.TextDisplayHandler.DEV_UUID)) {
+            sign = dannypx.foe.helper.NameTagMarker.devMarker(System.currentTimeMillis());
+            name = "Developer";
+        } else if (me != null && dannypx.foe.handler.logic.TextDisplayHandler.BETA_TESTERS.contains(me)) {
+            sign = dannypx.foe.helper.NameTagMarker.BETA_MARKER;
+            name = "Beta Tester";
+        } else {
+            int index = Configs.rendererConfig.foePlusColor.get();
+            sign = dannypx.foe.helper.NameTagMarker.colorMarker(index);
+            name = dannypx.foe.helper.NameTagMarker.plusColor(index).name();
+        }
+        return Component.literal("+ Colour: ").append(sign).append(Component.literal(" " + name).withStyle(ChatFormatting.GRAY));
+    }
+
+    private boolean isSpecialPlayer() {
+        java.util.UUID me = this.minecraft != null && this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
+        return me != null && (me.equals(dannypx.foe.handler.logic.TextDisplayHandler.DEV_UUID)
+                || dannypx.foe.handler.logic.TextDisplayHandler.BETA_TESTERS.contains(me));
     }
 
     private static String capitalize(String text) {

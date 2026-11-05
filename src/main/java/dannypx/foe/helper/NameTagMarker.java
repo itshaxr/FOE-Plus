@@ -33,6 +33,27 @@ public final class NameTagMarker {
         return insertAfter(original, devName, devMarker(nowMs));
     }
 
+    /// Colours players can pick for their + (O menu). Green is the beta testers' and rainbow the
+    /// developer's, so neither is in the list. Index 0 (gold) is the default.
+    public record PlusColor(String name, int rgb) {}
+    public static final java.util.List<PlusColor> PLUS_COLORS = java.util.List.of(
+            new PlusColor("Gold", 0xFFAA00), new PlusColor("Yellow", 0xFFFF55), new PlusColor("Orange", 0xFF8A1F),
+            new PlusColor("Red", 0xFF5555), new PlusColor("Dark Red", 0xAA0000), new PlusColor("Pink", 0xFF77CC),
+            new PlusColor("Light Purple", 0xFF55FF), new PlusColor("Dark Purple", 0xAA00AA), new PlusColor("Blue", 0x5555FF),
+            new PlusColor("Dark Blue", 0x0000AA), new PlusColor("Aqua", 0x55FFFF), new PlusColor("Dark Aqua", 0x00AAAA),
+            new PlusColor("Dark Green", 0x00AA00), new PlusColor("White", 0xFFFFFF), new PlusColor("Gray", 0xAAAAAA),
+            new PlusColor("Dark Gray", 0x555555));
+
+    public static PlusColor plusColor(int index) {
+        return PLUS_COLORS.get(index >= 0 && index < PLUS_COLORS.size() ? index : 0);
+    }
+
+    /// A FOE+ user's + in their chosen colour.
+    public static Component colorMarker(int index) {
+        int rgb = plusColor(index).rgb();
+        return Component.literal("+").withStyle(style -> style.withColor(rgb).withBold(true));
+    }
+
     /// A beta tester's + : bold green.
     public static final Component BETA_MARKER = Component.literal("+").withStyle(net.minecraft.ChatFormatting.GREEN, net.minecraft.ChatFormatting.BOLD);
 

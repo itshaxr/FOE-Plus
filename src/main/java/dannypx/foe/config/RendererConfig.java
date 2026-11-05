@@ -70,6 +70,10 @@ public class RendererConfig extends Config {
     @Desc("§7Players near you who use this mod get a + after their name above their head")
     public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
 
+    @Name("Your + colour")
+    @Desc("§7The colour of the + after your name, for everyone with FOE+ (change it in the O menu)")
+    public ValidatedInt foePlusColor = new ValidatedInt(0, 15, 0);
+
     @Name("Clean tab list tags")
     @Desc("§7Show rank tags in the tab list as FOE's compact lettered squares")
     public ValidatedBoolean cleanTabListTags = new ValidatedBoolean(true);

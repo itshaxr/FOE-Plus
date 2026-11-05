@@ -150,22 +150,23 @@ public class TopBarElement extends Element {
         return text;
     }
 
-    /// "ᴄᴏᴍᴍᴜɴɪᴛʏ 88.91K/100K · ʏᴏᴜ 352", or null before it's been read (or when turned off).
+    /// "ᴄᴏᴍ 88.9K/100K (352)": the community total, the goal and (in brackets) your contribution,
+    /// or null before it's been read (or when turned off).
     private static Component communityText() {
         if (!Configs.hudConfig.topBarShowCommunity.get()) return null;
         dannypx.foe.handler.logic.CommunityEventHandler event = dannypx.foe.handler.logic.CommunityEventHandler.instance();
         if (!event.hasData() || event.total().isEmpty()) return null;
         MutableComponent text = Component.empty()
-                .append(Component.literal("ᴄᴏᴍᴍᴜɴɪᴛʏ ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(event.total()).withStyle(ChatFormatting.AQUA));
+                .append(Component.literal("ᴄᴏᴍ ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(dannypx.foe.handler.logic.CommunityEventHandler.shortNumber(event.total())).withStyle(ChatFormatting.AQUA));
         if (!event.goal().isEmpty()) {
             text.append(Component.literal("/").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal(event.goal()).withStyle(ChatFormatting.WHITE));
+                    .append(Component.literal(dannypx.foe.handler.logic.CommunityEventHandler.shortNumber(event.goal())).withStyle(ChatFormatting.WHITE));
         }
         if (event.contribution() >= 0) {
-            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal("ʏᴏᴜ ").withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal(String.format(Locale.ROOT, "%,d", event.contribution())).withStyle(ChatFormatting.GOLD));
+            text.append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(dannypx.foe.handler.logic.CommunityEventHandler.shortNumber(String.valueOf(event.contribution()))).withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
         }
         return text;
     }
