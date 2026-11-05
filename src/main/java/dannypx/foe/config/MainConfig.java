@@ -33,9 +33,6 @@ public class MainConfig extends Config {
     @Desc("§7Google Sheets link (shared 'anyone with the link') for the pet price menu (U). Rating bands down column A, rarities across the top")
     public ValidatedString petPriceSheetUrl = new ValidatedString.Builder("https://docs.google.com/spreadsheets/d/1mmOt9-hvCfT3flCekELM7F3FcOrbygwKGOrNyLwA2dk/edit?gid=0#gid=0").withCorrector().build();
 
-    @Name("Show estimated price on pet tooltips")
-    public ValidatedBoolean showPetPriceTooltip = new ValidatedBoolean(true);
-
     @Name("Use FOE title screen")
     @Desc("§7Replace the main menu with the FOE title screen (Join FishOnMC button, player count)")
     public ValidatedBoolean useCustomTitleScreen = new ValidatedBoolean(true);

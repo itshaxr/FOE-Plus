@@ -27,7 +27,7 @@ Press **O** in game to open the FOE+ menu.
 **Tools**
 - Bait sorter (`B`), Personal Vault page buttons and sorting (amount / rarity).
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
-- Pet Prices (`U`): price table from a Google Sheet, plus an estimated price in pet tooltips.
+- Pet Prices (`U`): price table from a Google Sheet (updated once a day).
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.
 - `+` after the names of nearby FOE+ users.
 

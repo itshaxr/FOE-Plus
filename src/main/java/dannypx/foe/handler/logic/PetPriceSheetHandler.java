@@ -18,13 +18,17 @@ import java.util.regex.Pattern;
 /**
  * Pet price table from a Google Sheet: rating bands down the side ("<70%", "70-75%", "93%"),
  * rarities across the top (Common … Mythic), prices in the cells, plus optional extra columns
- * (e.g. "Max Scale/Luck") and a notes column. Downloaded as CSV in the background and refreshed
- * every 10 minutes.
+ * (e.g. "Max Scale/Luck") and a notes column. Downloaded as CSV in the background at most once a
+ * day; the last copy is kept on disk, so restarting the game doesn't download it again.
  */
 public class PetPriceSheetHandler {
     private static PetPriceSheetHandler INSTANCE = new PetPriceSheetHandler();
 
-    private static final long REFRESH_MS = 10L * 60L * 1000L;
+    /// The sheet rarely changes: download it at most once a day (Refresh in the menu forces it).
+    private static final long REFRESH_MS = 24L * 60L * 60L * 1000L;
+    /// A download that failed is tried again after this.
+    private static final long RETRY_MS = 30L * 60L * 1000L;
+    private boolean diskChecked = false;
     public static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythic");
     private static final Pattern RANGE = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*-\\s*(\\d+(?:\\.\\d+)?)");
     private static final Pattern BELOW = Pattern.compile("<\\s*(\\d+(?:\\.\\d+)?)");
@@ -77,9 +81,13 @@ public class PetPriceSheetHandler {
         long now = System.currentTimeMillis();
         // A new link loads straight away; one that failed is retried every couple of minutes,
         // not the moment the last try ends (that hammered the sheet nonstop when offline).
+        if (!diskChecked) {
+            diskChecked = true;
+            loadFromDisk(url);
+        }
         boolean newLink = !url.equals(lastTriedUrl);
         boolean notLoaded = !url.equals(loadedFrom);
-        if (newLink || (notLoaded && now - lastAttempt > ContestBaitSheetHandler.RETRY_MS) || now - lastAttempt > REFRESH_MS) refresh(url);
+        if (newLink || (notLoaded && now - lastAttempt > RETRY_MS) || now - lastAttempt > REFRESH_MS) refresh(url);
     }
 
     /// Download now (the menu's Refresh button).
@@ -112,6 +120,7 @@ public class PetPriceSheetHandler {
                         loadedFrom = url;
                         lastLoaded = System.currentTimeMillis();
                         lastError = "";
+                        saveToDisk(url, response.body(), lastLoaded);
                     }
                 }
             } catch (RuntimeException e) {
@@ -121,6 +130,45 @@ public class PetPriceSheetHandler {
             }
         });
     }
+
+    //region Copy on disk
+    private record Saved(String url, long loadedAt, String csv) {}
+
+    private static java.nio.file.Path diskFile() {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
+                .resolve(dannypx.foe.FishOnMCExtras.MOD_ID).resolve("pet_price_sheet.json");
+    }
+
+    /// Uses the copy from the last download (if it's from this link), so the next download is
+    /// only due a day after that one, even across restarts.
+    private void loadFromDisk(String url) {
+        try {
+            java.nio.file.Path file = diskFile();
+            if (!java.nio.file.Files.exists(file)) return;
+            Saved saved = new com.google.gson.Gson().fromJson(java.nio.file.Files.readString(file), Saved.class);
+            if (saved == null || saved.csv() == null || !url.equals(saved.url())) return;
+            Table parsed = parse(saved.csv());
+            if (parsed.rows().isEmpty()) return;
+            table = parsed;
+            loadedFrom = url;
+            lastLoaded = saved.loadedAt();
+            lastAttempt = saved.loadedAt();
+            lastTriedUrl = url;
+        } catch (Exception | LinkageError e) {
+            // No usable copy: it's simply downloaded again.
+        }
+    }
+
+    private static void saveToDisk(String url, String csv, long loadedAt) {
+        try {
+            java.nio.file.Path file = diskFile();
+            java.nio.file.Files.createDirectories(file.getParent());
+            java.nio.file.Files.writeString(file, new com.google.gson.Gson().toJson(new Saved(url, loadedAt, csv)));
+        } catch (Exception | LinkageError e) {
+            // Not saved: the next start downloads it again.
+        }
+    }
+    //endregion
 
     static Table parse(String csv) {
         List<List<String>> all = ContestBaitSheetHandler.readCsv(csv);

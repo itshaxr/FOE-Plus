@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.8+1.21.11",
+      "name": "FOE+ 1.0.8+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- Remove the estimated price from pet tooltips by @phckd\n- The pet price sheet downloads once a day and is kept between restarts by @phckd"
+    },
+    {
       "versionNumber": "1.0.7+1.21.11",
       "name": "FOE+ 1.0.7+1.21.11",
       "datePublished": "2026-11-04",

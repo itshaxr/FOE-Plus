@@ -98,8 +98,8 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
 - **Held item:** the item your pet is holding shows in the Pet panel.
-- **Pet tooltips:** rating letter, max Luck / max Scale markers, and an estimated price.
-- **Pet Prices (`U`):** the full price table from the community price sheet.
+- **Pet tooltips:** rating letter and max Luck / max Scale markers.
+- **Pet Prices (`U`):** the full price table from the community price sheet, updated once a day.
 
 ---
 
