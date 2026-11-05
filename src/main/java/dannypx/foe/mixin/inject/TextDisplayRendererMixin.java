@@ -40,4 +40,24 @@ public abstract class TextDisplayRendererMixin {
             textDisplayEntityRenderState.cachedInfo = entry.info();
         }
     }
+
+    /// Hides the background box behind floating text when asked to (AUTO: only with a shader pack
+    /// on, since some packs such as Photon draw it as a solid black box). Clears the "default
+    /// background" flag too, as that one ignores the colour.
+    @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Display$TextDisplay;Lnet/minecraft/client/renderer/entity/state/TextDisplayEntityRenderState;F)V", at = @At("TAIL"))
+    private void foe$hideBackground(Display.TextDisplay textDisplay, TextDisplayEntityRenderState state, float f, CallbackInfo ci) {
+        if (!Configs.mainConfig.enableMod.get()) return;
+        dannypx.foe.type.TextBackgroundMode mode = Configs.rendererConfig.textDisplayBackground.get();
+        boolean hide = mode == dannypx.foe.type.TextBackgroundMode.HIDE
+                || (mode == dannypx.foe.type.TextBackgroundMode.AUTO && dannypx.foe.helper.ShaderHelper.isShaderPackInUse());
+        Display.TextDisplay.TextRenderState data = state.textRenderState;
+        if (!hide || data == null) return;
+        state.textRenderState = new Display.TextDisplay.TextRenderState(
+                data.text(),
+                data.lineWidth(),
+                data.textOpacity(),
+                Display.IntInterpolator.constant(0),
+                (byte) (data.flags() & ~Display.TextDisplay.FLAG_USE_DEFAULT_BACKGROUND)
+        );
+    }
 }

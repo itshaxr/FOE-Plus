@@ -70,6 +70,11 @@ public class RendererConfig extends Config {
     @Desc("§7Players near you who use this mod get a + after their name above their head")
     public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
 
+    @Name("Floating text backgrounds")
+    @Desc("§7The dark box behind server text like FISH MERCHANT. Some shaders (Photon) draw it solid black. AUTO hides it only while a shader pack is on")
+    public me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<dannypx.foe.type.TextBackgroundMode> textDisplayBackground =
+            new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.TextBackgroundMode.AUTO, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
+
     @Name("Your + colour")
     @Desc("§7The colour of the + after your name, for everyone with FOE+ (pick it in the O menu). -1 = default")
     public ValidatedInt foePlusColor = new ValidatedInt(-1, 16, -1);
