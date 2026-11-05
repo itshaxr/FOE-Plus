@@ -2,6 +2,8 @@
 // Licensed under AGPL-3.0 by its authors; package changed for FishOnMC-Extras-R.
 package dannypx.foe.helper;
 
+import dannypx.foe.type.baitsorter.BaitSortOrder;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,9 +22,14 @@ public final class SortPlanner {
 
     /// One bait or lure in a slot. {@code slot} is the container slot id used in click packets.
     /// {@code color} and {@code size} only matter for lures: two lures merge only when name, color and size all match.
-    public record Entry(int slot, String type, String name, String rarity, String color, String size) {
+    /// {@code amount} is how many baits (or lure uses) the stack holds, for sorting by amount.
+    public record Entry(int slot, String type, String name, String rarity, String color, String size, int amount) {
         public Entry(int slot, String type, String name, String rarity) {
-            this(slot, type, name, rarity, "", "");
+            this(slot, type, name, rarity, "", "", 0);
+        }
+
+        public Entry(int slot, String type, String name, String rarity, String color, String size) {
+            this(slot, type, name, rarity, color, size, 0);
         }
 
         /// What must be equal for two entries to merge, or null when this entry never merges.
@@ -65,16 +72,24 @@ public final class SortPlanner {
     /// {@code sort}, common first when {@code commonFirst}) within one group of slots. Merging only works where baits can stack, which
     /// is the player inventory; in a chest or vault pass {@code merge = false}.
     public static List<List<Click>> plan(List<Entry> found, boolean merge, boolean sort, boolean commonFirst) {
+        return plan(found, merge, sort, commonFirst ? BaitSortOrder.COMMON_TO_LEGENDARY : BaitSortOrder.LEGENDARY_TO_COMMON);
+    }
+
+    /// As above, laid out in {@code order}: by rarity, or by amount (merged stacks count their
+    /// total). Ties go rarest first, then baits before lures, then by name.
+    public static List<List<Click>> plan(List<Entry> found, boolean merge, boolean sort, BaitSortOrder order) {
         List<Entry> entries = sortable(found);
         List<List<Click>> groups = new ArrayList<>();
 
         // Merge baits with the same name (lures: same name, color and size) into the lowest slot.
         // Picking one up and clicking another adds their stock (uses for lures) on the server.
         Map<String, Entry> mergeTarget = new HashMap<>();
+        Map<Entry, Integer> total = new java.util.IdentityHashMap<>();
         List<Entry> kept = new ArrayList<>();
         List<Integer> freed = new ArrayList<>();
         for (Entry e : entries) {
             String key = e.mergeKey();
+            total.put(e, e.amount());
             if (!merge || key == null) {
                 kept.add(e);
                 continue;
@@ -84,6 +99,7 @@ public final class SortPlanner {
                 mergeTarget.put(key, e);
                 kept.add(e);
             } else {
+                total.merge(target, e.amount(), Integer::sum);
                 groups.add(List.of(Click.pick(e.slot()), Click.pick(target.slot())));
                 freed.add(e.slot());
             }
@@ -96,10 +112,17 @@ public final class SortPlanner {
         slots.addAll(freed);
         slots.sort(Comparator.naturalOrder());
 
+        // RARITY_ORDER lists the rarest first, so a lower index is rarer.
+        Comparator<Entry> rarestFirst = Comparator.comparingInt((Entry e) -> RARITY_ORDER.indexOf(e.rarity()));
+        Comparator<Entry> mostFirst = Comparator.comparingInt((Entry e) -> -total.getOrDefault(e, 0));
+        Comparator<Entry> primary = switch (order) {
+            case LEGENDARY_TO_COMMON -> rarestFirst;
+            case COMMON_TO_LEGENDARY -> rarestFirst.reversed();
+            case MOST_TO_FEWEST -> mostFirst.thenComparing(rarestFirst);
+            case FEWEST_TO_MOST -> mostFirst.reversed().thenComparing(rarestFirst);
+        };
         List<Entry> desired = new ArrayList<>(kept);
-        desired.sort(Comparator
-                .comparingInt((Entry e) -> commonFirst
-                        ? -RARITY_ORDER.indexOf(e.rarity()) : RARITY_ORDER.indexOf(e.rarity()))
+        desired.sort(primary
                 .thenComparing(e -> BAIT.equals(e.type()) ? 0 : 1)
                 .thenComparing(Entry::name)
                 .thenComparingInt(Entry::slot));

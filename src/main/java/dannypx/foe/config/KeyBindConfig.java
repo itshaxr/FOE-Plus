@@ -63,6 +63,7 @@ public class KeyBindConfig extends Config {
     public ValidatedKeybind sortBaitsKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_B, ContextInput.KEYBOARD, false, false, false);
 
     @Name("Sort order")
+    @Desc("§7By rarity or by amount. The vault's Amount / Rarity buttons change this too, so B keeps the order you picked last")
     public ValidatedEnum<BaitSortOrder> baitSortOrder = new ValidatedEnum<>(BaitSortOrder.COMMON_TO_LEGENDARY, ValidatedEnum.WidgetType.CYCLING);
 
     @ConfigGroup.Pop

@@ -126,7 +126,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 ## Tools
 
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
-- **Bait sorter (`B`):** sorts the baits in your inventory.
+- **Bait sorter (`B`):** merges and sorts the baits in your inventory, chests and vault, by rarity or by amount. It remembers the order you last picked on the vault's sort buttons.
 - **Personal Vault:** page buttons 1–7, sorting by amount or rarity (Shift-click to reverse), and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On** in the O menu.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.

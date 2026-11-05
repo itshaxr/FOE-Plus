@@ -1,8 +1,10 @@
 package dannypx.foe.handler.logic;
 
+import dannypx.foe.config.Configs;
 import dannypx.foe.helper.SortPlanner;
 import dannypx.foe.item.TagObject;
 import dannypx.foe.item.ValidateItem;
+import dannypx.foe.type.baitsorter.BaitSortOrder;
 import dannypx.foe.type.tuple.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Sorts the open Personal Vault page by amount or by rarity. Only the 45 item slots are touched
@@ -34,14 +37,28 @@ public final class VaultSortHandler {
     /// One item in the vault. Compared by identity while planning.
     record Item(int slot, String name, int amount, int rarityRank) {}
 
-    /// Starts a sort of the open vault page; {@code reverse} flips the order (Shift-click).
+    /// Starts a sort of the open vault page; {@code reverse} flips the order (Shift-click). The
+    /// choice is saved as the bait sorter's order, so pressing B afterwards keeps it.
     public static boolean sort(Mode mode, boolean reverse) {
         Minecraft mc = Minecraft.getInstance();
-        return BaitSorterHandler.instance().queueSort(mc, () -> {
+        BaitSortOrder order = BaitSortOrder.fromVault(mode == Mode.AMOUNT, reverse);
+        boolean started = BaitSorterHandler.instance().queueSort(mc, planner(order));
+        if (started && Configs.keyBindConfig.baitSortOrder.get() != order) {
+            Configs.keyBindConfig.baitSortOrder.accept(order);
+            Configs.keyBindConfig.save();
+        }
+        return started;
+    }
+
+    /// A sort of the open vault page in {@code order}, planned when it runs.
+    public static Supplier<List<List<SortPlanner.Click>>> planner(BaitSortOrder order) {
+        Mode mode = order.byAmount() ? Mode.AMOUNT : Mode.RARITY;
+        boolean reverse = order.isVaultReverse();
+        return () -> {
             List<Integer> slots = new ArrayList<>();
             List<Item> items = scan(slots);
             return plan(items, slots, mode, reverse);
-        });
+        };
     }
 
     public static boolean isSorting() {

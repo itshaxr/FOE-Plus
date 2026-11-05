@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.21+1.21.11",
+      "name": "FOE+ 1.0.21+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Bait sorter (B) can sort by amount, most or fewest first by @phckd\n- B remembers the order you last picked on the vault's Amount / Rarity buttons, so it no longer re-sorts the vault by rarity by @phckd"
+    },
+    {
       "versionNumber": "1.0.20+1.21.11",
       "name": "FOE+ 1.0.20+1.21.11",
       "datePublished": "2026-11-05",

@@ -87,9 +87,9 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
             int top = minecraft.getWindow().getGuiScaledHeight() / 2 - 111;
             int sortWidth = 64;
             widgets.add(sortButton("⇅ Amount", VaultSortHandler.Mode.AMOUNT,
-                    "Sort this page by amount, most first.\nShift-click: fewest first.", left - sortWidth - 4, top + 18, sortWidth));
+                    "Sort this page by amount, most first.\nShift-click: fewest first.\nThe bait sorter (B) keeps this order.", left - sortWidth - 4, top + 18, sortWidth));
             widgets.add(sortButton("⇅ Rarity", VaultSortHandler.Mode.RARITY,
-                    "Sort this page by rarity, rarest first.\nShift-click: most common first.", left - sortWidth - 4, top + 42, sortWidth));
+                    "Sort this page by rarity, rarest first.\nShift-click: most common first.\nThe bait sorter (B) keeps this order.", left - sortWidth - 4, top + 42, sortWidth));
 
             widgets.forEach(Screens.getButtons(screen)::add);
         }

@@ -28,7 +28,8 @@ import java.util.function.Supplier;
  * and rewritten for Mojang mappings and Fzzy Config.
  * <p>
  * Press the sort key (default B) while an inventory, chest or vault is open: identical baits and
- * lures (same name, and for lures also same color and size) are merged, then sorted by rarity.
+ * lures (same name, and for lures also same color and size) are merged, then sorted by rarity or
+ * amount (the order picked in the settings or last used on the vault's sort buttons).
  * Clicks are queued and sent a few per tick. Only player inventory slots 0-35 are touched.
  */
 public class BaitSorterHandler {
@@ -83,18 +84,25 @@ public class BaitSorterHandler {
         AbstractContainerMenu menu = ((AbstractContainerScreen<?>) mc.screen).getMenu();
         containerId = menu.containerId;
         boolean container = menu instanceof ChestMenu;
-        boolean commonFirst = Configs.keyBindConfig.baitSortOrder.get() == BaitSortOrder.COMMON_TO_LEGENDARY;
+        boolean vault = mc.screen.getTitle().getString()
+                .startsWith(dannypx.foe.handler.fetch.GenericContainerScreenHandler.PERSONAL_VAULT_SCREEN_CONTAINER);
+        // The order you last picked here or with the vault's Amount / Rarity buttons.
+        BaitSortOrder order = Configs.keyBindConfig.baitSortOrder.get();
 
         // Inventory baits first, so there is one bait per name to carry into the chest.
-        stages.add(() -> SortPlanner.plan(scan(true), true, false, commonFirst));
+        stages.add(() -> SortPlanner.plan(scan(true), true, false, order));
         if (container) {
             // Merge inventory baits into their stashed twins and shift them back in.
             stages.add(() -> SortPlanner.planCrossMerge(scan(false), scan(true)));
         }
-        stages.add(() -> SortPlanner.plan(scan(true), true, true, commonFirst));
-        if (container) {
-            // Baits cannot stack in a chest or vault, so only rearrange there.
-            stages.add(() -> SortPlanner.plan(scan(false), false, true, commonFirst));
+        stages.add(() -> SortPlanner.plan(scan(true), true, true, order));
+        if (vault) {
+            // The whole vault page, exactly as its Amount / Rarity buttons sort it, so B keeps the
+            // order you chose instead of re-sorting the baits by rarity among your other items.
+            stages.add(VaultSortHandler.planner(order));
+        } else if (container) {
+            // Baits cannot stack in a chest, so only rearrange there.
+            stages.add(() -> SortPlanner.plan(scan(false), false, true, order));
         }
         cooldown = 0;
         credit = 0;
@@ -143,7 +151,8 @@ public class BaitSorterHandler {
                     tag.getStringOr("name", ""),
                     tag.getStringOr("rarity", ""),
                     tag.getStringOr("color", ""),
-                    tag.getStringOr("size", "")));
+                    tag.getStringOr("size", ""),
+                    tag.getIntOr(dannypx.foe.item.TagObject.COUNTER, stack.getCount())));
         }
         return found;
     }
