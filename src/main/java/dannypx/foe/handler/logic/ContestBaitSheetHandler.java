@@ -40,6 +40,9 @@ public class ContestBaitSheetHandler {
 
     private volatile List<Row> rows = List.of();
     private volatile long lastAttempt = 0L;
+    private volatile String lastTriedUrl = null;
+    /// Wait this long before trying a sheet that didn't load again.
+    static final long RETRY_MS = 2L * 60L * 1000L;
     private volatile String loadedFrom = "";
     private volatile String lastError = "";
 
@@ -65,9 +68,13 @@ public class ContestBaitSheetHandler {
         String url = toCsvUrl(Configs.hudConfig.contestBaitSheetUrl.get());
         if (url == null) return;
         long now = System.currentTimeMillis();
-        boolean urlChanged = !url.equals(loadedFrom);
-        if ((urlChanged || now - lastAttempt > REFRESH_MS) && loading.compareAndSet(false, true)) {
+        // A new link loads straight away; one that failed is retried every couple of minutes,
+        // not the moment the last try ends (that hammered the sheet nonstop when offline).
+        boolean newLink = !url.equals(lastTriedUrl);
+        boolean notLoaded = !url.equals(loadedFrom);
+        if ((newLink || (notLoaded && now - lastAttempt > RETRY_MS) || now - lastAttempt > REFRESH_MS) && loading.compareAndSet(false, true)) {
             lastAttempt = now;
+            lastTriedUrl = url;
             this.download(url);
         }
     }

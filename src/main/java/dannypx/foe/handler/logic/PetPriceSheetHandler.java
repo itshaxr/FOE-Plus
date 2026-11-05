@@ -38,6 +38,7 @@ public class PetPriceSheetHandler {
 
     private volatile Table table = Table.EMPTY;
     private volatile long lastAttempt = 0L;
+    private volatile String lastTriedUrl = null;
     private volatile long lastLoaded = 0L;
     private volatile String loadedFrom = "";
     private volatile String lastError = "";
@@ -74,7 +75,11 @@ public class PetPriceSheetHandler {
         String url = ContestBaitSheetHandler.toCsvUrl(Configs.mainConfig.petPriceSheetUrl.get());
         if (url == null) return;
         long now = System.currentTimeMillis();
-        if ((!url.equals(loadedFrom) || now - lastAttempt > REFRESH_MS)) refresh(url);
+        // A new link loads straight away; one that failed is retried every couple of minutes,
+        // not the moment the last try ends (that hammered the sheet nonstop when offline).
+        boolean newLink = !url.equals(lastTriedUrl);
+        boolean notLoaded = !url.equals(loadedFrom);
+        if (newLink || (notLoaded && now - lastAttempt > ContestBaitSheetHandler.RETRY_MS) || now - lastAttempt > REFRESH_MS) refresh(url);
     }
 
     /// Download now (the menu's Refresh button).
@@ -86,6 +91,7 @@ public class PetPriceSheetHandler {
     private void refresh(String url) {
         if (!loading.compareAndSet(false, true)) return;
         lastAttempt = System.currentTimeMillis();
+        lastTriedUrl = url;
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(20))
                 .header("User-Agent", "FishOnMC-Extras")

@@ -146,11 +146,22 @@ public class InventoryHandler extends Handler {
         this.currentlyLoading = false;
         this.snapshotInventory.clear();
         this.snapshottedItems.clear();
+        this.snapshottedRemovedItems.clear();
     }
 
+    /// How long a new item is remembered: longer than the longest window the catch and quest
+    /// checks look back (catching cooldown up to 60 s plus the check window up to 1 s).
+    private static final long KEEP_NEW_ITEMS_MS = 90_000L;
+
+    /// Forgets old entries. This used to compare the wrong way round ("newer than the future"),
+    /// so nothing was ever removed: every item that entered or left the inventory stayed in
+    /// memory for the whole session, and each inventory change compared against all of them,
+    /// which slowed the game down over time and could run it out of memory.
     private void checkSnapshottedItems() {
-        snapshottedItems.removeIf(item -> item.value1() > System.currentTimeMillis() + 1000L);
-        snapshottedRemovedItems.removeIf(item -> item.value1() > System.currentTimeMillis() + 60L + NetworkHandler.instance().getPing());
+        long now = System.currentTimeMillis();
+        long removedWindow = 60L + Math.max(0, Math.min(NetworkHandler.instance().getPing(), 2000));
+        snapshottedItems.removeIf(item -> now - item.value1() > KEEP_NEW_ITEMS_MS);
+        snapshottedRemovedItems.removeIf(item -> now - item.value1() > removedWindow);
     }
 
     private void addToSnapshotItems(ItemStack newStack, int count) {
