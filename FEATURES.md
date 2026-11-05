@@ -26,7 +26,7 @@ Panels always stay on screen, and they push each other aside so they never overl
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Its text is centred and it stays where you put it. |
-| **Top bar** | Wallet and other key info in one clean bar. |
+| **Top bar** | Level, location, time, balance and catches, plus the community event total and your contribution. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
 

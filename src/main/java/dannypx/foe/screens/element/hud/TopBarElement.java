@@ -72,6 +72,22 @@ public class TopBarElement extends Element {
         Component left = leftText();
         Component middle = middleText();
         Component right = rightText();
+        // The community event goes in the bigger gap: after the level bar or before the balance.
+        // If neither gap fits it, it's left out, so it never runs into the location in the middle.
+        Component community = communityText();
+        int communityX = -1;
+        if (community != null) {
+            int gap = PADDING;
+            int w = font.width(community);
+            int middleLeft = screenWidth / 2 - font.width(middle) / 2;
+            int middleRight = screenWidth / 2 + font.width(middle) / 2;
+            int leftEnd = PADDING + font.width(left);
+            int rightStart = screenWidth - PADDING - font.width(right);
+            int leftRoom = middleLeft - leftEnd;
+            int rightRoom = rightStart - middleRight;
+            if (leftRoom >= rightRoom && leftRoom >= w + gap * 2) communityX = leftEnd + (leftRoom - w) / 2;
+            else if (rightRoom >= w + gap * 2) communityX = middleRight + (rightRoom - w) / 2;
+        }
 
         int alpha = Math.round(Configs.hudConfig.topBarOpacity.get() / 100f * 255f) << 24;
 
@@ -81,6 +97,7 @@ public class TopBarElement extends Element {
         guiGraphics.drawString(font, left, PADDING, PADDING, 0xFFFFFFFF, true);
         guiGraphics.drawString(font, middle, screenWidth / 2 - font.width(middle) / 2, PADDING, 0xFFFFFFFF, true);
         guiGraphics.drawString(font, right, screenWidth - font.width(right) - PADDING, PADDING, 0xFFFFFFFF, true);
+        if (communityX >= 0) guiGraphics.drawString(font, community, communityX, PADDING, 0xFFFFFFFF, true);
         guiGraphics.pose().popMatrix();
     }
 
@@ -129,6 +146,26 @@ public class TopBarElement extends Element {
         if (!time.isEmpty()) {
             text.append(Component.literal(" ")).append(boss.getWeather())
                     .append(Component.literal(" ")).append(boss.getTime());
+        }
+        return text;
+    }
+
+    /// "ᴄᴏᴍᴍᴜɴɪᴛʏ 88.91K/100K · ʏᴏᴜ 352", or null before it's been read (or when turned off).
+    private static Component communityText() {
+        if (!Configs.hudConfig.topBarShowCommunity.get()) return null;
+        dannypx.foe.handler.logic.CommunityEventHandler event = dannypx.foe.handler.logic.CommunityEventHandler.instance();
+        if (!event.hasData() || event.total().isEmpty()) return null;
+        MutableComponent text = Component.empty()
+                .append(Component.literal("ᴄᴏᴍᴍᴜɴɪᴛʏ ").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(event.total()).withStyle(ChatFormatting.AQUA));
+        if (!event.goal().isEmpty()) {
+            text.append(Component.literal("/").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(event.goal()).withStyle(ChatFormatting.WHITE));
+        }
+        if (event.contribution() >= 0) {
+            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal("ʏᴏᴜ ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(String.format(Locale.ROOT, "%,d", event.contribution())).withStyle(ChatFormatting.GOLD));
         }
         return text;
     }

@@ -574,6 +574,14 @@ public class HUDConfig extends Config {
     @Name("Show climate")
     public ValidatedBoolean topBarShowClimate = new ValidatedBoolean(true);
 
+    @Name("Show community event")
+    @Desc("§7The community event total and your contribution")
+    public ValidatedBoolean topBarShowCommunity = new ValidatedBoolean(true);
+
+    @Name("Check the community event in the background")
+    @Desc("§7Quietly runs /communityevent every 10 minutes (never while a menu is open) to keep your contribution current")
+    public ValidatedBoolean communityAutoRefresh = new ValidatedBoolean(true);
+
     @Name("Background opacity in %")
     public ValidatedInt topBarOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
