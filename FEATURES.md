@@ -130,6 +130,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Personal Vault:** page buttons 1–7, sorting by amount or rarity (Shift-click to reverse), and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On** in the O menu.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
+- **Bobber presets:** nine colour sets for the 3D bobber (Classic, Ocean, Lime, Gold, Pumpkin, Candy, Royal, Midnight, Glass). Cycle them with the **Bobber** button in the O menu. Your bobber uses your preset and other players' stay Classic, so yours is easy to spot (or show yours on everyone's in Settings).
 - **FOE+ users:** a **+** after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).
 
 ---

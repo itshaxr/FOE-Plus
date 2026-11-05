@@ -124,6 +124,16 @@ public class FoeMainScreen extends Screen {
                 b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
         add(rightX, rowsY + ROW * 5, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
                 b -> this.minecraft.setScreen(new MainScreen(this)));
+        Button bobber = add(rightX, rowsY + ROW * 6, "", Items.FISHING_ROD,
+                "Click for the next 3D bobber colours, Shift-click for the previous ones",
+                b -> {
+                    var cfg = Configs.rendererConfig;
+                    cfg.bobberStyle.accept(cfg.bobberStyle.get().cycle(this.minecraft.hasShiftDown()));
+                    if (!cfg.showNewFishingHook.get()) cfg.showNewFishingHook.accept(true);
+                    cfg.save();
+                    b.setMessage(bobberLabel());
+                });
+        bobber.setMessage(bobberLabel());
 
         // Bottom row
         int bottomY = rowsY + ROWS * ROW + 8;
@@ -137,6 +147,11 @@ public class FoeMainScreen extends Screen {
         this.addRenderableWidget(button);
         icons.add(new IconButton(button, new ItemStack(icon)));
         return button;
+    }
+
+    private static Component bobberLabel() {
+        return Component.literal("Bobber: ").append(Component.literal(Configs.rendererConfig.bobberStyle.get().displayName())
+                .withStyle(ChatFormatting.GRAY));
     }
 
     private static Component inspectLabel() {

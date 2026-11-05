@@ -8,4 +8,8 @@ public interface IFishingHookRenderState {
 
     void foer$setBaitStack(ItemStack stack);
     void foer$setDisabledBait(boolean disabledBait);
+
+    /// True when this is your own bobber.
+    boolean foe$isOwn();
+    void foe$setOwn(boolean own);
 }

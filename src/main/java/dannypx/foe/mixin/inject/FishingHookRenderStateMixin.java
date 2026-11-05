@@ -15,6 +15,19 @@ public abstract class FishingHookRenderStateMixin implements IFishingHookRenderS
     @Unique
     private boolean disabledBait = false;
 
+    @Unique
+    private boolean own = false;
+
+    @Override
+    public boolean foe$isOwn() {
+        return own;
+    }
+
+    @Override
+    public void foe$setOwn(boolean own) {
+        this.own = own;
+    }
+
     @Override
     public ItemStack foer$getBaitStack() {
         return baitStack;

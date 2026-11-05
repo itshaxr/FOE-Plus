@@ -68,9 +68,13 @@ public abstract class FishingHookRendererMixin {
                 && Configs.rendererConfig.showNewFishingHook.get()
                 && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
         ) {
+            // Your preset on your own bobber (or on all of them if you chose that), Classic otherwise.
+            dannypx.foe.type.BobberStyle style = ((IFishingHookRenderState) fishingHookRenderState).foe$isOwn()
+                    || Configs.rendererConfig.bobberStyleForEveryone.get()
+                    ? Configs.rendererConfig.bobberStyle.get() : dannypx.foe.type.BobberStyle.CLASSIC;
             poseStack.pushPose();
             poseStack.translate(0f, -0.0075f, 0f);
-            submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, FishingHookEntityModel.RENDER_LAYER, fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
+            submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
             poseStack.popPose();
         }
 
@@ -103,6 +107,8 @@ public abstract class FishingHookRendererMixin {
 
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/projectile/FishingHook;Lnet/minecraft/client/renderer/entity/state/FishingHookRenderState;F)V", at = @At("TAIL"))
     private void injectUpdateRenderState(FishingHook fishingHookEntity, FishingHookRenderState fishingHookEntityState, float f, CallbackInfo ci) {
+        Player owner = fishingHookEntity.getPlayerOwner();
+        ((IFishingHookRenderState) fishingHookEntityState).foe$setOwn(owner != null && owner == Minecraft.getInstance().player);
         if(ConnectionHandler.instance().isOnServer()
                 && Configs.mainConfig.enableMod.get()
                 && Configs.rendererConfig.showFishingRodPositions.get()
