@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.14+1.21.11",
+      "name": "FOE+ 1.0.14+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Quests panel lines up in columns whatever the progress by @phckd\n- Long location names on the Quests panel are shortened (Toledo Bend Reservoir shows as Toledo) by @phckd"
+    },
+    {
       "versionNumber": "1.0.13+1.21.11",
       "name": "FOE+ 1.0.13+1.21.11",
       "datePublished": "2026-11-04",

@@ -33,6 +33,20 @@ public class QuestPanelElement extends PanelElement {
     @Override protected float scale() { return Configs.hudConfig.questPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.questPanelOpacity.get(); }
 
+    /// Left-aligned even when anchored on the right, so the quest numbers and badges line up in
+    /// columns whatever the progress numbers are.
+    @Override
+    protected boolean alignTextToAnchor() {
+        return false;
+    }
+
+    /// Long location names shortened to their first word ("Toledo Bend Reservoir" -> "Toledo").
+    static String shortLocation(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.length() <= 12 || !trimmed.contains(" ")) return trimmed;
+        return trimmed.substring(0, trimmed.indexOf(' '));
+    }
+
     @Override
     protected Component title() {
         return Component.literal("ꞯᴜᴇѕᴛѕ").withStyle(ChatFormatting.BOLD);
@@ -46,7 +60,7 @@ public class QuestPanelElement extends PanelElement {
                 .getOrDefault(location.getString(), List.of());
         if (quests.isEmpty()) return lines;
 
-        lines.add(join(label("ʟᴏᴄ: "), location));
+        lines.add(join(label("ʟᴏᴄ: "), Component.literal(shortLocation(location.getString())).setStyle(location.getStyle())));
         int index = 1;
         for (QuestDataHandler.Quest quest : quests) {
             Component prefix = label("#" + index++ + ": ");
