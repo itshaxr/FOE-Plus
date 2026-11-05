@@ -59,6 +59,18 @@ public class SilentMenuHandler {
         return INSTANCE;
     }
 
+    /// True when a background command (a silent /menu, the contest refresh) may be sent now: no
+    /// screen of any kind is open (inventory, chest, Auction House, chat...), you closed the last
+    /// one a moment ago at least, you haven't just typed a command, and no silent /menu is in
+    /// progress. Anything that can't run now waits and tries again.
+    public boolean isQuietForBackgroundCommand() {
+        Minecraft mc = Minecraft.getInstance();
+        long now = System.currentTimeMillis();
+        if (mc.player == null || mc.getConnection() == null || mc.screen != null) return false;
+        if (now - lastScreenSeen < QUIET_AFTER_SCREEN_MS || now - lastUserActivity < QUIET_AFTER_ACTIVITY_MS) return false;
+        return containerId == -1 && now > expectMenuUntil;
+    }
+
     /// Asks for a read {@code delayMs} from now (or sooner, if one is already due earlier).
     public void request(long delayMs) {
         long at = System.currentTimeMillis() + Math.max(0L, delayMs);

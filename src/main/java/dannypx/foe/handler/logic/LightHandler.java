@@ -53,6 +53,11 @@ public class LightHandler extends Handler {
 
             if (fishingHook != null) {
                 BlockPos currentPos = fishingHook.blockPosition();
+                // Only when the bobber reaches another block. This used to mark the 27 sections
+                // around it for a rebuild every tick, even with the bobber sitting still, which
+                // kept the game rebuilding chunk meshes nonstop while fishing (very heavy with
+                // Sodium and shaders).
+                if (currentPos.equals(prevPos)) return;
 
                 if (prevPos != null) {
                     this.scheduleSectionUpdate(prevPos);

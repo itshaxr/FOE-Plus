@@ -125,12 +125,23 @@ public class ContestTrackerHandler {
         Minecraft mc = Minecraft.getInstance();
         long now = System.currentTimeMillis();
         if (mc.getConnection() == null || now - lastRefresh < MIN_REFRESH_GAP_MS) return;
+        // Never while a menu (inventory, chest, Auction House...) is open or right after you typed
+        // something: wait and try again once you're back in the game.
+        if (!SilentMenuHandler.instance().isQuietForBackgroundCommand()) {
+            pendingPersonalBest |= personalBestRefresh;
+            if (refreshDueAt == 0L) refreshDueAt = now + 1_000L;
+            return;
+        }
         lastRefresh = now;
         hideUntil = now + HIDE_WINDOW_MS;
         hidingOutput = false;
-        announcePersonalBest = personalBestRefresh;
+        announcePersonalBest = personalBestRefresh || pendingPersonalBest;
+        pendingPersonalBest = false;
         mc.getConnection().sendCommand("contest");
     }
+
+    /// A personal-best refresh that had to wait still announces the new best when it runs.
+    private boolean pendingPersonalBest = false;
 
     /// Called on every catch: refreshes the contest when this fish beats your best for it.
     public void onFishCaught(FishTagObject fish) {
