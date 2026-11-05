@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/foe_plus.png",
+      "height": 21,
+      "ascent": 14,
+      "chars": [
+        "\ue000"
+      ]
+    }
+  ]
+}

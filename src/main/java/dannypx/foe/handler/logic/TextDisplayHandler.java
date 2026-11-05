@@ -25,7 +25,13 @@ public class TextDisplayHandler extends Handler {
 
     //region Fields
     public static final String MARKER = "\uF064";
+    /// FOE-R's logo (in the default font), shown before FOE-R users' names.
     private static final String ICON_CHAR = "\uDB80\uDC6A";
+    /// FOE+'s logo (in this mod's own font, so it can't clash with the server's glyphs), shown
+    /// before FOE+ users' names instead.
+    private static final Component FOE_PLUS_ICON = Component.literal("\uE000").withStyle(style -> style
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "foe_plus_icon"))));
 
     private final Map<UUID, String> USERS = new ConcurrentHashMap<>();
     /// Players using FOE+ (this merged build); they get a + after their name.
@@ -143,7 +149,11 @@ public class TextDisplayHandler extends Handler {
         else if (dev) named = dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
         else if (beta != null) named = dannypx.foe.helper.NameTagMarker.insertAfter(original, beta, dannypx.foe.helper.NameTagMarker.BETA_MARKER);
         else named = dannypx.foe.helper.NameTagMarker.insertAfterName(original, this.foePlusPattern);
-        return Component.empty().append(ICON_CHAR).append(" ").append(named);
+        // FOE+ users (you, the developer, beta testers, anyone seen running FOE+) get the FOE+
+        // logo; FOE-R users keep FOE-R's.
+        boolean foePlus = dev || beta != null || this.foePlusPattern.matcher(s).find();
+        Component icon = foePlus ? FOE_PLUS_ICON : Component.literal(ICON_CHAR);
+        return Component.empty().append(icon).append(" ").append(named);
     }
 
     private static boolean isDevTag(String text, String devName) {
