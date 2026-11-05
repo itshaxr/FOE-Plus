@@ -100,6 +100,23 @@ public class TextDisplayHandler extends Handler {
         this.rebuild();
     }
 
+    /// /foe users: who this session has seen running FOE-R or FOE+ (for checking name tag logos).
+    public void printDetectedUsers() {
+        java.util.List<String> foer = new java.util.ArrayList<>();
+        for (Map.Entry<UUID, String> e : this.USERS.entrySet()) {
+            if (!this.FOE_PLUS_USERS.containsKey(e.getKey())) foer.add(e.getValue());
+        }
+        java.util.List<String> plus = new java.util.ArrayList<>(this.FOE_PLUS_USERS.values());
+        java.util.Collections.sort(foer);
+        java.util.Collections.sort(plus);
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
+                .append(dannypx.foe.helper.FoeChat.text("FOE-R (" + foer.size() + "): "))
+                .append(dannypx.foe.helper.FoeChat.white(foer.isEmpty() ? "none seen yet" : String.join(", ", foer))));
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
+                .append(dannypx.foe.helper.FoeChat.text("FOE+ (" + plus.size() + "): "))
+                .append(dannypx.foe.helper.FoeChat.white(plus.isEmpty() ? "none seen yet" : String.join(", ", plus))));
+    }
+
     public boolean isFoePlusUser(UUID uuid) {
         return this.FOE_PLUS_USERS.containsKey(uuid);
     }
@@ -115,7 +132,9 @@ public class TextDisplayHandler extends Handler {
     private void rebuild() {
         this.pattern = build();
         this.foePlusPattern = buildPattern(new LinkedHashSet<>(this.FOE_PLUS_USERS.values()));
-        Minecraft.getInstance().execute(this::clearCache);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) mc.execute(this::clearCache);
+        else this.clearCache();
     }
 
     private void clearCache() {
@@ -133,17 +152,17 @@ public class TextDisplayHandler extends Handler {
     }
 
     public Component apply(Component original) {
-        return applyFor(original, devName(), betaNames(), System.currentTimeMillis());
+        return applyFor(original, devName(), betaNames(), System.currentTimeMillis(),
+                dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get());
     }
 
     /// Package-private for tests: the developer's and beta testers' names if they're online.
-    Component applyFor(Component original, String devName, java.util.List<String> betaNames, long nowMs) {
+    Component applyFor(Component original, String devName, java.util.List<String> betaNames, long nowMs, boolean markers) {
         String s = original.getString();
         if (!s.contains(MARKER)) return original;
         boolean dev = isDevTag(s, devName);
         String beta = dev ? null : betaNames.stream().filter(n -> isDevTag(s, n)).findFirst().orElse(null);
         if (!dev && beta == null && !this.matches(s)) return original;
-        boolean markers = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
         Component named;
         if (!markers) named = original;
         else if (dev) named = dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
@@ -177,13 +196,13 @@ public class TextDisplayHandler extends Handler {
             return e;
         }
 
-        Component prefixed = this.applyFor(source, devName, betaNames, now);
+        boolean markers = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
+        Component prefixed = this.applyFor(source, devName, betaNames, now, markers);
         Display.TextDisplay.CachedInfo info =
                 prefixed == source ? null : splitter.apply(prefixed, lineWidth);
         // Only the developer's tag animates (and is rebuilt a few times a second); every other
         // tag is built once and kept.
-        boolean animated = prefixed != source && isDevTag(source.getString(), devName)
-                && dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
+        boolean animated = prefixed != source && isDevTag(source.getString(), devName) && markers;
 
         e = new Entry(source, lineWidth, prefixed, info, animated, now);
         this.CACHE.put(display, e);
@@ -198,8 +217,12 @@ public class TextDisplayHandler extends Handler {
     /// Whole-name pattern for these players, always including you (you use this mod too).
     private static Pattern buildPattern(Set<String> others) {
         Set<String> names = new LinkedHashSet<>();
-        names.add(Minecraft.getInstance().getUser().getName());
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null) names.add(mc.getUser().getName());
         names.addAll(others);
+        names.removeIf(n -> n == null || n.isBlank());
+        // No names: match nothing. An empty alternation would match every name tag.
+        if (names.isEmpty()) return Pattern.compile("(?!)");
 
         String alternation = names.stream()
                 .map(Pattern::quote)

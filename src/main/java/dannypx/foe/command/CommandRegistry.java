@@ -44,6 +44,10 @@ public class CommandRegistry {
                 command("foe")
                         .then(command("config").executes(Command.Foe::openConfig))
                         .then(command("main").executes(Command.Foe::openMainScreen))
+                        .then(command("users").executes(context -> {
+                            dannypx.foe.handler.logic.TextDisplayHandler.instance().printDetectedUsers();
+                            return 1;
+                        }))
                         .then(command("export_placeholder_data").executes(Command.Foe::exportPlaceholderData))
                         .then(command("stats")
                                 .then(command("import").executes(Command.Stats::importStats))
