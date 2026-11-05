@@ -141,7 +141,25 @@ public class AutotipHandler {
                     .append(dannypx.foe.helper.FoeChat.white(tip.player()))
                     .append(Component.literal(" $" + String.format(Locale.ROOT, "%,d", (long) tip.amount())).withStyle(ChatFormatting.GREEN))
                     .append(dannypx.foe.helper.FoeChat.sep())
-                    .append(dannypx.foe.helper.FoeChat.text(tip.reason().toLowerCase(Locale.ROOT))));
+                    .append(reasonComponent(tip.reason())));
         }
+    }
+
+    /// "common chummer" -> <common badge> chummer (the server's rarity badge, as in chat and on
+    /// items); anything else (e.g. "reaction") as plain text.
+    private static final java.util.Map<String, String> RARITY_BADGES = java.util.Map.of(
+            "common", "\uF033", "rare", "\uF034", "epic", "\uF035", "legendary", "\uF036", "mythical", "\uF037");
+
+    public static Component reasonComponent(String reason) {
+        String lower = reason.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(" chummer")) {
+            String badge = RARITY_BADGES.get(lower.substring(0, lower.length() - " chummer".length()).trim());
+            if (badge != null) {
+                return Component.empty()
+                        .append(Component.literal(badge).withStyle(ChatFormatting.WHITE))
+                        .append(dannypx.foe.helper.FoeChat.text(" chummer"));
+            }
+        }
+        return dannypx.foe.helper.FoeChat.text(lower);
     }
 }
