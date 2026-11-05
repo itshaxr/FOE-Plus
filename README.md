@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/foe-plus-logo.png" alt="FOE+" width="256"></p>
+
 # FOE+
 
 FOE+ is a quality-of-life mod for **play.fishonmc.net** (Fabric, Minecraft 1.21.11).

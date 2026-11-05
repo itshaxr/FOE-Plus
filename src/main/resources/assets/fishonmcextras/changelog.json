@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.10+1.21.11",
+      "name": "FOE+ 1.0.10+1.21.11",
+      "datePublished": "2026-11-04",
+      "changelog": "## What's Changed\n- New FOE+ logo for the mod icon by @phckd"
+    },
+    {
       "versionNumber": "1.0.9+1.21.11",
       "name": "FOE+ 1.0.9+1.21.11",
       "datePublished": "2026-11-04",
