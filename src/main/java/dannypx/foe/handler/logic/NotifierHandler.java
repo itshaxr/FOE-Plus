@@ -174,11 +174,22 @@ public class NotifierHandler extends Handler {
         if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
         // [FOE+] <variant badge> <fish picture> Largemouth Bass · Dry streak 1,234
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
-                .append(fish.getVariantComponent())
+                .append(variantBadge(variant, fish))
                 .append(Component.literal(" "))
                 .append(dannypx.foe.helper.FoeChat.itemIcon(fish.getItemStack()))
                 .append(fish.getName())
                 .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
+    }
+
+    /// The server's badge box for a variant (the same glyphs it uses on items), so the line always
+    /// shows the box, never the word. Falls back to the badge from the fish's own lore.
+    private static final java.util.Map<String, String> VARIANT_BADGES = java.util.Map.of(
+            "albino", "\uF041", "melanistic", "\uF042", "trophy", "\uF043", "fabled", "\uF044");
+
+    private static Component variantBadge(String variant, FishTagObject fish) {
+        String glyph = VARIANT_BADGES.get(variant);
+        if (glyph != null) return Component.literal(glyph).withStyle(ChatFormatting.WHITE);
+        return fish.getVariantComponent();
     }
 
     /// [FOE+] <GIGANTIC badge> <fish picture> Largemouth Bass · Dry streak 1,234
