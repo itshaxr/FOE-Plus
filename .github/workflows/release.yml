@@ -1,0 +1,73 @@
+# Publishes a GitHub release whenever mod_version in gradle.properties changes on the main
+# branch: builds the jar, takes the notes for that version from the in-game changelog
+# (src/main/resources/assets/fishonmcextras/changelog.json) and attaches the jar.
+# A version that already has a release is skipped, so ordinary pushes do nothing.
+name: release
+on:
+  push:
+    branches: [ "1.21.11" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: read version
+        id: version
+        run: |
+          VERSION=$(sed -n 's/^mod_version=//p' gradle.properties | tr -d '\r')
+          MC=$(sed -n 's/^minecraft_version=//p' gradle.properties | tr -d '\r')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "mc=$MC" >> "$GITHUB_OUTPUT"
+      - name: skip if already released
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" -R "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "v${{ steps.version.outputs.version }} is already released"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-java@v4
+        if: steps.check.outputs.exists == 'false'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.check.outputs.exists == 'false'
+      - name: build
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -x test
+      - name: release notes
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          python3 - "${{ steps.version.outputs.version }}+${{ steps.version.outputs.mc }}" <<'PY'
+          import json, sys
+          version = sys.argv[1]
+          entries = json.load(open("src/main/resources/assets/fishonmcextras/changelog.json", encoding="utf-8"))["entries"]
+          entry = next((e for e in entries if e["versionNumber"] == version), None)
+          notes = open(".github/release-header.md", encoding="utf-8").read()
+          if entry:
+              # "by @phckd" would tag a GitHub account of that name: plain name on GitHub.
+              notes += entry["changelog"].strip().replace(" by @", " by ") + "\n"
+          open("release-notes.md", "w", encoding="utf-8").write(notes)
+          PY
+      - name: publish
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          JAR="build/libs/foe-plus-$V+${{ steps.version.outputs.mc }}.jar"
+          gh release create "v$V" "$JAR" -R "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "FOE+ $V for Minecraft ${{ steps.version.outputs.mc }}" \
+            --notes-file release-notes.md
