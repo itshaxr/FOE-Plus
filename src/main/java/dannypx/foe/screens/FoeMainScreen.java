@@ -107,18 +107,8 @@ public class FoeMainScreen extends Screen {
                 });
         inspect.setMessage(inspectLabel());
         Button plus = add(leftX, rowsY + ROW * 6, "", Items.MAGENTA_DYE,
-                "The colour of the + after your name, for everyone with FOE+. Click for the next colour, Shift-click for the previous one.",
-                b -> {
-                    if (isSpecialPlayer()) return;
-                    int n = dannypx.foe.helper.NameTagMarker.PLUS_COLORS.size();
-                    int step = this.minecraft.hasShiftDown() ? -1 : 1;
-                    int next = Math.floorMod(Configs.rendererConfig.foePlusColor.get() + step, n);
-                    Configs.rendererConfig.foePlusColor.accept(next);
-                    Configs.rendererConfig.save();
-                    dannypx.foe.handler.logic.TextDisplayHandler.instance().onOwnColorChanged();
-                    dannypx.foe.nearby_dispatcher.types.ModUserType.announceColor();
-                    b.setMessage(plusLabel());
-                });
+                "Pick the colour of the + after your name, for everyone with FOE+",
+                b -> this.minecraft.setScreen(new PlusColorScreen(this)));
         plus.setMessage(plusLabel());
 
         // Stats
@@ -157,30 +147,26 @@ public class FoeMainScreen extends Screen {
                 : Component.literal("Hold " + capitalize(key.replaceFirst("(?i)^(left|right) ", ""))).withStyle(ChatFormatting.GRAY));
     }
 
-    /// "+ Colour: +" with the + in your colour (rainbow for the developer, green for beta testers,
-    /// who can't change theirs).
+    /// "+ Colour: + Gold" with the + in your colour (Rainbow / Green for the developer and beta
+    /// testers until they pick a normal colour).
     private Component plusLabel() {
         java.util.UUID me = this.minecraft != null && this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
+        boolean dev = me != null && me.equals(dannypx.foe.handler.logic.TextDisplayHandler.DEV_UUID);
+        boolean beta = me != null && dannypx.foe.handler.logic.TextDisplayHandler.BETA_TESTERS.contains(me);
+        int value = Configs.rendererConfig.foePlusColor.get();
         Component sign;
         String name;
-        if (me != null && me.equals(dannypx.foe.handler.logic.TextDisplayHandler.DEV_UUID)) {
+        if (dannypx.foe.helper.NameTagMarker.isListColor(value) || (!dev && !beta)) {
+            sign = dannypx.foe.helper.NameTagMarker.colorMarker(value);
+            name = dannypx.foe.helper.NameTagMarker.plusColor(value).name();
+        } else if (dev) {
             sign = dannypx.foe.helper.NameTagMarker.devMarker(System.currentTimeMillis());
-            name = "Developer";
-        } else if (me != null && dannypx.foe.handler.logic.TextDisplayHandler.BETA_TESTERS.contains(me)) {
-            sign = dannypx.foe.helper.NameTagMarker.BETA_MARKER;
-            name = "Beta Tester";
+            name = "Rainbow";
         } else {
-            int index = Configs.rendererConfig.foePlusColor.get();
-            sign = dannypx.foe.helper.NameTagMarker.colorMarker(index);
-            name = dannypx.foe.helper.NameTagMarker.plusColor(index).name();
+            sign = dannypx.foe.helper.NameTagMarker.BETA_MARKER;
+            name = "Green";
         }
         return Component.literal("+ Colour: ").append(sign).append(Component.literal(" " + name).withStyle(ChatFormatting.GRAY));
-    }
-
-    private boolean isSpecialPlayer() {
-        java.util.UUID me = this.minecraft != null && this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
-        return me != null && (me.equals(dannypx.foe.handler.logic.TextDisplayHandler.DEV_UUID)
-                || dannypx.foe.handler.logic.TextDisplayHandler.BETA_TESTERS.contains(me));
     }
 
     private static String capitalize(String text) {

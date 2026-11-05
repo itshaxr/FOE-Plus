@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.17+1.21.11",
+      "name": "FOE+ 1.0.17+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- + Colour opens a colour menu with swatches and a preview, instead of clicking through by @phckd\n- The developer and beta testers can pick a colour too, or keep their own by @phckd"
+    },
+    {
       "versionNumber": "1.0.16+1.21.11",
       "name": "FOE+ 1.0.16+1.21.11",
       "datePublished": "2026-11-05",

@@ -44,6 +44,14 @@ public final class NameTagMarker {
             new PlusColor("Dark Green", 0x00AA00), new PlusColor("White", 0xFFFFFF), new PlusColor("Gray", 0xAAAAAA),
             new PlusColor("Dark Gray", 0x555555));
 
+    /// Colour value meaning "my special +" (rainbow for the developer, green for beta testers).
+    /// -1 means nothing picked yet, which is the special + for them and gold for everyone else.
+    public static final int SPECIAL = 16;
+
+    public static boolean isListColor(int index) {
+        return index >= 0 && index < PLUS_COLORS.size();
+    }
+
     public static PlusColor plusColor(int index) {
         return PLUS_COLORS.get(index >= 0 && index < PLUS_COLORS.size() ? index : 0);
     }

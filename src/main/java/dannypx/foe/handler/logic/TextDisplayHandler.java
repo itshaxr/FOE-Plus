@@ -56,6 +56,7 @@ public class TextDisplayHandler extends Handler {
     /// A player's current name, from the server's player list (or yours, if it's you).
     private static String nameOf(UUID uuid) {
         Minecraft mc = Minecraft.getInstance();
+        if (mc == null) return null;
         if (mc.player != null && uuid.equals(mc.player.getUUID())) return mc.player.getGameProfile().name();
         if (mc.getConnection() == null) return null;
         var info = mc.getConnection().getPlayerInfo(uuid);
@@ -136,6 +137,22 @@ public class TextDisplayHandler extends Handler {
         this.clearCache();
     }
 
+    /// What this player picked: yours from your settings, others' from their colour message
+    /// (-1 when nothing was received).
+    private int chosenColor(UUID uuid, int ownColor) {
+        Minecraft mc = Minecraft.getInstance();
+        if (uuid == null) return -1;
+        if (mc != null && mc.player != null && uuid.equals(mc.player.getUUID())) return ownColor;
+        return this.FOE_PLUS_COLORS.getOrDefault(uuid, -1);
+    }
+
+    private static UUID betaUuid(String name) {
+        for (UUID uuid : BETA_TESTERS) {
+            if (name.equalsIgnoreCase(nameOf(uuid))) return uuid;
+        }
+        return null;
+    }
+
     private int colorOf(String name, String ownName, int ownColor) {
         if (ownName != null && ownName.equalsIgnoreCase(name)) return ownColor;
         for (Map.Entry<UUID, String> e : this.FOE_PLUS_USERS.entrySet()) {
@@ -195,8 +212,18 @@ public class TextDisplayHandler extends Handler {
         if (!dev && beta == null && !this.matches(s)) return original;
         Component named;
         if (!markers) named = original;
-        else if (dev) named = dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
-        else if (beta != null) named = dannypx.foe.helper.NameTagMarker.insertAfter(original, beta, dannypx.foe.helper.NameTagMarker.BETA_MARKER);
+        else if (dev) {
+            // The developer: rainbow, unless they picked one of the normal colours.
+            int picked = chosenColor(DEV_UUID, ownColor);
+            named = dannypx.foe.helper.NameTagMarker.isListColor(picked)
+                    ? dannypx.foe.helper.NameTagMarker.insertAfter(original, devName, dannypx.foe.helper.NameTagMarker.colorMarker(picked))
+                    : dannypx.foe.helper.NameTagMarker.insertDevMarker(original, devName, nowMs);
+        } else if (beta != null) {
+            // A beta tester: green, unless they picked one of the normal colours.
+            int picked = chosenColor(betaUuid(beta), ownColor);
+            named = dannypx.foe.helper.NameTagMarker.insertAfter(original, beta, dannypx.foe.helper.NameTagMarker.isListColor(picked)
+                    ? dannypx.foe.helper.NameTagMarker.colorMarker(picked) : dannypx.foe.helper.NameTagMarker.BETA_MARKER);
+        }
         else {
             // Everyone else: the + in the colour they picked (gold until they pick one).
             java.util.regex.Matcher m = this.foePlusPattern.matcher(s);

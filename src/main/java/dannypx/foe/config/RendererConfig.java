@@ -71,8 +71,8 @@ public class RendererConfig extends Config {
     public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
 
     @Name("Your + colour")
-    @Desc("§7The colour of the + after your name, for everyone with FOE+ (change it in the O menu)")
-    public ValidatedInt foePlusColor = new ValidatedInt(0, 15, 0);
+    @Desc("§7The colour of the + after your name, for everyone with FOE+ (pick it in the O menu). -1 = default")
+    public ValidatedInt foePlusColor = new ValidatedInt(-1, 16, -1);
 
     @Name("Clean tab list tags")
     @Desc("§7Show rank tags in the tab list as FOE's compact lettered squares")
