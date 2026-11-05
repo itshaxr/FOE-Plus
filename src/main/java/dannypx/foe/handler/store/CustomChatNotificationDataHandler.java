@@ -30,7 +30,22 @@ public class CustomChatNotificationDataHandler extends Handler {
 
     public void setCustomChatNotificationData(CustomChatNotificationDataModel customChatNotificationData) {
         this.customChatNotificationData = customChatNotificationData;
+        this.removeOldVariantNotification();
         this.updateCustomChatNotificationData();
+    }
+
+    /// FOE-R's "Caught a <variant> fish with a drystreak of N" line, as it shipped. FOE+ posts its
+    /// own variant line, so this one is removed from saved notifications unless you edited it.
+    static final String OLD_VARIANT_NAME = "Variant Notification";
+    static final String OLD_VARIANT_TEXT =
+            "%hide_line.(<not.(<or.(<condition.(<catch.last_caught.fish.variant.id>==\"albino\")>,<condition.(<catch.last_caught.fish.variant.id>==\"melanistic\")>,<condition.(<catch.last_caught.fish.variant.id>==\"trophy\")>)>)>)%&7Caught a &r%catch.last_caught.fish.variant.icon% &7fish with a drystreak of &e%catch.last_caught.fish.variant.last_drystreak%";
+
+    private void removeOldVariantNotification() {
+        if (customChatNotificationData == null || customChatNotificationData.notificationList == null) return;
+        if (OLD_VARIANT_TEXT.equals(customChatNotificationData.notificationList.get(OLD_VARIANT_NAME))) {
+            customChatNotificationData.notificationList.remove(OLD_VARIANT_NAME);
+            needsUpdate = true;
+        }
     }
 
     private void updateCustomChatNotificationData() {
@@ -114,10 +129,8 @@ public class CustomChatNotificationDataHandler extends Handler {
     public static class CustomChatNotificationDataModel extends DataModels.DataModel {
         private static final String CUSTOM_CHAT_NOTIFICATION_DATA_MODEL_VERSION = "0.2";
 
-        private static final Map<String, String> defaultNotifications = Map.of(
-            "Variant Notification",
-                "%hide_line.(<not.(<or.(<condition.(<catch.last_caught.fish.variant.id>==\"albino\")>,<condition.(<catch.last_caught.fish.variant.id>==\"melanistic\")>,<condition.(<catch.last_caught.fish.variant.id>==\"trophy\")>)>)>)%&7Caught a &r%catch.last_caught.fish.variant.icon% &7fish with a drystreak of &e%catch.last_caught.fish.variant.last_drystreak%"
-        );
+        // FOE-R shipped a variant line here; FOE+ has its own ([FOE+] <variant> Fish · Dry streak N).
+        private static final Map<String, String> defaultNotifications = Map.of();
 
         //Name Notification, Notification
         public Map<String, String> notificationList = new HashMap<>(defaultNotifications);
