@@ -66,6 +66,34 @@ public final class FoeChat {
         return Component.empty().append(sep()).append(text("Dry streak ")).append(number(Math.max(0, value)));
     }
 
+    /// A small picture of the item, drawn inside the chat line (from the item's own texture, so the
+    /// server's resource pack fish show as they do in your inventory). Empty when there's no
+    /// picture to show, e.g. before the item models are loaded.
+    public static Component itemIcon(net.minecraft.world.item.ItemStack stack) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || stack == null || stack.isEmpty()) return Component.empty();
+        try {
+            var state = new net.minecraft.client.renderer.item.ItemStackRenderState();
+            mc.getItemModelResolver().updateForTopItem(state, stack, net.minecraft.world.item.ItemDisplayContext.GUI, mc.level, mc.player, 0);
+            if (state.isEmpty()) return Component.empty();
+            var sprite = state.pickParticleIcon(net.minecraft.util.RandomSource.create(0L));
+            if (sprite == null) return Component.empty();
+            net.minecraft.resources.Identifier name = sprite.contents().name();
+            if (name.equals(net.minecraft.client.renderer.texture.MissingTextureAtlasSprite.getLocation())) return Component.empty();
+            // Chat names atlases by id ("minecraft:items"); the sprite knows its texture location.
+            net.minecraft.resources.Identifier[] atlasId = {null};
+            mc.getAtlasManager().forEach((id, atlas) -> {
+                if (atlasId[0] == null && atlas.location().equals(sprite.atlasLocation())) atlasId[0] = id;
+            });
+            if (atlasId[0] == null) return Component.empty();
+            return Component.empty()
+                    .append(Component.object(new net.minecraft.network.chat.contents.objects.AtlasSprite(atlasId[0], name)))
+                    .append(Component.literal(" "));
+        } catch (RuntimeException e) {
+            return Component.empty();
+        }
+    }
+
     public static void send(Component line) {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null && mc.player != null) mc.player.displayClientMessage(line, false);

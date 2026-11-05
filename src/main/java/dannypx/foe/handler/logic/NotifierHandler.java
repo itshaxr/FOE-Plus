@@ -172,20 +172,22 @@ public class NotifierHandler extends Handler {
     public void chatVariant(FishTagObject fish, int dryStreak) {
         String variant = fish.getVariant().toLowerCase(java.util.Locale.ROOT);
         if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
-        // [FOE+] <variant badge> Largemouth Bass · Dry streak 1,234
+        // [FOE+] <variant badge> <fish picture> Largemouth Bass · Dry streak 1,234
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(fish.getVariantComponent())
                 .append(Component.literal(" "))
+                .append(dannypx.foe.helper.FoeChat.itemIcon(fish.getItemStack()))
                 .append(fish.getName())
                 .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
     }
 
-    /// [FOE+] <GIGANTIC badge> Largemouth Bass · Dry streak 1,234
+    /// [FOE+] <GIGANTIC badge> <fish picture> Largemouth Bass · Dry streak 1,234
     public void chatGigantic(FishTagObject fish, int dryStreak) {
         if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(dannypx.foe.screens.element.hud.StatsPanelElement.GIGANTIC_BADGE)
                 .append(Component.literal(" "))
+                .append(dannypx.foe.helper.FoeChat.itemIcon(fish.getItemStack()))
                 .append(fish.getName())
                 .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
     }
