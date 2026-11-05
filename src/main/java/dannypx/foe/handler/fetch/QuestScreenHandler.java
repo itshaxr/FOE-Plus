@@ -77,6 +77,25 @@ public class QuestScreenHandler extends Handler {
         });
     }
 
+    /// Items of a /quests menu read in the background (SilentMenuHandler): the quests for where
+    /// you are now. Kept only when some were found, so a read while the location is still
+    /// changing can't wipe the panel.
+    public void readItems(List<ItemStack> items) {
+        List<QuestDataHandler.Quest> questList = new ArrayList<>();
+        for (ItemStack stack : items) {
+            if (stack == null || stack.isEmpty()) continue;
+            if (!stack.is(ItemTags.SHULKER_BOXES) || stack.getItem() == Items.WHITE_SHULKER_BOX) continue;
+            if (!stack.getHoverName().getString().startsWith("Fishing Quest")) continue;
+            try {
+                QuestDataHandler.Quest quest = this.extractQuestData(stack);
+                if (quest != null) questList.add(quest);
+            } catch (RuntimeException e) {
+                // A quest item laid out differently: skip it.
+            }
+        }
+        if (!questList.isEmpty()) QuestDataHandler.instance().setQuest(questList);
+    }
+
     private QuestDataHandler.Quest extractQuestData(ItemStack stack) {
         if(stack.get(DataComponents.LORE) != null) {
             List<Component> lines = stack.get(DataComponents.LORE).lines();

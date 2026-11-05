@@ -140,9 +140,12 @@ public class ProfileStatsHandler {
         if (locationKnown && here == lastLocation) return;
         locationKnown = true;
         lastLocation = here;
-        if (here != null && Configs.hudConfig.showLuckScalePanel.get() && Configs.hudConfig.luckScaleAutoRefresh.get()) {
-            SilentMenuHandler.instance().request(ARRIVAL_DELAY_MS);
-        }
+        if (here == null) return;
+        // A new location: read /menu (Luck & Scale, Daily Quests) and /quests (Quests panel) now.
+        boolean menu = (Configs.hudConfig.showLuckScalePanel.get() && Configs.hudConfig.luckScaleAutoRefresh.get())
+                || (Configs.hudConfig.showDailyQuestPanel.get() && Configs.hudConfig.dailyQuestAutoRefresh.get());
+        boolean quests = Configs.hudConfig.showQuestPanel.get();
+        SilentMenuHandler.instance().requestLocationRefresh(ARRIVAL_DELAY_MS, menu, quests);
     }
 
     /// Items of a /menu read in the background by {@link SilentMenuHandler}.
