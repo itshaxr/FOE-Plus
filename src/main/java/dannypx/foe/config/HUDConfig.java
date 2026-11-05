@@ -342,7 +342,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
 
     @Name("Show Infusion Capsules")
-    @Desc("§7How many you've pulled, with your dry streak in brackets")
+    @Desc("§7How many you've pulled")
     public ValidatedBoolean statsPanelShowCapsules = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop

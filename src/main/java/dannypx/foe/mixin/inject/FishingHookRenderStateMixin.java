@@ -18,6 +18,19 @@ public abstract class FishingHookRenderStateMixin implements IFishingHookRenderS
     @Unique
     private boolean own = false;
 
+    @Unique
+    private java.util.UUID owner = null;
+
+    @Override
+    public java.util.UUID foe$getOwner() {
+        return owner;
+    }
+
+    @Override
+    public void foe$setOwner(java.util.UUID owner) {
+        this.owner = owner;
+    }
+
     @Override
     public boolean foe$isOwn() {
         return own;

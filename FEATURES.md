@@ -20,7 +20,7 @@ Panels always stay on screen, and they push each other aside so they never overl
 | **Contest** | Time left, contest type with the fish you need in brackets, best bait, the top 3 and your rank. Warns you when you're not in the contest area. |
 | **Daily Quests** | Exact progress on each daily quest, updated after every catch. |
 | **Quests** | Your active location quests. |
-| **All-Time Stats** | Fish caught, fish per hour, fish time, rarities, variants, Gigantic and Infusion Capsules, each with its dry streak. |
+| **All-Time Stats** | Fish caught, fish per hour, fish time, rarities, variants and Gigantic with their dry streaks, and how many Infusion Capsules you've pulled. |
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count. Refreshes automatically when you change location. |
 | **Pet** | Your equipped pet and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
@@ -105,7 +105,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 ## Dry streaks & stats
 
-- **Live dry streaks** for every rarity, variant, Gigantic and Infusion Capsule, shown on the All-Time Stats panel.
+- **Live dry streaks** for every rarity, variant and Gigantic, shown on the All-Time Stats panel.
 - **Import from old installs:** FOE+ finds previous FOE and FOE-R installs (Prism, Modrinth, CurseForge, `.minecraft` and other profiles) and imports your stats on first launch.
 - **Import Dry Streaks:** pulls streaks from your newest old FOE or FOE-R install. A streak you've reset since then is never overwritten by an older, higher one.
 - **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic and Infusion Capsules). Manual edits count as newest, so an import won't undo them.
@@ -130,8 +130,8 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Personal Vault:** page buttons 1–7, sorting by amount or rarity (Shift-click to reverse), and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On** in the O menu.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
-- **Bobber presets:** nine colour sets for the 3D bobber (Classic, Ocean, Lime, Gold, Pumpkin, Candy, Royal, Midnight, Glass). Cycle them with the **Bobber** button in the O menu. Your bobber uses your preset and other players' stay Classic, so yours is easy to spot (or show yours on everyone's in Settings).
-- **FOE+ users:** a **+** after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).
+- **Bobber presets:** 16 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow), picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
+- **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).
 
 ---
 

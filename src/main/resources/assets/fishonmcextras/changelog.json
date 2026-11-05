@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.23+1.21.11",
+      "name": "FOE+ 1.0.23+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Bobber menu in O, laid out like + Colour, with 16 presets: Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight and Snow by @phckd\n- FOE+ users near you see your bobber preset, and you see theirs by @phckd\n- Glass bobber removed by @phckd\n- Bobber button moved under + Colour by @phckd\n- A 1-pixel gap between names and the +, so they no longer touch by @phckd\n- All-Time Stats shows how many Infusion Capsules you've pulled, without the capsule dry streak for now by @phckd"
+    },
+    {
       "versionNumber": "1.0.22+1.21.11",
       "name": "FOE+ 1.0.22+1.21.11",
       "datePublished": "2026-11-05",

@@ -68,10 +68,15 @@ public abstract class FishingHookRendererMixin {
                 && Configs.rendererConfig.showNewFishingHook.get()
                 && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
         ) {
-            // Your preset on your own bobber (or on all of them if you chose that), Classic otherwise.
-            dannypx.foe.type.BobberStyle style = ((IFishingHookRenderState) fishingHookRenderState).foe$isOwn()
-                    || Configs.rendererConfig.bobberStyleForEveryone.get()
-                    ? Configs.rendererConfig.bobberStyle.get() : dannypx.foe.type.BobberStyle.CLASSIC;
+            // Your preset on your bobber, other FOE+ users' presets on theirs, Classic otherwise.
+            IFishingHookRenderState hookState = (IFishingHookRenderState) fishingHookRenderState;
+            dannypx.foe.type.BobberStyle style = dannypx.foe.type.BobberStyle.CLASSIC;
+            if (hookState.foe$isOwn()) {
+                style = Configs.rendererConfig.bobberStyle.get();
+            } else if (Configs.rendererConfig.showOtherBobberStyles.get()) {
+                dannypx.foe.type.BobberStyle theirs = dannypx.foe.nearby_dispatcher.types.ModUserType.bobberStyleOf(hookState.foe$getOwner());
+                if (theirs != null) style = theirs;
+            }
             poseStack.pushPose();
             poseStack.translate(0f, -0.0075f, 0f);
             submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
@@ -109,6 +114,7 @@ public abstract class FishingHookRendererMixin {
     private void injectUpdateRenderState(FishingHook fishingHookEntity, FishingHookRenderState fishingHookEntityState, float f, CallbackInfo ci) {
         Player owner = fishingHookEntity.getPlayerOwner();
         ((IFishingHookRenderState) fishingHookEntityState).foe$setOwn(owner != null && owner == Minecraft.getInstance().player);
+        ((IFishingHookRenderState) fishingHookEntityState).foe$setOwner(owner != null ? owner.getUUID() : null);
         if(ConnectionHandler.instance().isOnServer()
                 && Configs.mainConfig.enableMod.get()
                 && Configs.rendererConfig.showFishingRodPositions.get()

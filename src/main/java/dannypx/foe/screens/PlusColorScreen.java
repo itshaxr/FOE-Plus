@@ -129,7 +129,8 @@ public class PlusColorScreen extends Screen {
         Component sign;
         if (current == NameTagMarker.SPECIAL) sign = isDev() ? NameTagMarker.devMarker(now) : NameTagMarker.BETA_MARKER;
         else sign = NameTagMarker.colorMarker(current);
-        Component preview = Component.literal(name).withStyle(ChatFormatting.WHITE).append(sign);
+        Component preview = Component.empty().append(Component.literal(name).withStyle(ChatFormatting.WHITE))
+                .append(NameTagMarker.GAP).append(sign);
         int py = options.isEmpty() ? gridTop : options.getLast().button().getY() + BUTTON_H + 4;
         guiGraphics.drawCenteredString(font, Component.literal("Preview: ").withStyle(ChatFormatting.DARK_GRAY).append(preview), width / 2, py, 0xFFFFFFFF);
     }

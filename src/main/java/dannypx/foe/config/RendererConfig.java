@@ -118,13 +118,13 @@ public class RendererConfig extends Config {
     public ValidatedBoolean showNewFishingHook = new ValidatedBoolean(true);
 
     @Name("3D bobber style")
-    @Desc("§7The colours of your 3D bobber. Also on the Bobber button in the O menu")
+    @Desc("§7The colours of your 3D bobber. Also in O → Bobber")
     public me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<dannypx.foe.type.BobberStyle> bobberStyle =
             new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.BobberStyle.CLASSIC, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
 
-    @Name("Use your bobber style on everyone's bobbers")
-    @Desc("§7Off: other players' bobbers stay Classic, so yours is easy to spot")
-    public ValidatedBoolean bobberStyleForEveryone = new ValidatedBoolean(false);
+    @Name("Show other FOE+ users' bobber styles")
+    @Desc("§7Other FOE+ users' bobbers show the preset they picked. Off, or for players without FOE+: Classic")
+    public ValidatedBoolean showOtherBobberStyles = new ValidatedBoolean(true);
 
     @Name("Use custom hat positions")
     public ValidatedBoolean showHatPositions = new ValidatedBoolean(true);

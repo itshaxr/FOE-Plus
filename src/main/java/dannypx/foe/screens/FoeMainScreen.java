@@ -32,7 +32,7 @@ public class FoeMainScreen extends Screen {
     private static final int BUTTON_HEIGHT = 20;
     private static final int ROW = 24;
     private static final int COLUMN_GAP = 10;
-    private static final int ROWS = 7;
+    private static final int ROWS = 8;
 
     private final Screen parent;
     private final List<IconButton> icons = new ArrayList<>();
@@ -71,16 +71,18 @@ public class FoeMainScreen extends Screen {
     protected void init() {
         icons.clear();
 
-        // Vertical layout: logo, welcome line, column headers, 6 rows, gap, Done.
+        // Vertical layout: logo, welcome line, column headers, the rows, gap, Done.
         int fixed = 12 /*welcome*/ + 8 + 12 /*headers*/ + ROWS * ROW + 8 + BUTTON_HEIGHT;
-        logoH = Math.max(20, Math.min(60, height - fixed - 18));
+        // The logo shrinks to fit, and is left out on very small screens (high GUI scale).
+        logoH = Math.min(60, height - fixed - 12);
+        if (logoH < 16) logoH = 0;
         logoW = logoH * LOGO_W / LOGO_H;
-        int total = logoH + 6 + fixed;
+        int total = (logoH > 0 ? logoH + 6 : 0) + fixed;
         int top = Math.max(6, (height - total) / 2);
 
         logoX = (width - logoW) / 2;
         logoY = top;
-        welcomeY = logoY + logoH + 6;
+        welcomeY = logoY + (logoH > 0 ? logoH + 6 : 0);
         headerY = welcomeY + 12 + 8;
         int rowsY = headerY + 12;
 
@@ -110,6 +112,10 @@ public class FoeMainScreen extends Screen {
                 "Pick the colour of the + after your name, for everyone with FOE+",
                 b -> this.minecraft.setScreen(new PlusColorScreen(this)));
         plus.setMessage(plusLabel());
+        Button bobber = add(leftX, rowsY + ROW * 7, "", Items.FISHING_ROD,
+                "Pick the colours of your 3D bobber, for everyone with FOE+",
+                b -> this.minecraft.setScreen(new BobberScreen(this)));
+        bobber.setMessage(bobberLabel());
 
         // Stats
         add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
@@ -124,16 +130,6 @@ public class FoeMainScreen extends Screen {
                 b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
         add(rightX, rowsY + ROW * 5, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
                 b -> this.minecraft.setScreen(new MainScreen(this)));
-        Button bobber = add(rightX, rowsY + ROW * 6, "", Items.FISHING_ROD,
-                "Click for the next 3D bobber colours, Shift-click for the previous ones",
-                b -> {
-                    var cfg = Configs.rendererConfig;
-                    cfg.bobberStyle.accept(cfg.bobberStyle.get().cycle(this.minecraft.hasShiftDown()));
-                    if (!cfg.showNewFishingHook.get()) cfg.showNewFishingHook.accept(true);
-                    cfg.save();
-                    b.setMessage(bobberLabel());
-                });
-        bobber.setMessage(bobberLabel());
 
         // Bottom row
         int bottomY = rowsY + ROWS * ROW + 8;
@@ -199,7 +195,7 @@ public class FoeMainScreen extends Screen {
         super.render(guiGraphics, mouseX, mouseY, delta);
 
         // Logo
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_U, LOGO_V, logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX, LOGO_TEX);
+        if (logoH > 0) guiGraphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_U, LOGO_V, logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX, LOGO_TEX);
 
         // Welcome, <player name>
         String name = this.minecraft.player != null ? this.minecraft.player.getName().getString() : this.minecraft.getUser().getName();

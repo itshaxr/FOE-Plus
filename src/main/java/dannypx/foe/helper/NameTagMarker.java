@@ -10,6 +10,12 @@ import java.util.regex.Pattern;
 public final class NameTagMarker {
     private NameTagMarker() {}
 
+    /// A 1-pixel space (the smallest there is) between a name and its +, so they never touch.
+    /// It lives in FOE+'s own "gap" font and is never bold, which would make it wider.
+    public static final Component GAP = Component.literal("\uE001").withStyle(style -> style
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gap"))));
+
     private static final Component FOE_PLUS_MARKER = Component.literal("+").withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD);
 
     /// Puts a + right after the first FOE+ user's name in the name tag, keeping every other part
@@ -84,6 +90,7 @@ public final class NameTagMarker {
             int stop = start + text.length();
             if (!done[0] && end > start && end <= stop) {
                 out.append(Component.literal(text.substring(0, end - start)).withStyle(style));
+                out.append(GAP);
                 out.append(marker);
                 if (end < stop) out.append(Component.literal(text.substring(end - start)).withStyle(style));
                 done[0] = true;
