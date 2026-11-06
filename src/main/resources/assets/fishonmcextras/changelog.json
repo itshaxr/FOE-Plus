@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.45+1.21.11",
+      "name": "FOE+ 1.0.45+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel is tidier: just 'Rerolls 23h 55m 2s' above the missions (the event name and end time are gone) by @phckd\n- Fixed the crew list: the server's /crew heads no longer carry a player id or name (only a skin), so FOE+ found no members. It now reads each member from the head's label ('GhostZland (Offline)'), with their id from the tab list (filled in when an offline member comes online). Open /crew once to reload by @phckd"
+    },
+    {
       "versionNumber": "1.0.44+1.21.11",
       "name": "FOE+ 1.0.44+1.21.11",
       "datePublished": "2026-11-06",

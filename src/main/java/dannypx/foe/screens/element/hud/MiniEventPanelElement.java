@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The mini event from /minievent: its name and when it ends, when the daily missions reroll,
- * then each mission with its progress, in the server's colours. Hidden when no mini event is on.
+ * The mini event from /minievent: when the daily missions reroll, then each mission with its
+ * progress, in the server's colours. Hidden when no mini event is on.
  */
 public class MiniEventPanelElement extends PanelElement {
     public MiniEventPanelElement() {
@@ -43,17 +43,9 @@ public class MiniEventPanelElement extends PanelElement {
         return Component.literal("ᴍɪɴɪ ᴇᴠᴇɴᴛ").withStyle(ChatFormatting.BOLD);
     }
 
-    /// "KENAI MINI EVENT » Ends in 3d 6h 55m 2s"
-    static Component header(String name, int color, long msLeft) {
-        return join(Component.literal(name).withColor(color).withStyle(ChatFormatting.BOLD),
-                Component.literal(" » ").withStyle(ChatFormatting.DARK_GRAY),
-                Component.literal("Ends in ").withStyle(ChatFormatting.GRAY),
-                Component.literal(MiniEventHandler.dhms(msLeft)).withStyle(ChatFormatting.WHITE));
-    }
-
-    /// "Daily missions reroll in 23h 55m 2s"
+    /// "Rerolls 23h 55m 2s" (when the daily missions reroll)
     static Component reroll(long msLeft) {
-        return join(Component.literal("Daily missions reroll in ").withStyle(ChatFormatting.GRAY),
+        return join(Component.literal("Rerolls ").withStyle(ChatFormatting.GRAY),
                 Component.literal(MiniEventHandler.dhms(msLeft)).withStyle(ChatFormatting.WHITE));
     }
 
@@ -68,7 +60,7 @@ public class MiniEventPanelElement extends PanelElement {
         MiniEventHandler event = MiniEventHandler.instance();
         List<Component> lines = new ArrayList<>();
         if (!event.active()) return lines;
-        lines.add(header(event.eventName(), event.eventColor(), event.endsInMs()));
+        // Just the daily reroll timer above the missions (the event's end time is left out).
         if (event.rerollInMs() > 0) lines.add(reroll(event.rerollInMs()));
         boolean hideDone = Configs.hudConfig.miniEventHideCompleted.get();
         for (MiniEventHandler.Mission m : event.missions()) {
@@ -81,7 +73,6 @@ public class MiniEventPanelElement extends PanelElement {
     @Override
     protected List<Component> previewLines() {
         List<Component> lines = new ArrayList<>();
-        lines.add(header("KENAI MINI EVENT", 0x55FF55, 3 * 86_400_000L + 6 * 3_600_000L + 55 * 60_000L + 2_000L));
         lines.add(reroll(23 * 3_600_000L + 55 * 60_000L + 2_000L));
         lines.add(mission(new MiniEventHandler.Mission(
                 Component.literal("— ").withStyle(ChatFormatting.RED).append(Component.literal("Kenai River").withStyle(ChatFormatting.GREEN)),

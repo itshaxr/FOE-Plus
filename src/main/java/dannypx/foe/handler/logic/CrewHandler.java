@@ -39,6 +39,7 @@ public class CrewHandler extends Handler {
     boolean isCrewNearby = false;
 
     int leaveDelay = 20;
+    private int idCheckTicks = 0;
 
     public List<Pair<UUID, String>> getCrewListOrdered() {
         return crewListOrdered;
@@ -69,6 +70,12 @@ public class CrewHandler extends Handler {
     public void tick() {
         if(!ScoreboardHandler.instance().getCrew().getString().isBlank()) {
             if(crewListOrdered.isEmpty()) this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
+            if(++idCheckTicks >= 20) {
+                idCheckTicks = 0;
+                if(CrewDataHandler.instance().swapInRealIds(minecraft.getConnection()) != null) {
+                    this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
+                }
+            }
         }
 
         if(minecraft.player != null
@@ -176,6 +183,17 @@ public class CrewHandler extends Handler {
     }
 
     public void onPlayerJoin(UUID uuid) {
+        // A member read from /crew while offline is saved under a made-up id: swap in the real
+        // one now, keeping them offline here so the join below still announces them.
+        if(!CrewDataHandler.instance().getCrewData().crewList.containsKey(uuid)
+                && CrewDataHandler.instance().swapInRealIds(minecraft.getConnection()) != null) {
+            this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
+            onlineMembers.removeIf(m -> {
+                if (!m.value1().equals(uuid)) return false;
+                offlineMembers.add(m);
+                return true;
+            });
+        }
         if(LoadingHandler.instance().isLoadingDone()
                 && !ScoreboardHandler.instance().getCrew().getString().isBlank()
                 && CrewDataHandler.instance().getCrewData().crewList.containsKey(uuid)

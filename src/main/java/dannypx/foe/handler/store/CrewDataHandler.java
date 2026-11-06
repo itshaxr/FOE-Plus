@@ -50,6 +50,27 @@ public class CrewDataHandler extends Handler {
         this.crewData.uuid = uuid;
     }
 
+    /// Members saved under a made-up id (offline when /crew was read) get their real one once
+    /// they're in the tab list. Returns a real id that was swapped in, or null when nothing changed.
+    public UUID swapInRealIds(net.minecraft.client.multiplayer.ClientPacketListener connection) {
+        if (connection == null) return null;
+        Map<UUID, Pair<String, ItemStack>> fixed = null;
+        UUID last = null;
+        for (var e : crewData.crewList.entrySet()) {
+            String name = e.getValue().value1();
+            if (name == null || name.isBlank() || connection.getPlayerInfo(e.getKey()) != null) continue;
+            var info = connection.getPlayerInfo(name);
+            if (info == null || info.getProfile().id().equals(e.getKey())) continue;
+            if (fixed == null) fixed = new java.util.LinkedHashMap<>(crewData.crewList);
+            fixed.remove(e.getKey());
+            fixed.put(info.getProfile().id(), e.getValue());
+            last = info.getProfile().id();
+        }
+        if (fixed == null) return null;
+        updateCrewList(fixed);
+        return last;
+    }
+
     public void updateCrewList(Map<UUID, Pair<String, ItemStack>> crewList) {
         this.crewData.crewList = crewList;
         this.needsUpdate = true;

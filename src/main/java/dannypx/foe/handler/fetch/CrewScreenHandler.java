@@ -52,9 +52,16 @@ public class CrewScreenHandler extends Handler {
                     ItemStack itemStack = chestMenu.getSlot(i).getItem();
                     if(itemStack.getItem() == Items.PLAYER_HEAD
                             && itemStack.get(DataComponents.PROFILE) != null
-                            && itemStack.get(DataComponents.PROFILE).partialProfile().id() != null
                     ) {
-                        crewMembers.put(itemStack.get(DataComponents.PROFILE).partialProfile().id(), Pair.of(itemStack.get(DataComponents.PROFILE).partialProfile().name(), itemStack));
+                        // The server's heads now carry only a skin (all-zero id, no name); the
+                        // player is in the label: "GhostZland (Offline)".
+                        var profile = itemStack.get(DataComponents.PROFILE).partialProfile();
+                        String name = memberName(itemStack.getHoverName().getString());
+                        if (name.isEmpty()) name = profile.name() == null ? "" : profile.name();
+                        if (name.isEmpty()) continue;
+                        UUID id = profile.id();
+                        if (id == null || NIL.equals(id)) id = idForName(name);
+                        crewMembers.put(id, Pair.of(name, itemStack));
                     }
                 }
 
@@ -71,6 +78,39 @@ public class CrewScreenHandler extends Handler {
             }
         }
     }
+    private static final UUID NIL = new UUID(0L, 0L);
+    private static final java.util.regex.Pattern MEMBER = java.util.regex.Pattern.compile(
+            "([A-Za-z0-9_]{1,16})\\s*\\((?:online|offline)\\)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /// " 퀁    GhostZland (Offline)" → "GhostZland" ("" when it isn't a member's label).
+    /// Public for tests.
+    public static String memberName(String label) {
+        if (label == null) return "";
+        String plain = net.minecraft.ChatFormatting.stripFormatting(label);
+        if (plain == null) return "";
+        java.util.regex.Matcher m = MEMBER.matcher(plain);
+        return m.find() ? m.group(1) : "";
+    }
+
+    /// The player's id: from the tab list when they're on, else the one saved before, else one
+    /// made from the name (swapped for the real one once they come online).
+    private static UUID idForName(String name) {
+        var conn = net.minecraft.client.Minecraft.getInstance().getConnection();
+        if (conn != null) {
+            var info = conn.getPlayerInfo(name);
+            if (info != null) return info.getProfile().id();
+        }
+        for (var e : CrewDataHandler.instance().getCrewData().crewList.entrySet()) {
+            if (name.equalsIgnoreCase(e.getValue().value1()) && !NIL.equals(e.getKey())) return e.getKey();
+        }
+        return nameId(name);
+    }
+
+    /// The made-up id for a name (the same one Minecraft uses for offline players).
+    public static UUID nameId(String name) {
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     /// Everything on the /crew screen's info item and member heads, as text.
     private static String dump(ChestMenu menu) {
         StringBuilder out = new StringBuilder("FOE+ /crew dump\n");
