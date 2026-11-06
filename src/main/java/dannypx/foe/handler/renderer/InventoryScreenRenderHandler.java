@@ -89,7 +89,8 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             }
             this.renderButtonBoxString(guiGraphics);
             if(Configs.inventoryScreenConfig.showMoonTimer.get()) this.renderMoonTimer(guiGraphics);
-            if(searchBar != null) searchBar.renderHelp(guiGraphics, mouseX, mouseY, tickDelta);
+            // No help box here (unlike the Personal Vault): it's too big to fit anywhere around
+            // the inventory without covering it.
         }
     }
 
