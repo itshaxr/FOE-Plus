@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.44+1.21.11",
+      "name": "FOE+ 1.0.44+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel now shows the missions (the mark before each one is the server's status icon, which FOE+ took for a dash and stopped reading at) by @phckd\n- The quiet /minievent check no longer leaves the mission list in chat: its whole answer is hidden by @phckd"
+    },
+    {
       "versionNumber": "1.0.43+1.21.11",
       "name": "FOE+ 1.0.43+1.21.11",
       "datePublished": "2026-11-06",

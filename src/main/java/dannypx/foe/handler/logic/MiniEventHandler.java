@@ -46,12 +46,11 @@ public class MiniEventHandler {
     private static final long CATCH_REFRESH_GAP_MS = 3L * 60L * 1000L;
     private static final long CATCH_REFRESH_DELAY_MS = 5_000L;
     private static final long HIDE_WINDOW_MS = 3_000L;
-    private static final long CAPTURE_MS = 2_000L;
+    private static final long CAPTURE_MS = 750L;
 
     static final Pattern HEADER = Pattern.compile("^\\s*(.*?\\bMINI EVENT)\\s*[»>]\\s*Ends in\\s*(.+?)\\s*$", Pattern.CASE_INSENSITIVE);
     static final Pattern REROLL = Pattern.compile("^\\s*Daily missions?\\s+rerolls?\\s+in\\s*(.+?)\\s*$", Pattern.CASE_INSENSITIVE);
-    static final Pattern MISSION = Pattern.compile("^\\s*[—–-]\\s*\\S.*$");
-    static final Pattern PROGRESS = Pattern.compile("^\\s*└\\s*(.*)$");
+    /// A progress line: it has the "(0/2)" count (after a └ or similar).
     static final Pattern COUNT = Pattern.compile("\\(\\s*([\\d,]+)\\s*/\\s*([\\d,]+)\\s*\\)");
     private static final Pattern SEPARATOR = Pattern.compile("^[\\s\\-=_─━]+$");
 
@@ -68,6 +67,8 @@ public class MiniEventHandler {
     private List<Mission> missions = new ArrayList<>();
 
     private boolean capturing = false;
+    /// The answer being read is our own quiet check's: all of it is hidden.
+    private boolean captureOurs = false;
     private long captureUntil = 0L;
     private Component pendingName = null;
     private List<Mission> incoming = null;
@@ -102,11 +103,12 @@ public class MiniEventHandler {
     public boolean onGameMessage(Component message) {
         long now = System.currentTimeMillis();
         boolean ours = now < hideUntil;
-        boolean handled = false;
+        boolean hide = false;
         for (MutableComponent line : splitLines(message)) {
-            if (onLine(line, now, ours)) handled = true;
+            boolean partOfOurs = ours || (capturing && captureOurs && now <= captureUntil);
+            if (onLine(line, now, ours) && (partOfOurs || (capturing && captureOurs))) hide = true;
         }
-        return ours && handled;
+        return hide;
     }
 
     /// One line of chat; true when it belonged to a /minievent answer. Package-private for tests.
@@ -114,6 +116,7 @@ public class MiniEventHandler {
         String text = ChatFormatting.stripFormatting(line.getString());
         if (text == null) return false;
         if (capturing && now > captureUntil) finishCapture();
+        if (capturing && captureOurs) ours = true;
 
         Matcher m = HEADER.matcher(text);
         if (m.matches()) {
@@ -122,6 +125,7 @@ public class MiniEventHandler {
             eventColor = firstColor(line, 0x55FF55);
             if (ms >= 0) endsAt = now + ms;
             capturing = true;
+            captureOurs = ours;
             captureUntil = now + CAPTURE_MS;
             pendingName = null;
             incoming = new ArrayList<>();
@@ -144,32 +148,29 @@ public class MiniEventHandler {
             return true;
         }
         if (text.isBlank() || SEPARATOR.matcher(text).matches()) return true;
-        m = PROGRESS.matcher(text);
-        if (m.matches()) {
+        Matcher c = COUNT.matcher(text);
+        if (c.find()) {
             if (pendingName != null) {
-                Component progress = dropLeading(line, text.indexOf('└') + 1);
-                long done = -1, goal = -1;
-                Matcher c = COUNT.matcher(text);
-                if (c.find()) {
-                    done = Long.parseLong(c.group(1).replace(",", ""));
-                    goal = Long.parseLong(c.group(2).replace(",", ""));
-                }
+                // "└ (0/2) One Timer" → "(0/2) One Timer" (whatever the corner glyph is).
+                Component progress = dropLeading(line, c.start());
+                long done = Long.parseLong(c.group(1).replace(",", ""));
+                long goal = Long.parseLong(c.group(2).replace(",", ""));
                 incoming.add(new Mission(pendingName, progress, done, goal));
                 missions = new ArrayList<>(incoming);
                 pendingName = null;
             }
             return true;
         }
-        if (MISSION.matcher(text).matches()) {
-            pendingName = dropLeading(line, leadingSpaces(text));
-            return true;
-        }
-        finishCapture();
-        return false;
+        // Any other line in the answer is a mission's name ("— ⛏ Kenai River GIGANTIC", its
+        // first mark being the server's status icon); it only counts once its progress line
+        // follows. Hidden only when the answer is ours.
+        pendingName = dropLeading(line, leadingSpaces(text));
+        return ours;
     }
 
     private void finishCapture() {
         capturing = false;
+        captureOurs = false;
         pendingName = null;
         if (incoming != null) missions = new ArrayList<>(incoming);
         incoming = null;
@@ -202,6 +203,11 @@ public class MiniEventHandler {
         long now = System.currentTimeMillis();
         if (!active() || catchRefreshAt != 0L || now - lastCheckAt < CATCH_REFRESH_GAP_MS) return;
         catchRefreshAt = now + CATCH_REFRESH_DELAY_MS;
+    }
+
+    /// Tests: act as if our quiet check was just sent.
+    void hideForTest(long now) {
+        hideUntil = now + HIDE_WINDOW_MS;
     }
 
     /// The server said to wait: check again after that.
