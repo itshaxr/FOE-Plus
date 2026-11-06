@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.26+1.21.11",
+      "name": "FOE+ 1.0.26+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Fixed pet and shard dry streaks jumping by thousands when your fish total updated from your server stats by @phckd\n- Import Dry Streaks repairs streaks that jumped, and brings over your capsule, bottle, pet and shard totals from FOE when they're higher there by @phckd\n- Edit All-Time Stats in the O menu: fix any total by hand (fish caught, pets, shards, capsules, bottles, quests, rarities, variants and Gigantic) by @phckd"
+    },
+    {
       "versionNumber": "1.0.25+1.21.11",
       "name": "FOE+ 1.0.25+1.21.11",
       "datePublished": "2026-11-05",

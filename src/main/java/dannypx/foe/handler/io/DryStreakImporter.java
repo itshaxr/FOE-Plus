@@ -49,18 +49,30 @@ public final class DryStreakImporter {
 
     /// Pets of any rarity, as one streak.
     static final String PET_ANY = "pet";
+    static final String COUNT_PETS = "pets";
+    static final String COUNT_SHARDS = "shards";
 
     /// Dry streaks read from one file: category → field → streak, plus pets and items, and
     /// {@code special}: the any-rarity pet streak ("pet") and the rare pulls ("infusion_capsule",
     /// "lightning_bottle", which count only Blood Moon / thunderstorm catches).
+    /// {@code counts}: totals the file knows ("pets", "shards", "infusion_capsule",
+    /// "lightning_bottle"), brought over when higher than here. {@code fishTotal}: the file's own
+    /// fish count, or 0 when it isn't comparable with this install's.
     public record Source(Path file, String kind, long lastModified,
                          Map<String, Map<String, Integer>> fish,
                          Map<String, Map<String, Integer>> pets,
                          Map<String, Integer> items,
-                         Map<String, Integer> special) {
+                         Map<String, Integer> special,
+                         Map<String, Integer> counts,
+                         int fishTotal) {
         public Source(Path file, String kind, long lastModified, Map<String, Map<String, Integer>> fish,
                       Map<String, Map<String, Integer>> pets, Map<String, Integer> items) {
-            this(file, kind, lastModified, fish, pets, items, new LinkedHashMap<>());
+            this(file, kind, lastModified, fish, pets, items, new LinkedHashMap<>(), new LinkedHashMap<>(), 0);
+        }
+
+        public Source(Path file, String kind, long lastModified, Map<String, Map<String, Integer>> fish,
+                      Map<String, Map<String, Integer>> pets, Map<String, Integer> items, Map<String, Integer> special) {
+            this(file, kind, lastModified, fish, pets, items, special, new LinkedHashMap<>(), 0);
         }
 
         int count() {
@@ -88,7 +100,13 @@ public final class DryStreakImporter {
         if (foe.has("petDryStreak")) special.put(PET_ANY, Math.max(0, all - getInt(foe, "petDryStreak")));
         if (foe.has("infusionCapsuleDryStreak")) special.put(RareCatchHandler.INFUSION_CAPSULE, Math.max(0, all - getInt(foe, "infusionCapsuleDryStreak")));
         if (foe.has("lightningBottleDryStreak")) special.put(RareCatchHandler.LIGHTNING_BOTTLE, Math.max(0, all - getInt(foe, "lightningBottleDryStreak")));
-        return new Source(file, "FOE", lastModified, fish, new LinkedHashMap<>(), items, special);
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        if (foe.has("allPetCaughtCount")) counts.put(COUNT_PETS, getInt(foe, "allPetCaughtCount"));
+        if (foe.has("allShardCaughtCount")) counts.put(COUNT_SHARDS, getInt(foe, "allShardCaughtCount"));
+        if (foe.has("allInfusionCapsuleCount")) counts.put(RareCatchHandler.INFUSION_CAPSULE, getInt(foe, "allInfusionCapsuleCount"));
+        if (foe.has("allLightningBottleCount")) counts.put(RareCatchHandler.LIGHTNING_BOTTLE, getInt(foe, "allLightningBottleCount"));
+        // FOE takes its fish count from your server stats, like FOE+, so the two can be compared.
+        return new Source(file, "FOE", lastModified, fish, new LinkedHashMap<>(), items, special, counts, all);
     }
 
     private static Map<String, Integer> foeMap(JsonObject foe, String key, int all, List<String> known) {
@@ -138,8 +156,13 @@ public final class DryStreakImporter {
     //endregion
 
     //region Applying
-    /// What an import did: streaks set, and streaks kept because this install's are newer.
-    public record Result(int set, int kept) {}
+    /// What an import did: streaks set, streaks kept because this install's are newer, and totals
+    /// raised to the file's.
+    public record Result(int set, int kept, int counts) {
+        public Result(int set, int kept) {
+            this(set, kept, 0);
+        }
+    }
 
     /**
      * Sets the streaks in {@code source} on {@code data}; counts are left alone. A streak is kept
@@ -160,14 +183,53 @@ public final class DryStreakImporter {
             }
             int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
             // Negative is fine: it means the streak started before this install counted any fish.
-            data.itemData.put(key, StatsDataHandler.Stat.of(amount, data.fishTotal - item.getValue()));
+            data.itemData.put(key, StatsDataHandler.Stat.of(amount, data.fishTotal - streakNow(source, data, item.getValue())));
             counts[0]++;
         }
         for (var special : source.special().entrySet()) {
             if (applySpecial(source, data, special.getKey(), special.getValue())) counts[0]++;
             else counts[1]++;
         }
-        return new Result(counts[0], counts[1]);
+        return new Result(counts[0], counts[1], applyCounts(source, data));
+    }
+
+    /// Totals from the file, where they're higher than here (you never lose any you counted
+    /// here, and nothing is counted twice). Returns how many were raised.
+    private static int applyCounts(Source source, StatsDataHandler.StatsDataModel data) {
+        int raised = 0;
+        for (var count : source.counts().entrySet()) {
+            int value = Math.max(0, count.getValue());
+            switch (count.getKey()) {
+                case COUNT_PETS -> {
+                    if (value > data.petTotal) { data.petTotal = value; raised++; }
+                }
+                case COUNT_SHARDS -> {
+                    int have = 0;
+                    for (var e : data.itemData.entrySet()) {
+                        if (e.getKey().toLowerCase(Locale.ROOT).contains("shard") && e.getValue() != null && e.getValue().amount() != null) have += e.getValue().amount();
+                    }
+                    if (value > have) {
+                        String key = itemKey(data, "shard");
+                        StatsDataHandler.Stat<Integer, Integer> stat = data.itemData.get(key);
+                        int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
+                        Integer on = stat == null ? null : stat.caughtOn();
+                        data.itemData.put(key, StatsDataHandler.Stat.of(amount + value - have, on == null ? data.fishTotal : on));
+                        raised++;
+                    }
+                }
+                default -> {
+                    if (!RareCatchHandler.isEventPull(count.getKey())) continue;
+                    if (data.rareCatchData == null) data.rareCatchData = new HashMap<>();
+                    StatsDataHandler.Stat<Integer, Integer> stat = data.rareCatchData.get(count.getKey());
+                    int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
+                    if (value > amount) {
+                        data.rareCatchData.put(count.getKey(), StatsDataHandler.Stat.of(value, stat == null || stat.caughtOn() == null ? data.fishTotal : stat.caughtOn()));
+                        raised++;
+                    }
+                }
+            }
+        }
+        return raised;
     }
 
     private static void applyMap(Source source, StatsDataHandler.StatsDataModel data, String set,
@@ -181,7 +243,7 @@ public final class DryStreakImporter {
                 continue;
             }
             int amount = stat == null || stat.amount() == null ? 0 : stat.amount();
-            fields.put(streak.getKey(), StatsDataHandler.Stat.of(amount, data.fishTotal - streak.getValue()));
+            fields.put(streak.getKey(), StatsDataHandler.Stat.of(amount, data.fishTotal - streakNow(source, data, streak.getValue())));
             counts[0]++;
         }
     }
@@ -193,7 +255,7 @@ public final class DryStreakImporter {
             boolean havePet = data.petCaughtOn != null || on > 0;
             StatsDataHandler.Stat<Integer, Integer> current = havePet ? StatsDataHandler.Stat.of(0, on) : null;
             if (keepCurrent(source, data, "pet:any", current, streak)) return false;
-            data.petCaughtOn = data.fishTotal - streak;
+            data.petCaughtOn = data.fishTotal - streakNow(source, data, streak);
             return true;
         }
         if (!RareCatchHandler.isEventPull(key)) return false;
@@ -210,11 +272,39 @@ public final class DryStreakImporter {
     /// True when this install's streak is newer than the source's and must stay. Package-private for tests.
     static boolean keepCurrent(Source source, StatsDataHandler.StatsDataModel data, String key,
                                StatsDataHandler.Stat<Integer, Integer> current, int sourceStreak) {
+        // Both fish counts come from your server stats: a streak here that's longer than the
+        // file's plus every fish since it was saved can't be right (an older FOE+ build let pet
+        // and shard streaks jump when the fish total changed), so the file's is taken.
+        if (comparable(source, data) && current != null && current.caughtOn() != null
+                && data.fishTotal - current.caughtOn() > streakNow(source, data, sourceStreak)) {
+            return false;
+        }
         Long knownAt = data.streakKnownAt == null ? null : data.streakKnownAt.get(key);
         if (knownAt != null && knownAt > source.lastModified()) return true;
         if (current == null || current.caughtOn() == null) return false;
         int currentStreak = data.fishTotal - current.caughtOn();
         return currentStreak > 0 && currentStreak < sourceStreak;
+    }
+
+    /// True when the file's fish count and this install's count the same fish (both from your
+    /// server stats), so fish caught since the file was saved = this total minus the file's. Only
+    /// when the difference is no more than you could have fished since then (FOE counts from when
+    /// it was installed unless you imported your server stats into it).
+    static boolean comparable(Source source, StatsDataHandler.StatsDataModel data) {
+        if (source.fishTotal() <= 0 || data.fishTotal < source.fishTotal() || source.lastModified() <= 0L) return false;
+        long hours = Math.max(0L, System.currentTimeMillis() - source.lastModified()) / 3_600_000L;
+        long mostFish = MAX_FISH_SLACK + hours * MAX_FISH_PER_HOUR;
+        return data.fishTotal - source.fishTotal() <= mostFish;
+    }
+
+    /// Far more than anyone catches, so real fishing never looks impossible.
+    static final long MAX_FISH_PER_HOUR = 1_500L;
+    static final long MAX_FISH_SLACK = 2_000L;
+
+    /// The file's streak as it stands now: plus the fish you've caught since it was saved, when
+    /// the two fish counts can be compared.
+    static int streakNow(Source source, StatsDataHandler.StatsDataModel data, int sourceStreak) {
+        return comparable(source, data) ? sourceStreak + (data.fishTotal - source.fishTotal()) : sourceStreak;
     }
 
     /// FOE calls it "shard"; use whatever shard key this install already has.
@@ -279,7 +369,8 @@ public final class DryStreakImporter {
                 StatsDataHandler stats = StatsDataHandler.instance();
                 Result result = apply(source.get(), stats.getStatsData());
                 stats.markChanged();
-                message(Component.literal("Imported " + result.set() + " dry streaks from " + source.get().kind() + " (").withStyle(ChatFormatting.GREEN)
+                message(Component.literal("Imported " + result.set() + " dry streaks"
+                                + (result.counts() > 0 ? " and " + result.counts() + " totals" : "") + " from " + source.get().kind() + " (").withStyle(ChatFormatting.GREEN)
                         .append(Component.literal(describe(source.get().file())).withStyle(ChatFormatting.GRAY))
                         .append(Component.literal(")").withStyle(ChatFormatting.GREEN))
                         .append(Component.literal(result.kept() > 0 ? " · kept " + result.kept() + " newer here" : "").withStyle(ChatFormatting.GRAY)));

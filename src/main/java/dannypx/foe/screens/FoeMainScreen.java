@@ -118,17 +118,19 @@ public class FoeMainScreen extends Screen {
         bobber.setMessage(bobberLabel());
 
         // Stats
-        add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install. Nothing else changes.",
+        add(rightX, rowsY, "Import Dry Streaks", Items.CLOCK, "Take your dry streaks from your newest FOE or FOE-R install, and your pet, shard, capsule and bottle totals where they're higher there",
                 b -> dannypx.foe.handler.io.DryStreakImporter.importNow());
         add(rightX, rowsY + ROW, "Edit Dry Streaks", Items.NAME_TAG, "Set your dry streaks by hand",
                 b -> this.minecraft.setScreen(new DryStreakEditScreen(this)));
-        add(rightX, rowsY + ROW * 2, "Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from a previous FOE install",
+        add(rightX, rowsY + ROW * 2, "Edit All-Time Stats", Items.KNOWLEDGE_BOOK, "Fix any All-Time Stats total by hand, in case something counted wrong",
+                b -> this.minecraft.setScreen(new StatsEditScreen(this)));
+        add(rightX, rowsY + ROW * 3, "Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from a previous FOE install",
                 b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false));
-        add(rightX, rowsY + ROW * 3, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
+        add(rightX, rowsY + ROW * 4, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
                 b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
-        add(rightX, rowsY + ROW * 4, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
+        add(rightX, rowsY + ROW * 5, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
                 b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
-        add(rightX, rowsY + ROW * 5, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
+        add(rightX, rowsY + ROW * 6, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
                 b -> this.minecraft.setScreen(new MainScreen(this)));
 
         // Bottom row

@@ -93,10 +93,11 @@ public class StatsScreenHandler extends Handler {
                 Map<String, Map<String, StatsDataHandler.Stat<Integer, Integer>>> newData = StatsDataHandler.instance().getStatsData().fishData;
 
                 int totalFish = this.extractTotal(loreLines.get(6));
-                // The server only knows counts, not dry streaks: keep each streak you had
-                // (fish since its last catch) across the new fish total.
-                int oldTotal = StatsDataHandler.instance().getStatsData().fishTotal;
-                StatsDataHandler.instance().getStatsData().fishTotal = totalFish;
+                // The server only knows counts, not dry streaks: keep every streak you had (fish,
+                // pets, shards, rare pulls) across the new fish total. After the shift each
+                // streak is already right for the new total, so keepStreak leaves it as it is.
+                StatsDataHandler.instance().setFishTotalKeepingStreaks(totalFish);
+                int oldTotal = totalFish;
 
                 // Rarity
                 for (int i = 8; i < 13; i++) {

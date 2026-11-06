@@ -329,6 +329,32 @@ public class StatsDataHandler extends Handler {
         this.needsUpdate = true;
     }
 
+    /// Changes the fish total without changing any dry streak: every "caught on" fish count (fish,
+    /// pets, items like shards, rare pulls, the last pet) moves by the same amount. Used when the
+    /// total comes from the server's stats or is typed in by hand. Before, only the fish streaks
+    /// moved, so pet and shard streaks jumped by the whole difference.
+    public void setFishTotalKeepingStreaks(int newTotal) {
+        shiftStreaks(statsData, newTotal);
+        this.needsUpdate = true;
+    }
+
+    /// Package-private for tests.
+    static void shiftStreaks(StatsDataModel data, int newTotal) {
+        int delta = newTotal - data.fishTotal;
+        data.fishTotal = newTotal;
+        if (delta == 0) return;
+        if (data.fishData != null) data.fishData.values().forEach(m -> shift(m, delta));
+        if (data.petData != null) data.petData.values().forEach(m -> shift(m, delta));
+        shift(data.itemData, delta);
+        shift(data.rareCatchData, delta);
+        if (data.petCaughtOn != null) data.petCaughtOn += delta;
+    }
+
+    private static void shift(Map<String, Stat<Integer, Integer>> map, int delta) {
+        if (map == null) return;
+        map.replaceAll((k, s) -> s == null || s.caughtOn() == null ? s : Stat.of(s.amount(), s.caughtOn() + delta));
+    }
+
     /// Remembers that this install knows this dry streak first-hand (a catch here, or you set it),
     /// so an import never replaces it with older numbers.
     public void markStreakKnown(String key) {
@@ -386,6 +412,55 @@ public class StatsDataHandler extends Handler {
         this.needsUpdate = true;
     }
 
+    /// From Edit All-Time Stats: sets a total by hand. "fish" keeps every dry streak, "shards"
+    /// puts the difference on one shard kind, rare pulls ("infusion_capsule") keep their streak.
+    public void setTotalManually(String what, int value) {
+        int v = Math.max(0, value);
+        switch (what) {
+            case "fish" -> setFishTotalKeepingStreaks(v);
+            case "pets" -> statsData.petTotal = v;
+            case "quests" -> statsData.questsCompleted = v;
+            case "shards" -> setShardTotal(statsData, v);
+            default -> {
+                if (statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
+                Stat<Integer, Integer> stat = statsData.rareCatchData.get(what);
+                statsData.rareCatchData.put(what, Stat.of(v, stat == null || stat.caughtOn() == null ? statsData.fishTotal : stat.caughtOn()));
+            }
+        }
+        this.needsUpdate = true;
+    }
+
+    /// Package-private for tests: the shard total becomes {@code value}, other shard kinds kept
+    /// where they fit and the rest on the main one.
+    static void setShardTotal(StatsDataModel data, int value) {
+        String main = null;
+        int others = 0;
+        for (Map.Entry<String, Stat<Integer, Integer>> e : data.itemData.entrySet()) {
+            if (!e.getKey().toLowerCase(java.util.Locale.ROOT).contains("shard")) continue;
+            if (main == null || e.getKey().length() < main.length()) main = e.getKey();
+        }
+        if (main == null) main = "shard";
+        for (Map.Entry<String, Stat<Integer, Integer>> e : data.itemData.entrySet()) {
+            if (e.getKey().equals(main) || !e.getKey().toLowerCase(java.util.Locale.ROOT).contains("shard")) continue;
+            int amount = e.getValue() == null || e.getValue().amount() == null ? 0 : e.getValue().amount();
+            if (others + amount > value) {
+                amount = value - others;
+                e.setValue(Stat.of(amount, e.getValue() == null ? null : e.getValue().caughtOn()));
+            }
+            others += amount;
+        }
+        Stat<Integer, Integer> stat = data.itemData.get(main);
+        data.itemData.put(main, Stat.of(value - others, stat == null || stat.caughtOn() == null ? data.fishTotal : stat.caughtOn()));
+    }
+
+    /// From Edit All-Time Stats: how many of a rarity / variant / size you've caught, keeping its streak.
+    public void setFishCountManually(String category, String field, int value) {
+        Map<String, Stat<Integer, Integer>> fields = statsData.fishData.computeIfAbsent(category, k -> new HashMap<>());
+        Stat<Integer, Integer> stat = fields.get(field);
+        fields.put(field, Stat.of(Math.max(0, value), stat == null || stat.caughtOn() == null ? statsData.fishTotal : stat.caughtOn()));
+        this.needsUpdate = true;
+    }
+
     public void addQuestCompleted() {
         statsData.questsCompleted++;
         this.needsUpdate = true;
@@ -393,10 +468,7 @@ public class StatsDataHandler extends Handler {
 
     public void updateData(String set, int value) {
         switch (set) {
-            case "fish" -> {
-                this.statsData.fishTotal = value;
-                this.needsUpdate = true;
-            }
+            case "fish" -> setFishTotalKeepingStreaks(value);
             case "pet" -> {
                 this.statsData.petTotal = value;
                 this.needsUpdate = true;

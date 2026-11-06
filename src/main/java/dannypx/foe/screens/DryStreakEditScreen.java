@@ -31,16 +31,16 @@ public class DryStreakEditScreen extends Screen {
     private int leftX, rightX, top, tableY, panelBottom;
 
     /// One editable streak: where it lives in the stats and how its label looks.
-    private record Entry(String category, String field, Component label) {}
+    record Entry(String category, String field, Component label) {}
 
-    private static final List<Entry> RARITIES = List.of(
+    static final List<Entry> RARITIES = List.of(
             new Entry("rarity", "common", badge("")),
             new Entry("rarity", "rare", badge("")),
             new Entry("rarity", "epic", badge("")),
             new Entry("rarity", "legendary", badge("")),
             new Entry("rarity", "mythical", badge("")));
 
-    private static final List<Entry> SPECIAL = List.of(
+    static final List<Entry> SPECIAL = List.of(
             new Entry("variant", "albino", badge("")),
             new Entry("variant", "melanistic", badge("")),
             new Entry("variant", "trophy", badge("")),
