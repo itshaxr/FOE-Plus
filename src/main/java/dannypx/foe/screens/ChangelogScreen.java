@@ -24,6 +24,10 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
     private static final int BOTTOM_MARGIN = 30;
     private static final int SCROLLBAR_WIDTH = 6;
     private static final int LINE_SPACING = 2;
+    /// The notes are drawn a little smaller than normal text, in a column about a page wide,
+    /// so long entries stay easy to read; version headings stay full size.
+    private static final float BODY_SCALE = 0.8f;
+    private static final int MAX_COLUMN_WIDTH = 340;
 
     private static final int COLOR_HEADER = 0xFFFFD966;
     private static final int COLOR_META = 0xFFAAAAAA;
@@ -83,11 +87,11 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
     }
 
     private int contentLeft() {
-        return CONTENT_PADDING;
+        return Math.max(CONTENT_PADDING, (this.width - contentWidth() - SCROLLBAR_WIDTH - 4) / 2);
     }
 
     private int contentWidth() {
-        return this.width - CONTENT_PADDING * 2 - SCROLLBAR_WIDTH - 4;
+        return Math.min(MAX_COLUMN_WIDTH, this.width - CONTENT_PADDING * 2 - SCROLLBAR_WIDTH - 4);
     }
 
     private int viewportTop() {
@@ -112,11 +116,15 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
         Font font = this.font;
         int wrapWidth = contentWidth();
         int normalLineHeight = font.lineHeight + LINE_SPACING;
+        int bodyLineHeight = Mth.ceil(font.lineHeight * BODY_SCALE) + LINE_SPACING;
         int cursorY = 0;
 
         for (ChangelogFetcherHandler.ChangelogEntry entry : entries) {
-            String header = "v" + entry.versionNumber()
-                    + (entry.name().isBlank() ? "" : " - " + entry.name())
+            // "v1.0.46  (2026-11-06)": the Minecraft part and a name that just repeats the version are left out.
+            String version = entry.versionNumber().replaceFirst("\+.*$", "");
+            boolean nameRepeats = entry.name().isBlank() || entry.name().contains(version);
+            String header = "v" + version
+                    + (nameRepeats ? "" : " - " + entry.name())
                     + (entry.datePublished().isBlank() ? "" : "  (" + entry.datePublished() + ")");
             renderLines.add(new RenderLine(FormattedCharSequence.forward(header, Style.EMPTY), COLOR_HEADER, 0, cursorY, normalLineHeight, 1.0f));
             cursorY += normalLineHeight;
@@ -161,8 +169,8 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
             for (String rawLine : bodyToRender.split("\n", -1)) {
                 String trimmed = rawLine.strip();
                 if (trimmed.isEmpty()) {
-                    renderLines.add(RenderLine.blank(cursorY, normalLineHeight));
-                    cursorY += normalLineHeight;
+                    renderLines.add(RenderLine.blank(cursorY, bodyLineHeight));
+                    cursorY += bodyLineHeight;
                     continue;
                 }
 
@@ -184,15 +192,13 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
                     lineComponent = parseInlineMarkdown(trimmed, Style.EMPTY.withColor(COLOR_BODY));
                 }
 
-                int effectiveWidth = wrapWidth - indent;
+                int effectiveWidth = Mth.floor((wrapWidth - indent) / BODY_SCALE);
                 List<FormattedCharSequence> wrapped = font.split(lineComponent, effectiveWidth);
                 for (FormattedCharSequence seq : wrapped) {
-                    renderLines.add(new RenderLine(seq, fallbackColor, indent, cursorY, normalLineHeight, 1.0f));
-                    cursorY += normalLineHeight;
+                    renderLines.add(new RenderLine(seq, fallbackColor, indent, cursorY, bodyLineHeight, BODY_SCALE));
+                    cursorY += bodyLineHeight;
                 }
             }
-            renderLines.add(RenderLine.blank(cursorY, normalLineHeight));
-            cursorY += normalLineHeight;
             renderLines.add(RenderLine.blank(cursorY, normalLineHeight));
             cursorY += normalLineHeight;
         }

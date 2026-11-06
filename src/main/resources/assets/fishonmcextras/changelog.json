@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.47+1.21.11",
+      "name": "FOE+ 1.0.47+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Changelog is easier to read: smaller text in a centred column, and shorter version headings by @phckd\n- Events panel: the wavy icon before Fish Frenzy is gone by @phckd\n- Daily Quests panel: rarity badges like MYTHICAL are drawn in their own colours again (they were tinted green) by @phckd"
+    },
+    {
       "versionNumber": "1.0.46+1.21.11",
       "name": "FOE+ 1.0.46+1.21.11",
       "datePublished": "2026-11-06",

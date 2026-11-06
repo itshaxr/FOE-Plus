@@ -41,6 +41,30 @@ public class DailyQuestPanelElement extends PanelElement {
         return Component.literal("ᴅᴀɪʟʏ ꞯᴜᴇѕᴛѕ").withStyle(ChatFormatting.BOLD);
     }
 
+    /// The goal text in green, but the server's badge glyphs in it ("Catch 3 MYTHICAL") in
+    /// white: they carry their own colours, and green would tint them.
+    static Component goal(String text) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        StringBuilder run = new StringBuilder();
+        boolean glyphRun = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            boolean glyph = c >= '\uE000' && c <= '\uF8FF';
+            if (glyph != glyphRun && run.length() > 0) {
+                out.append(glyphRun ? Component.literal(run.toString()).withStyle(ChatFormatting.WHITE)
+                        : Component.literal(run.toString()).withStyle(ChatFormatting.GREEN));
+                run.setLength(0);
+            }
+            glyphRun = glyph;
+            run.append(c);
+        }
+        if (run.length() > 0) {
+            out.append(glyphRun ? Component.literal(run.toString()).withStyle(ChatFormatting.WHITE)
+                    : Component.literal(run.toString()).withStyle(ChatFormatting.GREEN));
+        }
+        return out;
+    }
+
     @Override
     protected List<Component> lines() {
         List<Component> lines = new ArrayList<>();
@@ -59,7 +83,7 @@ public class DailyQuestPanelElement extends PanelElement {
                 lines.add(join(prefix, Component.literal("ꞯᴜᴇѕᴛ ᴅᴏɴᴇ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
             } else {
                 lines.add(join(prefix,
-                        Component.literal(quest.goal).withStyle(ChatFormatting.GREEN),
+                        goal(quest.goal),
                         label(" ("),
                         Component.literal(String.valueOf(quest.progress)).withStyle(ChatFormatting.YELLOW),
                         label("/"),

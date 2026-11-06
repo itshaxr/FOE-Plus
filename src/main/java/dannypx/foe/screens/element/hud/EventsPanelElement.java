@@ -55,10 +55,9 @@ public class EventsPanelElement extends PanelElement {
         return Component.literal("ᴇᴠᴇɴᴛѕ").withStyle(ChatFormatting.BOLD);
     }
 
-    /// "≈ Fish Frenzy at Hawaii 33:37"
+    /// "Fish Frenzy at Hawaii 33:37"
     static Component frenzy(String location, long msLeft) {
-        return join(Component.literal("").withStyle(s -> s.withFont(ICONS).withColor(FRENZY_COLOR)),
-                Component.literal(" Fish Frenzy").withColor(FRENZY_COLOR),
+        return join(Component.literal("Fish Frenzy").withColor(FRENZY_COLOR),
                 Component.literal(" at ").withStyle(ChatFormatting.DARK_GRAY),
                 FoeLocations.styledName(location),
                 Component.literal(" " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD));
