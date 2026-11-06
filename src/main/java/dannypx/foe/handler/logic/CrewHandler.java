@@ -39,6 +39,7 @@ public class CrewHandler extends Handler {
     boolean isCrewNearby = false;
 
     int leaveDelay = 20;
+    private int idCheckTicks = 0;
 
     public List<Pair<UUID, String>> getCrewListOrdered() {
         return crewListOrdered;
@@ -69,6 +70,12 @@ public class CrewHandler extends Handler {
     public void tick() {
         if(!ScoreboardHandler.instance().getCrew().getString().isBlank()) {
             if(crewListOrdered.isEmpty()) this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
+            if(++idCheckTicks >= 20) {
+                idCheckTicks = 0;
+                if(CrewDataHandler.instance().swapInRealIds(minecraft.getConnection())) {
+                    this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
+                }
+            }
         }
 
         if(minecraft.player != null

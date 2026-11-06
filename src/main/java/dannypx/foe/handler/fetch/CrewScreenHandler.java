@@ -44,12 +44,19 @@ public class CrewScreenHandler extends Handler {
                     ItemStack itemStack = chestMenu.getSlot(i).getItem();
                     if(itemStack.getItem() == Items.PLAYER_HEAD
                             && itemStack.get(DataComponents.PROFILE) != null
-                            && itemStack.get(DataComponents.PROFILE).partialProfile().id() != null
                     ) {
-                        String name = itemStack.get(DataComponents.PROFILE).partialProfile().name();
+                        var profile = itemStack.get(DataComponents.PROFILE).partialProfile();
+                        String name = profile.name();
                         // Some heads come without a name in their profile: use the one on the item.
                         if (name == null || name.isBlank()) name = nameFromText(itemStack.getHoverName().getString());
-                        crewMembers.put(itemStack.get(DataComponents.PROFILE).partialProfile().id(), Pair.of(name, itemStack));
+                        UUID id = profile.id();
+                        // A head with only a skin has the all-zero id: every such head would land on
+                        // one entry (one blank member, the rest lost). Find the player by name instead.
+                        if (id == null || net.minecraft.util.Util.NIL_UUID.equals(id)) {
+                            if (name == null || name.isBlank()) continue;
+                            id = idForName(name);
+                        }
+                        crewMembers.put(id, Pair.of(name == null ? "" : name, itemStack));
                     }
                 }
 
@@ -66,6 +73,26 @@ public class CrewScreenHandler extends Handler {
             }
         }
     }
+    /// The player's id from the tab list, else from the crew saved before, else one made from the
+    /// name (swapped for the real one when they come online).
+    private static UUID idForName(String name) {
+        var conn = net.minecraft.client.Minecraft.getInstance().getConnection();
+        if (conn != null) {
+            var info = conn.getPlayerInfo(name);
+            if (info != null) return info.getProfile().id();
+        }
+        for (var e : CrewDataHandler.instance().getCrewData().crewList.entrySet()) {
+            String saved = e.getValue().value1();
+            if (saved != null && saved.equalsIgnoreCase(name) && !net.minecraft.util.Util.NIL_UUID.equals(e.getKey())) return e.getKey();
+        }
+        return nameId(name);
+    }
+
+    /// The made-up id for a name (the same one Minecraft uses for offline players).
+    public static UUID nameId(String name) {
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     private static final java.util.regex.Pattern MC_NAME = java.util.regex.Pattern.compile("[A-Za-z0-9_]{3,16}");
 
     /// "[ADMIRAL] WatDaFrickle" (or with rank glyphs and colours) → "WatDaFrickle": the last

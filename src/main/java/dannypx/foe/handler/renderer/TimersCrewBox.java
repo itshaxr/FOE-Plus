@@ -146,6 +146,8 @@ public final class TimersCrewBox {
         LinkedHashMap<UUID, String> crew = new LinkedHashMap<>();
         if (loaded) {
             for (Pair<UUID, String> m : CrewHandler.instance().getCrewListOrdered()) {
+                // A leftover from before 1.0.40: heads with no id and no name, saved as one entry.
+                if (net.minecraft.util.Util.NIL_UUID.equals(m.value1()) && (m.value2() == null || m.value2().isBlank())) continue;
                 String name = nameOf(mc, m.value1(), m.value2(), friends);
                 if (m.value1().equals(me) || name.equalsIgnoreCase(myName)) continue;
                 crew.put(m.value1(), name);
