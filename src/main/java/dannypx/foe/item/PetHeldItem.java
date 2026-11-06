@@ -30,6 +30,22 @@ public final class PetHeldItem {
         return cachedItem;
     }
 
+    /// Uncached: for callers that keep their own cache (the slot marker colour).
+    public static ItemStack decodeUncached(PetTagObject pet) {
+        return pet == null ? ItemStack.EMPTY : decode(pet);
+    }
+
+    /// The colour of the held item's name (the server colours it by rarity: a Fabled Amulet is
+    /// red), or -1 when there's no item or its name has no colour.
+    public static int nameColor(ItemStack held) {
+        if (held == null || held.isEmpty()) return -1;
+        return held.getHoverName().visit((style, text) -> {
+            if (text.isBlank() || style.getColor() == null) return java.util.Optional.<Integer>empty();
+            int rgb = style.getColor().getValue() & 0xFFFFFF;
+            return rgb == 0xFFFFFF ? java.util.Optional.<Integer>empty() : java.util.Optional.of(rgb);
+        }, net.minecraft.network.chat.Style.EMPTY).orElse(-1);
+    }
+
     private static ItemStack decode(PetTagObject pet) {
         ListTag items = pet.getList(PetTagObject.ITEM);
         if (items.isEmpty()) return ItemStack.EMPTY;

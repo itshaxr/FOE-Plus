@@ -36,6 +36,11 @@ public class ItemRendererHandler extends Handler {
 
     //region Fields
     private final Identifier petItemMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/pet_item");
+    /// The same star in white (with its shading), tinted the colour of the held amulet.
+    private final Identifier petItemMarkerTint = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/pet_item_tint");
+    /// Amulet colour per pet stack (slot stacks are replaced when the held item changes), so the
+    /// held item isn't decoded every frame. -1 = no colour, use the gold star.
+    private final java.util.Map<ItemStack, Integer> amuletColors = new java.util.IdentityHashMap<>();
     // Max pet stat markers, ported from FOECollab (AGPL-3.0)
     private final Identifier maxLuckMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_luck");
     private final Identifier maxScaleMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_scale");
@@ -112,6 +117,15 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    private int amuletColor(ItemStack petStack, PetTagObject pet) {
+        Integer cached = amuletColors.get(petStack);
+        if (cached != null) return cached;
+        if (amuletColors.size() >= 512) amuletColors.clear();
+        int rgb = dannypx.foe.item.PetHeldItem.nameColor(dannypx.foe.item.PetHeldItem.decodeUncached(pet));
+        amuletColors.put(petStack, rgb);
+        return rgb;
+    }
+
     public void drawPetItemEquipped(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
         if(!Configs.rendererConfig.showPetEquippedMarker.get()) {
             return;
@@ -121,7 +135,9 @@ public class ItemRendererHandler extends Handler {
 
         // Only for a held item (an amulet): a skin or trail alone gets no marker.
         if(validatedPet.value1() && validatedPet.value2().contains(PetTagObject.ITEM)) {
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
+            int rgb = amuletColor(stack, validatedPet.value2());
+            if (rgb < 0) guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
+            else guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarkerTint, x, y, 16, 16, 0xFF000000 | rgb);
         }
     }
 

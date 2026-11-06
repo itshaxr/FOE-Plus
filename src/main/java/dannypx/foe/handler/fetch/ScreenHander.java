@@ -40,6 +40,8 @@ public class ScreenHander extends Handler {
         if(screen instanceof InventoryScreen inventoryScreen) {
             InventoryScreenRenderHandler.instance().init(inventoryScreen);
             ScreenMouseEvents.afterMouseScroll(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onMouseScrolled);
+            ScreenMouseEvents.afterMouseClick(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onMouseClicked);
+            ScreenEvents.remove(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onClose);
         } else if(screen instanceof ContainerScreen genericContainerScreen) {
             GenericContainerScreenHandler.instance().init(genericContainerScreen);
             ScreenEvents.afterRender(screen).register(GenericContainerScreenHandler.instance()::render);

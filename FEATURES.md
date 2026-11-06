@@ -100,7 +100,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
   | Danube River | Wolf | | |
 
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
-- **Held item:** the item your pet is holding shows in the Pet panel.
+- **Held item:** the item your pet is holding shows in the Pet panel, and pets holding an amulet get a star on their slot in the amulet's rarity colour.
 - **Pet tooltips:** rating letter and max Luck / max Scale markers.
 - **Max rod parts:** a bright purple border round rod parts rolled at the highest their rarity can roll, and on rods with two different max stats.
 - **Pet Prices (`U`):** the full price table from the community price sheet, updated once a day.
@@ -132,6 +132,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
 - **Bait sorter (`B`):** merges and sorts the baits in your inventory, chests and vault, by rarity or by amount. It remembers the order you last picked on the vault's sort buttons.
+- **Inventory search:** the Personal Vault's search bar above your inventory too; matching items get a red outline, and while you type, keys like Q and 1–9 don't drop or swap items.
 - **Personal Vault:** page buttons 1–7, sorting baits by amount, rarity or name (name groups every Crankbait together; Shift-click to reverse; pets and other items stay put), and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
 - **Friends:** `/foe friend add <name>`, `remove` and `list`. Friends show on the Timers & Crew panel in blue; a friend who is also in your crew is light blue with an orange ★ (the crew colour).

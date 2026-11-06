@@ -23,6 +23,10 @@ public class InventoryScreenConfig extends Config {
     @Desc("§7FOE-R's stats list right of your inventory (the All-Time Stats panel shows the same)")
     public ValidatedBoolean showFishingStatsList = new ValidatedBoolean(false);
 
+    @Name("Show the search bar")
+    @Desc("§7Above your inventory, like the Personal Vault's: matching items get a red outline")
+    public ValidatedBoolean showSearchBar = new ValidatedBoolean(true);
+
     @Name("Show Timers & Crew box")
     @Desc("§7Left of your inventory: moon, Tackle Shop, Cosmetic Store and vote timers, then your crew and friends")
     public ValidatedBoolean showMoonTimer = new ValidatedBoolean(true);

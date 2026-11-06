@@ -21,6 +21,23 @@ public abstract class AbstractContainerScreenMixin {
         }
     }
 
+    /// While the search bar has focus, keys are for typing: the text box ignores letters and
+    /// numbers (they arrive as characters), and without this Q would drop the hovered item and
+    /// 1-9 would swap it with the hotbar. Escape still closes the screen.
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+    private void injectKeyPressedWhileSearching(KeyEvent keyEvent, CallbackInfoReturnable<Boolean> cir) {
+        if(ConnectionHandler.instance().isOnServer()
+                && Configs.mainConfig.enableMod.get()
+                && Configs.mixinConfig.abstractContainerScreenMixinKeyPressed.get()
+                && SearchHandler.instance().isFocused()
+                && keyEvent.key() != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+        ) {
+            var focused = ((net.minecraft.client.gui.screens.Screen) (Object) this).getFocused();
+            if (focused != null) focused.keyPressed(keyEvent);
+            cir.setReturnValue(true);
+        }
+    }
+
     @Inject(method = "keyPressed", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;onClose()V"), cancellable = true)
     private void injectKeyPressed(KeyEvent keyEvent, CallbackInfoReturnable<Boolean> cir) {
         if(ConnectionHandler.instance().isOnServer()

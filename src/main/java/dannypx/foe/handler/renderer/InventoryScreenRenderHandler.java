@@ -48,6 +48,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     List<AbstractWidget> widgets = new ArrayList<>();
 
     AbstractWidget buttonMenuToggle;
+    dannypx.foe.search.editbox.SearchBarEditBox searchBar;
     AbstractWidget addFriendButton;
     AbstractWidget buttonMenuEditor;
     List<AbstractWidget> buttons = new ArrayList<>();
@@ -88,7 +89,22 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             }
             this.renderButtonBoxString(guiGraphics);
             if(Configs.inventoryScreenConfig.showMoonTimer.get()) this.renderMoonTimer(guiGraphics);
+            if(searchBar != null) searchBar.renderHelp(guiGraphics, mouseX, mouseY, tickDelta);
         }
+    }
+
+    /// Clicking the search bar focuses it; clicking anywhere else lets go of it.
+    public boolean onMouseClicked(Screen screen, net.minecraft.client.input.MouseButtonEvent context, boolean consumed) {
+        if(searchBar != null) searchBar.setFocused(searchBar.isMouseOver(context.x(), context.y()));
+        return consumed;
+    }
+
+    public void onClose(Screen screen) {
+        if(searchBar == null) return;
+        Screens.getButtons(screen).remove(searchBar);
+        dannypx.foe.handler.logic.SearchHandler.instance().setFocused(false);
+        dannypx.foe.handler.logic.SearchHandler.instance().setOnScreen(false);
+        searchBar = null;
     }
 
     /// The Timers & Crew box left of the inventory (moon timer from FOECollab's MoonTimerWidget).
@@ -133,6 +149,18 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             buttons.clear();
 
             if(Configs.inventoryScreenConfig.showFishingStatsList.get()) widgets.add(getStatList());
+
+            // The Personal Vault's search bar, above the inventory (same search, same last input).
+            searchBar = null;
+            if(Configs.inventoryScreenConfig.showSearchBar.get()) {
+                searchBar = dannypx.foe.handler.logic.SearchHandler.getSearchBar(
+                        minecraft.getWindow().getGuiScaledWidth() / 2 - 80,
+                        minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP - 22,
+                        160, 18);
+                dannypx.foe.handler.logic.SearchHandler.instance().setFocused(false);
+                dannypx.foe.handler.logic.SearchHandler.instance().setOnScreen(true);
+                widgets.add(searchBar);
+            }
 
             // The + next to "Online" in the Timers & Crew box: starts /foe friend add in chat.
             addFriendButton = new SmallButtonBuilder(0, 0, 10, 10,

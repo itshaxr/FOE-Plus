@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.37+1.21.11",
+      "name": "FOE+ 1.0.37+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Pets holding an amulet get their star in the amulet's rarity colour (a Fabled Amulet gives a red star) by @phckd\n- Search bar above your inventory, the same as the Personal Vault's (red outline on matches; toggle in the inventory settings) by @phckd\n- While typing in a search bar, Q and the number keys no longer drop or swap the item under your mouse by @phckd"
+    },
+    {
       "versionNumber": "1.0.36+1.21.11",
       "name": "FOE+ 1.0.36+1.21.11",
       "datePublished": "2026-11-05",
