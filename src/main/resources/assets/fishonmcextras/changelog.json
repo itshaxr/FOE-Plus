@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.33+1.21.11",
+      "name": "FOE+ 1.0.33+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Timers & Crew: the star next to a friend in your crew is now the same orange as the Crew colour by @phckd"
+    },
+    {
       "versionNumber": "1.0.32+1.21.11",
       "name": "FOE+ 1.0.32+1.21.11",
       "datePublished": "2026-11-05",

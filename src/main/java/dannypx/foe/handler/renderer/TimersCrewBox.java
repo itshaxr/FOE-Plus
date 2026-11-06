@@ -30,9 +30,9 @@ public final class TimersCrewBox {
 
     static final int CREW_COLOR = 0xFFAA00;
     static final int FRIEND_COLOR = 0x55AAFF;
-    /// A friend who's also in your crew: light blue, with a yellow star.
+    /// A friend who's also in your crew: light blue, with a star in the crew colour.
     static final int CREW_FRIEND_COLOR = 0x9FE4FF;
-    private static final int STAR_COLOR = 0xFFFF55;
+    private static final int STAR_OFFLINE_COLOR = 0xA8772A;
     private static final int MOON_COLOR = 0x55FFFF;
     private static final int TACKLE_COLOR = 0xFFFF55;
     private static final int COSMETIC_COLOR = 0xFF55FF;
@@ -54,12 +54,12 @@ public final class TimersCrewBox {
     }
 
     /// One person: a green (online) or grey (offline) square, then the name: orange for crew,
-    /// blue for a friend, light blue with a yellow star for a friend who's in your crew.
+    /// blue for a friend, light blue with an orange (crew) star for a friend who's in your crew.
     static Component person(String name, boolean online, boolean crew, boolean friend) {
         int color = !online ? 0xAAAAAA : crew && friend ? CREW_FRIEND_COLOR : crew ? CREW_COLOR : FRIEND_COLOR;
         Component line = Component.empty()
                 .append(Component.literal("■ ").withStyle(online ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
-        if (crew && friend) line = line.copy().append(Component.literal("★ ").withColor(online ? STAR_COLOR : 0x9E9E50));
+        if (crew && friend) line = line.copy().append(Component.literal("★ ").withColor(online ? CREW_COLOR : STAR_OFFLINE_COLOR));
         return line.copy().append(Component.literal(name).withColor(color));
     }
 
