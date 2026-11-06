@@ -57,7 +57,10 @@ public class PetPanelElement extends PanelElement {
     protected List<PanelIcon> icons() {
         if (!hasPet()) return List.of();
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        return List.of(new PanelIcon(pet.getItemStack(), PET_BORDER),
+        // The pet's frame takes its rarity colour (blue only when the rarity isn't known).
+        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(pet.getRarity());
+        int border = rarityColor < 0 ? PET_BORDER : 0xFF000000 | rarityColor;
+        return List.of(new PanelIcon(pet.getItemStack(), border),
                 new PanelIcon(PetHeldItem.of(pet), HELD_ITEM_BORDER));
     }
 

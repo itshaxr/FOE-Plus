@@ -86,6 +86,8 @@ public class GearWarningPanelElement extends PanelElement {
         Component locationName = BossEventHandler.instance().getLocation();
         FoeLocations.Location location = FoeLocations.fromName(locationName.getString());
         if (location == null) return lines; // hub, crew island, or unknown
+        // Cypress Lake's spawn area: no warning until you get to the water (like FOE).
+        if (!isCopy && dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) return lines;
 
         // Armor
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {

@@ -47,8 +47,11 @@ public class KeyBindConfig extends Config {
     public ValidatedEnum<KeyBindMode> inspectMode = new ValidatedEnum<>(KeyBindMode.HOLD, ValidatedEnum.WidgetType.CYCLING);
 
     @ConfigGroup.Pop
-    @Name("Inspect always on")
-    @Desc("§7Always show pet %, armor rolls and other inspect info, without holding the inspect key")
+    @Name("Show inspect info without the key")
+    @Desc("§7Hold key: only while you hold it. Always On: always. Pets Only / Armor Only: always for pets / armor, the key for the rest")
+    public ValidatedEnum<dannypx.foe.type.InspectAlways> inspectAlways = new ValidatedEnum<>(dannypx.foe.type.InspectAlways.OFF, ValidatedEnum.WidgetType.CYCLING);
+
+    /// Older versions' on/off setting; carried over to "Always On" once, then left off.
     public ValidatedBoolean inspectAlwaysOn = new ValidatedBoolean(false);
 
     @Name("Enable page scrolling with scroll wheel")

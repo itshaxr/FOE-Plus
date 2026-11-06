@@ -122,6 +122,17 @@ public class TopBarElement extends Element {
         BossEventHandler boss = BossEventHandler.instance();
         Component location = boss.getLocation();
         MutableComponent text = Component.literal(" ").withStyle(ChatFormatting.WHITE).append(location);
+        // The spot you're at within the location (Big Bear Dock, Thunderwood Marina...), from the
+        // server's second boss bar; "Spawn" in Cypress Lake's hub before the water.
+        String spot = boss.getSubLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        if (!spot.isEmpty()) {
+            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(spot).withStyle(boss.getSubLocation().getStyle().getColor() == null
+                            ? net.minecraft.network.chat.Style.EMPTY.withColor(ChatFormatting.GRAY) : boss.getSubLocation().getStyle()));
+        } else if (dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) {
+            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal("Spawn").withStyle(ChatFormatting.GRAY));
+        }
 
         String min = ScoreboardHandler.instance().getLocationMin().getString().trim();
         String max = ScoreboardHandler.instance().getLocationMax().getString().trim();

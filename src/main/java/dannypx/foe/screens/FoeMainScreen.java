@@ -102,9 +102,9 @@ public class FoeMainScreen extends Screen {
         add(leftX, rowsY + ROW * 4, "Pet Prices", Items.EMERALD, "Pet price table from the price sheet (U)",
                 b -> this.minecraft.setScreen(new PetPriceScreen(this)));
         Button inspect = add(leftX, rowsY + ROW * 5, "", Items.SPYGLASS,
-                "Always On: pet %, fish details and armor rolls show without holding the inspect key",
+                "When pet %, fish details and armor rolls show: while holding the key, always, or always for pets / armor only",
                 b -> {
-                    dannypx.foe.handler.logic.KeyBindHandler.toggleInspectAlwaysOn();
+                    dannypx.foe.handler.logic.KeyBindHandler.cycleInspectAlways();
                     b.setMessage(inspectLabel());
                 });
         inspect.setMessage(inspectLabel());
@@ -153,11 +153,11 @@ public class FoeMainScreen extends Screen {
     }
 
     private static Component inspectLabel() {
-        boolean on = Configs.keyBindConfig.inspectAlwaysOn.get();
+        dannypx.foe.type.InspectAlways mode = dannypx.foe.handler.logic.KeyBindHandler.inspectAlways();
         String key = KeyBindHelper.getKeyString(Configs.keyBindConfig.inspectKeybind);
-        return Component.literal("Inspect: ").append(on
-                ? Component.literal("Always On").withStyle(ChatFormatting.GREEN)
-                : Component.literal("Hold " + capitalize(key.replaceFirst("(?i)^(left|right) ", ""))).withStyle(ChatFormatting.GRAY));
+        return Component.literal("Inspect: ").append(mode == dannypx.foe.type.InspectAlways.OFF
+                ? Component.literal("Hold " + capitalize(key.replaceFirst("(?i)^(left|right) ", ""))).withStyle(ChatFormatting.GRAY)
+                : Component.literal(mode.toString()).withStyle(ChatFormatting.GREEN));
     }
 
     /// "+ Colour: + Gold" with the + in your colour (Rainbow / Green for the developer and beta

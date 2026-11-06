@@ -41,7 +41,7 @@ public class AlertHandler {
     public enum Kind { CLOCK, MOON, RAINBOW, FABLED }
 
     public enum Alert {
-        WITCHING_HOUR("Witching Hour", 0xD23B3B, FoeLocations.Location.CYPRESS_LAKE, Kind.CLOCK, 0, 3,
+        WITCHING_HOUR("Witching Hour", 0xD23B3B, FoeLocations.Location.CYPRESS_LAKE, Kind.CLOCK, 1, 3,
                 "Bigfoot 1/300", "steals a fish, leaves a gift"),
         TITANOBOA("Titanoboa", 0x3FA34D, FoeLocations.Location.AMAZON_RIVER, Kind.CLOCK, 2, 4,
                 "Titan's Fang 1/1500", "8 + Fabled Shard: Titan's Graceful Necklace"),

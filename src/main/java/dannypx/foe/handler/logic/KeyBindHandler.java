@@ -27,14 +27,31 @@ public class KeyBindHandler extends Handler {
     private boolean wasInspectKeyDown = false;
     private boolean wasDismissKeyDown = false;
 
-    /// Inspect info is shown: the key is held (or toggled on), or "Inspect always on" is set.
+    /// Inspect info is shown for everything: the key is held (or toggled on), or it's Always On.
     public boolean isPressingInspect() {
-        return isPressingInspect || Configs.keyBindConfig.inspectAlwaysOn.get();
+        return isInspecting(dannypx.foe.type.InspectAlways.Kind.OTHER);
     }
 
-    /// The O menu button: flips "Inspect always on" and saves it.
-    public static void toggleInspectAlwaysOn() {
-        Configs.keyBindConfig.inspectAlwaysOn.accept(!Configs.keyBindConfig.inspectAlwaysOn.get());
+    /// Inspect info is shown for this kind of item: the key is held, or the setting covers it
+    /// (Always On, or Pets Only / Armor Only for that kind).
+    public boolean isInspecting(dannypx.foe.type.InspectAlways.Kind kind) {
+        return isPressingInspect || inspectAlways().covers(kind);
+    }
+
+    public static dannypx.foe.type.InspectAlways inspectAlways() {
+        var cfg = Configs.keyBindConfig;
+        if (cfg.inspectAlwaysOn.get()) {
+            // Carry the old on/off setting over once.
+            cfg.inspectAlwaysOn.accept(false);
+            cfg.inspectAlways.accept(dannypx.foe.type.InspectAlways.ALWAYS);
+            cfg.save();
+        }
+        return cfg.inspectAlways.get();
+    }
+
+    /// The O menu button: Hold key → Always On → Pets Only → Armor Only, and saves it.
+    public static void cycleInspectAlways() {
+        Configs.keyBindConfig.inspectAlways.accept(inspectAlways().next());
         Configs.keyBindConfig.save();
     }
     //endregion

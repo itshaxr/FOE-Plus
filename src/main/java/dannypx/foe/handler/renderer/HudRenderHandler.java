@@ -93,6 +93,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("pet_panel", new PetPanelElement()));
             elements.add(Pair.of("bait_panel", new BaitPanelElement()));
             elements.add(Pair.of("luck_scale_panel", new LuckScalePanelElement()));
+            elements.add(Pair.of("timers_panel", new dannypx.foe.screens.element.hud.TimersPanelElement()));
             elements.add(Pair.of("equipment_bar", new EquipmentBarElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
@@ -100,7 +101,6 @@ public class HudRenderHandler extends Handler {
 
         LoggerHandler.info("Register Elements");
         HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "foer_hud_foreground"), (guiGraphics, deltaTracker) -> {
-            if (Configs.mainConfig.enableMod.get()) this.beginLayout();
             elements.forEach(element -> {
                 if (Configs.mainConfig.enableMod.get()) element.value2().render(guiGraphics);
             });
@@ -112,21 +112,6 @@ public class HudRenderHandler extends Handler {
         HudElementRegistry.attachElementAfter(VanillaHudElements.EXPERIENCE_LEVEL, Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "foer_hud_priority"), (guiGraphics, deltaTracker) -> {
             if (Configs.mainConfig.enableMod.get()) this.renderAfterSubtitles(guiGraphics);
         });
-    }
-
-    /// Starts this frame's HUD layout: the fixed pieces are reserved first, then every panel and
-    /// custom HUD claims its space as it renders (see {@link dannypx.foe.helper.HudLayout}).
-    private void beginLayout() {
-        int width = minecraft.getWindow().getGuiScaledWidth();
-        int height = minecraft.getWindow().getGuiScaledHeight();
-        dannypx.foe.helper.HudLayout layout = dannypx.foe.helper.HudLayout.FRAME;
-        layout.beginFrame(width, height);
-        int topBar = TopBarElement.barHeight();
-        if (topBar > 0) layout.reserve(new dannypx.foe.helper.HudLayout.Rect(0, 0, width, topBar));
-        dannypx.foe.helper.HudLayout.Rect equipment = EquipmentBarElement.bounds();
-        if (equipment != null) layout.reserve(equipment);
-        // Vanilla hotbar, XP bar and hearts.
-        if (!minecraft.options.hideGui) layout.reserve(new dannypx.foe.helper.HudLayout.Rect(width / 2 - 91, height - 39, 182, 39));
     }
 
     private void render(GuiGraphics guiGraphics) {

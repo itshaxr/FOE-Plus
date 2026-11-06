@@ -139,6 +139,7 @@ public class CrewHandler extends Handler {
 
             offlineMembers.add(updatedMember.get());
             NotifierHandler.instance().notifyPlayerStatus(false, crewMember);
+            crewChat(crewMember.value1(), false);
             EventHandler.instance().onCrewLeave();
         }
     }
@@ -161,8 +162,17 @@ public class CrewHandler extends Handler {
 
             onlineMembers.add(updatedMember.get());
             NotifierHandler.instance().notifyPlayerStatus(true, crewMember);
+            crewChat(crewMember.value1(), true);
             EventHandler.instance().onCrewJoin();
         }
+    }
+
+    /// [FOE+] CREW Ewiksen is online / went offline (FOE-R's notification box is hidden in FOE+).
+    private static void crewChat(String name, boolean online) {
+        if (!dannypx.foe.config.Configs.hudConfig.crewStatusChat.get()) return;
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.GOLD)
+                .append(dannypx.foe.helper.FoeChat.white(name))
+                .append(dannypx.foe.helper.FoeChat.text(online ? " is online" : " went offline")));
     }
 
     public void onPlayerJoin(UUID uuid) {

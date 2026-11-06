@@ -43,6 +43,7 @@ public abstract class ClientPacketListenerMixin {
             for (ClientboundPlayerInfoUpdatePacket.Entry entry : packet.entries()) {
                 if (packet.actions().contains(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER)) {
                     CrewHandler.instance().onPlayerJoin(entry.profileId());
+                    dannypx.foe.handler.logic.FriendsHandler.instance().onPlayerJoin(entry.profileId());
                 }
             }
         }
@@ -56,6 +57,7 @@ public abstract class ClientPacketListenerMixin {
         ) {
             for (UUID uuid : packet.profileIds()) {
                 CrewHandler.instance().onPlayerLeave(uuid);
+                dannypx.foe.handler.logic.FriendsHandler.instance().onPlayerLeave(uuid);
                 HatType.onPlayerLeave(uuid);
                 RodType.onPlayerLeave(uuid);
                 ModUserType.onPlayerLeave(uuid);

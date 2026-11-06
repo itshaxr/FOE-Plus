@@ -102,16 +102,12 @@ public class CustomHudElement extends Element implements ScreenConstants {
                     default -> 0;
                 };
 
-                // Same layout rules as the FOE panels: on screen, never over another HUD box.
+                // Same as the FOE panels: kept on screen, otherwise exactly where you put it.
                 float scale = customHud.getScale();
                 dannypx.foe.helper.HudLayout.Rect wanted = new dannypx.foe.helper.HudLayout.Rect(
                         Math.round(x * scale), Math.round(y * scale), Math.round(boxWidth * scale), Math.round(boxHeight * scale));
-                dannypx.foe.type.Alignment alignment = customHud.getAlignment();
-                boolean fromBottom = alignment == dannypx.foe.type.Alignment.BOTTOM_LEFT || alignment == dannypx.foe.type.Alignment.BOTTOM_RIGHT || alignment == dannypx.foe.type.Alignment.BOTTOM;
-                boolean fromRight = alignment == dannypx.foe.type.Alignment.TOP_RIGHT || alignment == dannypx.foe.type.Alignment.BOTTOM_RIGHT || alignment == dannypx.foe.type.Alignment.RIGHT;
-                dannypx.foe.helper.HudLayout.Rect placed = isCopy
-                        ? dannypx.foe.helper.HudLayout.clamp(wanted, Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight())
-                        : dannypx.foe.helper.HudLayout.FRAME.place(wanted, fromBottom, fromRight);
+                dannypx.foe.helper.HudLayout.Rect placed = dannypx.foe.helper.HudLayout.clamp(wanted,
+                        Minecraft.getInstance().getWindow().getGuiScaledWidth(), Minecraft.getInstance().getWindow().getGuiScaledHeight());
                 x = Math.round(placed.x() / scale);
                 y = Math.round(placed.y() / scale);
 

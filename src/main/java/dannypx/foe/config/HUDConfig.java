@@ -219,6 +219,14 @@ public class HUDConfig extends Config {
     @Name("Show notification when crew join/leave the server (status)")
     public ValidatedBoolean showCrewStatusNotification = new ValidatedBoolean(true);
 
+    @Name("Chat line when a crew member comes online / goes offline")
+    @Desc("§7[FOE+] CREW Ewiksen is online")
+    public ValidatedBoolean crewStatusChat = new ValidatedBoolean(true);
+
+    @Name("Chat line when a friend comes online / goes offline")
+    @Desc("§7Friends you added with /foe friend add <name>")
+    public ValidatedBoolean friendStatusChat = new ValidatedBoolean(true);
+
     @ConfigGroup.Pop
     @Name("Crew status dismissal time")
     @Desc("§7How long in seconds, before the notification dismisses")
@@ -486,6 +494,46 @@ public class HUDConfig extends Config {
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Timers & Crew Panel")
+    @Desc("§7Moon, Tackle Shop and Cosmetic Store timers, then your crew and friends: who's in range and who's online")
+    public ConfigGroup timersPanelGroup = new ConfigGroup("timers_panel_group");
+
+    @Name("Show Timers & Crew Panel")
+    public ValidatedBoolean showTimersPanel = new ValidatedBoolean(true);
+
+    @Name("Show the moon timer")
+    public ValidatedBoolean timersPanelMoon = new ValidatedBoolean(true);
+
+    @Name("Show the Tackle Shop timer")
+    @Desc("§7Restocks every 4 hours; re-synced whenever the restock message shows in chat")
+    public ValidatedBoolean timersPanelTackleShop = new ValidatedBoolean(true);
+
+    @Name("Show the Cosmetic Store timer")
+    @Desc("§7Resets every day at 8pm New York time")
+    public ValidatedBoolean timersPanelCosmeticStore = new ValidatedBoolean(true);
+
+    @Name("Show your crew and friends")
+    public ValidatedBoolean timersPanelCrew = new ValidatedBoolean(true);
+
+    @Name("Show offline crew members and friends")
+    public ValidatedBoolean timersPanelOffline = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt timersPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt timersPanelYPosition = new ValidatedInt(42, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> timersPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt timersPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat timersPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Luck & Scale Panel")
     @Desc("§7Your current Luck and Scale as shown on your profile in /menu (boosters included)")

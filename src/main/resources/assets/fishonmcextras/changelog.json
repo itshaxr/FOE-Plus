@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.27+1.21.11",
+      "name": "FOE+ 1.0.27+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Witching Hour is now 1am to 3am by @phckd\n- HUD panels no longer push each other around: they stay where you put them and may overlap, and a panel whose text changes width (like a countdown) no longer jumps sideways by @phckd\n- New Timers & Crew panel: moon, Tackle Shop (every 4 hours) and Cosmetic Store (8pm New York) timers, then your crew and friends with who's in range and who's online by @phckd\n- Friends list: /foe friend add, remove and list by @phckd\n- Chat line when a crew member or friend comes online or goes offline by @phckd\n- No wrong-gear warning at Cypress Lake's spawn until you reach the water by @phckd\n- Top bar shows the spot you're at (Big Bear Dock, Thunderwood Marina...), and the spot name no longer flickers away by @phckd\n- Pet panel: the pet's frame takes its rarity colour by @phckd\n- Vault sort only moves baits and lures (pets stay put), and has a Name sort that groups every Crankbait together by @phckd\n- Inspect can be Hold key, Always On, Pets Only or Armor Only by @phckd\n- /foe item copies the held item's data, for bug reports by @phckd"
+    },
+    {
       "versionNumber": "1.0.26+1.21.11",
       "name": "FOE+ 1.0.26+1.21.11",
       "datePublished": "2026-11-05",

@@ -127,7 +127,7 @@ public class TooltipHandler extends Handler {
 
         if(rightClickLine != -1
                 && armorNbtObject.isIdentified()
-                && !Configs.keyBindConfig.inspectAlwaysOn.get()
+                && !KeyBindHandler.inspectAlways().covers(dannypx.foe.type.InspectAlways.Kind.ARMOR)
         ) {
             Component inspectComponent = TextHelper.concat(
                     Component.literal(TextHelper.smallCaps("Hold ")),
@@ -142,7 +142,7 @@ public class TooltipHandler extends Handler {
             components.add(rightClickLine + 1, rollHintComponent);
         }
 
-        if(KeyBindHandler.instance().isPressingInspect()) {
+        if(KeyBindHandler.instance().isInspecting(dannypx.foe.type.InspectAlways.Kind.ARMOR)) {
             if(tierLine != -1) {
                 for (int i = 4; i >= 0; i--) {
                     if(armorNbtObject.isArmorRollUnlocked(i)

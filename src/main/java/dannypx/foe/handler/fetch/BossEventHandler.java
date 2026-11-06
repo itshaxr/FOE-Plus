@@ -28,6 +28,7 @@ public class BossEventHandler extends Handler {
     private MutableComponent time = Component.empty();
     private MutableComponent temperature = Component.empty();
     private MutableComponent subLocation = Component.empty();
+    private String prevSubLocationBar = null;
     private MutableComponent communityGoalCurrent = Component.empty();
     private MutableComponent communityGoalMax = Component.empty();
     private String prevBossEvent = "";
@@ -68,9 +69,12 @@ public class BossEventHandler extends Handler {
 
     private void fetchFromBossBar() {
         Map<UUID, LerpingBossEvent> bossEventMap = ((BossHealthOverlayAccessor) (minecraft.gui.getBossOverlay())).getEvents();
+        boolean[] sawSubLocation = {false};
         if(!bossEventMap.isEmpty()) {
             bossEventMap.forEach(((uuid, lerpingBossEvent) -> {
-                if(lerpingBossEvent.getName().getString().contains("\uF039") && !Objects.equals(prevBossEvent, lerpingBossEvent.getName().getString())) {
+                String name = lerpingBossEvent.getName().getString();
+                if(name.contains("\uF039")) {
+                    if(Objects.equals(prevBossEvent, name)) return;
                     prevBossEvent = lerpingBossEvent.getName().getString();
                     String json = TextHelper.componentToJson(lerpingBossEvent.getName());
                     JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
@@ -132,7 +136,12 @@ public class BossEventHandler extends Handler {
                                     .withColor(TextColor.parseColor(communityGoalMaxObject.get("color").getAsString()).getOrThrow().getValue());
                         }
                     }
-                } else if(lerpingBossEvent.getName().getString().contains("\uA201\uEEE1\uA208")) {
+                } else if(name.contains("\uA201\uEEE1\uA208")) {
+                    // The spot within the location (Big Bear Dock...). Before, every other boss bar
+                    // (even the location bar itself) cleared this, so it flickered or never showed.
+                    sawSubLocation[0] = true;
+                    if(Objects.equals(prevSubLocationBar, name)) return;
+                    prevSubLocationBar = name;
                     JsonObject jsonObject = JsonParser.parseString(TextHelper.componentToJson(lerpingBossEvent.getName())).getAsJsonObject();
 
                     if(jsonObject.get("extra") != null) {
@@ -140,10 +149,12 @@ public class BossEventHandler extends Handler {
                         subLocation = Component.literal(locationObject.get("text").getAsString())
                                 .withColor(TextColor.parseColor(locationObject.get("color").getAsString()).getOrThrow().getValue());
                     }
-                } else {
-                    subLocation = Component.empty();
                 }
             }));
+        }
+        if(!sawSubLocation[0]) {
+            subLocation = Component.empty();
+            prevSubLocationBar = null;
         }
     }
     //endregion

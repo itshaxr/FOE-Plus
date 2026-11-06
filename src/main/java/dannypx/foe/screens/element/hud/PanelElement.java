@@ -120,6 +120,27 @@ public abstract class PanelElement extends Element {
         return max + PADDING * 4;
     }
 
+    /// A panel's width only grows straight away; it shrinks once it has been narrower for a few
+    /// seconds. Countdowns ("2:10 left" → "59 left") change the width every second, which made
+    /// centred or right-anchored panels jump sideways.
+    private static final long SHRINK_AFTER_MS = 4_000L;
+    private int shownWidth = -1;
+    private long narrowerSince = -1L;
+
+    /// Package-private for tests.
+    int steadyWidth(int wanted, long nowMs) {
+        if (shownWidth < 0 || wanted >= shownWidth) {
+            shownWidth = wanted;
+            narrowerSince = -1L;
+        } else if (narrowerSince < 0) {
+            narrowerSince = nowMs;
+        } else if (nowMs - narrowerSince >= SHRINK_AFTER_MS) {
+            shownWidth = wanted;
+            narrowerSince = -1L;
+        }
+        return shownWidth;
+    }
+
     private int outerHeight(List<Component> lines, Font font) {
         return (Math.max(lines.size(), 1) - 1) * lineHeight(font) + PADDING * 5;
     }
@@ -152,14 +173,15 @@ public abstract class PanelElement extends Element {
             cachedAtNs = nowNs;
         }
         List<Component> lines = cachedLines;
+        int steadyWidth = steadyWidth(cachedOuterWidth, System.currentTimeMillis());
         float scale = scale();
-        this.width = Math.round(cachedOuterWidth * scale);
+        this.width = Math.round(steadyWidth * scale);
         this.height = Math.round(cachedOuterHeight * scale);
         if (lines.isEmpty()) return;
 
         int screenWidth = (int) (minecraft.getWindow().getGuiScaledWidth() / scale);
         int screenHeight = (int) (minecraft.getWindow().getGuiScaledHeight() / scale);
-        int outerWidth = cachedOuterWidth;
+        int outerWidth = steadyWidth;
         int outerHeight = cachedOuterHeight;
 
         boolean right = alignment == Alignment.TOP_RIGHT || alignment == Alignment.BOTTOM_RIGHT || alignment == Alignment.RIGHT;
@@ -172,15 +194,11 @@ public abstract class PanelElement extends Element {
         int outerX = centered ? anchorX - outerWidth / 2 : right ? anchorX - outerWidth : anchorX;
         int outerY = bottom ? anchorY - outerHeight : anchorY;
 
-        // Fit the panel into this frame's layout (in GUI pixels): always fully on screen, and the
-        // live HUD also moves it off any box placed before it (top bar, equipment bar, other
-        // panels). Recomputed every frame, so a panel that grows pushes its neighbours instead of
-        // running off screen or over them, and returns to its spot when it shrinks again.
+        // The panel stays exactly where you put it (only kept on screen). Panels don't push each
+        // other around any more: they may overlap if that's how you place them.
         HudLayout.Rect wanted = new HudLayout.Rect(Math.round(outerX * scale), Math.round(outerY * scale),
                 Math.round(outerWidth * scale), Math.round(outerHeight * scale));
-        HudLayout.Rect placed = isCopy
-                ? HudLayout.clamp(wanted, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight())
-                : HudLayout.FRAME.place(wanted, bottom, right);
+        HudLayout.Rect placed = HudLayout.clamp(wanted, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
         outerX = Math.round(placed.x() / scale);
         outerY = Math.round(placed.y() / scale);
 

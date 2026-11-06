@@ -120,6 +120,8 @@ public final class SortPlanner {
             case COMMON_TO_LEGENDARY -> rarestFirst.reversed();
             case MOST_TO_FEWEST -> mostFirst.thenComparing(rarestFirst);
             case FEWEST_TO_MOST -> mostFirst.reversed().thenComparing(rarestFirst);
+            case NAME_A_TO_Z -> Comparator.comparing((Entry e) -> BaitSortOrder.nameKey(e.name())).thenComparing(rarestFirst);
+            case NAME_Z_TO_A -> Comparator.comparing((Entry e) -> BaitSortOrder.nameKey(e.name())).reversed().thenComparing(rarestFirst);
         };
         List<Entry> desired = new ArrayList<>(kept);
         desired.sort(primary

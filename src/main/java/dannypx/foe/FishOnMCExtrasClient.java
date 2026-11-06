@@ -102,6 +102,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
     private void receiveGameMessage(Component message, boolean overlay) {
         ChatHandler.instance().onReceiveMessage(message);
         if (!overlay) dannypx.foe.handler.logic.RareCatchHandler.onGameMessage(message.getString());
+        if (!overlay) dannypx.foe.handler.logic.StoreTimerHandler.instance().onGameMessage(message.getString());
     }
 
     private String modifyChatMessage(String text) {
@@ -181,6 +182,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ) {
             // Check if done loading
             if(LoadingHandler.instance().isLoadingDone()) {
+                dannypx.foe.handler.logic.FriendsHandler.instance().tick();
                 // Fetch
                 if(Configs.handlerConfig.tabOverlayHandler.get()) TabOverlayHandler.instance().tick();
                 if(Configs.handlerConfig.scoreboardHandler.get()) ScoreboardHandler.instance().tick();

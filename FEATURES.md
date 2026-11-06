@@ -13,7 +13,7 @@ Everything FOE+ adds to **play.fishonmc.net**. Press **O** in game to open the F
 ## HUD panels
 
 Every panel can be moved, anchored to any corner or edge, and resized in **O → Move HUD Elements**.
-Panels always stay on screen, and they push each other aside so they never overlap, at any window size or GUI scale.
+Panels stay exactly where you put them (only kept on screen), and can overlap if you place them that way. A panel whose text changes width, like a countdown, doesn't jump sideways.
 
 | Panel | What it shows |
 |---|---|
@@ -22,11 +22,12 @@ Panels always stay on screen, and they push each other aside so they never overl
 | **Quests** | Your active location quests. |
 | **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count. Refreshes automatically when you change location. |
-| **Pet** | Your equipped pet and the item it's holding. |
+| **Pet** | Your equipped pet (framed in its rarity colour) and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
-| **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Its text is centred and it stays where you put it. |
-| **Top bar** | Level, location, time, balance and catches, plus the community event total and your contribution. |
+| **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
+| **Top bar** | Level, location and the spot you're at (Big Bear Dock, Thunderwood Marina...), time, balance and catches, plus the community event total and your contribution. |
+| **Timers & Crew** | Next moon, Tackle Shop restock (every 4 hours) and Cosmetic Store reset (8pm New York), then your crew and friends: whether a crew member is in range, how many are online, and who. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
 
@@ -40,7 +41,7 @@ The Alerts panel and chat tell you when a rare catch is possible and how long th
 
 | Alert | Where | When | Odds |
 |---|---|---|---|
-| **Witching Hour** (Bigfoot) | Cypress Lake | 12–3 AM in game | 1 in 300 |
+| **Witching Hour** (Bigfoot) | Cypress Lake | 1–3 AM in game | 1 in 300 |
 | **Titanoboa** (Titan's Fang) | Amazon River | 2–4 AM in game | 1 in 1,500 |
 | **Bessie** (Silver Scale) | Great Lakes | 4–6 AM in game | 1 in 1,000 |
 | **Bessie**, moon | Great Lakes | During a moon | 1 in 500 |
@@ -129,8 +130,10 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
 - **Bait sorter (`B`):** merges and sorts the baits in your inventory, chests and vault, by rarity or by amount. It remembers the order you last picked on the vault's sort buttons.
-- **Personal Vault:** page buttons 1–7, sorting by amount or rarity (Shift-click to reverse), and rank badges on locked pages.
-- **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On** in the O menu.
+- **Personal Vault:** page buttons 1–7, sorting baits by amount, rarity or name (name groups every Crankbait together; Shift-click to reverse; pets and other items stay put), and rank badges on locked pages.
+- **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
+- **Friends:** `/foe friend add <name>`, `remove` and `list`. Friends show on the Timers & Crew panel.
+- **Crew and friend alerts:** a chat line when a crew member or friend comes online or goes offline.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
 - **Bobber presets:** 16 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow), picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
 - **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).

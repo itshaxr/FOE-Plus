@@ -42,6 +42,20 @@ public class PetLocationHandler {
         return FoeLocations.fromName(BossEventHandler.instance().getLocation().getString());
     }
 
+    /// True at Cypress Lake's spawn hub (FOE's box), before the first water.
+    public static boolean inCypressHub() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return false;
+        return currentLocation() == FoeLocations.Location.CYPRESS_LAKE
+                && FoeLocations.isCypressHub(mc.player.getX(), mc.player.getZ());
+    }
+
+    /// Where your gear has to fit: the current location, except Cypress Lake's spawn hub (no
+    /// warnings until you reach the water, like FOE).
+    public static FoeLocations.Location fishingLocation() {
+        return inCypressHub() ? null : currentLocation();
+    }
+
     /// The location a pet belongs to, from its NBT ("location", or its species as a fallback).
     public static FoeLocations.Location locationOf(PetTagObject pet) {
         FoeLocations.Location byId = FoeLocations.fromId(pet.getString("location"));
@@ -83,7 +97,7 @@ public class PetLocationHandler {
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        FoeLocations.Location here = currentLocation();
+        FoeLocations.Location here = fishingLocation();
         long now = System.currentTimeMillis();
         if (here != lastLocation) {
             lastLocation = here;

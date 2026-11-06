@@ -22,26 +22,32 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Sorts the open Personal Vault page by amount or by rarity. Only the 45 item slots are touched
- * (the bottom row holds the page arrows). The moves go through the bait sorter's paced click
+ * Sorts the baits and lures on the open Personal Vault page by amount, rarity or name. Pets and
+ * every other item stay exactly where they are; baits fill the free slots around them. Only the
+ * 45 item slots are touched (the bottom row holds the page arrows). The moves go through the bait sorter's paced click
  * queue, so they follow its click speed setting and stop if you close the vault.
  */
 public final class VaultSortHandler {
     private VaultSortHandler() {}
 
-    public enum Mode { AMOUNT, RARITY }
+    public enum Mode { AMOUNT, RARITY, NAME }
 
     /// Vault item slots: rows 1-5 of the 6-row vault.
     static final int ITEM_SLOTS = 45;
 
-    /// One item in the vault. Compared by identity while planning.
-    record Item(int slot, String name, int amount, int rarityRank) {}
+    /// One item in the vault. Compared by identity while planning. {@code movable}: a bait or
+    /// lure (the only things the sort moves).
+    record Item(int slot, String name, int amount, int rarityRank, boolean movable) {
+        Item(int slot, String name, int amount, int rarityRank) {
+            this(slot, name, amount, rarityRank, true);
+        }
+    }
 
     /// Starts a sort of the open vault page; {@code reverse} flips the order (Shift-click). The
     /// choice is saved as the bait sorter's order, so pressing B afterwards keeps it.
     public static boolean sort(Mode mode, boolean reverse) {
         Minecraft mc = Minecraft.getInstance();
-        BaitSortOrder order = BaitSortOrder.fromVault(mode == Mode.AMOUNT, reverse);
+        BaitSortOrder order = mode == Mode.NAME ? BaitSortOrder.fromVaultName(reverse) : BaitSortOrder.fromVault(mode == Mode.AMOUNT, reverse);
         boolean started = BaitSorterHandler.instance().queueSort(mc, planner(order));
         if (started && Configs.keyBindConfig.baitSortOrder.get() != order) {
             Configs.keyBindConfig.baitSortOrder.accept(order);
@@ -52,7 +58,7 @@ public final class VaultSortHandler {
 
     /// A sort of the open vault page in {@code order}, planned when it runs.
     public static Supplier<List<List<SortPlanner.Click>>> planner(BaitSortOrder order) {
-        Mode mode = order.byAmount() ? Mode.AMOUNT : Mode.RARITY;
+        Mode mode = order.byName() ? Mode.NAME : order.byAmount() ? Mode.AMOUNT : Mode.RARITY;
         boolean reverse = order.isVaultReverse();
         return () -> {
             List<Integer> slots = new ArrayList<>();
@@ -77,12 +83,15 @@ public final class VaultSortHandler {
             if (stack.isEmpty()) continue;
             int amount = stack.getCount();
             String rarity = "";
+            String type = "";
             Pair<Boolean, TagObject> tag = ValidateItem.isServerItem(stack, true);
             if (tag.value1() && tag.value2() != null) {
                 amount = tag.value2().getCount();
                 rarity = tag.value2().getRarity();
+                type = tag.value2().getType();
             }
-            items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity)));
+            boolean bait = SortPlanner.BAIT.equals(type) || SortPlanner.LURE.equals(type);
+            items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity), bait));
         }
         slots.sort(Comparator.naturalOrder());
         return items;
@@ -106,16 +115,26 @@ public final class VaultSortHandler {
     static List<List<SortPlanner.Click>> plan(List<Item> items, List<Integer> slots, Mode mode, boolean reverse) {
         Comparator<Item> byAmount = Comparator.comparingInt(Item::amount).reversed();
         Comparator<Item> byRarity = Comparator.comparingInt(Item::rarityRank).reversed();
-        Comparator<Item> order = mode == Mode.AMOUNT
-                ? byAmount.thenComparing(byRarity)
-                : byRarity.thenComparing(byAmount);
+        Comparator<Item> byName = Comparator.comparing((Item i) -> BaitSortOrder.nameKey(i.name()));
+        Comparator<Item> order = switch (mode) {
+            case AMOUNT -> byAmount.thenComparing(byRarity);
+            case RARITY -> byRarity.thenComparing(byAmount);
+            case NAME -> byName.thenComparing(byRarity);
+        };
         if (reverse) order = order.reversed();
         order = order.thenComparing(Item::name).thenComparingInt(Item::slot);
 
-        List<Item> desired = new ArrayList<>(items);
+        // Only baits and lures move. Pets and everything else keep their slots, and the baits go
+        // into the slots that are left (theirs and the empty ones), in order.
+        List<Integer> free = new ArrayList<>();
+        java.util.Set<Integer> fixed = new java.util.HashSet<>();
+        for (Item item : items) if (!item.movable()) fixed.add(item.slot());
+        for (int slot : slots) if (!fixed.contains(slot)) free.add(slot);
+        List<Item> desired = new ArrayList<>();
+        for (Item item : items) if (item.movable()) desired.add(item);
         desired.sort(order);
         Map<Integer, Item> state = new HashMap<>();
-        for (Item item : items) state.put(item.slot(), item);
-        return SortPlanner.arrange(state, desired, slots);
+        for (Item item : items) if (item.movable()) state.put(item.slot(), item);
+        return SortPlanner.arrange(state, desired, free);
     }
 }

@@ -124,6 +124,12 @@ public final class FoeLocations {
         return null;
     }
 
+    /// FOE's spawn hub box at Cypress Lake (x 95..145, z -58..38): you're at spawn, not at the
+    /// water yet (Big Bear Dock, Thunderwood Marina...), so gear warnings wait.
+    public static boolean isCypressHub(double x, double z) {
+        return x >= 95 && x <= 145 && z >= -58 && z <= 38;
+    }
+
     /// FOE's rarity colours, by rarity ID.
     public static int rarityColor(String rarity) {
         return switch (rarity == null ? "" : rarity.toLowerCase(Locale.ROOT)) {

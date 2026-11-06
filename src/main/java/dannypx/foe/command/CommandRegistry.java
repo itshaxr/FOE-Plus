@@ -54,6 +54,24 @@ public class CommandRegistry {
                                 .then(command("cancel").executes(Command.Stats::cancelStats))
                                 .then(command("reset").executes(Command.Stats::resetStats))
                         )
+                        .then(command("friend")
+                                .then(command("add").then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                        .suggests((context, builder) -> {
+                                            if (Minecraft.getInstance().getConnection() != null) {
+                                                Minecraft.getInstance().getConnection().getOnlinePlayers().forEach(p -> builder.suggest(p.getProfile().name()));
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(Command.Friend::add)))
+                                .then(command("remove").then(ClientCommandManager.argument("name", StringArgumentType.word())
+                                        .suggests((context, builder) -> {
+                                            dannypx.foe.handler.logic.FriendsHandler.instance().all().values().forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(Command.Friend::remove)))
+                                .then(command("list").executes(Command.Friend::list))
+                        )
+                        .then(command("item").executes(Command.Foe::copyHeldItem))
                         .then(command("crew")
                                 .then(command("import").executes(Command.Crew::importCrew))
                                 .then(command("cancel").executes(Command.Crew::cancelCrew))
@@ -202,6 +220,28 @@ public class CommandRegistry {
 
     private static class Command {
         static class Foe {
+            /// Copies the held item's data (name, lore and FOE's custom data) to the clipboard, so
+            /// it can be shared when something about an item needs fixing.
+            public static int copyHeldItem(CommandContext<FabricClientCommandSource> context) {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player == null) return 0;
+                ItemStack stack = mc.player.getMainHandItem();
+                if (stack.isEmpty()) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("ITEM", dannypx.foe.helper.FoeChat.RED).append(dannypx.foe.helper.FoeChat.text("Hold the item first.")));
+                    return 1;
+                }
+                StringBuilder out = new StringBuilder();
+                out.append("Name: ").append(stack.getHoverName().getString()).append('\n');
+                var lore = stack.get(net.minecraft.core.component.DataComponents.LORE);
+                if (lore != null) lore.lines().forEach(l -> out.append("Lore: ").append(l.getString()).append('\n'));
+                var data = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                out.append("Data: ").append(data == null ? "(none)" : data.copyTag().toString());
+                mc.keyboardHandler.setClipboard(out.toString());
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("ITEM", dannypx.foe.helper.FoeChat.GREEN)
+                        .append(stack.getHoverName().copy()).append(dannypx.foe.helper.FoeChat.text(" copied to your clipboard")));
+                return 1;
+            }
+
             public static int openConfig(CommandContext<FabricClientCommandSource> context) {
                 return executeCommand(() -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID));
             }
@@ -231,6 +271,47 @@ public class CommandRegistry {
 
             public static int resetStats(CommandContext<FabricClientCommandSource> context) {
                 return executeCommand(() -> StatsDataHandler.instance().resetStats());
+            }
+        }
+
+        static class Friend {
+            private static void say(Component line) {
+                dannypx.foe.helper.FoeChat.send(line);
+            }
+
+            public static int add(CommandContext<FabricClientCommandSource> context) {
+                String name = StringArgumentType.getString(context, "name");
+                String added = dannypx.foe.handler.logic.FriendsHandler.instance().add(name);
+                say(added == null
+                        ? dannypx.foe.helper.FoeChat.line("FRIEND", dannypx.foe.helper.FoeChat.RED).append(dannypx.foe.helper.FoeChat.white(name)).append(dannypx.foe.helper.FoeChat.text(" isn't online. Add them while they're on."))
+                        : dannypx.foe.helper.FoeChat.line("FRIEND", dannypx.foe.helper.FoeChat.AQUA).append(dannypx.foe.helper.FoeChat.white(added)).append(dannypx.foe.helper.FoeChat.text(" added to your friends")));
+                return 1;
+            }
+
+            public static int remove(CommandContext<FabricClientCommandSource> context) {
+                String name = StringArgumentType.getString(context, "name");
+                String removed = dannypx.foe.handler.logic.FriendsHandler.instance().remove(name);
+                say(removed == null
+                        ? dannypx.foe.helper.FoeChat.line("FRIEND", dannypx.foe.helper.FoeChat.RED).append(dannypx.foe.helper.FoeChat.white(name)).append(dannypx.foe.helper.FoeChat.text(" isn't on your friends list"))
+                        : dannypx.foe.helper.FoeChat.line("FRIEND", dannypx.foe.helper.FoeChat.AQUA).append(dannypx.foe.helper.FoeChat.white(removed)).append(dannypx.foe.helper.FoeChat.text(" removed from your friends")));
+                return 1;
+            }
+
+            public static int list(CommandContext<FabricClientCommandSource> context) {
+                var friends = dannypx.foe.handler.logic.FriendsHandler.instance().all();
+                var line = dannypx.foe.helper.FoeChat.line("FRIENDS", dannypx.foe.helper.FoeChat.AQUA);
+                if (friends.isEmpty()) {
+                    line.append(dannypx.foe.helper.FoeChat.text("None yet. Add one with /foe friend add <name>"));
+                } else {
+                    boolean first = true;
+                    for (var e : friends.entrySet()) {
+                        if (!first) line.append(Component.literal(", ").withStyle(ChatFormatting.DARK_GRAY));
+                        first = false;
+                        line.append(Component.literal(e.getValue()).withStyle(dannypx.foe.handler.logic.FriendsHandler.isOnline(e.getKey()) ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+                    }
+                }
+                say(line);
+                return 1;
             }
         }
 

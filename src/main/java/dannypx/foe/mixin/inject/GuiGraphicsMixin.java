@@ -48,12 +48,17 @@ public abstract class GuiGraphicsMixin {
             ItemRendererHandler.instance().drawPetItemEquipped((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawMaxPetStats((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawBaitStackerMarker((GuiGraphics) (Object) this, font, stack, x, y);
-            if(KeyBindHandler.instance().isPressingInspect()) {
+            KeyBindHandler keys = KeyBindHandler.instance();
+            if(keys.isInspecting(dannypx.foe.type.InspectAlways.Kind.OTHER)) {
                 ItemRendererHandler.instance().drawFishSize((GuiGraphics) (Object) this, font, stack, x, y);
+            }
+            if(keys.isInspecting(dannypx.foe.type.InspectAlways.Kind.PET)) {
                 ItemRendererHandler.instance().drawPetRating((GuiGraphics) (Object) this, font, stack, x, y);
-                ItemRendererHandler.instance().drawArmorQuality((GuiGraphics) (Object) this, font, stack, x, y);
             } else {
                 ItemRendererHandler.instance().drawPetRatingLetter((GuiGraphics) (Object) this, font, stack, x, y);
+            }
+            if(keys.isInspecting(dannypx.foe.type.InspectAlways.Kind.ARMOR)) {
+                ItemRendererHandler.instance().drawArmorQuality((GuiGraphics) (Object) this, font, stack, x, y);
             }
         }
     }
