@@ -130,6 +130,13 @@ public class RendererConfig extends Config {
     @Desc("§7Other FOE+ users' bobbers show the preset they picked. Off, or for players without FOE+: Classic")
     public ValidatedBoolean showOtherBobberStyles = new ValidatedBoolean(true);
 
+    @Name("Bobber timer")
+    @Desc("§7How long your bobber has been out, in seconds, over your own bobber (hidden once a fish is on)")
+    public ValidatedBoolean showBobberTimer = new ValidatedBoolean(true);
+
+    @Name("Bobber timer: show \"s\" after the time")
+    public ValidatedBoolean bobberTimerSecondsSuffix = new ValidatedBoolean(true);
+
     @Name("Use custom hat positions")
     public ValidatedBoolean showHatPositions = new ValidatedBoolean(true);
 

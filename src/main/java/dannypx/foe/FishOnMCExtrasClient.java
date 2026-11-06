@@ -213,6 +213,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 dannypx.foe.handler.logic.CommunityEventHandler.instance().tick();
                 dannypx.foe.handler.logic.EventTimesHandler.instance().tick();
                 dannypx.foe.handler.logic.MiniEventHandler.instance().tick();
+                dannypx.foe.handler.logic.BobberTimerHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 dannypx.foe.handler.io.FoerStatsImporter.tick();
                 dannypx.foe.handler.io.FoeStatsImporter.tick();

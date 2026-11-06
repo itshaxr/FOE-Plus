@@ -115,6 +115,14 @@ public abstract class FishingHookRendererMixin {
         Player owner = fishingHookEntity.getPlayerOwner();
         ((IFishingHookRenderState) fishingHookEntityState).foe$setOwn(owner != null && owner == Minecraft.getInstance().player);
         ((IFishingHookRenderState) fishingHookEntityState).foe$setOwner(owner != null ? owner.getUUID() : null);
+        // Bobber timer: seconds since the cast, as a label over your own bobber.
+        if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
+            net.minecraft.network.chat.Component timer = dannypx.foe.handler.logic.BobberTimerHandler.instance().label(fishingHookEntity, f);
+            if (timer != null) {
+                fishingHookEntityState.nameTag = timer;
+                fishingHookEntityState.nameTagAttachment = new Vec3(0, 0.6, 0);
+            }
+        }
         if(ConnectionHandler.instance().isOnServer()
                 && Configs.mainConfig.enableMod.get()
                 && Configs.rendererConfig.showFishingRodPositions.get()

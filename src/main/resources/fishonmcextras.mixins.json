@@ -17,6 +17,7 @@
   "client": [
     "accessor.AbstractSelectionListAccessor",
     "accessor.BossHealthOverlayAccessor",
+    "accessor.GuiAccessor",
     "accessor.LevelRendererAccessor",
     "accessor.MinecraftAccessor",
     "accessor.PlayerTabOverlayAccessor",

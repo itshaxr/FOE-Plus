@@ -139,6 +139,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Friends:** `/foe friend add <name>`, `remove` and `list`. Friends show on the Timers & Crew panel in blue; a friend who is also in your crew is light blue with an orange ★ (the crew colour).
 - **Crew and friend alerts:** a chat line when a crew member or friend comes online or goes offline.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
+- **Bobber timer:** how long your bobber has been out ("12.4s") floating over your own bobber; it hides once a fish is on. On by default (from FOE's bobber tracker).
 - **Bobber presets:** 16 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow), picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
 - **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours).
 
