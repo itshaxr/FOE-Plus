@@ -92,6 +92,10 @@ public class RendererConfig extends Config {
     @Name("Show max Luck/Scale pet marker")
     public ValidatedBoolean showMaxPetStatsMarker = new ValidatedBoolean(true);
 
+    @Name("Show max stat rod part marker")
+    @Desc("§7A gold star on rod parts rolled at the highest their rarity can roll, and on rods with two different max stats")
+    public ValidatedBoolean showMaxRodPartMarker = new ValidatedBoolean(true);
+
     @Name("Show Rarity marker")
     public ValidatedBoolean showRarityMarker = new ValidatedBoolean(true);
 

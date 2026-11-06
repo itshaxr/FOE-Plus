@@ -496,32 +496,11 @@ public class HUDConfig extends Config {
     public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Timers & Crew Panel")
-    @Desc("§7Moon, Tackle Shop and Cosmetic Store timers, then your crew and friends: who's in range and who's online")
+    @Desc("§7The Timers & Crew box from your inventory as a HUD panel too (what it shows is set in the inventory settings)")
     public ConfigGroup timersPanelGroup = new ConfigGroup("timers_panel_group");
 
     @Name("Show Timers & Crew Panel")
     public ValidatedBoolean showTimersPanel = new ValidatedBoolean(true);
-
-    @Name("Show the moon timer")
-    public ValidatedBoolean timersPanelMoon = new ValidatedBoolean(true);
-
-    @Name("Show the Tackle Shop timer")
-    @Desc("§7Restocks every 4 hours; re-synced whenever the restock message shows in chat")
-    public ValidatedBoolean timersPanelTackleShop = new ValidatedBoolean(true);
-
-    @Name("Show the Cosmetic Store timer")
-    @Desc("§7Resets every day at 8pm New York time")
-    public ValidatedBoolean timersPanelCosmeticStore = new ValidatedBoolean(true);
-
-    @Name("Show your votes")
-    @Desc("§7How many of the 7 sites you've voted on in the last 24 hours (from the VOTE reward lines), and when the first one can be voted again")
-    public ValidatedBoolean timersPanelVote = new ValidatedBoolean(true);
-
-    @Name("Show your crew and friends")
-    public ValidatedBoolean timersPanelCrew = new ValidatedBoolean(true);
-
-    @Name("Show offline crew members and friends")
-    public ValidatedBoolean timersPanelOffline = new ValidatedBoolean(true);
 
     @Name("X Position in %")
     public ValidatedInt timersPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);

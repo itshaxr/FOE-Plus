@@ -27,7 +27,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
 | **Top bar** | Level, location and the spot you're at (Big Bear Dock, Thunderwood Marina...), time, balance and catches, plus the community event total and your contribution. |
-| **Timers & Crew** | Next moon, Tackle Shop restock (every 4 hours, with a ✔ once you've checked it), Cosmetic Store reset (8pm New York) and your votes (x/7 in the last 24 hours, and when you can vote again), then your crew and friends: whether a crew member is in range, how many are online, and who. |
+| **Timers & Crew** | Next to your inventory and as a HUD panel: next moon, Tackle Shop restock (every 4 hours, ✔ once you've checked it), Cosmetic Store reset (8pm New York), your votes (x/7 in the last 24 hours), then whether a crew member is in range and your crew and friends, online first. In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
 
@@ -57,7 +57,7 @@ The Alerts panel and chat tell you when a rare catch is possible and how long th
 
 ## Chat notifications
 
-All FOE+ messages share one clean style, starting with a bold **[FOE+]** tag:
+All FOE+ messages share one clean style, starting with a bold **[FOE+]** tag, with location names in the server's own colours:
 
 ```
 [FOE+] PET PULLED! Eagle Pet (87.0% A) · Dry streak 164
@@ -101,6 +101,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
 - **Held item:** the item your pet is holding shows in the Pet panel.
 - **Pet tooltips:** rating letter and max Luck / max Scale markers.
+- **Max rod parts:** a gold star on rod parts rolled at the highest their rarity can roll, and on rods with two different max stats.
 - **Pet Prices (`U`):** the full price table from the community price sheet, updated once a day.
 
 ---

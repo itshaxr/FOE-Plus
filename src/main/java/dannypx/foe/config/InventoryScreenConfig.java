@@ -20,9 +20,30 @@ public class InventoryScreenConfig extends Config {
     @Name("Show Stats Element")
     public ValidatedBoolean showStatsElement = new ValidatedBoolean(true);
 
-    @Name("Show Moon Timer")
-    @Desc("§7Time until the next moonrise, shown left of your inventory")
+    @Name("Show Timers & Crew box")
+    @Desc("§7Left of your inventory: moon, Tackle Shop, Cosmetic Store and vote timers, then your crew and friends")
     public ValidatedBoolean showMoonTimer = new ValidatedBoolean(true);
+
+    @Name("Show the moon timer")
+    public ValidatedBoolean timersMoon = new ValidatedBoolean(true);
+
+    @Name("Show the Tackle Shop timer")
+    @Desc("§7Restocks every 4 hours; re-synced whenever the restock message shows in chat. ✔ once you've opened it since")
+    public ValidatedBoolean timersTackleShop = new ValidatedBoolean(true);
+
+    @Name("Show the Cosmetic Store timer")
+    @Desc("§7Resets every day at 8pm New York time")
+    public ValidatedBoolean timersCosmeticStore = new ValidatedBoolean(true);
+
+    @Name("Show your votes")
+    @Desc("§7How many of the 7 sites you've voted on in the last 24 hours, and when the first can be voted again")
+    public ValidatedBoolean timersVote = new ValidatedBoolean(true);
+
+    @Name("Show your crew and friends")
+    public ValidatedBoolean timersCrew = new ValidatedBoolean(true);
+
+    @Name("Show offline crew members and friends")
+    public ValidatedBoolean timersOffline = new ValidatedBoolean(true);
 
     @Override
     public @NotNull FileType fileType() {

@@ -57,8 +57,9 @@ public final class FoeChat {
         return Component.literal(text).withStyle(ChatFormatting.YELLOW);
     }
 
+    /// A location name in the server's colours for it (as in /tt).
     public static Component place(String text) {
-        return Component.literal(text).withStyle(ChatFormatting.AQUA);
+        return FoeLocations.styledName(text);
     }
 
     /// " · Dry streak 1,234"

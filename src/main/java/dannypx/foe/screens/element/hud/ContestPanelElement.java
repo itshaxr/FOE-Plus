@@ -89,7 +89,7 @@ public class ContestPanelElement extends PanelElement {
         lines.add(join(header.toArray(new Component[0])));
         lines.add(Component.empty());
 
-        Component location = Component.literal(contest.location).withStyle(ChatFormatting.AQUA);
+        Component location = dannypx.foe.helper.FoeLocations.styledName(contest.location);
         boolean atLocation = normalizeLocation(contest.location)
                 .equals(normalizeLocation(BossEventHandler.instance().getLocation().getString()));
 

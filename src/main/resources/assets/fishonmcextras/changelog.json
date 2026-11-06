@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.29+1.21.11",
+      "name": "FOE+ 1.0.29+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Timers & Crew box next to your inventory: moon, Tackle Shop, Cosmetic Store and vote timers, crew range, and your crew and friends with a + to add a friend (the list scrolls) by @phckd\n- The Timers & Crew HUD panel stays too, showing the same lines by @phckd\n- Gold star on rod parts rolled at their rarity's max stat, and on rods with two different max stats (inventory, hotbar and equipment bar) by @phckd\n- Location names in the HUDs and chat use the server's own colours (as in /tt), gradients included by @phckd"
+    },
+    {
       "versionNumber": "1.0.28+1.21.11",
       "name": "FOE+ 1.0.28+1.21.11",
       "datePublished": "2026-11-05",

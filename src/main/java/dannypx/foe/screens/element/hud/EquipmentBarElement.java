@@ -107,6 +107,7 @@ public class EquipmentBarElement extends Element {
 
         if (!stack.isEmpty()) {
             guiGraphics.renderItem(stack, x + 2, y + 2);
+            dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawMaxRodPart(guiGraphics, stack, x + 2, y + 2);
         } else {
             Component text = Component.literal(placeholder).withStyle(ChatFormatting.GRAY);
             guiGraphics.drawString(font, text, x + BOX / 2 - font.width(text) / 2, y + BOX / 2 - font.lineHeight / 2, 0xFFFFFFFF, true);

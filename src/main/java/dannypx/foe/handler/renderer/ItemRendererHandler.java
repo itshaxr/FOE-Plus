@@ -153,6 +153,17 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    private final Identifier maxRodPartMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_rod_part");
+
+    /// A gold star on a rod part rolled at its rarity's max, and on a rod with two different max
+    /// stats (top-left of the slot).
+    public void drawMaxRodPart(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
+        if (!Configs.rendererConfig.showMaxRodPartMarker.get() || stack.isEmpty()) return;
+        if (dannypx.foe.helper.RodPartMax.markFor(dannypx.foe.helper.ItemStackHelper.getTag(stack)) == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
+        int iconSize = 7;
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, maxRodPartMarker, x, y, iconSize, iconSize, CommonColors.WHITE);
+    }
+
     private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");
 
     /// Gold ring behind the pet you have equipped, like FOE. Drawn before the item so it sits behind it.

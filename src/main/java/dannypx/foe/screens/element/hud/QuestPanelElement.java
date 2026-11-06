@@ -60,7 +60,7 @@ public class QuestPanelElement extends PanelElement {
                 .getOrDefault(location.getString(), List.of());
         if (quests.isEmpty()) return lines;
 
-        lines.add(join(label("ʟᴏᴄ: "), Component.literal(shortLocation(location.getString())).setStyle(location.getStyle())));
+        lines.add(join(label("ʟᴏᴄ: "), dannypx.foe.helper.FoeLocations.styledName(shortLocation(location.getString()))));
         int index = 1;
         for (QuestDataHandler.Quest quest : quests) {
             Component prefix = label("#" + index++ + ": ");

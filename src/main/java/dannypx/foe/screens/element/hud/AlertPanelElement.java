@@ -55,7 +55,7 @@ public class AlertPanelElement extends PanelElement {
             boolean here = where != null && where == PetLocationHandler.currentLocation();
             lines.add(join(Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                     Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                    Component.literal(alerts.locationLabel(alert)).withStyle(ChatFormatting.AQUA),
+                    dannypx.foe.helper.FoeLocations.styledName(alerts.locationLabel(alert)),
                     here ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty()));
             if (alert == AlertHandler.Alert.FABLED) {
                 lines.add(join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
@@ -94,7 +94,7 @@ public class AlertPanelElement extends PanelElement {
         return List.of(
                 join(Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                         Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                        Component.literal("Cypress Lake").withStyle(ChatFormatting.AQUA)),
+                        dannypx.foe.helper.FoeLocations.styledName("Cypress Lake")),
                 join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                         Component.literal("2:10 left").withStyle(ChatFormatting.GREEN)),
                 join(label("ɴᴇxᴛ: "), Component.literal("Titanoboa").withStyle(ChatFormatting.WHITE),

@@ -47,6 +47,7 @@ public abstract class GuiGraphicsMixin {
             ItemRendererHandler.instance().drawSearchItem((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawPetItemEquipped((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawMaxPetStats((GuiGraphics) (Object) this, stack, x, y);
+            ItemRendererHandler.instance().drawMaxRodPart((GuiGraphics) (Object) this, stack, x, y);
             ItemRendererHandler.instance().drawBaitStackerMarker((GuiGraphics) (Object) this, font, stack, x, y);
             KeyBindHandler keys = KeyBindHandler.instance();
             if(keys.isInspecting(dannypx.foe.type.InspectAlways.Kind.OTHER)) {
