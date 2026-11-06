@@ -17,8 +17,11 @@ public class InventoryScreenConfig extends Config {
         super(Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "inventory_config"));
     }
 
-    @Name("Show Stats Element")
-    public ValidatedBoolean showStatsElement = new ValidatedBoolean(true);
+    /// Off in FOE+: All-Time Stats already shows the same numbers. (Renamed from
+    /// showStatsElement, so it's off for everyone once, even if it was saved as on.)
+    @Name("Show the Fishing Statistics list")
+    @Desc("§7FOE-R's stats list right of your inventory (the All-Time Stats panel shows the same)")
+    public ValidatedBoolean showFishingStatsList = new ValidatedBoolean(false);
 
     @Name("Show Timers & Crew box")
     @Desc("§7Left of your inventory: moon, Tackle Shop, Cosmetic Store and vote timers, then your crew and friends")

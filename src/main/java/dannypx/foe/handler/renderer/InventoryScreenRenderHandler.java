@@ -81,7 +81,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
 
             elements.forEach(element -> element.value2().render(guiGraphics));
             if(this.statList != null
-                    && Configs.inventoryScreenConfig.showStatsElement.get()
+                    && Configs.inventoryScreenConfig.showFishingStatsList.get()
             ) {
                 this.statList.render(guiGraphics, mouseX, mouseY, tickDelta);
                 this.renderStatBoxHeaderString(guiGraphics);
@@ -132,7 +132,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             widgets.clear();
             buttons.clear();
 
-            if(Configs.inventoryScreenConfig.showStatsElement.get()) widgets.add(getStatList());
+            if(Configs.inventoryScreenConfig.showFishingStatsList.get()) widgets.add(getStatList());
 
             // The + next to "Online" in the Timers & Crew box: starts /foe friend add in chat.
             addFriendButton = new SmallButtonBuilder(0, 0, 10, 10,
@@ -273,7 +273,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     public boolean onMouseScrolled(Screen screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount, boolean consumed) {
         if(Configs.inventoryScreenConfig.showMoonTimer.get()) TimersCrewBox.mouseScrolled(mouseX, mouseY, verticalAmount);
         if(this.statList != null
-                && Configs.inventoryScreenConfig.showStatsElement.get()
+                && Configs.inventoryScreenConfig.showFishingStatsList.get()
                 && this.statList.isMouseOver(mouseX, mouseY)
         ) {
             this.statList.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -358,7 +358,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
         elements.clear();
 
         if(this.statList != null
-                && Configs.inventoryScreenConfig.showStatsElement.get()
+                && Configs.inventoryScreenConfig.showFishingStatsList.get()
         ) {
             elements.add(Pair.of("header_box", new BoxElement(minecraft.getWindow().getGuiScaledWidth() / 2 + INVENTORY_TRANSLATION + (STAT_WIDTH - ((STAT_WIDTH / 4) / 3)) / 2 - 65,
                     minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP - 20 + 4,

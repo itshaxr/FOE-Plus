@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.30+1.21.11",
+      "name": "FOE+ 1.0.30+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Removed FOE-R's Fishing Statistics list from the inventory (All-Time Stats shows the same); it can be turned back on in the inventory settings by @phckd"
+    },
+    {
       "versionNumber": "1.0.29+1.21.11",
       "name": "FOE+ 1.0.29+1.21.11",
       "datePublished": "2026-11-05",
