@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.39+1.21.11",
+      "name": "FOE+ 1.0.39+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Timers & Crew: fixed a crew member showing with no name (some /crew heads come without one: FOE+ now takes the name on the item, then the tab list or your friends list) by @phckd\n- A friend in your crew is recognised by name too, so they keep the crew colour and star by @phckd"
+    },
+    {
       "versionNumber": "1.0.38+1.21.11",
       "name": "FOE+ 1.0.38+1.21.11",
       "datePublished": "2026-11-06",

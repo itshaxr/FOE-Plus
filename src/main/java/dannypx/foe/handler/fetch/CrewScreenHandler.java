@@ -46,7 +46,10 @@ public class CrewScreenHandler extends Handler {
                             && itemStack.get(DataComponents.PROFILE) != null
                             && itemStack.get(DataComponents.PROFILE).partialProfile().id() != null
                     ) {
-                        crewMembers.put(itemStack.get(DataComponents.PROFILE).partialProfile().id(), Pair.of(itemStack.get(DataComponents.PROFILE).partialProfile().name(), itemStack));
+                        String name = itemStack.get(DataComponents.PROFILE).partialProfile().name();
+                        // Some heads come without a name in their profile: use the one on the item.
+                        if (name == null || name.isBlank()) name = nameFromText(itemStack.getHoverName().getString());
+                        crewMembers.put(itemStack.get(DataComponents.PROFILE).partialProfile().id(), Pair.of(name, itemStack));
                     }
                 }
 
@@ -62,6 +65,20 @@ public class CrewScreenHandler extends Handler {
                 }
             }
         }
+    }
+    private static final java.util.regex.Pattern MC_NAME = java.util.regex.Pattern.compile("[A-Za-z0-9_]{3,16}");
+
+    /// "[ADMIRAL] WatDaFrickle" (or with rank glyphs and colours) → "WatDaFrickle": the last
+    /// Minecraft-style name in the text, or "" when there's none. Public for the crew list.
+    public static String nameFromText(String text) {
+        if (text == null) return "";
+        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
+        if (plain == null) return "";
+        plain = plain.replaceAll("[\\uE000-\\uF8FF]", " ");
+        java.util.regex.Matcher m = MC_NAME.matcher(plain);
+        String last = "";
+        while (m.find()) last = m.group();
+        return last;
     }
     //endregion
 
