@@ -82,49 +82,11 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
                 widgets.add(button);
             }
 
-            // Bait Sorter (left of the vault) and Pet Sorter (right), each in a small titled box
-            // (FOE+). Shift-click for the reverse order.
-            int left = minecraft.getWindow().getGuiScaledWidth() / 2 - 88;
-            int right = minecraft.getWindow().getGuiScaledWidth() / 2 + 88;
-            int top = minecraft.getWindow().getGuiScaledHeight() / 2 - 111;
-            int sortWidth = 64;
-            int boxWidth = sortWidth + 8;
-            int boxHeight = 18 + 3 * 24 + 2;
-            int baitBoxX = left - 4 - boxWidth;
-            int petBoxX = right + 4;
-
-            widgets.add(new dannypx.foe.screens.widget.TitledBoxWidget(baitBoxX, top, boxWidth, boxHeight, Component.literal("Bait Sorter")));
-            widgets.add(sortButton("⇅ Amount", VaultSortHandler.Mode.AMOUNT,
-                    "Sort this page's baits by amount, most first.\nShift-click: fewest first.\nPets and other items stay put.\nThe bait sorter (B) keeps this order.", baitBoxX + 4, top + 18, sortWidth));
-            widgets.add(sortButton("⇅ Rarity", VaultSortHandler.Mode.RARITY,
-                    "Sort this page's baits by rarity, rarest first.\nShift-click: most common first.\nPets and other items stay put.\nThe bait sorter (B) keeps this order.", baitBoxX + 4, top + 42, sortWidth));
-            widgets.add(sortButton("⇅ Name", VaultSortHandler.Mode.NAME,
-                    "Sort this page's baits by name, grouped by kind\n(every Crankbait together), A to Z.\nShift-click: Z to A.\nPets and other items stay put.\nThe bait sorter (B) keeps this order.", baitBoxX + 4, top + 66, sortWidth));
-
-            widgets.add(new dannypx.foe.screens.widget.TitledBoxWidget(petBoxX, top, boxWidth, boxHeight, Component.literal("Pet Sorter")));
-            widgets.add(petSortButton("⇅ Percent", VaultSortHandler.Mode.PERCENT,
-                    "Sort this page's pets by percent, highest first.\nShift-click: lowest first.\nBaits and other items stay put.", petBoxX + 4, top + 18, sortWidth));
-            widgets.add(petSortButton("⇅ Rarity", VaultSortHandler.Mode.RARITY,
-                    "Sort this page's pets by rarity, rarest first\n(same rarity: highest percent first).\nShift-click: most common first.\nBaits and other items stay put.", petBoxX + 4, top + 42, sortWidth));
-            widgets.add(petSortButton("⇅ Name", VaultSortHandler.Mode.NAME,
-                    "Sort this page's pets by name, A to Z.\nShift-click: Z to A.\nBaits and other items stay put.", petBoxX + 4, top + 66, sortWidth));
+            // Bait Sorter (left of the vault) and Pet Sorter (right), each in a small titled box (FOE+).
+            SorterBoxes.add(widgets, 6, "page");
 
             widgets.forEach(Screens.getButtons(screen)::add);
         }
-    }
-
-    private Button petSortButton(String label, VaultSortHandler.Mode mode, String tooltip, int x, int y, int width) {
-        return Button.builder(Component.literal(label), b -> VaultSortHandler.sortPets(mode, minecraft.hasShiftDown()))
-                .bounds(x, y, width, 20)
-                .tooltip(Tooltip.create(Component.literal(tooltip)))
-                .build();
-    }
-
-    private Button sortButton(String label, VaultSortHandler.Mode mode, String tooltip, int x, int y, int width) {
-        return Button.builder(Component.literal(label), b -> VaultSortHandler.sort(mode, minecraft.hasShiftDown()))
-                .bounds(x, y, width, 20)
-                .tooltip(Tooltip.create(Component.literal(tooltip)))
-                .build();
     }
 
     private static int getCurrentPage(Screen screen) {

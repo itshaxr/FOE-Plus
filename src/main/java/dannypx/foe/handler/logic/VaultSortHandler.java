@@ -97,8 +97,15 @@ public final class VaultSortHandler {
         List<Item> items = new ArrayList<>();
         if (!(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)
                 || !(screen.getMenu() instanceof ChestMenu)) return items;
+        // The vault's bottom row holds the page arrows; a chest's rows are all items.
+        int itemSlots = ITEM_SLOTS;
+        if (screen.getMenu() instanceof ChestMenu chest) {
+            boolean vault = screen.getTitle().getString().startsWith(
+                    dannypx.foe.handler.fetch.GenericContainerScreenHandler.PERSONAL_VAULT_SCREEN_CONTAINER);
+            itemSlots = chest.getRowCount() * 9 - (vault ? 9 : 0);
+        }
         for (Slot slot : screen.getMenu().slots) {
-            if (slot.container instanceof Inventory || slot.index >= ITEM_SLOTS) continue;
+            if (slot.container instanceof Inventory || slot.index >= itemSlots) continue;
             slots.add(slot.index);
             ItemStack stack = slot.getItem();
             if (stack.isEmpty()) continue;

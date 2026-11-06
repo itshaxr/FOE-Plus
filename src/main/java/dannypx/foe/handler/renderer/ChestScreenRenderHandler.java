@@ -52,6 +52,10 @@ public class ChestScreenRenderHandler extends ScreenHandler {
             );
 
             widgets.add(searchBarWidget);
+            // The Bait Sorter and Pet Sorter boxes, as on the Personal Vault (FOE+).
+            if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen chest) {
+                SorterBoxes.add(widgets, chest.getMenu().getRowCount(), "chest");
+            }
 
             widgets.forEach(Screens.getButtons(screen)::add);
         }
