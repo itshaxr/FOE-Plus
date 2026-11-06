@@ -136,6 +136,12 @@ public class DailyQuestHandler {
     private static final Map<String, String> VARIANT_GLYPHS = Map.of(
             "albino", "\uF041", "melanistic", "\uF042", "trophy", "\uF043", "fabled", "\uF044");
     private static final List<String> SIZES = List.of("baby", "juvenile", "adult", "large", "gigantic");
+
+    /// A server badge glyph the mission matching knows (a rarity or a variant).
+    static boolean isKnownBadge(char c) {
+        String s = String.valueOf(c);
+        return RARITY_GLYPHS.containsValue(s) || VARIANT_GLYPHS.containsValue(s);
+    }
     /// Goals with these words are not "catch a fish" goals (they have their own triggers or none).
     private static final Pattern NOT_A_CATCH_GOAL = Pattern.compile(
             "\\b(quests?|contests?|shards?|sell|sold|earn|spend|pets?|baits?|lures?|crates?|levels?|money|coins?)\\b|\\$");

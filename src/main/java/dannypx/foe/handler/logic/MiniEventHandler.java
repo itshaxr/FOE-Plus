@@ -65,11 +65,12 @@ public class MiniEventHandler {
             return progress.getString().contains("∞");
         }
 
-        /// The mission as plain words ("Kenai River GIGANTIC"), without its icons.
+        /// The mission without its leading dash and icon ("Kenai River GIGANTIC"). Badges in the
+        /// name (ALBINO, TROPHY... are server glyphs) are kept: they're part of the mission.
         public String key() {
             String plain = ChatFormatting.stripFormatting(name.getString());
             if (plain == null) return "";
-            return plain.replaceAll("[\\uE000-\\uF8FF]", " ").replaceFirst("^[^\\p{L}]+", "").trim().replaceAll("\\s+", " ");
+            return plain.replaceFirst("^[^\\p{L}]+", "").trim().replaceAll("\\s+", " ");
         }
     }
 
@@ -261,6 +262,11 @@ public class MiniEventHandler {
     static boolean countsCatch(Mission m, DailyQuestHandler.Catch caught) {
         String goal = m.key();
         if (goal.isEmpty()) return false;
+        // A badge FOE+ can't read (a variant it doesn't know): leave it to the server's numbers
+        // rather than count every fish for it.
+        for (char c : goal.toCharArray()) {
+            if (c >= '\uE000' && c <= '\uF8FF' && !DailyQuestHandler.isKnownBadge(c)) return false;
+        }
         if (DailyQuestHandler.locationNamedIn(goal.toLowerCase(java.util.Locale.ROOT)) != null) {
             goal = goal.toLowerCase(java.util.Locale.ROOT).replaceAll("\\b(river|lake|lakes|sea|islands?|bend|rig|keys?)\\b", " ") + " fish";
         }

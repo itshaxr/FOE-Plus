@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.51+1.21.11",
+      "name": "FOE+ 1.0.51+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel: ALBINO, MELANISTIC and TROPHY missions no longer vanish and come back: their badge was ignored, so any Kenai fish counted for them. They now only go up for that variant (or wait for the server's numbers) by @phckd"
+    },
+    {
       "versionNumber": "1.0.50+1.21.11",
       "name": "FOE+ 1.0.50+1.21.11",
       "datePublished": "2026-11-06",
