@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.36+1.21.11",
+      "name": "FOE+ 1.0.36+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Events panel shows a Gold Rush (⚠ on the boss bar, base shard chance 1 in 25) with about 15 minutes counting down, from the chat announcement, /events or the boss bar; it goes when the ⚠ does by @phckd"
+    },
+    {
       "versionNumber": "1.0.35+1.21.11",
       "name": "FOE+ 1.0.35+1.21.11",
       "datePublished": "2026-11-05",

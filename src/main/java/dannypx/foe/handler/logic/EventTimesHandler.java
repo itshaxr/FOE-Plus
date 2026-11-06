@@ -45,12 +45,60 @@ public class EventTimesHandler {
     static final Pattern OASIS = Pattern.compile("^\\s*BLOOMING OASIS\\s*[»>].*?(?:\\(([^)]*)\\))?\\s*[.!]?\\s*$", Pattern.CASE_INSENSITIVE);
     /// Blooming Oasis lasts 900-960 s (wiki); until we know better, 15 minutes from when it shows.
     static final long OASIS_MS = 15L * 60L * 1000L;
+    /// "GOLD RUSH » A Gold Rush has begun! (Base Shard Chance → 1 in 50 25)", or with a time in
+    /// brackets in /events.
+    static final Pattern GOLD_RUSH = Pattern.compile("^\\s*GOLD RUSH\\s*[»>]\\s*(.*?)\\s*$", Pattern.CASE_INSENSITIVE);
+    /// Gold Rush lasts 900-960 s too (wiki): ⚠ on the boss bar, base shard chance 1/50 → 1/25.
+    static final long GOLD_RUSH_MS = 15L * 60L * 1000L;
+    private static final Pattern BRACKETS = Pattern.compile("\\(([^)]*)\\)");
+    private static final Pattern ENDED = Pattern.compile("\\b(ended|over|finished|expired)\\b", Pattern.CASE_INSENSITIVE);
     static final Pattern EVENT_LINE = Pattern.compile("^\\s*[A-Z][A-Z ]+\\s*»");
     static final Pattern FRENZY_OVER = Pattern.compile("^\\s*FISH FRENZY\\s*[»>].*\\b(ended|over|finished)\\b.*$", Pattern.CASE_INSENSITIVE);
 
-    private long oasisEndsAt = 0L;
-    private boolean oasisExact = false;
-    private boolean oasisOnBossBar = false;
+    /// An event shown by a symbol on the boss bar that lasts a set time (Blooming Oasis ♣,
+    /// Gold Rush ⚠): started by chat, /events or the symbol showing up, ended by the time running
+    /// out (when the server gave it) or the symbol going away.
+    static final class Timed {
+        final String symbol;
+        final long guessMs;
+        long endsAt = 0L;
+        boolean exact = false;
+        boolean onBossBar = false;
+
+        Timed(String symbol, long guessMs) {
+            this.symbol = symbol;
+            this.guessMs = guessMs;
+        }
+
+        /// From chat: {@code ms} left (exact), or -1 for "it's on" (our guess unless already known).
+        void started(long ms, long now) {
+            if (ms >= 0) { endsAt = now + ms; exact = true; }
+            else if (endsAt <= now) { endsAt = now + guessMs; exact = false; }
+        }
+
+        void ended() {
+            endsAt = 0L;
+            exact = false;
+        }
+
+        void weather(String weather, long now) {
+            boolean on = weather != null && weather.contains(symbol);
+            if (on && !onBossBar && endsAt <= now) { endsAt = now + guessMs; exact = false; }
+            if (!on && onBossBar) endsAt = 0L; // the symbol went away: it's over
+            onBossBar = on;
+        }
+
+        boolean active(long now) {
+            return onBossBar || endsAt > now;
+        }
+
+        long remaining(long now) {
+            return Math.max(0L, endsAt - now);
+        }
+    }
+
+    private final Timed oasis = new Timed("\u2663", OASIS_MS);
+    private final Timed goldRush = new Timed("\u26A0", GOLD_RUSH_MS);
     private String frenzyLocation = "";
     private long frenzyEndsAt = 0L;
     private long joinedAt = 0L, lastCheckAt = 0L, hideUntil = 0L;
@@ -88,9 +136,13 @@ public class EventTimesHandler {
         }
         m = OASIS.matcher(text);
         if (m.matches()) {
-            long ms = m.group(1) == null ? -1 : parseDuration(m.group(1));
-            if (ms >= 0) { oasisEndsAt = now + ms; oasisExact = true; }
-            else if (oasisEndsAt <= now) { oasisEndsAt = now + OASIS_MS; oasisExact = false; }
+            if (ENDED.matcher(text).find()) oasis.ended();
+            else oasis.started(m.group(1) == null ? -1 : parseDuration(m.group(1)), now);
+            return ours;
+        }
+        m = GOLD_RUSH.matcher(text);
+        if (m.matches()) {
+            onGoldRush(m.group(1), now);
             return ours;
         }
         m = FRENZY.matcher(text);
@@ -120,30 +172,54 @@ public class EventTimesHandler {
         else if (!same) frenzyEndsAt = now + FRENZY_MS;
     }
 
-    /// The boss bar shows ♣ while a Blooming Oasis is on. Package-private for tests.
-    void onWeather(String weather, long now) {
-        boolean on = weather != null && weather.contains("\u2663");
-        if (on && !oasisOnBossBar && oasisEndsAt <= now) {
-            oasisEndsAt = now + OASIS_MS;
-            oasisExact = false;
+    /// The text after "GOLD RUSH »": ended, or begun / active (a time in brackets when /events
+    /// gives one; "(Base Shard Chance → 1 in 50 25)" isn't a time). Package-private for tests.
+    void onGoldRush(String body, long now) {
+        if (ENDED.matcher(body).find()) {
+            goldRush.ended();
+            return;
         }
-        if (!on && oasisOnBossBar && !oasisExact) oasisEndsAt = 0L; // it ended
-        oasisOnBossBar = on;
+        long ms = -1;
+        Matcher b = BRACKETS.matcher(body);
+        while (b.find()) {
+            long t = parseDuration(b.group(1));
+            if (t >= 0) ms = t;
+        }
+        goldRush.started(ms, now);
+    }
+
+    /// The boss bar shows ♣ during a Blooming Oasis and ⚠ during a Gold Rush. Package-private for tests.
+    void onWeather(String weather, long now) {
+        oasis.weather(weather, now);
+        goldRush.weather(weather, now);
     }
 
     /// A Blooming Oasis is on: its ♣ is on the boss bar, or the server said so and its time
     /// isn't up yet.
     public boolean oasisActive() {
-        return oasisOnBossBar || oasisEndsAt > System.currentTimeMillis();
+        return oasis.active(System.currentTimeMillis());
     }
 
     /// Time left; {@link #oasisExact()} says whether it came from the server or is the 15 minute guess.
     public long oasisRemainingMs() {
-        return Math.max(0L, oasisEndsAt - System.currentTimeMillis());
+        return oasis.remaining(System.currentTimeMillis());
     }
 
     public boolean oasisExact() {
-        return oasisExact;
+        return oasis.exact;
+    }
+
+    /// A Gold Rush is on (⚠ on the boss bar, or announced and its time isn't up yet).
+    public boolean goldRushActive() {
+        return goldRush.active(System.currentTimeMillis());
+    }
+
+    public long goldRushRemainingMs() {
+        return goldRush.remaining(System.currentTimeMillis());
+    }
+
+    public boolean goldRushExact() {
+        return goldRush.exact;
     }
 
     public boolean frenzyActive() {

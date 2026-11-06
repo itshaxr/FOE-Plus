@@ -22,6 +22,7 @@ public class EventsPanelElement extends PanelElement {
     private static final int FRENZY_COLOR = 0x55FF55;
     private static final int FABLED_COLOR = 0xFC3E35;
     private static final int OASIS_COLOR = 0xFC54FC;
+    private static final int GOLD_RUSH_COLOR = 0xFFAA00;
     private static final FontDescription ICONS = new FontDescription.Resource(
             Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "stat_icons"));
 
@@ -72,6 +73,15 @@ public class EventsPanelElement extends PanelElement {
                         : Component.empty());
     }
 
+    /// "⚠ Gold Rush · Shards 1 in 25 · ~14:30" (~ while the time is FOE+'s estimate)
+    static Component goldRush(long msLeft, boolean exact) {
+        return join(Component.literal("⚠ Gold Rush").withColor(GOLD_RUSH_COLOR),
+                Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
+                Component.literal("Shards 1 in 25").withStyle(ChatFormatting.GRAY),
+                msLeft > 0 ? Component.literal(" · " + (exact ? "" : "~") + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
+                        : Component.empty());
+    }
+
     /// "★ Fabled Fish at Danube River · up 12:03"
     static Component fabled(String location, long msSince) {
         return join(Component.literal("★ Fabled Fish").withColor(FABLED_COLOR),
@@ -88,6 +98,7 @@ public class EventsPanelElement extends PanelElement {
         EventTimesHandler events = EventTimesHandler.instance();
         if (events.frenzyActive()) lines.add(frenzy(events.frenzyLocation(), events.frenzyRemainingMs()));
         if (events.oasisActive()) lines.add(oasis(events.oasisRemainingMs(), events.oasisExact()));
+        if (events.goldRushActive()) lines.add(goldRush(events.goldRushRemainingMs(), events.goldRushExact()));
         AlertHandler alerts = AlertHandler.instance();
         if (alerts.isFabledActive()) {
             long since = -1;
@@ -100,6 +111,7 @@ public class EventsPanelElement extends PanelElement {
     @Override
     protected List<Component> previewLines() {
         return List.of(frenzy("Hawaii", 33 * 60_000L + 37_000L), oasis(14 * 60_000L + 30_000L, false),
+                goldRush(11 * 60_000L + 12_000L, false),
                 fabled("Danube River", 12 * 60_000L + 3_000L));
     }
 }

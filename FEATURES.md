@@ -22,7 +22,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Quests** | Your active location quests. |
 | **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time (the server's "Time Fishing" from your /menu profile, read on each login and counted up from there) and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. |
-| **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (about 15 minutes, while its ♣ is on the boss bar) and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes. |
+| **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (♣) and a Gold Rush (⚠, shards 1 in 25), each about 15 minutes while its symbol is on the boss bar, and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes. |
 | **Pet** | Your equipped pet (framed in its rarity colour) and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |

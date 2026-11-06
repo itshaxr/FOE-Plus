@@ -493,7 +493,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Events Panel")
-    @Desc("§7A Fish Frenzy (where and how long is left of its hour), a Blooming Oasis, and an active Fabled event (until it's caught)")
+    @Desc("§7A Fish Frenzy (where and how long is left of its hour), a Blooming Oasis, a Gold Rush, and an active Fabled event (until it's caught)")
     public ConfigGroup eventsPanelGroup = new ConfigGroup("events_panel_group");
 
     @Name("Show Events Panel")
