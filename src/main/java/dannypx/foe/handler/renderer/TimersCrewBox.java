@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * The box left of your inventory: the next moon, the Tackle Shop restock (✔ once you've checked
  * it), the Cosmetic Store reset and your votes; then whether a crew member is in range (the crew
- * bonus); then your crew and friends, online first (crew in orange, friends in blue with a star),
+ * bonus); then your crew and friends, online first (crew in orange, friends in blue, friends in your crew in light blue with a star),
  * with a + to add a friend. The list scrolls when it's longer than the inventory.
  */
 public final class TimersCrewBox {
@@ -30,6 +30,9 @@ public final class TimersCrewBox {
 
     static final int CREW_COLOR = 0xFFAA00;
     static final int FRIEND_COLOR = 0x55AAFF;
+    /// A friend who's also in your crew: light blue, with a yellow star.
+    static final int CREW_FRIEND_COLOR = 0x9FE4FF;
+    private static final int STAR_COLOR = 0xFFFF55;
     private static final int MOON_COLOR = 0x55FFFF;
     private static final int TACKLE_COLOR = 0xFFFF55;
     private static final int COSMETIC_COLOR = 0xFF55FF;
@@ -50,13 +53,14 @@ public final class TimersCrewBox {
         return Component.empty().append(Component.literal(icon + " " + name + " ").withColor(color)).append(value);
     }
 
-    /// One person: a green (online) or grey (offline) square, then the name in the crew or
-    /// friend colour, a star for friends.
+    /// One person: a green (online) or grey (offline) square, then the name: orange for crew,
+    /// blue for a friend, light blue with a yellow star for a friend who's in your crew.
     static Component person(String name, boolean online, boolean crew, boolean friend) {
-        int color = !online ? 0xAAAAAA : crew ? CREW_COLOR : FRIEND_COLOR;
-        return Component.empty()
-                .append(Component.literal("■ ").withStyle(online ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY))
-                .append(Component.literal((friend ? "☆" : "") + name).withColor(color));
+        int color = !online ? 0xAAAAAA : crew && friend ? CREW_FRIEND_COLOR : crew ? CREW_COLOR : FRIEND_COLOR;
+        Component line = Component.empty()
+                .append(Component.literal("■ ").withStyle(online ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
+        if (crew && friend) line = line.copy().append(Component.literal("★ ").withColor(online ? STAR_COLOR : 0x9E9E50));
+        return line.copy().append(Component.literal(name).withColor(color));
     }
 
     public static List<Component> timers() {
