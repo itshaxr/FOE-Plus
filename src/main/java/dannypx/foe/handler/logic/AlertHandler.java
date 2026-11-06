@@ -31,8 +31,8 @@ import java.util.regex.Pattern;
  *       shown as approximate.</li>
  *   <li>Moons come from chat (risen / has set); how long a moon lasts is learned from the first
  *       one you see set, and remembered.</li>
- *   <li>Rainbows come from chat; one ends when the weather on the boss bar changes, and its length
- *       is learned the same way.</li>
+ *   <li>Rainbows come from chat: one starts with "has appeared" and ends with "has faded" (or,
+ *       failing that, when the weather on the boss bar changes); its length is learned the same way.</li>
  * </ul>
  */
 public class AlertHandler {
@@ -442,12 +442,24 @@ public class AlertHandler {
     public void onReceiveMessage(Component message) {
         String text = message.getString();
         onFabledMessage(text.strip(), now());
-        if (text.startsWith("RAINBOW »") && text.contains("appeared")) {
-            rainbowStartedAt = now();
+        onRainbowMessage(text.strip(), now());
+    }
+
+    /// "RAINBOW » A Rainbow has appeared…" starts one; "RAINBOW » The Rainbow has faded into the
+    /// sky." ends it there and then (and how long it lasted is remembered). Package-private for tests.
+    void onRainbowMessage(String text, long now) {
+        if (!RAINBOW_LINE.matcher(text).find()) return;
+        String lower = text.toLowerCase(Locale.ROOT);
+        if (lower.contains("faded") || lower.contains("disappeared") || lower.contains("ended") || lower.contains("gone")) {
+            if (rainbowStartedAt != 0L) endRainbow(true, now - rainbowStartedAt);
+        } else if (lower.contains("appeared")) {
+            rainbowStartedAt = now;
             rainbowLocation = PetLocationHandler.currentLocation();
             rainbowWeather = null;
         }
     }
+
+    private static final java.util.regex.Pattern RAINBOW_LINE = java.util.regex.Pattern.compile("^RAINBOW\\s*[»>]", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     public boolean isRainbowUp() {
         return rainbowStartedAt != 0L;
