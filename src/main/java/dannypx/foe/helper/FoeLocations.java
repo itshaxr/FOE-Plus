@@ -96,6 +96,12 @@ public final class FoeLocations {
         }
     }
 
+    /// The location's name as players see it ("Kenai River"), or null when unknown.
+    public static String displayName(Location location) {
+        NameColors n = NAME_COLORS.get(location);
+        return n == null ? null : n.name();
+    }
+
     /// The location for a boss-bar/contest name like "Great Lakes" or "Toledo Bend Reservoir", or null.
     public static Location fromName(String displayName) {
         String name = displayName.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");

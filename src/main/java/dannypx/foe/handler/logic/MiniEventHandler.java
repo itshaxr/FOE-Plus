@@ -264,26 +264,91 @@ public class MiniEventHandler {
         if (changed) missions = next;
     }
 
-    /// Whether a catch counts for a mission ("King Salmon", "Kenai River GIGANTIC", "Kenai
-    /// River"), with the Daily Quests matching. A mission naming only a place counts any fish there.
-    static boolean countsCatch(Mission m, DailyQuestHandler.Catch caught) {
-        String goal = m.key();
-        if (goal.isEmpty()) return false;
-        // Only clear-cut missions are counted here: a fish's name, or just a place. Ones with a
-        // badge (ALBINO, TROPHY...) or a size or rarity (GIGANTIC...) wait for the server's
-        // numbers, so they never show a count the server doesn't agree with.
-        for (char c : goal.toCharArray()) {
-            if (c >= '\uE000' && c <= '\uF8FF') return false;
+    /// Whether a catch counts for a mission. Everything the mission names has to match the
+    /// catch: the place ("Kenai River"), the size ("GIGANTIC", written in small capitals by the
+    /// server), the variant ("ALBINO", a badge glyph), the rarity and the fish's name. These are
+    /// the same details the FOE+ catch alerts go by, so a GIGANTIC mission only goes up for a
+    /// gigantic. Pet missions, and anything FOE+ can't read, are left to the server's numbers.
+    /// Package-private for tests.
+    static boolean countsCatch(Mission m, DailyQuestHandler.Catch c) {
+        String text = normalize(m.key());
+        if (text == null || text.isBlank()) return false;
+        if (hasWord(text, "pet") || hasWord(text, "pets")) return false;
+
+        dannypx.foe.helper.FoeLocations.Location place = null;
+        for (dannypx.foe.helper.FoeLocations.Location l : dannypx.foe.helper.FoeLocations.Location.values()) {
+            String name = dannypx.foe.helper.FoeLocations.displayName(l);
+            if (name == null) continue;
+            String n = name.toLowerCase(java.util.Locale.ROOT);
+            if (hasWord(text, n)) {
+                place = l;
+                text = text.replace(n, " ");
+                break;
+            }
         }
-        if (QUALIFIER.matcher(goal.toLowerCase(java.util.Locale.ROOT)).find()) return false;
-        if (DailyQuestHandler.locationNamedIn(goal.toLowerCase(java.util.Locale.ROOT)) != null) {
-            goal = goal.toLowerCase(java.util.Locale.ROOT).replaceAll("\\b(river|lake|lakes|sea|islands?|bend|rig|keys?)\\b", " ") + " fish";
+        String size = null, variant = null, rarity = null;
+        for (String w : SIZES) if (hasWord(text, w)) { size = w; text = removeWord(text, w); }
+        for (String w : VARIANTS) if (hasWord(text, w)) { variant = w; text = removeWord(text, w); }
+        for (String w : RARITIES) if (hasWord(text, w)) { rarity = w.equals("mythic") ? "mythical" : w; text = removeWord(text, w); }
+        String fish = text.replaceAll("[^a-z' ]", " ").trim().replaceAll("\\s+", " ");
+        // "Catch 50 fish" / "any fish": any fish (the other details still have to match).
+        fish = fish.replaceAll("(?<![a-z])(catch|catches|any|fish|fishes)(?![a-z])", " ").trim().replaceAll("\\s+", " ");
+
+        if (place == null && size == null && variant == null && rarity == null && fish.isEmpty()) return false;
+        if (place != null && place != c.here()) return false;
+        if (size != null && !size.equals(lower(c.size()))) return false;
+        if (variant != null && !variant.equals(lower(c.variant()))) return false;
+        if (rarity != null && !rarity.equals(lower(c.rarity()))) return false;
+        if (!fish.isEmpty()) {
+            String caught = normalize(c.fishName() == null ? "" : c.fishName());
+            if (caught == null || !hasWord(caught.replaceAll("[^a-z' ]", " ").replaceAll("\\s+", " "), fish)) return false;
         }
-        return DailyQuestHandler.countsCatch(goal, null, caught);
+        return true;
     }
 
-    private static final Pattern QUALIFIER = Pattern.compile(
-            "\\b(baby|juvenile|adult|large|gigantic|albino|melanistic|trophy|fabled|common|rare|epic|legendary|mythical|mythic)\\b");
+    private static final List<String> SIZES = List.of("baby", "juvenile", "adult", "large", "gigantic");
+    private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
+    private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical", "mythic");
+    /// The server's badge glyphs, as words.
+    private static final java.util.Map<Character, String> BADGES = java.util.Map.ofEntries(
+            java.util.Map.entry('\uF033', "common"), java.util.Map.entry('\uF034', "rare"),
+            java.util.Map.entry('\uF035', "epic"), java.util.Map.entry('\uF036', "legendary"),
+            java.util.Map.entry('\uF037', "mythical"), java.util.Map.entry('\uF040', " "),
+            java.util.Map.entry('\uF041', "albino"), java.util.Map.entry('\uF042', "melanistic"),
+            java.util.Map.entry('\uF043', "trophy"), java.util.Map.entry('\uF044', "fabled"));
+    private static final String SMALL_CAPS = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫꞯʀѕꜱᴛᴜᴠᴡʏᴢ";
+    private static final String SMALL_CAPS_AS = "abcdefghijklmnopqqrsstuvwyz";
+
+    /// Lower-case plain words: formatting removed, small capitals ("ɢɪɢᴀɴᴛɪᴄ") as letters, the
+    /// server's badge glyphs as their words. Null when there's a glyph FOE+ doesn't know.
+    static String normalize(String text) {
+        String plain = ChatFormatting.stripFormatting(text);
+        if (plain == null) return null;
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < plain.length(); i++) {
+            char ch = plain.charAt(i);
+            int sc = SMALL_CAPS.indexOf(ch);
+            if (sc >= 0) b.append(SMALL_CAPS_AS.charAt(sc));
+            else if (ch >= '\uE000' && ch <= '\uF8FF') {
+                String word = BADGES.get(ch);
+                if (word == null) return null;
+                b.append(' ').append(word).append(' ');
+            } else b.append(Character.toLowerCase(ch));
+        }
+        return b.toString().replaceAll("\\s+", " ").trim();
+    }
+
+    private static boolean hasWord(String text, String word) {
+        return Pattern.compile("(?<![a-z])" + Pattern.quote(word) + "(?![a-z])").matcher(text).find();
+    }
+
+    private static String removeWord(String text, String word) {
+        return text.replaceAll("(?<![a-z])" + Pattern.quote(word) + "(?![a-z])", " ");
+    }
+
+    private static String lower(String s) {
+        return s == null ? "" : s.toLowerCase(java.util.Locale.ROOT).trim();
+    }
 
     /// Whether a mission belongs on the panel: unfinished, repeatable, or finished in the last
     /// few seconds.
