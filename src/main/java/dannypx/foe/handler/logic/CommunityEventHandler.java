@@ -50,6 +50,7 @@ public class CommunityEventHandler {
         String text = ChatFormatting.stripFormatting(raw);
         if (text == null) return false;
         boolean ours = System.currentTimeMillis() < hideUntil;
+        if (ours && text.isBlank()) return true; // padding around our own answer
         Matcher m = TOTAL.matcher(text);
         if (m.matches()) {
             kind = m.group(1).trim();

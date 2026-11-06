@@ -62,6 +62,9 @@ public class EventTimesHandler {
         if (text == null) return false;
         long now = System.currentTimeMillis();
         boolean ours = now < hideUntil;
+        // The server pads its answer with blank lines (before the header too): inside our own
+        // answer's window they're hidden, or an empty chat line shows every 15 minutes.
+        if (ours && text.isBlank()) return true;
         if (HEADER.matcher(text).matches()) {
             inOurAnswer = ours;
             return ours;
