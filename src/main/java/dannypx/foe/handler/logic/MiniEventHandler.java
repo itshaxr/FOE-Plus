@@ -103,6 +103,30 @@ public class MiniEventHandler {
         return eventName;
     }
 
+    /// Where the mini event is: from its name ("KENAI MINI EVENT"), else a place its missions
+    /// name ("Kenai River ..."); null when FOE+ can't tell.
+    public dannypx.foe.helper.FoeLocations.Location location() {
+        return locationOf(eventName, missions);
+    }
+
+    /// Package-private for tests.
+    static dannypx.foe.helper.FoeLocations.Location locationOf(String name, List<Mission> missions) {
+        String place = name == null ? "" : name.replaceAll("(?i)\\bmini\\s*event\\b", " ").trim();
+        if (!place.isEmpty()) {
+            dannypx.foe.helper.FoeLocations.Location l = dannypx.foe.helper.FoeLocations.fromName(place);
+            if (l != null) return l;
+        }
+        for (Mission m : missions) {
+            String text = normalize(m.key());
+            if (text == null) continue;
+            for (dannypx.foe.helper.FoeLocations.Location l : dannypx.foe.helper.FoeLocations.Location.values()) {
+                String n = dannypx.foe.helper.FoeLocations.displayName(l);
+                if (n != null && hasWord(text, n.toLowerCase(java.util.Locale.ROOT))) return l;
+            }
+        }
+        return null;
+    }
+
     public int eventColor() {
         return eventColor;
     }

@@ -530,6 +530,10 @@ public class HUDConfig extends Config {
     @Name("Show Mini Event Panel")
     public ValidatedBoolean showMiniEventPanel = new ValidatedBoolean(true);
 
+    @Name("Only show at the event's location")
+    @Desc("§7Show the panel only while you're at the mini event's location (Kenai River for the Kenai mini event)")
+    public ValidatedBoolean miniEventOnlyAtLocation = new ValidatedBoolean(false);
+
     @Name("Check /minievent quietly now and then")
     @Desc("§7Every 10 minutes and a few seconds after a catch (at most once a minute), never while a menu is open; its answer is hidden")
     public ValidatedBoolean miniEventAutoRefresh = new ValidatedBoolean(true);

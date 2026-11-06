@@ -97,6 +97,10 @@ public class MiniEventPanelElement extends PanelElement {
         MiniEventHandler event = MiniEventHandler.instance();
         List<Component> lines = new ArrayList<>();
         if (!event.active()) return lines;
+        if (Configs.hudConfig.miniEventOnlyAtLocation.get()) {
+            dannypx.foe.helper.FoeLocations.Location at = event.location();
+            if (at != null && dannypx.foe.handler.logic.PetLocationHandler.currentLocation() != at) return lines;
+        }
         // Just the daily reroll timer above the missions (the event's end time is left out).
         if (event.rerollInMs() > 0) lines.add(reroll(event.rerollInMs()));
         // Finished missions show their ✔ for a few seconds, then leave until the daily reroll
