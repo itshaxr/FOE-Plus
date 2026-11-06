@@ -20,7 +20,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Contest** | Time left, contest type with the fish you need in brackets, best bait, the top 3 and your rank. Warns you when you're not in the contest area. |
 | **Daily Quests** | Exact progress on each daily quest, updated after every catch. |
 | **Quests** | Your active location quests. |
-| **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
+| **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time (the server's "Time Fishing" from your /menu profile, read on each login and counted up from there) and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. |
 | **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (about 15 minutes, while its ♣ is on the boss bar) and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes. |
 | **Pet** | Your equipped pet (framed in its rarity colour) and the item it's holding. |
@@ -115,7 +115,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles). Manual edits count as newest, so an import won't undo them.
 - **Edit All-Time Stats:** fix any total by hand (fish caught, pets, shards, Infusion Capsules, Lightning Bottles, quests, rarities, variants and Gigantic). Dry streaks stay as they are.
 - **Import FOE-R stats:** uses another install's stats if it has more fish, after backing yours up.
-- **Reset Fish Timer:** start fish time and fish per hour from zero.
+- **Reset Fish Timer:** start fish per hour from zero (Fish Time follows the server's "Time Fishing").
 
 ---
 

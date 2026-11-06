@@ -148,6 +148,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         if(ConnectionHandler.instance().isOnServer()) {
             ProfileDataHandler.instance().init();
             StatsDataHandler.instance().init();
+            dannypx.foe.handler.logic.ProfileStatsHandler.instance().onJoin();
             ConstantDataHandler.instance().init();
             QuestDataHandler.instance().init();
             CrewDataHandler.instance().init();

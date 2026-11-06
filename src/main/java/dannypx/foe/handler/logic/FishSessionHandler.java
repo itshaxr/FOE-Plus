@@ -61,6 +61,28 @@ public class FishSessionHandler {
         return StatsDataHandler.instance().getStatsData().fishTimeMs + pendingMs;
     }
 
+    /// Fish Time on All-Time Stats: the server's "Time Fishing" (your profile in /menu, read once
+    /// each login) plus the time FOE+ has counted you fishing since; FOE+'s own timer until the
+    /// server's number has been read once.
+    public long getFishTimeMs() {
+        var stats = StatsDataHandler.instance().getStatsData();
+        return fishTime(stats.serverFishTimeMs, stats.serverFishTimeBase, getActiveTimeMs());
+    }
+
+    /// Package-private for tests.
+    static long fishTime(long serverMs, long base, long active) {
+        if (serverMs <= 0L) return active;
+        return serverMs + Math.max(0L, active - base);
+    }
+
+    /// The server's "Time Fishing" was just read: count on from there.
+    public void syncServerFishTime(long serverMs) {
+        var stats = StatsDataHandler.instance().getStatsData();
+        stats.serverFishTimeMs = serverMs;
+        stats.serverFishTimeBase = getActiveTimeMs();
+        StatsDataHandler.instance().markChanged();
+    }
+
     public int getTimedFish() {
         return StatsDataHandler.instance().getStatsData().fishTimeFish + pendingFish;
     }
@@ -70,9 +92,14 @@ public class FishSessionHandler {
         return hours <= 0 ? 0 : getTimedFish() / hours;
     }
 
-    /// Clears the fish timer (time and fish/hour), like FOE's timer reset.
+    /// Clears the fish timer behind fish/hour, like FOE's timer reset. Fish Time follows the
+    /// server's "Time Fishing", so it carries on from where it was.
     public void reset() {
         var stats = StatsDataHandler.instance().getStatsData();
+        if (stats.serverFishTimeMs > 0L) {
+            stats.serverFishTimeMs = getFishTimeMs();
+            stats.serverFishTimeBase = 0L;
+        }
         stats.fishTimeMs = 0L;
         stats.fishTimeFish = 0;
         pendingMs = 0L;

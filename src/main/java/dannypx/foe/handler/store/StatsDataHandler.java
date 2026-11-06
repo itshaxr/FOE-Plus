@@ -616,6 +616,12 @@ public class StatsDataHandler extends Handler {
         public long fishTimeMs = 0L;
         public int fishTimeFish = 0;
 
+        /// The server's "Time Fishing" from your profile in /menu at the last read (once each
+        /// login; 0 = never read), and FOE+'s fish timer at that moment, so Fish Time is the
+        /// server's number plus what FOE+ has counted since.
+        public long serverFishTimeMs = 0L;
+        public long serverFishTimeBase = 0L;
+
         /// Set once stats from a previous FOE install have been imported
         public boolean importedFoeStats = false;
 

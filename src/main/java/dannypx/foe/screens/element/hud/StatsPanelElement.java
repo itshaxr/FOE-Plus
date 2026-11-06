@@ -75,7 +75,7 @@ public class StatsPanelElement extends PanelElement {
         lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
                 Component.literal(fishShare(fishTotal, stats.petTotal + capsules + bottles)).withStyle(ChatFormatting.GREEN)));
         lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", session.getFishPerHour()))));
-        lines.add(join(plain("Fish Time "), white(formatTime(session.getActiveTimeMs()))));
+        lines.add(join(plain("Fish Time "), white(formatTime(session.getFishTimeMs()))));
         lines.add(join(plain("Total Quests "), white(String.valueOf(stats.questsCompleted))));
         lines.add(Component.empty());
 

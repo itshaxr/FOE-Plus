@@ -128,7 +128,7 @@ public class FoeMainScreen extends Screen {
                 b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false));
         add(rightX, rowsY + ROW * 4, "Import FOE-R Stats", Items.WRITABLE_BOOK, "Use another FOE-R install's stats if it has more fish (yours are backed up first)",
                 b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
-        add(rightX, rowsY + ROW * 5, "Reset Fish Timer", Items.COMPASS, "Start fish time and fish/hour from zero",
+        add(rightX, rowsY + ROW * 5, "Reset Fish Timer", Items.COMPASS, "Start fish/hour from zero (Fish Time follows the server)",
                 b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
         add(rightX, rowsY + ROW * 6, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
                 b -> this.minecraft.setScreen(new MainScreen(this)));

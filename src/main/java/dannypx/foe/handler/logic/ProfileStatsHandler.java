@@ -37,6 +37,14 @@ public class ProfileStatsHandler {
     private long readAt = 0L;
     private FoeLocations.Location readAtLocation = null;
     private boolean loggedMiss = false;
+    /// "Time Fishing" is taken from your profile once each login (FOE+ counts on from there).
+    private boolean fishTimeSynced = false;
+    private long fishTimeRequestedAt = 0L;
+    private long joinedAt = 0L;
+    private static final long FISH_TIME_READ_DELAY_MS = 10_000L;
+    /// A background read can be dropped while you keep fishing: ask again after this.
+    private static final long FISH_TIME_RETRY_MS = 2L * 60L * 1000L;
+    private static final Pattern TIME_FISHING = Pattern.compile("(?i)\\btime\\s+fishing\\b[^0-9]*(.*)$");
 
     public static ProfileStatsHandler instance() {
         if (INSTANCE == null) {
@@ -67,10 +75,18 @@ public class ProfileStatsHandler {
         return hasData() && readAtLocation != PetLocationHandler.currentLocation();
     }
 
+    /// A new login: read "Time Fishing" from your profile again.
+    public void onJoin() {
+        fishTimeSynced = false;
+        fishTimeRequestedAt = 0L;
+        joinedAt = 0L;
+    }
+
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         this.tickAutoRefresh(mc);
+        this.tickFishTimeRead();
         if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return;
         List<ItemStack> items = new java.util.ArrayList<>();
         for (Slot slot : screen.getMenu().slots) {
@@ -109,6 +125,14 @@ public class ProfileStatsHandler {
         }
         if (best == null) return;
 
+        if (!fishTimeSynced) {
+            long fishing = timeFishing(best);
+            if (fishing >= 0) {
+                fishTimeSynced = true;
+                FishSessionHandler.instance().syncServerFishTime(fishing);
+            }
+        }
+
         String newLuck = null;
         String newScale = null;
         for (String line : best) {
@@ -146,6 +170,32 @@ public class ProfileStatsHandler {
                 || (Configs.hudConfig.showDailyQuestPanel.get() && Configs.hudConfig.dailyQuestAutoRefresh.get());
         boolean quests = Configs.hudConfig.showQuestPanel.get();
         SilentMenuHandler.instance().requestLocationRefresh(ARRIVAL_DELAY_MS, menu, quests);
+    }
+
+    /// Once each login, a quiet /menu read a few seconds in, for "Time Fishing" (skipped if you
+    /// opened /menu yourself first, retried until it's been read).
+    private void tickFishTimeRead() {
+        if (fishTimeSynced) return;
+        if (!dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance()) return;
+        long now = System.currentTimeMillis();
+        if (joinedAt == 0L) joinedAt = now;
+        if (now - joinedAt < FISH_TIME_READ_DELAY_MS) return;
+        if (fishTimeRequestedAt != 0L && now - fishTimeRequestedAt < FISH_TIME_RETRY_MS) return;
+        fishTimeRequestedAt = now;
+        SilentMenuHandler.instance().request(0L);
+    }
+
+    /// "Time Fishing: 10d 5h 25m 14s" on the profile → ms, or -1 when it isn't there.
+    /// Package-private for tests.
+    static long timeFishing(List<String> lore) {
+        for (String raw : lore) {
+            String line = raw.replaceAll("[\\uE000-\\uF8FF]", " ");
+            Matcher m = TIME_FISHING.matcher(line);
+            if (!m.find()) continue;
+            long ms = EventTimesHandler.parseDuration(m.group(1));
+            if (ms >= 0) return ms;
+        }
+        return -1L;
     }
 
     /// Items of a /menu read in the background by {@link SilentMenuHandler}.
