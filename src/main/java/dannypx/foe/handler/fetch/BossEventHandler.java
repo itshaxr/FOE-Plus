@@ -29,6 +29,10 @@ public class BossEventHandler extends Handler {
     private MutableComponent temperature = Component.empty();
     private MutableComponent subLocation = Component.empty();
     private String prevSubLocationBar = null;
+    /// The server drops or rebuilds the spot's boss bar for a moment now and then: the spot is
+    /// only cleared once its bar has been gone this long, so it doesn't blink.
+    private static final long SUB_LOCATION_GRACE_MS = 3_000L;
+    private long subLocationSeenAt = 0L;
     private MutableComponent communityGoalCurrent = Component.empty();
     private MutableComponent communityGoalMax = Component.empty();
     private String prevBossEvent = "";
@@ -140,6 +144,7 @@ public class BossEventHandler extends Handler {
                     // The spot within the location (Big Bear Dock...). Before, every other boss bar
                     // (even the location bar itself) cleared this, so it flickered or never showed.
                     sawSubLocation[0] = true;
+                    subLocationSeenAt = System.currentTimeMillis();
                     if(Objects.equals(prevSubLocationBar, name)) return;
                     prevSubLocationBar = name;
                     JsonObject jsonObject = JsonParser.parseString(TextHelper.componentToJson(lerpingBossEvent.getName())).getAsJsonObject();
@@ -152,7 +157,7 @@ public class BossEventHandler extends Handler {
                 }
             }));
         }
-        if(!sawSubLocation[0]) {
+        if(!sawSubLocation[0] && System.currentTimeMillis() - subLocationSeenAt > SUB_LOCATION_GRACE_MS) {
             subLocation = Component.empty();
             prevSubLocationBar = null;
         }
