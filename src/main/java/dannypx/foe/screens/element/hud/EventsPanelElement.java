@@ -55,6 +55,13 @@ public class EventsPanelElement extends PanelElement {
         return Component.literal("ᴇᴠᴇɴᴛѕ").withStyle(ChatFormatting.BOLD);
     }
 
+    /// " · Shards 1 in 25": what the event does, unless descriptions are turned off.
+    private static Component description(String text) {
+        if (!Configs.hudConfig.eventsShowDescriptions.get()) return Component.empty();
+        return join(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
+                Component.literal(text).withStyle(ChatFormatting.GRAY));
+    }
+
     /// "Fish Frenzy at Hawaii 33:37"
     static Component frenzy(String location, long msLeft) {
         return join(Component.literal("Fish Frenzy").withColor(FRENZY_COLOR),
@@ -63,20 +70,18 @@ public class EventsPanelElement extends PanelElement {
                 Component.literal(" " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD));
     }
 
-    /// "♣ Blooming Oasis · +100% Pet Luck · ~14:30" (~ while the time is FOE+'s estimate)
+    /// "♣ Blooming Oasis · +100% Pet Luck · 14:30" (the description can be turned off)
     static Component oasis(long msLeft, boolean exact) {
         return join(Component.literal("♣ Blooming Oasis").withColor(OASIS_COLOR),
-                Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                Component.literal("+100% Pet Luck").withStyle(ChatFormatting.GRAY),
+                description("+100% Pet Luck"),
                 msLeft > 0 ? Component.literal(" · " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
                         : Component.empty());
     }
 
-    /// "⚠ Gold Rush · Shards 1 in 25 · ~14:30" (~ while the time is FOE+'s estimate)
+    /// "⚠ Gold Rush · Shards 1 in 25 · 14:30" (the description can be turned off)
     static Component goldRush(long msLeft, boolean exact) {
         return join(Component.literal("⚠ Gold Rush").withColor(GOLD_RUSH_COLOR),
-                Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                Component.literal("Shards 1 in 25").withStyle(ChatFormatting.GRAY),
+                description("Shards 1 in 25"),
                 msLeft > 0 ? Component.literal(" · " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
                         : Component.empty());
     }

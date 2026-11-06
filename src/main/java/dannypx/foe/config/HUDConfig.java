@@ -499,6 +499,10 @@ public class HUDConfig extends Config {
     @Name("Show Events Panel")
     public ValidatedBoolean showEventsPanel = new ValidatedBoolean(true);
 
+    @Name("Show event descriptions")
+    @Desc("§7What an event does, next to its name: \"Shards 1 in 25\" for a Gold Rush, \"+100% Pet Luck\" for a Blooming Oasis")
+    public ValidatedBoolean eventsShowDescriptions = new ValidatedBoolean(true);
+
     @Name("Check /events quietly now and then")
     @Desc("§7Every 15 minutes, never while a menu is open; its answer is hidden. Syncs the frenzy and the Tackle Shop / Cosmetic Store timers")
     public ValidatedBoolean eventsAutoRefresh = new ValidatedBoolean(true);
