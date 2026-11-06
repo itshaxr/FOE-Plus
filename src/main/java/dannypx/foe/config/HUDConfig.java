@@ -358,7 +358,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean statsPanelShowCapsules = new ValidatedBoolean(true);
 
     @Name("Show Lightning Bottles")
-    @Desc("§7How many you've pulled, and the dry streak (thunderstorm catches since the last one)")
+    @Desc("§7How many you've pulled, and the dry streak (catches in a thunderstorm or supercell since the last one)")
     public ValidatedBoolean statsPanelShowBottles = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
@@ -467,9 +467,6 @@ public class HUDConfig extends Config {
     @Name("Show what starts soon (minutes ahead, 0 = off)")
     public ValidatedInt alertUpcomingMinutes = new ValidatedInt(3, 15, 0, ValidatedNumber.WidgetType.SLIDER);
 
-    @Name("Show the drop / craft line")
-    public ValidatedBoolean alertShowDrops = new ValidatedBoolean(true);
-
     @Name("Chat message when an alert starts")
     public ValidatedBoolean alertChat = new ValidatedBoolean(true);
 
@@ -494,6 +491,33 @@ public class HUDConfig extends Config {
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Events Panel")
+    @Desc("§7A Fish Frenzy (where and how long is left of its hour), a Blooming Oasis, and an active Fabled event (until it's caught)")
+    public ConfigGroup eventsPanelGroup = new ConfigGroup("events_panel_group");
+
+    @Name("Show Events Panel")
+    public ValidatedBoolean showEventsPanel = new ValidatedBoolean(true);
+
+    @Name("Check /events quietly now and then")
+    @Desc("§7Every 15 minutes, never while a menu is open; its answer is hidden. Syncs the frenzy and the Tackle Shop / Cosmetic Store timers")
+    public ValidatedBoolean eventsAutoRefresh = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt eventsPanelXPosition = new ValidatedInt(22, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt eventsPanelYPosition = new ValidatedInt(2, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> eventsPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCornersAndCenters(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt eventsPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat eventsPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Timers & Crew Panel")
     @Desc("§7The Timers & Crew box from your inventory as a HUD panel too (what it shows is set in the inventory settings)")

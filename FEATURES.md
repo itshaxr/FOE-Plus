@@ -21,13 +21,14 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Daily Quests** | Exact progress on each daily quest, updated after every catch. |
 | **Quests** | Your active location quests. |
 | **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
-| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count. Refreshes automatically when you change location. |
+| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. |
+| **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (about 15 minutes, while its ♣ is on the boss bar) and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes. |
 | **Pet** | Your equipped pet (framed in its rarity colour) and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
 | **Top bar** | Level, location and the spot you're at (Big Bear Dock, Thunderwood Marina...), time, balance and catches, plus the community event total and your contribution. |
-| **Timers & Crew** | Next to your inventory and as a HUD panel: next moon, Tackle Shop restock (every 4 hours, ✔ once you've checked it), Cosmetic Store reset (8pm New York), your votes (x/7 in the last 24 hours), then whether a crew member is in range and your crew and friends, online first. In the inventory a **+** adds a friend and the list scrolls. |
+| **Timers & Crew** | Next to your inventory and as a HUD panel: next moon, Tackle Shop restock (every 4 hours, ✔ once you've checked it), Cosmetic Store reset (7pm EST), your votes (x/7 in the last 24 hours), then whether a crew member is in range and your crew and friends, online first. In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
 
@@ -101,7 +102,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
 - **Held item:** the item your pet is holding shows in the Pet panel.
 - **Pet tooltips:** rating letter and max Luck / max Scale markers.
-- **Max rod parts:** a gold star on rod parts rolled at the highest their rarity can roll, and on rods with two different max stats.
+- **Max rod parts:** a bright purple border round rod parts rolled at the highest their rarity can roll, and on rods with two different max stats.
 - **Pet Prices (`U`):** the full price table from the community price sheet, updated once a day.
 
 ---

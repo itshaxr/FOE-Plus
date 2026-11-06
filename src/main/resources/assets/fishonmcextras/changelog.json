@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.31+1.21.11",
+      "name": "FOE+ 1.0.31+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Events panel: an active Fish Frenzy (where, and time left of its hour) and an active Fabled event (until it's caught) by @phckd\n- FOE+ checks /events quietly every 15 minutes and hides the answer, keeping the frenzy and the Tackle Shop / Cosmetic Store timers in sync with the server by @phckd\n- Cosmetic Store timer fixed: it resets at 7pm EST (midnight UTC), an hour earlier than before by @phckd\n- Global Luck / Scale boosters: a live countdown next to Luck or Scale on the Luck & Scale panel by @phckd\n- Removed the drop / craft line under the cryptid alerts by @phckd\n- Events panel also shows a Blooming Oasis (+100% pet luck) while its ♣ is on the boss bar, with about 15 minutes counting down by @phckd\n- Lightning in a Bottle dry streak only counts fish caught in a thunderstorm or supercell (not rain) by @phckd\n- Max rod parts get a bright purple border round the slot instead of the gold star by @phckd\n- The pet item marker only shows on pets holding an amulet, not on pets with just a skin or trail by @phckd"
+    },
+    {
       "versionNumber": "1.0.30+1.21.11",
       "name": "FOE+ 1.0.30+1.21.11",
       "datePublished": "2026-11-05",

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * [FOE+] RARE CATCH! Infusion Capsule · Dry streak 1,234
  * <p>
  * Infusion Capsules only drop during a Blood Moon and Lightning in a Bottle only in a
- * thunderstorm, so (like FOE) their dry streaks only count fish caught while that's on.
+ * thunderstorm or supercell, so their dry streaks only count fish caught while that's on.
  */
 public final class RareCatchHandler {
     private RareCatchHandler() {}
@@ -43,7 +43,7 @@ public final class RareCatchHandler {
     }
 
     /// Whether the event a pull drops in is on right now: a Blood Moon for capsules, a
-    /// thunderstorm (⚡ on the boss bar) for bottles.
+    /// thunderstorm or supercell (⚡ on the boss bar) for bottles. Rain doesn't count.
     public static boolean eventOn(String key) {
         try {
             if (INFUSION_CAPSULE.equals(key)) return MoonTimerHandler.instance().getCurrentMoon() == MoonTimerHandler.Moon.BLOOD;
@@ -54,7 +54,8 @@ public final class RareCatchHandler {
         return false;
     }
 
-    /// The boss bar's weather shows ⚡ during a thunderstorm. Package-private for tests.
+    /// The boss bar's weather shows ⚡ in a thunderstorm. Rain (☂) doesn't count.
+    /// Package-private for tests.
     static boolean isThunderstorm(String weather) {
         return weather != null && weather.contains("\u26A1");
     }

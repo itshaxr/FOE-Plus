@@ -127,7 +127,7 @@ public class DryStreakEditScreen extends Screen {
         if (current < 0) box.setHint(Component.literal("not tracked yet").withStyle(ChatFormatting.DARK_GRAY));
         box.setTooltip(Tooltip.create(Component.literal(switch (entry.field()) {
             case dannypx.foe.handler.logic.RareCatchHandler.INFUSION_CAPSULE -> "Fish caught during a Blood Moon since your last one. Type a number to set it.";
-            case dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE -> "Fish caught in a thunderstorm since your last one. Type a number to set it.";
+            case dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE -> "Fish caught in a thunderstorm or supercell since your last one. Type a number to set it.";
             default -> "Fish since your last one. Type a number to set it.";
         })));
         box.setResponder(text -> {

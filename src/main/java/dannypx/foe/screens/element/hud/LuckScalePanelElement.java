@@ -60,8 +60,8 @@ public class LuckScalePanelElement extends PanelElement {
             lines.add(join(label("ᴏᴘᴇɴ "), Component.literal("/menu").withStyle(ChatFormatting.AQUA), label(" ᴛᴏ ʟᴏᴀᴅ")));
             return lines;
         }
-        lines.add(statLine("♣ ʟᴜᴄᴋ ", profile.getLuck(), LUCK_COLOR));
-        lines.add(statLine("⚓ ѕᴄᴀʟᴇ ", profile.getScale(), SCALE_COLOR));
+        lines.add(withBooster(statLine("♣ ʟᴜᴄᴋ ", profile.getLuck(), LUCK_COLOR), true));
+        lines.add(withBooster(statLine("⚓ ѕᴄᴀʟᴇ ", profile.getScale(), SCALE_COLOR), false));
         if (profile.isFromOtherLocation()) {
             lines.add(join(Component.literal("⚠ ").withStyle(ChatFormatting.YELLOW), label("ᴀʀᴇᴀ ᴄʜᴀɴɢᴇᴅ, ᴏᴘᴇɴ "),
                     Component.literal("/menu").withStyle(ChatFormatting.AQUA)));
@@ -70,6 +70,14 @@ public class LuckScalePanelElement extends PanelElement {
                     label(" ᴀɢᴏ ᴠɪᴀ "), Component.literal("/menu").withStyle(ChatFormatting.AQUA)));
         }
         return lines;
+    }
+
+    /// "♣ Luck 1,245 ⚡ 23:10": time left on a global booster, counting down live.
+    private static Component withBooster(Component line, boolean luck) {
+        long left = dannypx.foe.handler.logic.StoreTimerHandler.instance().boosterRemainingMs(luck);
+        if (left <= 0) return line;
+        return join(line, Component.literal(" ⚡ ").withStyle(ChatFormatting.YELLOW),
+                Component.literal(dannypx.foe.handler.logic.StoreTimerHandler.clock(left)).withStyle(ChatFormatting.YELLOW));
     }
 
     private static String age(long ms) {

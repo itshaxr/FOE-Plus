@@ -119,11 +119,8 @@ public class ItemRendererHandler extends Handler {
 
         Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
 
-        if(validatedPet.value1() && (
-                validatedPet.value2().contains(PetTagObject.ITEM)
-                || validatedPet.value2().contains(PetTagObject.SKIN)
-                || validatedPet.value2().contains(PetTagObject.TRAIL)
-        )) {
+        // Only for a held item (an amulet): a skin or trail alone gets no marker.
+        if(validatedPet.value1() && validatedPet.value2().contains(PetTagObject.ITEM)) {
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
         }
     }
@@ -153,15 +150,18 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
-    private final Identifier maxRodPartMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_rod_part");
+    private static final int MAX_ROD_PART_BORDER = 0xFFC040FF;
 
-    /// A gold star on a rod part rolled at its rarity's max, and on a rod with two different max
-    /// stats (top-left of the slot).
+    /// A bright purple frame round a rod part rolled at its rarity's max, and round a rod with two
+    /// different max stats (on the slot's edge, so it doesn't cover the item).
     public void drawMaxRodPart(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
         if (!Configs.rendererConfig.showMaxRodPartMarker.get() || stack.isEmpty()) return;
         if (dannypx.foe.helper.RodPartMax.markFor(dannypx.foe.helper.ItemStackHelper.getTag(stack)) == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
-        int iconSize = 7;
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, maxRodPartMarker, x, y, iconSize, iconSize, CommonColors.WHITE);
+        int c = MAX_ROD_PART_BORDER;
+        guiGraphics.fill(x - 1, y - 1, x + 17, y, c);
+        guiGraphics.fill(x - 1, y + 16, x + 17, y + 17, c);
+        guiGraphics.fill(x - 1, y, x, y + 16, c);
+        guiGraphics.fill(x + 16, y, x + 17, y + 16, c);
     }
 
     private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");

@@ -35,7 +35,7 @@ public class InventoryScreenConfig extends Config {
     public ValidatedBoolean timersTackleShop = new ValidatedBoolean(true);
 
     @Name("Show the Cosmetic Store timer")
-    @Desc("§7Resets every day at 8pm New York time")
+    @Desc("§7Resets every day at midnight UTC (7pm EST); re-synced from /events")
     public ValidatedBoolean timersCosmeticStore = new ValidatedBoolean(true);
 
     @Name("Show your votes")

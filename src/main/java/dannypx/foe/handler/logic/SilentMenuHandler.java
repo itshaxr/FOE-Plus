@@ -128,6 +128,8 @@ public class SilentMenuHandler {
             ContestTrackerHandler.instance().retryRefreshIn(retryMs);
         } else if (lastBackgroundCommand.equals("communityevent")) {
             CommunityEventHandler.instance().retryIn(retryMs);
+        } else if (lastBackgroundCommand.equals("events")) {
+            EventTimesHandler.instance().retryIn(retryMs);
         }
         lastBackgroundCommandAt = 0L;
         return true;

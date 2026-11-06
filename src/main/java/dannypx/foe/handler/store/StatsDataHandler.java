@@ -587,7 +587,7 @@ public class StatsDataHandler extends Handler {
 
         /// Dry streaks of rare pulls that only drop during an event, like FOE: fish caught during
         /// that event since the last one ("infusion_capsule": Blood Moon catches,
-        /// "lightning_bottle": thunderstorm catches). Missing = not known yet.
+        /// "lightning_bottle": thunderstorm / supercell catches). Missing = not known yet.
         public Map<String, Integer> rareEventStreak = new HashMap<>();
 
         /// Fish count at your last pet (any rarity), or null to work it out from the pet rarities.

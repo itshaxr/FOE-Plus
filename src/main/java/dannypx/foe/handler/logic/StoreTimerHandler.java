@@ -8,13 +8,12 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 /**
  * Countdowns for the server's shops: the Tackle Shop restocks every 4 hours (6pm EST is one of
  * them; FOE's timer, re-synced every time "TACKLE SHOP » Tackle items restocked!" shows in chat)
- * and the Cosmetic Store resets every day at 8pm New York time. Also your votes: every
+ * and the Cosmetic Store resets every day at midnight UTC (7pm EST, 8pm EDT). Both re-sync
+ * from the server's /events answer ("Tackle Shop Restock → 3h 11m 20s"). Also your votes: every
  * "VOTE » You received ..." line is one site voted, which counts for 24 hours; and whether you've
  * opened the Tackle Shop since it last restocked (the ✓).
  */
@@ -29,8 +28,9 @@ public class StoreTimerHandler {
     static final long TACKLE_PERIOD_MS = 4L * 60 * 60 * 1000;
     /// A known restock: 5 Nov 2026, 6pm EST (23:00 UTC). Every 4 hours from there.
     static final long DEFAULT_TACKLE_ANCHOR = Instant.parse("2026-11-05T23:00:00Z").toEpochMilli();
-    static final ZoneId NEW_YORK = ZoneId.of("America/New_York");
-    static final int COSMETIC_HOUR = 20;
+    static final long DAY_MS = 24L * 60 * 60 * 1000;
+    /// A known Cosmetic Store reset: midnight UTC (7pm EST), every 24 hours from there.
+    static final long DEFAULT_COSMETIC_ANCHOR = Instant.parse("2026-11-06T00:00:00Z").toEpochMilli();
 
     /// Vote sites on the server.
     public static final int VOTE_SITES = 7;
@@ -38,8 +38,12 @@ public class StoreTimerHandler {
 
     private static final class Saved {
         long tackleAnchor = DEFAULT_TACKLE_ANCHOR;
+        long cosmeticAnchor = DEFAULT_COSMETIC_ANCHOR;
         /// When you last opened the Tackle Shop.
         long tackleCheckedAt = 0L;
+        /// When the global Luck / Scale boosters run out (0 = none).
+        long luckBoosterEnds = 0L;
+        long scaleBoosterEnds = 0L;
         /// When each vote in the last 24 hours went through, oldest first.
         java.util.List<Long> votes = new java.util.ArrayList<>();
     }
@@ -58,6 +62,7 @@ public class StoreTimerHandler {
                     Saved read = new Gson().fromJson(Files.readString(file), Saved.class);
                     if (read != null && read.tackleAnchor > 0) {
                         if (read.votes == null) read.votes = new java.util.ArrayList<>();
+                        if (read.cosmeticAnchor <= 0) read.cosmeticAnchor = DEFAULT_COSMETIC_ANCHOR;
                         saved = read;
                     }
                 }
@@ -89,7 +94,41 @@ public class StoreTimerHandler {
         } else if (isVoteReward(plain)) {
             addVote(saved().votes, System.currentTimeMillis());
             save();
+        } else {
+            Booster booster = parseBooster(plain);
+            if (booster != null) {
+                long now = System.currentTimeMillis();
+                if (booster.luck()) saved().luckBoosterEnds = boosterEnd(saved().luckBoosterEnds, now, booster.ms());
+                else saved().scaleBoosterEnds = boosterEnd(saved().scaleBoosterEnds, now, booster.ms());
+                save();
+            }
         }
+    }
+
+    /// "{name} has activated a global Luck booster for 30 minutes": which kind and how long.
+    record Booster(boolean luck, long ms) {}
+
+    private static final java.util.regex.Pattern BOOSTER = java.util.regex.Pattern.compile(
+            "has activated an? global (luck|scale) booster for (.+?)[.!]?\\s*$", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /// Package-private for tests.
+    static Booster parseBooster(String plain) {
+        java.util.regex.Matcher m = BOOSTER.matcher(plain.trim());
+        if (!m.find()) return null;
+        long ms = EventTimesHandler.parseDuration(m.group(2));
+        if (ms <= 0) return null;
+        return new Booster(m.group(1).equalsIgnoreCase("luck"), ms);
+    }
+
+    /// A new booster while one is running adds its time on top (they queue up).
+    static long boosterEnd(long currentEnd, long now, long ms) {
+        return Math.max(currentEnd, now) + ms;
+    }
+
+    /// Time left on the global Luck (or Scale) booster, 0 when none is on.
+    public long boosterRemainingMs(boolean luck) {
+        long end = luck ? saved().luckBoosterEnds : saved().scaleBoosterEnds;
+        return Math.max(0L, end - System.currentTimeMillis());
     }
 
     /// "VOTE » You received a Rare Bait Box" (sometimes "... and an Epic Chummer"): one vote.
@@ -157,7 +196,23 @@ public class StoreTimerHandler {
     }
 
     public long cosmeticStoreRemainingMs() {
-        return cosmeticRemaining(System.currentTimeMillis());
+        return cosmeticRemaining(System.currentTimeMillis(), saved().cosmeticAnchor);
+    }
+
+    /// From /events: the Tackle Shop restocks in {@code remainingMs}.
+    public void syncTackleShop(long remainingMs) {
+        long now = System.currentTimeMillis();
+        long next = now + Math.max(0L, remainingMs);
+        saved().tackleAnchor = next - next % 1000L;
+        save();
+    }
+
+    /// From /events: the Cosmetic Store resets in {@code remainingMs}.
+    public void syncCosmeticStore(long remainingMs) {
+        long now = System.currentTimeMillis();
+        long next = now + Math.max(0L, remainingMs);
+        saved().cosmeticAnchor = next - next % 1000L;
+        save();
     }
 
     /// Until the next 4-hourly restock after {@code anchor} (a known restock). Package-private for tests.
@@ -165,12 +220,9 @@ public class StoreTimerHandler {
         return TACKLE_PERIOD_MS - Math.floorMod(now - anchor, TACKLE_PERIOD_MS);
     }
 
-    /// Until the next 8pm in New York (EST in winter, EDT in summer). Package-private for tests.
-    static long cosmeticRemaining(long now) {
-        ZonedDateTime here = Instant.ofEpochMilli(now).atZone(NEW_YORK);
-        ZonedDateTime next = here.toLocalDate().atTime(COSMETIC_HOUR, 0).atZone(NEW_YORK);
-        if (!next.isAfter(here)) next = here.toLocalDate().plusDays(1).atTime(COSMETIC_HOUR, 0).atZone(NEW_YORK);
-        return next.toInstant().toEpochMilli() - now;
+    /// Until the next daily reset after {@code anchor} (a known reset). Package-private for tests.
+    static long cosmeticRemaining(long now, long anchor) {
+        return DAY_MS - Math.floorMod(now - anchor, DAY_MS);
     }
 
     /// 3725000 → "1:02:05", 59000 → "0:59".

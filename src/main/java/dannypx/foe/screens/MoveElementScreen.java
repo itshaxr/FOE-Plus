@@ -100,6 +100,8 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.luckScalePanelAlignment, hud.luckScalePanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.TimersPanelElement(true), hud.showTimersPanel, hud.timersPanelXPosition, hud.timersPanelYPosition,
                 hud.timersPanelAlignment, hud.timersPanelScale, Alignment.getCorners());
+        addPanel(new dannypx.foe.screens.element.hud.EventsPanelElement(true), hud.showEventsPanel, hud.eventsPanelXPosition, hud.eventsPanelYPosition,
+                hud.eventsPanelAlignment, hud.eventsPanelScale, Alignment.getCornersAndCenters());
         addPanel(new GearWarningPanelElement(true), hud.showGearWarning, hud.gearWarningXPosition, hud.gearWarningYPosition,
                 hud.gearWarningAlignment, hud.gearWarningScale, Alignment.getCornersAndCenters());
         addPanel(new CatchPopupElement(true), null, hud.catchPopupXPosition, hud.catchPopupYPosition,

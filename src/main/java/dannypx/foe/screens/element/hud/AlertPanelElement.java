@@ -67,7 +67,6 @@ public class AlertPanelElement extends PanelElement {
                         Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                         Component.literal(AlertHandler.timeLeft(active.msLeft())).withStyle(timerColor(active.msLeft()))));
             }
-            if (Configs.hudConfig.alertShowDrops.get()) lines.add(Component.literal(alert.drop).withStyle(ChatFormatting.DARK_GRAY));
         }
         int ahead = Configs.hudConfig.alertUpcomingMinutes.get();
         if (ahead > 0) {
