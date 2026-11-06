@@ -96,6 +96,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("timers_panel", new dannypx.foe.screens.element.hud.TimersPanelElement()));
             elements.add(Pair.of("events_panel", new dannypx.foe.screens.element.hud.EventsPanelElement()));
             elements.add(Pair.of("mini_event_panel", new dannypx.foe.screens.element.hud.MiniEventPanelElement()));
+            elements.add(Pair.of("session_stats_panel", new dannypx.foe.screens.element.hud.SessionStatsPanelElement()));
             elements.add(Pair.of("equipment_bar", new EquipmentBarElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }

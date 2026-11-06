@@ -366,6 +366,29 @@ public class HUDConfig extends Config {
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
     public ValidatedFloat statsPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Session Stats Panel")
+    @Desc("§7Everything All-Time Stats shows, for this session only (cleared when you log out). Gigantic, capsules and bottles follow the All-Time Stats settings")
+    public ConfigGroup sessionStatsPanelGroup = new ConfigGroup("sessionStatsPanel_group");
+
+    @Name("Show Session Stats Panel")
+    public ValidatedBoolean showSessionStatsPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt sessionStatsPanelXPosition = new ValidatedInt(26, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt sessionStatsPanelYPosition = new ValidatedInt(18, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> sessionStatsPanelAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt sessionStatsPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat sessionStatsPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
     @Name("Quests Panel")
     @Desc("§7Quests for your current location")
     public ConfigGroup questPanelGroup = new ConfigGroup("questPanel_group");

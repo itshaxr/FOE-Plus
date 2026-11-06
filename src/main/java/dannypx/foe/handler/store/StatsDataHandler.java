@@ -92,6 +92,7 @@ public class StatsDataHandler extends Handler {
                 ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastGigantic.caughtOn();
         statsData.fishTotal++;
         countEventCatch();
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().onFish(fish.getRarity(), fish.getVariant(), fish.getFishSize());
 
         Pair<String, Integer> rarityDrystreak = this.updateFishData(statsData, FishTagObject.RARITY, fish.getRarity(), 1);
         ConstantDataHandler.instance().updateFishData(FishTagObject.RARITY, fish.getRarity(), fish.getRarityComponent());
@@ -133,6 +134,7 @@ public class StatsDataHandler extends Handler {
                 ? statsData.fishTotal : statsData.fishTotal - lastOfRarity.caughtOn();
         statsData.petTotal++;
         statsData.petCaughtOn = statsData.fishTotal;
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().onPet();
         markStreakKnown("pet:any");
 
         Pair<String, Integer> rarityDrystreak = this.updatePetData(statsData, PetTagObject.RARITY, pet.getRarity());
@@ -205,6 +207,7 @@ public class StatsDataHandler extends Handler {
 
     public Pair<String, Integer> setOtherItem(TagObject item, int count) {
         Pair<String, Integer> itemDrystreak = this.updateOtherItemData(statsData, item.getType(), count);
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().onItem(item.getType(), count);
         ConstantDataHandler.instance().updateItemData(item.getType(), item.getItemStack());
 
         // Notify Item
@@ -234,6 +237,7 @@ public class StatsDataHandler extends Handler {
         int streak = rareCatchStreak(key);
         int amount = (old == null || old.amount() == null ? 0 : old.amount()) + Math.max(1, count);
         statsData.rareCatchData.put(key, Stat.of(amount, statsData.fishTotal));
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().onRare(key, count);
         if (dannypx.foe.handler.logic.RareCatchHandler.isEventPull(key)) statsData.rareEventStreak.put(key, 0);
         markStreakKnown("rare:" + key);
         this.needsUpdate = true;
@@ -463,6 +467,7 @@ public class StatsDataHandler extends Handler {
 
     public void addQuestCompleted() {
         statsData.questsCompleted++;
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().onQuest();
         this.needsUpdate = true;
     }
 

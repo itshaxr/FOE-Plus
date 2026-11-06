@@ -18,7 +18,7 @@ import java.util.List;
 /// shards, then counts per rarity and variant with their share and dry streak. Layout ported from
 /// FOECollab's FishTrackerHudHandler (AGPL-3.0); the numbers come from FOE-R's stats tracker.
 public class StatsPanelElement extends PanelElement {
-    private static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
+    static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
     /// The GIGANTIC badge: a glyph image in this mod's tag font, drawn like the server's rarity
     /// badges (the text shadow gives it the same dark drop shadow).
     public static final Component GIGANTIC_BADGE = Component.literal("\uE910").withStyle(style -> style
@@ -27,7 +27,7 @@ public class StatsPanelElement extends PanelElement {
                     net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "tags"))));
     private Component giganticLine = null;
 
-    private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
+    static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
 
     /// FOE+'s own little icons (font fishonmcextras:stat_icons), white so the line's colour tints them.
     private static final net.minecraft.network.chat.FontDescription ICON_FONT = new net.minecraft.network.chat.FontDescription.Resource(
@@ -127,7 +127,7 @@ public class StatsPanelElement extends PanelElement {
     }
 
     /// "Total Pets 🐾 " : "Total" in grey, the name and its icon in the item's colour.
-    private static Component total(String name, int color, String icon) {
+    static Component total(String name, int color, String icon) {
         return join(plain("Total "), Component.literal(name + " ").withColor(color),
                 Component.literal(icon).withStyle(style -> style.withFont(ICON_FONT).withColor(color)),
                 Component.literal(" "));
@@ -139,7 +139,7 @@ public class StatsPanelElement extends PanelElement {
                 Component.literal("(" + (dryStreak < 0 ? "?" : String.valueOf(dryStreak)) + ")").withStyle(ChatFormatting.GRAY));
     }
 
-    private static Component plain(String text) {
+    static Component plain(String text) {
         return Component.literal(text).withStyle(ChatFormatting.GRAY);
     }
 
@@ -150,12 +150,12 @@ public class StatsPanelElement extends PanelElement {
         return String.format(java.util.Locale.ROOT, "%.2f%%", fish * 100.0 / all);
     }
 
-    private static Component white(String text) {
+    static Component white(String text) {
         return Component.literal(text).withStyle(ChatFormatting.WHITE);
     }
 
     /// 39.7, 0.02, 0.002: more decimals for rarer things, like FOE.
-    private static String percent(int amount, int total) {
+    static String percent(int amount, int total) {
         if (total <= 0) return "0";
         double pct = amount * 100.0 / total;
         if (pct == 0) return "0";

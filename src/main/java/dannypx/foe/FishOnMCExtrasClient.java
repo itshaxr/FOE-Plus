@@ -138,6 +138,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
     private void onLeave(ClientPacketListener clientPacketListener, Minecraft minecraft) {
         ConnectionHandler.instance().onLeave();
         LoadingHandler.instance().onLeave();
+        dannypx.foe.handler.logic.SessionStatsHandler.instance().reset(); // a session ends at logout
 
         InventoryHandler.instance().onLeave();
         ChummerHandler.instance().onLeave();
@@ -214,6 +215,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 dannypx.foe.handler.logic.EventTimesHandler.instance().tick();
                 dannypx.foe.handler.logic.MiniEventHandler.instance().tick();
                 dannypx.foe.handler.logic.BobberTimerHandler.instance().tick();
+                dannypx.foe.handler.logic.SessionStatsHandler.instance().tick();
                 FishSessionHandler.instance().tick();
                 dannypx.foe.handler.io.FoerStatsImporter.tick();
                 dannypx.foe.handler.io.FoeStatsImporter.tick();

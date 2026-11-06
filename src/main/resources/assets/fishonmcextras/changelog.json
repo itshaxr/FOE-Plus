@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.60+1.21.11",
+      "name": "FOE+ 1.0.60+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- New Session Stats panel: everything All-Time Stats shows (fish, fish/hour, fish time, quests, pets, shards, capsules, bottles, rarities, gigantic, variants), for this session only; cleared when you log out. On by default, can be turned off and moved like the other panels by @phckd"
+    },
+    {
       "versionNumber": "1.0.59+1.21.11",
       "name": "FOE+ 1.0.59+1.21.11",
       "datePublished": "2026-11-06",
