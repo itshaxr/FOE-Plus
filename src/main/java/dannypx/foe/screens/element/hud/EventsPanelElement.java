@@ -68,7 +68,7 @@ public class EventsPanelElement extends PanelElement {
         return join(Component.literal("♣ Blooming Oasis").withColor(OASIS_COLOR),
                 Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                 Component.literal("+100% Pet Luck").withStyle(ChatFormatting.GRAY),
-                msLeft > 0 ? Component.literal(" · " + (exact ? "" : "~") + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
+                msLeft > 0 ? Component.literal(" · " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
                         : Component.empty());
     }
 
@@ -77,7 +77,7 @@ public class EventsPanelElement extends PanelElement {
         return join(Component.literal("⚠ Gold Rush").withColor(GOLD_RUSH_COLOR),
                 Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                 Component.literal("Shards 1 in 25").withStyle(ChatFormatting.GRAY),
-                msLeft > 0 ? Component.literal(" · " + (exact ? "" : "~") + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
+                msLeft > 0 ? Component.literal(" · " + StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD)
                         : Component.empty());
     }
 

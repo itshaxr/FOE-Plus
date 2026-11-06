@@ -49,7 +49,32 @@ public class PetPanelElement extends PanelElement {
         return InventoryHandler.instance().hasPet();
     }
 
-    private static final int PET_BORDER = 0xFF4C88F1;
+    private static final int UNKNOWN_BORDER = 0xFFAAAAAA;
+
+    /// The pet's rarity id ("common"...), from its data or, failing that, the rarity badge in
+    /// its description. Package-private for tests.
+    static String petRarity(PetTagObject pet) {
+        String rarity = pet.getRarity();
+        if (dannypx.foe.helper.FoeLocations.rarityColor(rarity) >= 0) return rarity;
+        try {
+            String badge = pet.getRarityComponent().getString();
+            return rarityFromText(badge);
+        } catch (RuntimeException e) {
+            return rarity;
+        }
+    }
+
+    static String rarityFromText(String text) {
+        if (text == null) return "";
+        String t = text.toLowerCase(java.util.Locale.ROOT);
+        if (t.indexOf('\uF033') >= 0 || t.contains("common")) return "common";
+        if (t.indexOf('\uF034') >= 0 || t.contains("rare")) return "rare";
+        if (t.indexOf('\uF035') >= 0 || t.contains("epic")) return "epic";
+        if (t.indexOf('\uF036') >= 0 || t.contains("legendary")) return "legendary";
+        if (t.indexOf('\uF037') >= 0 || t.contains("mythic")) return "mythical";
+        if (t.contains("special")) return "special";
+        return "";
+    }
     private static final int HELD_ITEM_BORDER = 0xFFD9A441;
 
     /// The pet, then the item it holds (an empty box when it holds nothing).
@@ -57,9 +82,9 @@ public class PetPanelElement extends PanelElement {
     protected List<PanelIcon> icons() {
         if (!hasPet()) return List.of();
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        // The pet's frame takes its rarity colour (blue only when the rarity isn't known).
-        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(pet.getRarity());
-        int border = rarityColor < 0 ? PET_BORDER : 0xFF000000 | rarityColor;
+        // The pet's frame takes its rarity colour: from its rarity, else its rarity badge, else grey.
+        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(petRarity(pet));
+        int border = rarityColor < 0 ? UNKNOWN_BORDER : 0xFF000000 | rarityColor;
         return List.of(new PanelIcon(pet.getItemStack(), border),
                 new PanelIcon(PetHeldItem.of(pet), HELD_ITEM_BORDER));
     }

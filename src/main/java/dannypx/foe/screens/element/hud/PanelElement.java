@@ -254,6 +254,9 @@ public abstract class PanelElement extends Element {
             int iconsWidth = iconSpace - PADDING;
             int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - ICON_SIZE) / 2 - 2;
             int x = right ? contentRight - iconsWidth : contentLeft;
+            // The frames are drawn again over the items afterwards: a big item model (some pets)
+            // can otherwise cover the frame's edge.
+            List<int[]> frames = new java.util.ArrayList<>();
             for (PanelIcon icon : icons) {
                 guiGraphics.renderOutline(x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor());
                 if (icon.stack() == null || icon.stack().isEmpty()) {
@@ -263,7 +266,12 @@ public abstract class PanelElement extends Element {
                 } else {
                     guiGraphics.renderItem(icon.stack(), x + 1, iconBoxY + 1);
                 }
+                frames.add(new int[]{x, iconBoxY, icon.borderColor()});
                 x += ICON_SIZE + ICON_GAP;
+            }
+            if (!frames.isEmpty()) {
+                guiGraphics.nextStratum();
+                for (int[] f : frames) guiGraphics.renderOutline(f[0], f[1], ICON_SIZE, ICON_SIZE, f[2]);
             }
             if (right) textRightEdge -= iconSpace;
             else textLeft += iconSpace;
