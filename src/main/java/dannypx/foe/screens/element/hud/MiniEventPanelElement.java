@@ -51,7 +51,8 @@ public class MiniEventPanelElement extends PanelElement {
 
     /// "— Kenai River GIGANTIC  (0/2) One Timer", with a ✔ once it's done.
     static Component mission(MiniEventHandler.Mission m) {
-        return join(m.name(), Component.literal("  "), m.progress(),
+        // Fish names in the colour the compendium gives them (their rarity), not the server's green.
+        return join(dannypx.foe.handler.logic.FishColorHandler.instance().recolor(m.name()), Component.literal("  "), m.progress(),
                 m.complete() ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty());
     }
 

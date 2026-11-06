@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.49+1.21.11",
+      "name": "FOE+ 1.0.49+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel: fish missions show the fish's name in its rarity colour, like the Fish Compendium (FOE+ learns the colours whenever you open the compendium, and from fish in your inventory) by @phckd"
+    },
+    {
       "versionNumber": "1.0.48+1.21.11",
       "name": "FOE+ 1.0.48+1.21.11",
       "datePublished": "2026-11-06",
