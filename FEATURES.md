@@ -134,7 +134,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
 - **Bait sorter (`B`):** merges and sorts the baits in your inventory, chests and vault, by rarity or by amount. It remembers the order you last picked on the vault's sort buttons.
 - **Inventory search:** the Personal Vault's search bar above your inventory too; matching items get a red outline (the search help shows only on the vault's bar), and while you type, keys like Q and 1–9 don't drop or swap items.
-- **Personal Vault:** page buttons 1–7, sorting baits by amount, rarity or name (name groups every Crankbait together; Shift-click to reverse; pets and other items stay put), and rank badges on locked pages.
+- **Personal Vault:** page buttons 1–7, a **Bait Sorter** box (sort baits by amount, rarity or name; name groups every Crankbait together; pets and other items stay put), a **Pet Sorter** box on the right (sort pets by percent, rarity or name; baits and other items stay put), Shift-click to reverse, and rank badges on locked pages.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
 - **Friends:** `/foe friend add <name>`, `remove` and `list`. Friends show on the Timers & Crew panel in blue; a friend who is also in your crew is light blue with an orange ★ (the crew colour).
 - **Crew and friend alerts:** a chat line when a crew member or friend comes online or goes offline.

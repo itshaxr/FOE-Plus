@@ -30,17 +30,34 @@ import java.util.function.Supplier;
 public final class VaultSortHandler {
     private VaultSortHandler() {}
 
-    public enum Mode { AMOUNT, RARITY, NAME }
+    public enum Mode { AMOUNT, RARITY, NAME, PERCENT }
+
+    /// What a sort moves: baits and lures (the Bait Sorter), or pets (the Pet Sorter).
+    public enum Kind { BAITS, PETS }
 
     /// Vault item slots: rows 1-5 of the 6-row vault.
     static final int ITEM_SLOTS = 45;
 
     /// One item in the vault. Compared by identity while planning. {@code movable}: a bait or
     /// lure (the only things the sort moves).
-    record Item(int slot, String name, int amount, int rarityRank, boolean movable) {
-        Item(int slot, String name, int amount, int rarityRank) {
-            this(slot, name, amount, rarityRank, true);
+    record Item(int slot, String name, int amount, int rarityRank, boolean movable, float percent) {
+        Item(int slot, String name, int amount, int rarityRank, boolean movable) {
+            this(slot, name, amount, rarityRank, movable, 0f);
         }
+
+        Item(int slot, String name, int amount, int rarityRank) {
+            this(slot, name, amount, rarityRank, true, 0f);
+        }
+    }
+
+    /// Sorts the pets on the open vault page by percent (highest first), rarity or name;
+    /// {@code reverse} flips it (Shift-click). Baits and everything else stay where they are.
+    public static boolean sortPets(Mode mode, boolean reverse) {
+        return BaitSorterHandler.instance().queueSort(Minecraft.getInstance(), () -> {
+            List<Integer> slots = new ArrayList<>();
+            List<Item> items = scan(slots, Kind.PETS);
+            return plan(items, slots, mode, reverse);
+        });
     }
 
     /// Starts a sort of the open vault page; {@code reverse} flips the order (Shift-click). The
@@ -73,6 +90,10 @@ public final class VaultSortHandler {
 
     /// Items in the vault's item slots; fills {@code slots} with all item slot ids, in order.
     private static List<Item> scan(List<Integer> slots) {
+        return scan(slots, Kind.BAITS);
+    }
+
+    private static List<Item> scan(List<Integer> slots, Kind kind) {
         List<Item> items = new ArrayList<>();
         if (!(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)
                 || !(screen.getMenu() instanceof ChestMenu)) return items;
@@ -91,7 +112,11 @@ public final class VaultSortHandler {
                 type = tag.value2().getType();
             }
             boolean bait = SortPlanner.BAIT.equals(type) || SortPlanner.LURE.equals(type);
-            items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity), bait));
+            boolean pet = "pet".equals(type);
+            float percent = 0f;
+            if (pet) percent = ValidateItem.isPet(tag.value2()).value2().getTotalPercent();
+            items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity),
+                    kind == Kind.PETS ? pet : bait, percent));
         }
         slots.sort(Comparator.naturalOrder());
         return items;
@@ -116,16 +141,18 @@ public final class VaultSortHandler {
         Comparator<Item> byAmount = Comparator.comparingInt(Item::amount).reversed();
         Comparator<Item> byRarity = Comparator.comparingInt(Item::rarityRank).reversed();
         Comparator<Item> byName = Comparator.comparing((Item i) -> BaitSortOrder.nameKey(i.name()));
+        Comparator<Item> byPercent = Comparator.comparingDouble((Item i) -> i.percent()).reversed();
         Comparator<Item> order = switch (mode) {
             case AMOUNT -> byAmount.thenComparing(byRarity);
-            case RARITY -> byRarity.thenComparing(byAmount);
+            case RARITY -> byRarity.thenComparing(byPercent).thenComparing(byAmount);
             case NAME -> byName.thenComparing(byRarity);
+            case PERCENT -> byPercent.thenComparing(byRarity);
         };
         if (reverse) order = order.reversed();
         order = order.thenComparing(Item::name).thenComparingInt(Item::slot);
 
-        // Only baits and lures move. Pets and everything else keep their slots, and the baits go
-        // into the slots that are left (theirs and the empty ones), in order.
+        // Only the movable items (baits and lures, or pets) move. Everything else keeps its slot,
+        // and the movable items go into the slots that are left (theirs and the empty ones), in order.
         List<Integer> free = new ArrayList<>();
         java.util.Set<Integer> fixed = new java.util.HashSet<>();
         for (Item item : items) if (!item.movable()) fixed.add(item.slot());
