@@ -231,12 +231,19 @@ public class MiniEventHandler {
     /// A catch: every unfinished mission it counts for goes up by one straight away (like the
     /// Daily Quests panel), and /minievent is checked again shortly for the exact numbers.
     public void onFishCaught(dannypx.foe.item.FishTagObject fish) {
+        boolean special = false;
         try {
-            applyCatch(DailyQuestHandler.catchOf(fish), System.currentTimeMillis());
+            DailyQuestHandler.Catch caught = DailyQuestHandler.catchOf(fish);
+            applyCatch(caught, System.currentTimeMillis());
+            // A gigantic or a variant (the catches FOE+ alerts about) can move the missions only
+            // the server counts: check again in a few seconds, not after the usual minute.
+            special = "gigantic".equals(caught.size())
+                    || (!caught.variant().isEmpty() && !"normal".equals(caught.variant()));
         } catch (RuntimeException e) {
             // the check below still catches up
         }
-        onFishCaught();
+        if (special && active()) catchRefreshAt = System.currentTimeMillis() + CATCH_REFRESH_DELAY_MS;
+        else onFishCaught();
     }
 
     /// Package-private for tests.
