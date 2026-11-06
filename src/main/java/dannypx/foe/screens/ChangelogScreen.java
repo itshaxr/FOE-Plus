@@ -121,7 +121,7 @@ public class ChangelogScreen extends Screen implements ChangelogFetcherHandler.L
 
         for (ChangelogFetcherHandler.ChangelogEntry entry : entries) {
             // "v1.0.46  (2026-11-06)": the Minecraft part and a name that just repeats the version are left out.
-            String version = entry.versionNumber().replaceFirst("\+.*$", "");
+            String version = entry.versionNumber().replaceFirst("\\+.*$", "");
             boolean nameRepeats = entry.name().isBlank() || entry.name().contains(version);
             String header = "v" + version
                     + (nameRepeats ? "" : " - " + entry.name())
