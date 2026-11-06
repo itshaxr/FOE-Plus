@@ -186,6 +186,10 @@ public class HUDConfig extends Config {
     @Desc("§7The capsule and your Infusion Capsule dry streak, in chat")
     public ValidatedBoolean showInfusionCapsuleChat = new ValidatedBoolean(true);
 
+    @Name("Chat message when you pull a Lightning in a Bottle")
+    @Desc("§7The bottle and your Lightning Bottle dry streak, in chat")
+    public ValidatedBoolean showLightningBottleChat = new ValidatedBoolean(true);
+
     @Name("Chat message when you pull a pet")
     @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
     public ValidatedBoolean showPetCatchChat = new ValidatedBoolean(true);
@@ -342,8 +346,12 @@ public class HUDConfig extends Config {
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
 
     @Name("Show Infusion Capsules")
-    @Desc("§7How many you've pulled")
+    @Desc("§7How many you've pulled, and the dry streak (Blood Moon catches since the last one)")
     public ValidatedBoolean statsPanelShowCapsules = new ValidatedBoolean(true);
+
+    @Name("Show Lightning Bottles")
+    @Desc("§7How many you've pulled, and the dry streak (thunderstorm catches since the last one)")
+    public ValidatedBoolean statsPanelShowBottles = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Scale")

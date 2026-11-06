@@ -20,7 +20,7 @@ Panels always stay on screen, and they push each other aside so they never overl
 | **Contest** | Time left, contest type with the fish you need in brackets, best bait, the top 3 and your rank. Warns you when you're not in the contest area. |
 | **Daily Quests** | Exact progress on each daily quest, updated after every catch. |
 | **Quests** | Your active location quests. |
-| **All-Time Stats** | Fish caught, fish per hour, fish time, rarities, variants and Gigantic with their dry streaks, and how many Infusion Capsules you've pulled. |
+| **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
 | **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count. Refreshes automatically when you change location. |
 | **Pet** | Your equipped pet and the item it's holding. |
 | **Bait** | The bait on your rod and how many you have left. |
@@ -63,6 +63,7 @@ All FOE+ messages share one clean style, starting with a bold **[FOE+]** tag:
 [FOE+] You caught MELANISTIC 🐟 Largemouth Bass · Dry streak 1,234
 [FOE+] You caught GIGANTIC 🐟 Walleye · Dry streak 5,321
 [FOE+] RARE CATCH! Infusion Capsule · Dry streak 2,410
+[FOE+] RARE CATCH! Lightning in a Bottle · Dry streak 220
 [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · 2:10 left
 [FOE+] FABLED CAUGHT Danube River · by Steve
 [FOE+] WRONG PET Eagle Pet · Danube River needs a Wolf Pet (in inventory)
@@ -74,7 +75,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Pet pulls:** rarity badge, pet, percentage, rating and your pet dry streak.
 - **Variants:** Albino, Melanistic, Trophy and Fabled, with the fish and that variant's dry streak.
 - **Gigantic catches:** the Gigantic badge, the fish and its dry streak.
-- **Infusion Capsules:** when the server says you pulled one, with your capsule dry streak.
+- **Infusion Capsules and Lightning Bottles:** when the server says you pulled one, with its dry streak.
 - **Contest chat:** proper spacing, and the hourly auto-refresh output is hidden.
 - You can turn each notification on or off in Settings.
 
@@ -105,10 +106,10 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 ## Dry streaks & stats
 
-- **Live dry streaks** for every rarity, variant and Gigantic, shown on the All-Time Stats panel.
+- **Live dry streaks** for every rarity, variant, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles, shown on the All-Time Stats panel. Like FOE, the capsule streak only counts Blood Moon catches and the bottle streak only thunderstorm catches, since that's when they drop.
 - **Import from old installs:** FOE+ finds previous FOE and FOE-R installs (Prism, Modrinth, CurseForge, `.minecraft` and other profiles) and imports your stats on first launch.
-- **Import Dry Streaks:** pulls streaks from your newest old FOE or FOE-R install. A streak you've reset since then is never overwritten by an older, higher one.
-- **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic and Infusion Capsules). Manual edits count as newest, so an import won't undo them.
+- **Import Dry Streaks:** pulls streaks (including pets, shards, Infusion Capsules and Lightning Bottles) from your newest old FOE or FOE-R install. A streak you've reset since then is never overwritten by an older, higher one.
+- **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles). Manual edits count as newest, so an import won't undo them.
 - **Import FOE-R stats:** uses another install's stats if it has more fish, after backing yours up.
 - **Reset Fish Timer:** start fish time and fish per hour from zero.
 

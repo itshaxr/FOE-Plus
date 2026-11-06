@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dannypx.foe.FishOnMCExtras;
 import dannypx.foe.handler.logic.LoggerHandler;
+import dannypx.foe.handler.logic.RareCatchHandler;
 import dannypx.foe.handler.store.StatsDataHandler;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
@@ -36,7 +37,8 @@ import java.util.UUID;
  * this install's fish total, so the streaks read exactly as they did before.
  * <p>
  * FOE's file has the same idea with its own fish count ({@code allFishCaughtCount}), except the
- * Fabled entry, which FOE keeps as a plain counter.
+ * Fabled entry, which FOE keeps as a plain counter. Pets (any rarity), shards, Infusion Capsules
+ * and Lightning Bottles come over too.
  */
 public final class DryStreakImporter {
     private DryStreakImporter() {}
@@ -45,13 +47,24 @@ public final class DryStreakImporter {
     static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
     static final List<String> SIZES = List.of("baby", "juvenile", "adult", "large", "gigantic");
 
-    /// Dry streaks read from one file: category → field → streak, plus pets and items.
+    /// Pets of any rarity, as one streak.
+    static final String PET_ANY = "pet";
+
+    /// Dry streaks read from one file: category → field → streak, plus pets and items, and
+    /// {@code special}: the any-rarity pet streak ("pet") and the rare pulls ("infusion_capsule",
+    /// "lightning_bottle", which count only Blood Moon / thunderstorm catches).
     public record Source(Path file, String kind, long lastModified,
                          Map<String, Map<String, Integer>> fish,
                          Map<String, Map<String, Integer>> pets,
-                         Map<String, Integer> items) {
+                         Map<String, Integer> items,
+                         Map<String, Integer> special) {
+        public Source(Path file, String kind, long lastModified, Map<String, Map<String, Integer>> fish,
+                      Map<String, Map<String, Integer>> pets, Map<String, Integer> items) {
+            this(file, kind, lastModified, fish, pets, items, new LinkedHashMap<>());
+        }
+
         int count() {
-            int n = items.size();
+            int n = items.size() + special.size();
             for (Map<String, Integer> m : fish.values()) n += m.size();
             for (Map<String, Integer> m : pets.values()) n += m.size();
             return n;
@@ -68,7 +81,14 @@ public final class DryStreakImporter {
         fish.put("size", foeMap(foe, "fishSizeDryStreak", all, SIZES));
         Map<String, Integer> items = new LinkedHashMap<>();
         if (foe.has("shardDryStreak")) items.put("shard", Math.max(0, all - getInt(foe, "shardDryStreak")));
-        return new Source(file, "FOE", lastModified, fish, new LinkedHashMap<>(), items);
+        // FOE keeps the fish count at the last one for these too. For capsules and bottles it also
+        // moves that count along on every catch outside a Blood Moon / thunderstorm, so the
+        // difference is exactly the event catches since the last one.
+        Map<String, Integer> special = new LinkedHashMap<>();
+        if (foe.has("petDryStreak")) special.put(PET_ANY, Math.max(0, all - getInt(foe, "petDryStreak")));
+        if (foe.has("infusionCapsuleDryStreak")) special.put(RareCatchHandler.INFUSION_CAPSULE, Math.max(0, all - getInt(foe, "infusionCapsuleDryStreak")));
+        if (foe.has("lightningBottleDryStreak")) special.put(RareCatchHandler.LIGHTNING_BOTTLE, Math.max(0, all - getInt(foe, "lightningBottleDryStreak")));
+        return new Source(file, "FOE", lastModified, fish, new LinkedHashMap<>(), items, special);
     }
 
     private static Map<String, Integer> foeMap(JsonObject foe, String key, int all, List<String> known) {
@@ -94,7 +114,16 @@ public final class DryStreakImporter {
         if (model.fishData != null) model.fishData.forEach((category, fields) -> fish.put(category, foerMap(fields, model.fishTotal)));
         if (model.petData != null) model.petData.forEach((category, fields) -> pets.put(category, foerMap(fields, model.fishTotal)));
         if (model.itemData != null) items.putAll(foerMap(model.itemData, model.fishTotal));
-        return new Source(file, "FOE-R", lastModified, fish, pets, items);
+        Map<String, Integer> special = new LinkedHashMap<>();
+        // Another FOE+ install: its any-rarity pet streak and event-only streaks.
+        int petOn = model.petCaughtOn != null ? model.petCaughtOn : StatsDataHandler.lastPetCaughtOnFromRarities(model);
+        if (model.petCaughtOn != null || petOn > 0) special.put(PET_ANY, Math.max(0, model.fishTotal - petOn));
+        if (model.rareEventStreak != null) {
+            model.rareEventStreak.forEach((key, streak) -> {
+                if (streak != null && RareCatchHandler.isEventPull(key)) special.put(key, Math.max(0, streak));
+            });
+        }
+        return new Source(file, "FOE-R", lastModified, fish, pets, items, special);
     }
 
     private static Map<String, Integer> foerMap(Map<String, StatsDataHandler.Stat<Integer, Integer>> fields, int fishTotal) {
@@ -134,6 +163,10 @@ public final class DryStreakImporter {
             data.itemData.put(key, StatsDataHandler.Stat.of(amount, data.fishTotal - item.getValue()));
             counts[0]++;
         }
+        for (var special : source.special().entrySet()) {
+            if (applySpecial(source, data, special.getKey(), special.getValue())) counts[0]++;
+            else counts[1]++;
+        }
         return new Result(counts[0], counts[1]);
     }
 
@@ -151,6 +184,27 @@ public final class DryStreakImporter {
             fields.put(streak.getKey(), StatsDataHandler.Stat.of(amount, data.fishTotal - streak.getValue()));
             counts[0]++;
         }
+    }
+
+    /// The any-rarity pet streak, or an event-only rare pull streak. True when it was set.
+    private static boolean applySpecial(Source source, StatsDataHandler.StatsDataModel data, String key, int streak) {
+        if (key.equals(PET_ANY)) {
+            int on = data.petCaughtOn != null ? data.petCaughtOn : StatsDataHandler.lastPetCaughtOnFromRarities(data);
+            boolean havePet = data.petCaughtOn != null || on > 0;
+            StatsDataHandler.Stat<Integer, Integer> current = havePet ? StatsDataHandler.Stat.of(0, on) : null;
+            if (keepCurrent(source, data, "pet:any", current, streak)) return false;
+            data.petCaughtOn = data.fishTotal - streak;
+            return true;
+        }
+        if (!RareCatchHandler.isEventPull(key)) return false;
+        if (data.rareEventStreak == null) data.rareEventStreak = new HashMap<>();
+        Long knownAt = data.streakKnownAt == null ? null : data.streakKnownAt.get("rare:" + key);
+        if (knownAt != null && knownAt > source.lastModified()) return false;
+        Integer current = data.rareEventStreak.get(key);
+        // A lower streak here means you pulled one more recently than that file knows.
+        if (current != null && current > 0 && current < streak) return false;
+        data.rareEventStreak.put(key, streak);
+        return true;
     }
 
     /// True when this install's streak is newer than the source's and must stay. Package-private for tests.

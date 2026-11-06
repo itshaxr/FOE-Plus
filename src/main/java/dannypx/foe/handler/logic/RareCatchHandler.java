@@ -14,17 +14,50 @@ import java.util.regex.Pattern;
 
 /**
  * Rare pulls the server announces in chat: "RARE CATCH! You pulled 1x Infusion Capsule".
- * Tracked ones are counted with a dry streak (fish since the last one) and get a FOE+ line:
+ * Tracked ones are counted with a dry streak and get a FOE+ line:
  * [FOE+] RARE CATCH! Infusion Capsule · Dry streak 1,234
+ * <p>
+ * Infusion Capsules only drop during a Blood Moon and Lightning in a Bottle only in a
+ * thunderstorm, so (like FOE) their dry streaks only count fish caught while that's on.
  */
 public final class RareCatchHandler {
     private RareCatchHandler() {}
 
     /// Server line (not player chat, which has "»" before the text).
-    static final Pattern RARE_CATCH = Pattern.compile("RARE CATCH!\\s*You pulled (\\d+)\\s*x\\s+(.+?)\\s*[.!]?\\s*$");
+    /// "You pulled 1x Infusion Capsule", "You pulled a 2x ...", "You pulled a Lightning in a Bottle".
+    static final Pattern RARE_CATCH = Pattern.compile("RARE CATCH!\\s*You pulled (?:an? )?(?:(\\d+)\\s*x\\s+)?(.+?)\\s*[.!]?\\s*$");
+
+    public static final String INFUSION_CAPSULE = "infusion_capsule";
+    public static final String LIGHTNING_BOTTLE = "lightning_bottle";
 
     /// Tracked pulls: display name (as in chat, any case) → stats key.
-    public static final Map<String, String> TRACKED = Map.of("infusion capsule", "infusion_capsule");
+    public static final Map<String, String> TRACKED = Map.of(
+            "infusion capsule", INFUSION_CAPSULE,
+            "lightning in a bottle", LIGHTNING_BOTTLE);
+
+    /// Pulls whose dry streak only counts fish caught during their event.
+    public static final java.util.List<String> EVENT_PULLS = java.util.List.of(INFUSION_CAPSULE, LIGHTNING_BOTTLE);
+
+    public static boolean isEventPull(String key) {
+        return EVENT_PULLS.contains(key);
+    }
+
+    /// Whether the event a pull drops in is on right now: a Blood Moon for capsules, a
+    /// thunderstorm (⚡ on the boss bar) for bottles.
+    public static boolean eventOn(String key) {
+        try {
+            if (INFUSION_CAPSULE.equals(key)) return MoonTimerHandler.instance().getCurrentMoon() == MoonTimerHandler.Moon.BLOOD;
+            if (LIGHTNING_BOTTLE.equals(key)) return isThunderstorm(dannypx.foe.handler.fetch.BossEventHandler.instance().getWeather().getString());
+        } catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+        return false;
+    }
+
+    /// The boss bar's weather shows ⚡ during a thunderstorm. Package-private for tests.
+    static boolean isThunderstorm(String weather) {
+        return weather != null && weather.contains("\u26A1");
+    }
 
     /// What a chat line is, if it's a tracked rare pull. Package-private for tests.
     record Pull(String name, String key, int count) {}
@@ -38,11 +71,13 @@ public final class RareCatchHandler {
         String name = m.group(2).trim();
         String key = TRACKED.get(name.toLowerCase(Locale.ROOT));
         if (key == null) return null;
-        int count;
-        try {
-            count = Integer.parseInt(m.group(1));
-        } catch (NumberFormatException e) {
-            count = 1;
+        int count = 1;
+        if (m.group(1) != null) {
+            try {
+                count = Integer.parseInt(m.group(1));
+            } catch (NumberFormatException e) {
+                count = 1;
+            }
         }
         return new Pull(name, key, Math.max(1, count));
     }
@@ -51,7 +86,9 @@ public final class RareCatchHandler {
         Pull pull = parse(text);
         if (pull == null) return;
         int streak = StatsDataHandler.instance().onRareCatch(pull.key(), pull.count());
-        if (Configs.hudConfig.showInfusionCapsuleChat.get()) FoeChat.send(line(pull, streak));
+        boolean chat = LIGHTNING_BOTTLE.equals(pull.key())
+                ? Configs.hudConfig.showLightningBottleChat.get() : Configs.hudConfig.showInfusionCapsuleChat.get();
+        if (chat) FoeChat.send(line(pull, streak));
     }
 
     /// [FOE+] RARE CATCH! Infusion Capsule · Dry streak 1,234  (or "2x ..."; "first one tracked")

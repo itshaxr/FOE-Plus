@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.25+1.21.11",
+      "name": "FOE+ 1.0.25+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- New All-Time Stats top: Total Caught with the share of your catches that were fish, then Total Pets, Shards, Infusion and Bottle, each with its dry streak by @phckd\n- Lightning in a Bottle is now tracked, with its own chat line by @phckd\n- Infusion Capsule and Lightning Bottle dry streaks count only Blood Moon and thunderstorm catches, like FOE by @phckd\n- Import Dry Streaks also brings over your pet, shard, Infusion Capsule and Lightning Bottle streaks from FOE by @phckd\n- Edit Dry Streaks has pets, shards, Infusion Capsules and Lightning Bottles by @phckd"
+    },
+    {
       "versionNumber": "1.0.24+1.21.11",
       "name": "FOE+ 1.0.24+1.21.11",
       "datePublished": "2026-11-05",

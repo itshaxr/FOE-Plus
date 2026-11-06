@@ -74,6 +74,7 @@ public class StatsDataHandler extends Handler {
         if(statsData.petData == null) statsData.petData = new HashMap<>();
         if(statsData.itemData == null) statsData.itemData = new HashMap<>();
         if(statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
+        if(statsData.rareEventStreak == null) statsData.rareEventStreak = new HashMap<>();
 
         if(statsData.questItemData == null) statsData.questItemData = new HashMap<>();
         if(statsData.questPetData == null) statsData.questItemData = new HashMap<>();
@@ -90,6 +91,7 @@ public class StatsDataHandler extends Handler {
         int giganticDryStreak = lastGigantic == null || lastGigantic.amount() == null || lastGigantic.amount() == 0
                 ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastGigantic.caughtOn();
         statsData.fishTotal++;
+        countEventCatch();
 
         Pair<String, Integer> rarityDrystreak = this.updateFishData(statsData, FishTagObject.RARITY, fish.getRarity(), 1);
         ConstantDataHandler.instance().updateFishData(FishTagObject.RARITY, fish.getRarity(), fish.getRarityComponent());
@@ -130,6 +132,8 @@ public class StatsDataHandler extends Handler {
         int petRarityDryStreak = lastOfRarity == null || lastOfRarity.amount() == null || lastOfRarity.amount() == 0
                 ? statsData.fishTotal : statsData.fishTotal - lastOfRarity.caughtOn();
         statsData.petTotal++;
+        statsData.petCaughtOn = statsData.fishTotal;
+        markStreakKnown("pet:any");
 
         Pair<String, Integer> rarityDrystreak = this.updatePetData(statsData, PetTagObject.RARITY, pet.getRarity());
         ConstantDataHandler.instance().updatePetData(PetTagObject.RARITY, pet.getRarity(), pet.getRarityComponent());
@@ -146,6 +150,13 @@ public class StatsDataHandler extends Handler {
 
     /// Fish count at your most recent pet catch (0 if you have never caught one).
     int lastPetCaughtOn() {
+        if (statsData.petCaughtOn != null) return statsData.petCaughtOn;
+        return lastPetCaughtOnFromRarities(statsData);
+    }
+
+    /// The newest pet catch going by the pet rarities alone (older files have nothing else).
+    public static int lastPetCaughtOnFromRarities(StatsDataModel statsData) {
+        if (statsData.petData == null) return 0;
         Map<String, Stat<Integer, Integer>> byRarity = statsData.petData.get(PetTagObject.RARITY);
         if (byRarity == null) return 0;
         int last = 0;
@@ -218,10 +229,12 @@ public class StatsDataHandler extends Handler {
     /// first one this install has seen.
     public int onRareCatch(String key, int count) {
         if (statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
+        if (statsData.rareEventStreak == null) statsData.rareEventStreak = new HashMap<>();
         Stat<Integer, Integer> old = statsData.rareCatchData.get(key);
-        int streak = old == null || old.caughtOn() == null ? -1 : Math.max(0, statsData.fishTotal - old.caughtOn());
+        int streak = rareCatchStreak(key);
         int amount = (old == null || old.amount() == null ? 0 : old.amount()) + Math.max(1, count);
         statsData.rareCatchData.put(key, Stat.of(amount, statsData.fishTotal));
+        if (dannypx.foe.handler.logic.RareCatchHandler.isEventPull(key)) statsData.rareEventStreak.put(key, 0);
         markStreakKnown("rare:" + key);
         this.needsUpdate = true;
         return streak;
@@ -229,8 +242,56 @@ public class StatsDataHandler extends Handler {
 
     /// Fish since the last rare pull of this kind, or -1 if none has been seen (or set by hand).
     public int rareCatchStreak(String key) {
+        if (dannypx.foe.handler.logic.RareCatchHandler.isEventPull(key)) {
+            Integer streak = statsData.rareEventStreak == null ? null : statsData.rareEventStreak.get(key);
+            return streak == null ? -1 : Math.max(0, streak);
+        }
         Stat<Integer, Integer> stat = statsData.rareCatchData == null ? null : statsData.rareCatchData.get(key);
         return stat == null || stat.caughtOn() == null ? -1 : Math.max(0, statsData.fishTotal - stat.caughtOn());
+    }
+
+    /// A fish was caught: the event-only dry streaks count it if their event is on.
+    private void countEventCatch() {
+        if (statsData.rareEventStreak == null) statsData.rareEventStreak = new HashMap<>();
+        for (String key : dannypx.foe.handler.logic.RareCatchHandler.EVENT_PULLS) {
+            if (!dannypx.foe.handler.logic.RareCatchHandler.eventOn(key)) continue;
+            Integer streak = statsData.rareEventStreak.get(key);
+            // Not known yet (no catch or import so far): don't guess, it starts at the next one.
+            if (streak != null) statsData.rareEventStreak.put(key, streak + 1);
+        }
+    }
+
+    /// How many of a rare pull you've had ("infusion_capsule").
+    public int rareCatchAmount(String key) {
+        Stat<Integer, Integer> stat = statsData.rareCatchData == null ? null : statsData.rareCatchData.get(key);
+        return stat == null || stat.amount() == null ? 0 : stat.amount();
+    }
+
+    /// Fish since your last pet of any rarity.
+    public int petDryStreak() {
+        return Math.max(0, statsData.fishTotal - lastPetCaughtOn());
+    }
+
+    /// Shards of every kind you've caught.
+    public int shardTotal() {
+        int shards = 0;
+        for (Map.Entry<String, Stat<Integer, Integer>> entry : statsData.itemData.entrySet()) {
+            if (entry.getKey().toLowerCase(java.util.Locale.ROOT).contains("shard") && entry.getValue() != null && entry.getValue().amount() != null) {
+                shards += entry.getValue().amount();
+            }
+        }
+        return shards;
+    }
+
+    /// Fish since your last shard of any kind (your fish total if you've never had one).
+    public int shardDryStreak() {
+        int last = Integer.MIN_VALUE;
+        for (Map.Entry<String, Stat<Integer, Integer>> entry : statsData.itemData.entrySet()) {
+            if (entry.getKey().toLowerCase(java.util.Locale.ROOT).contains("shard") && entry.getValue() != null && entry.getValue().caughtOn() != null) {
+                last = Math.max(last, entry.getValue().caughtOn());
+            }
+        }
+        return last == Integer.MIN_VALUE ? statsData.fishTotal : Math.max(0, statsData.fishTotal - last);
     }
 
     public void setQuestItem(TagObject item, int count) {
@@ -277,6 +338,36 @@ public class StatsDataHandler extends Handler {
 
     /// Sets a dry streak by hand (from the O menu), keeping the count.
     public void setStreakManually(String set, String category, String field, int dryStreak) {
+        if (set.equals("rare") && dannypx.foe.handler.logic.RareCatchHandler.isEventPull(field)) {
+            if (statsData.rareEventStreak == null) statsData.rareEventStreak = new HashMap<>();
+            statsData.rareEventStreak.put(field, Math.max(0, dryStreak));
+            markStreakKnown("rare:" + field);
+            this.needsUpdate = true;
+            return;
+        }
+        if (set.equals("pet") && category.equals("any")) {
+            statsData.petCaughtOn = statsData.fishTotal - Math.max(0, dryStreak);
+            markStreakKnown("pet:any");
+            this.needsUpdate = true;
+            return;
+        }
+        if (set.equals("item")) {
+            // Every shard kind counts as one streak: set them all, so the newest is this one.
+            boolean any = false;
+            for (Map.Entry<String, Stat<Integer, Integer>> e : statsData.itemData.entrySet()) {
+                if (!e.getKey().toLowerCase(java.util.Locale.ROOT).contains(field)) continue;
+                int amount = e.getValue() == null || e.getValue().amount() == null ? 0 : e.getValue().amount();
+                e.setValue(Stat.of(amount, statsData.fishTotal - Math.max(0, dryStreak)));
+                markStreakKnown("item:" + e.getKey());
+                any = true;
+            }
+            if (!any) {
+                statsData.itemData.put(field, Stat.of(0, statsData.fishTotal - Math.max(0, dryStreak)));
+                markStreakKnown("item:" + field);
+            }
+            this.needsUpdate = true;
+            return;
+        }
         if (set.equals("rare")) {
             if (statsData.rareCatchData == null) statsData.rareCatchData = new HashMap<>();
             Stat<Integer, Integer> stat = statsData.rareCatchData.get(field);
@@ -421,6 +512,15 @@ public class StatsDataHandler extends Handler {
         /// Rare pulls announced in chat ("RARE CATCH! You pulled 1x Infusion Capsule"), keyed like
         /// "infusion_capsule": how many and the fish count at the last one (for the dry streak)
         public Map<String, Stat<Integer, Integer>> rareCatchData = new HashMap<>();
+
+        /// Dry streaks of rare pulls that only drop during an event, like FOE: fish caught during
+        /// that event since the last one ("infusion_capsule": Blood Moon catches,
+        /// "lightning_bottle": thunderstorm catches). Missing = not known yet.
+        public Map<String, Integer> rareEventStreak = new HashMap<>();
+
+        /// Fish count at your last pet (any rarity), or null to work it out from the pet rarities.
+        /// Set on every pet catch, by an import and by hand.
+        public Integer petCaughtOn = null;
 
         /// QUESTS
 

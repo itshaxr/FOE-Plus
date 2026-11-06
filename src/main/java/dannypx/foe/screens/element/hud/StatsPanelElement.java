@@ -29,6 +29,12 @@ public class StatsPanelElement extends PanelElement {
 
     private static final List<String> VARIANTS = List.of("albino", "melanistic", "trophy", "fabled");
 
+    /// FOE+'s own little icons (font fishonmcextras:stat_icons), white so the line's colour tints them.
+    private static final net.minecraft.network.chat.FontDescription ICON_FONT = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "stat_icons"));
+    static final String ROD = "\uE010", PAW = "\uE011", SHARD = "\uE012", CAPSULE = "\uE013", BOLT = "\uE014";
+    static final int CAUGHT_COLOR = 0x00AA00, PET_COLOR = 0xFF55FF, SHARD_COLOR = 0xFFAA00, CAPSULE_COLOR = 0xFF5555, BOTTLE_COLOR = 0xFFFF55;
+
     public StatsPanelElement() {
         this(false);
     }
@@ -60,24 +66,28 @@ public class StatsPanelElement extends PanelElement {
         List<Component> lines = new ArrayList<>();
         int fishTotal = stats.fishTotal;
 
-        lines.add(join(label("ꜰɪѕʜ ᴄᴀᴜɢʜᴛ: "), white(String.valueOf(fishTotal))));
-        lines.add(join(label("ꜰɪѕʜ/ʜᴏᴜʀ: "), white(String.format("%.1f", session.getFishPerHour()))));
-        lines.add(join(label("ꜰɪѕʜ ᴛɪᴍᴇ: "), white(formatTime(session.getActiveTimeMs()))));
+        StatsDataHandler handler = StatsDataHandler.instance();
+        int capsules = handler.rareCatchAmount(dannypx.foe.handler.logic.RareCatchHandler.INFUSION_CAPSULE);
+        int bottles = handler.rareCatchAmount(dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE);
+
+        // Total Caught, with the share of your catches that were fish (pets, capsules and bottles
+        // are the other things you pull).
+        lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
+                Component.literal(fishShare(fishTotal, stats.petTotal + capsules + bottles)).withStyle(ChatFormatting.GREEN)));
+        lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", session.getFishPerHour()))));
+        lines.add(join(plain("Fish Time "), white(formatTime(session.getActiveTimeMs()))));
+        lines.add(join(plain("Total Quests "), white(String.valueOf(stats.questsCompleted))));
         lines.add(Component.empty());
 
-        int shards = 0;
-        for (Map.Entry<String, StatsDataHandler.Stat<Integer, Integer>> entry : stats.itemData.entrySet()) {
-            if (entry.getKey().toLowerCase().contains("shard")) shards += entry.getValue().amount();
-        }
-        lines.add(join(label("ꞯᴜᴇѕᴛѕ: "), white(String.valueOf(stats.questsCompleted))));
-        lines.add(join(label("ᴘᴇᴛѕ: "), white(String.valueOf(stats.petTotal))));
-        lines.add(join(label("ѕʜᴀʀᴅѕ: "), white(String.valueOf(shards))));
-        // Infusion Capsules, counted from the server's RARE CATCH line. Just the amount for now:
-        // the capsule dry streak on this panel wasn't counting up properly.
+        lines.add(totalLine("Pets", PET_COLOR, PAW, stats.petTotal, handler.petDryStreak()));
+        lines.add(totalLine("Shards", SHARD_COLOR, SHARD, handler.shardTotal(), handler.shardDryStreak()));
         if (Configs.hudConfig.statsPanelShowCapsules.get()) {
-            StatsDataHandler.Stat<Integer, Integer> capsules = stats.rareCatchData == null ? null : stats.rareCatchData.get("infusion_capsule");
-            int amount = capsules == null || capsules.amount() == null ? 0 : capsules.amount();
-            lines.add(join(label("ᴄᴀᴘѕᴜʟᴇѕ: "), white(String.valueOf(amount))));
+            lines.add(totalLine("Infusion", CAPSULE_COLOR, CAPSULE, capsules,
+                    handler.rareCatchStreak(dannypx.foe.handler.logic.RareCatchHandler.INFUSION_CAPSULE)));
+        }
+        if (Configs.hudConfig.statsPanelShowBottles.get()) {
+            lines.add(totalLine("Bottle", BOTTLE_COLOR, BOLT, bottles,
+                    handler.rareCatchStreak(dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE)));
         }
         lines.add(Component.empty());
 
@@ -114,6 +124,30 @@ public class StatsPanelElement extends PanelElement {
         }
 
         return lines;
+    }
+
+    /// "Total Pets 🐾 " : "Total" in grey, the name and its icon in the item's colour.
+    private static Component total(String name, int color, String icon) {
+        return join(plain("Total "), Component.literal(name + " ").withColor(color),
+                Component.literal(icon).withStyle(style -> style.withFont(ICON_FONT).withColor(color)),
+                Component.literal(" "));
+    }
+
+    /// "Total Pets 🐾 1721 (657)": amount, and the dry streak in brackets ("?" until it's known).
+    static Component totalLine(String name, int color, String icon, int amount, int dryStreak) {
+        return join(total(name, color, icon), white(amount + " "),
+                Component.literal("(" + (dryStreak < 0 ? "?" : String.valueOf(dryStreak)) + ")").withStyle(ChatFormatting.GRAY));
+    }
+
+    private static Component plain(String text) {
+        return Component.literal(text).withStyle(ChatFormatting.GRAY);
+    }
+
+    /// 99.73%: fish out of everything you've pulled. Package-private for tests.
+    static String fishShare(int fish, int other) {
+        int all = fish + Math.max(0, other);
+        if (all <= 0) return "0%";
+        return String.format(java.util.Locale.ROOT, "%.2f%%", fish * 100.0 / all);
     }
 
     private static Component white(String text) {

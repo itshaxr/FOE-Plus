@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/stat_icons.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [
+        ""
+      ]
+    }
+  ]
+}
