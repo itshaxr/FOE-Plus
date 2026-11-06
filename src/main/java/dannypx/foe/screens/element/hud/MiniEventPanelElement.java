@@ -51,9 +51,31 @@ public class MiniEventPanelElement extends PanelElement {
 
     /// "— Kenai River GIGANTIC  (0/2) One Timer", with a ✔ once it's done.
     static Component mission(MiniEventHandler.Mission m) {
-        // Fish names in the colour the compendium gives them (their rarity), not the server's green.
-        return join(dannypx.foe.handler.logic.FishColorHandler.instance().recolor(m.name()), Component.literal("  "), m.progress(),
-                m.complete() ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty());
+        String progress = m.progress().getString();
+        boolean serverTicked = progress.contains("✓") || progress.contains("✔");
+        return join(badged(m.name()), Component.literal("  "), m.progress(),
+                m.complete() && !serverTicked ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty());
+    }
+
+    /// The server writes GIGANTIC as plain red text: shown as the GIGANTIC badge instead (the one
+    /// on the All-Time Stats panel).
+    static Component badged(Component name) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        name.visit((style, text) -> {
+            String plain = ChatFormatting.stripFormatting(text);
+            String word = plain == null ? "" : plain.trim();
+            if (word.equalsIgnoreCase("gigantic") || word.equals("ɢɪɢᴀɴᴛɪᴄ")) {
+                int lead = text.indexOf(text.trim());
+                if (lead > 0) out.append(Component.literal(text.substring(0, lead)).setStyle(style));
+                out.append(StatsPanelElement.GIGANTIC_BADGE);
+                String tail = text.substring(lead + text.trim().length());
+                if (!tail.isEmpty()) out.append(Component.literal(tail).setStyle(style));
+            } else {
+                out.append(Component.literal(text).setStyle(style));
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
     }
 
     @Override
@@ -63,10 +85,10 @@ public class MiniEventPanelElement extends PanelElement {
         if (!event.active()) return lines;
         // Just the daily reroll timer above the missions (the event's end time is left out).
         if (event.rerollInMs() > 0) lines.add(reroll(event.rerollInMs()));
-        boolean hideDone = Configs.hudConfig.miniEventHideCompleted.get();
+        // Finished missions show their ✔ for a few seconds, then leave until the daily reroll
+        // (repeatable ones stay).
         for (MiniEventHandler.Mission m : event.missions()) {
-            if (hideDone && m.complete()) continue;
-            lines.add(mission(m));
+            if (event.shouldShow(m)) lines.add(mission(m));
         }
         return lines;
     }

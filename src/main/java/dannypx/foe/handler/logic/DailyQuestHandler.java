@@ -147,12 +147,16 @@ public class DailyQuestHandler {
         // Exact numbers from the server shortly after; the guess below shows up instantly.
         requestRefresh();
         if (quests.isEmpty()) return;
+        applyCatch(quests, catchOf(fish));
+    }
+
+    /// A caught fish as the mission matching sees it (also used by the Mini Event panel).
+    static Catch catchOf(FishTagObject fish) {
         String rarity = fish.getRarity().toLowerCase(Locale.ROOT);
         if (rarity.equals("mythic")) rarity = "mythical";
-        Catch caught = new Catch(fish.getName().getString(), fish.getString("group"), rarity,
+        return new Catch(fish.getName().getString(), fish.getString("group"), rarity,
                 fish.getVariant().toLowerCase(Locale.ROOT), fish.getFishSize().toLowerCase(Locale.ROOT),
                 PetLocationHandler.currentLocation());
-        applyCatch(quests, caught);
     }
 
     /// Called for every other item you catch; shards count for the shard missions.
@@ -249,7 +253,7 @@ public class DailyQuestHandler {
             Map.entry(FoeLocations.Location.LOFOTEN_ISLANDS, List.of("lofoten")),
             Map.entry(FoeLocations.Location.NILE_RIVER, List.of("nile")));
 
-    private static FoeLocations.Location locationNamedIn(String lower) {
+    static FoeLocations.Location locationNamedIn(String lower) {
         for (Map.Entry<FoeLocations.Location, List<String>> entry : LOCATION_WORDS.entrySet()) {
             for (String word : entry.getValue()) {
                 if (hasWord(lower, word)) return entry.getKey();

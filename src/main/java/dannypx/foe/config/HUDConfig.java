@@ -527,11 +527,8 @@ public class HUDConfig extends Config {
     public ValidatedBoolean showMiniEventPanel = new ValidatedBoolean(true);
 
     @Name("Check /minievent quietly now and then")
-    @Desc("§7Every 10 minutes and a few seconds after a catch (at most every 3 minutes), never while a menu is open; its answer is hidden")
+    @Desc("§7Every 10 minutes and a few seconds after a catch (at most once a minute), never while a menu is open; its answer is hidden")
     public ValidatedBoolean miniEventAutoRefresh = new ValidatedBoolean(true);
-
-    @Name("Hide finished missions")
-    public ValidatedBoolean miniEventHideCompleted = new ValidatedBoolean(false);
 
     @Name("X Position in %")
     public ValidatedInt miniEventPanelXPosition = new ValidatedInt(99, 100, 0, ValidatedNumber.WidgetType.SLIDER);

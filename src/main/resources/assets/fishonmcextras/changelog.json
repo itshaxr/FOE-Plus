@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.50+1.21.11",
+      "name": "FOE+ 1.0.50+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel: fish names are the server's green again (the 1.0.49 colours are undone) by @phckd\n- Missions go up the moment you catch something that counts, like the Daily Quests panel; the quiet check confirms within about a minute and never skips a catch by @phckd\n- A finished mission shows one ✔ for a few seconds, then leaves the panel until the daily reroll; repeatable missions (∞) stay. FOE+ checks again right after the reroll by @phckd\n- GIGANTIC missions use the GIGANTIC badge by @phckd"
+    },
+    {
       "versionNumber": "1.0.49+1.21.11",
       "name": "FOE+ 1.0.49+1.21.11",
       "datePublished": "2026-11-06",

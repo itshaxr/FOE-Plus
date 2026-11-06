@@ -43,7 +43,7 @@ public class MiniEventHandler {
     private static final long IDLE_REFRESH_MS = 30L * 60L * 1000L;
     private static final long FIRST_CHECK_MS = 40_000L;
     /// After a catch, refresh the progress at most this often, a few seconds later.
-    private static final long CATCH_REFRESH_GAP_MS = 3L * 60L * 1000L;
+    private static final long CATCH_REFRESH_GAP_MS = 60L * 1000L;
     private static final long CATCH_REFRESH_DELAY_MS = 5_000L;
     private static final long HIDE_WINDOW_MS = 3_000L;
     private static final long CAPTURE_MS = 750L;
@@ -59,7 +59,26 @@ public class MiniEventHandler {
         public boolean complete() {
             return goal > 0 && done >= goal;
         }
+
+        /// A mission that goes on ("(46/100) ∞ x0"): it stays on the panel when done.
+        public boolean repeatable() {
+            return progress.getString().contains("∞");
+        }
+
+        /// The mission as plain words ("Kenai River GIGANTIC"), without its icons.
+        public String key() {
+            String plain = ChatFormatting.stripFormatting(name.getString());
+            if (plain == null) return "";
+            return plain.replaceAll("[\\uE000-\\uF8FF]", " ").replaceFirst("^[^\\p{L}]+", "").trim().replaceAll("\\s+", " ");
+        }
     }
+
+    /// A finished mission shows its ✔ this long, then leaves the panel (until the daily reroll).
+    static final long SHOW_DONE_MS = 5_000L;
+    /// When each mission was seen finishing (by key), for {@link #SHOW_DONE_MS}.
+    private final java.util.Map<String, Long> completedAt = new java.util.HashMap<>();
+    /// The missions as they were when the current answer started, to spot ones that just finished.
+    private java.util.Map<String, Boolean> doneBefore = java.util.Map.of();
 
     private String eventName = "";
     private int eventColor = 0x55FF55;
@@ -126,6 +145,9 @@ public class MiniEventHandler {
             if (ms >= 0) endsAt = now + ms;
             capturing = true;
             captureOurs = ours;
+            java.util.Map<String, Boolean> before = new java.util.HashMap<>();
+            for (Mission old : missions) before.put(old.key(), old.complete());
+            doneBefore = before;
             captureUntil = now + CAPTURE_MS;
             pendingName = null;
             incoming = new ArrayList<>();
@@ -157,7 +179,9 @@ public class MiniEventHandler {
                 Component progress = dropLeading(line, c.start());
                 long done = Long.parseLong(c.group(1).replace(",", ""));
                 long goal = Long.parseLong(c.group(2).replace(",", ""));
-                incoming.add(new Mission(pendingName, progress, done, goal));
+                Mission mission = new Mission(pendingName, progress, done, goal);
+                if (mission.complete() && Boolean.FALSE.equals(doneBefore.get(mission.key()))) completedAt.put(mission.key(), now);
+                incoming.add(mission);
                 missions = new ArrayList<>(incoming);
                 pendingName = null;
             }
@@ -191,6 +215,8 @@ public class MiniEventHandler {
         boolean due;
         if (lastCheckAt == 0L) due = now - joinedAt >= FIRST_CHECK_MS;
         else if (catchRefreshAt != 0L && now >= catchRefreshAt) due = true;
+        // Right after the daily missions reroll: show the new ones.
+        else if (rerollAt > 0L && now >= rerollAt + 10_000L && lastCheckAt < rerollAt) due = true;
         else due = now - lastCheckAt >= (active() ? REFRESH_MS : IDLE_REFRESH_MS);
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
         lastCheckAt = now;
@@ -201,10 +227,93 @@ public class MiniEventHandler {
     }
 
     /// A catch can move a mission along: check again shortly (at most every few minutes).
+    /// A catch: every unfinished mission it counts for goes up by one straight away (like the
+    /// Daily Quests panel), and /minievent is checked again shortly for the exact numbers.
+    public void onFishCaught(dannypx.foe.item.FishTagObject fish) {
+        try {
+            applyCatch(DailyQuestHandler.catchOf(fish), System.currentTimeMillis());
+        } catch (RuntimeException e) {
+            // the check below still catches up
+        }
+        onFishCaught();
+    }
+
+    /// Package-private for tests.
+    void applyCatch(DailyQuestHandler.Catch caught, long now) {
+        if (missions.isEmpty()) return;
+        List<Mission> next = new ArrayList<>(missions.size());
+        boolean changed = false;
+        for (Mission m : missions) {
+            if (!m.complete() && m.goal() > 0 && countsCatch(m, caught)) {
+                Mission up = new Mission(m.name(), replaceFirstNumber(m.progress(), m.done() + 1), m.done() + 1, m.goal());
+                if (up.complete()) completedAt.put(up.key(), now);
+                next.add(up);
+                changed = true;
+            } else {
+                next.add(m);
+            }
+        }
+        if (changed) missions = next;
+    }
+
+    /// Whether a catch counts for a mission ("King Salmon", "Kenai River GIGANTIC", "Kenai
+    /// River"), with the Daily Quests matching. A mission naming only a place counts any fish there.
+    static boolean countsCatch(Mission m, DailyQuestHandler.Catch caught) {
+        String goal = m.key();
+        if (goal.isEmpty()) return false;
+        if (DailyQuestHandler.locationNamedIn(goal.toLowerCase(java.util.Locale.ROOT)) != null) {
+            goal = goal.toLowerCase(java.util.Locale.ROOT).replaceAll("\\b(river|lake|lakes|sea|islands?|bend|rig|keys?)\\b", " ") + " fish";
+        }
+        return DailyQuestHandler.countsCatch(goal, null, caught);
+    }
+
+    /// Whether a mission belongs on the panel: unfinished, repeatable, or finished in the last
+    /// few seconds.
+    public boolean shouldShow(Mission m) {
+        if (!m.complete() || m.repeatable()) return true;
+        Long at = completedAt.get(m.key());
+        return at != null && System.currentTimeMillis() - at < SHOW_DONE_MS;
+    }
+
+    /// "(46/100) ∞ x0" with its first number changed, keeping the colours.
+    static MutableComponent replaceFirstNumber(Component progress, long value) {
+        MutableComponent out = Component.empty();
+        boolean[] done = {false};
+        progress.visit((style, text) -> {
+            String t = text;
+            if (!done[0]) {
+                Matcher n = Pattern.compile("[\\d,]+").matcher(t);
+                while (n.find()) {
+                    if (n.group().chars().anyMatch(Character::isDigit)) {
+                        t = t.substring(0, n.start()) + value + t.substring(n.end());
+                        done[0] = true;
+                        break;
+                    }
+                }
+            }
+            out.append(Component.literal(t).setStyle(style));
+            return Optional.empty();
+        }, Style.EMPTY);
+        return out;
+    }
+
     public void onFishCaught() {
         long now = System.currentTimeMillis();
-        if (!active() || catchRefreshAt != 0L || now - lastCheckAt < CATCH_REFRESH_GAP_MS) return;
-        catchRefreshAt = now + CATCH_REFRESH_DELAY_MS;
+        if (!active() || catchRefreshAt != 0L) return;
+        // A few seconds after the catch, or (when we checked under a minute ago) as soon as the
+        // minute is up: a catch is never dropped, so a finished mission shows within about a minute.
+        catchRefreshAt = Math.max(now + CATCH_REFRESH_DELAY_MS, lastCheckAt + CATCH_REFRESH_GAP_MS);
+    }
+
+    /// Tests: when the next check after a catch is due (0 = none).
+    long catchRefreshAtForTest() {
+        return catchRefreshAt;
+    }
+
+    /// Tests: as if an event is on and we last checked at {@code at}.
+    void setForTest(long endsAt, long lastCheckAt) {
+        this.endsAt = endsAt;
+        this.lastCheckAt = lastCheckAt;
     }
 
     /// Tests: act as if our quiet check was just sent.
