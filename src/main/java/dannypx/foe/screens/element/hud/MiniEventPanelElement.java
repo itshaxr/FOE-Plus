@@ -71,7 +71,21 @@ public class MiniEventPanelElement extends PanelElement {
                 String tail = text.substring(lead + text.trim().length());
                 if (!tail.isEmpty()) out.append(Component.literal(tail).setStyle(style));
             } else {
-                out.append(Component.literal(text).setStyle(style));
+                // Badge glyphs (ALBINO, MELANISTIC, TROPHY...) carry their own colours: drawn
+                // white so the line's colour doesn't tint them; the words keep the line's colour.
+                StringBuilder run = new StringBuilder();
+                boolean glyphRun = false;
+                for (int i = 0; i < text.length(); i++) {
+                    char c = text.charAt(i);
+                    boolean glyph = c >= '\uE000' && c <= '\uF8FF';
+                    if (glyph != glyphRun && run.length() > 0) {
+                        out.append(Component.literal(run.toString()).setStyle(glyphRun ? style.withColor(ChatFormatting.WHITE) : style));
+                        run.setLength(0);
+                    }
+                    glyphRun = glyph;
+                    run.append(c);
+                }
+                if (run.length() > 0) out.append(Component.literal(run.toString()).setStyle(glyphRun ? style.withColor(ChatFormatting.WHITE) : style));
             }
             return java.util.Optional.empty();
         }, net.minecraft.network.chat.Style.EMPTY);

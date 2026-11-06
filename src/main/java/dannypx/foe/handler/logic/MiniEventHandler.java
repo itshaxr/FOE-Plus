@@ -262,16 +262,21 @@ public class MiniEventHandler {
     static boolean countsCatch(Mission m, DailyQuestHandler.Catch caught) {
         String goal = m.key();
         if (goal.isEmpty()) return false;
-        // A badge FOE+ can't read (a variant it doesn't know): leave it to the server's numbers
-        // rather than count every fish for it.
+        // Only clear-cut missions are counted here: a fish's name, or just a place. Ones with a
+        // badge (ALBINO, TROPHY...) or a size or rarity (GIGANTIC...) wait for the server's
+        // numbers, so they never show a count the server doesn't agree with.
         for (char c : goal.toCharArray()) {
-            if (c >= '\uE000' && c <= '\uF8FF' && !DailyQuestHandler.isKnownBadge(c)) return false;
+            if (c >= '\uE000' && c <= '\uF8FF') return false;
         }
+        if (QUALIFIER.matcher(goal.toLowerCase(java.util.Locale.ROOT)).find()) return false;
         if (DailyQuestHandler.locationNamedIn(goal.toLowerCase(java.util.Locale.ROOT)) != null) {
             goal = goal.toLowerCase(java.util.Locale.ROOT).replaceAll("\\b(river|lake|lakes|sea|islands?|bend|rig|keys?)\\b", " ") + " fish";
         }
         return DailyQuestHandler.countsCatch(goal, null, caught);
     }
+
+    private static final Pattern QUALIFIER = Pattern.compile(
+            "\\b(baby|juvenile|adult|large|gigantic|albino|melanistic|trophy|fabled|common|rare|epic|legendary|mythical|mythic)\\b");
 
     /// Whether a mission belongs on the panel: unfinished, repeatable, or finished in the last
     /// few seconds.

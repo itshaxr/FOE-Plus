@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.52+1.21.11",
+      "name": "FOE+ 1.0.52+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Mini Event panel: GIGANTIC, ALBINO, MELANISTIC and TROPHY missions only take the server's numbers (no more counts that jump up and back); fish-name and place missions still go up on each catch by @phckd\n- Variant badges on the Mini Event panel are drawn in their own colours (they were tinted by the line's colour) by @phckd"
+    },
+    {
       "versionNumber": "1.0.51+1.21.11",
       "name": "FOE+ 1.0.51+1.21.11",
       "datePublished": "2026-11-06",
