@@ -27,7 +27,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
 | **Top bar** | Level, location and the spot you're at (Big Bear Dock, Thunderwood Marina...), time, balance and catches, plus the community event total and your contribution. |
-| **Timers & Crew** | Next moon, Tackle Shop restock (every 4 hours) and Cosmetic Store reset (8pm New York), then your crew and friends: whether a crew member is in range, how many are online, and who. |
+| **Timers & Crew** | Next moon, Tackle Shop restock (every 4 hours, with a ✔ once you've checked it), Cosmetic Store reset (8pm New York) and your votes (x/7 in the last 24 hours, and when you can vote again), then your crew and friends: whether a crew member is in range, how many are online, and who. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
 

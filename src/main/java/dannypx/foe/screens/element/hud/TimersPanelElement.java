@@ -26,6 +26,7 @@ public class TimersPanelElement extends PanelElement {
     private static final int MOON_COLOR = 0x55FFFF;
     private static final int TACKLE_COLOR = 0xFFFF55;
     private static final int COSMETIC_COLOR = 0xFF55FF;
+    private static final int VOTE_COLOR = 0x55FFFF;
 
     public TimersPanelElement() {
         this(false);
@@ -91,10 +92,24 @@ public class TimersPanelElement extends PanelElement {
         }
         StoreTimerHandler stores = StoreTimerHandler.instance();
         if (hud.timersPanelTackleShop.get()) {
-            lines.add(timer("⚓", "Tackle Shop", TACKLE_COLOR, StoreTimerHandler.clock(stores.tackleShopRemainingMs())));
+            Component tackle = timer("⚓", "Tackle Shop", TACKLE_COLOR, StoreTimerHandler.clock(stores.tackleShopRemainingMs()));
+            // ✓ once you've opened the Tackle Shop since it restocked.
+            lines.add(stores.tackleShopChecked()
+                    ? Component.empty().append(tackle).append(Component.literal(" ✔").withStyle(ChatFormatting.GREEN)) : tackle);
         }
         if (hud.timersPanelCosmeticStore.get()) {
             lines.add(timer("♦", "Cosmetic Store", COSMETIC_COLOR, StoreTimerHandler.clock(stores.cosmeticStoreRemainingMs())));
+        }
+
+        if (hud.timersPanelVote.get()) {
+            int votes = stores.votesToday();
+            Component status = votes >= StoreTimerHandler.VOTE_SITES
+                    ? Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal(StoreTimerHandler.clock(stores.nextVoteInMs())).withStyle(ChatFormatting.WHITE))
+                    : Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY).append(Component.literal("vote now").withStyle(ChatFormatting.GREEN));
+            lines.add(Component.empty()
+                    .append(Component.literal("✉ Vote ").withColor(VOTE_COLOR))
+                    .append(Component.literal(votes + "/" + StoreTimerHandler.VOTE_SITES).withStyle(votes >= StoreTimerHandler.VOTE_SITES ? ChatFormatting.GREEN : ChatFormatting.WHITE))
+                    .append(status));
         }
 
         if (hud.timersPanelCrew.get()) addCrew(lines);
@@ -116,7 +131,7 @@ public class TimersPanelElement extends PanelElement {
         if (crewLoaded) {
             lines.add(CrewHandler.instance().isCrewNearby()
                     ? Component.literal("✔ Member in Range").withStyle(ChatFormatting.GREEN)
-                    : Component.literal("✖ No Member in Range").withStyle(ChatFormatting.RED));
+                    : Component.literal("× No Member in Range").withStyle(ChatFormatting.RED));
         }
 
         // Everyone: crew first (as the crew list has them), then friends who aren't in the crew.
@@ -159,8 +174,11 @@ public class TimersPanelElement extends PanelElement {
                 timer("○", "Moon", MOON_COLOR, "1:00:09"),
                 timer("⚓", "Tackle Shop", TACKLE_COLOR, "57:09"),
                 timer("♦", "Cosmetic Store", COSMETIC_COLOR, "1:57:10"),
+                Component.empty().append(Component.literal("✉ Vote ").withColor(VOTE_COLOR))
+                        .append(Component.literal("7/7").withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY)).append(Component.literal("22:51:26").withStyle(ChatFormatting.WHITE)),
                 Component.empty(),
-                Component.literal("✖ No Member in Range").withStyle(ChatFormatting.RED),
+                Component.literal("× No Member in Range").withStyle(ChatFormatting.RED),
                 Component.literal("3/7 Online").withStyle(ChatFormatting.WHITE),
                 Component.empty()
                         .append(Component.literal("■").withColor(CREW_COLOR)).append(Component.literal("Crew ").withStyle(ChatFormatting.GRAY))

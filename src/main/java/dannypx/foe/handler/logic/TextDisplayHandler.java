@@ -92,6 +92,8 @@ public class TextDisplayHandler extends Handler {
 
     public void addModUser(UUID uuid, String name) {
         this.USERS.put(uuid, name);
+        this.SEEN.put(uuid, name);
+        this.SEEN_PLUS.putIfAbsent(uuid, false);
         this.rebuild();
     }
 
@@ -103,25 +105,41 @@ public class TextDisplayHandler extends Handler {
     }
 
     public void addFoePlusUser(UUID uuid, String name) {
+        this.SEEN.put(uuid, name);
+        this.SEEN_PLUS.put(uuid, true);
         if (name.equals(this.FOE_PLUS_USERS.put(uuid, name))) return;
         this.rebuild();
     }
 
     /// /foe users: who this session has seen running FOE-R or FOE+ (for checking name tag logos).
+    /// Everyone this session's mod has detected (they're only detected while near you), kept
+    /// after they move to another instance; true for FOE+ users. Cleared when you leave.
+    private final Map<UUID, String> SEEN = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> SEEN_PLUS = new ConcurrentHashMap<>();
+
+    /// /foe users: who uses FOE-R or FOE+ among the players you've been near this session and
+    /// who are still online (and you). Mods can only find each other nearby, never server-wide.
     public void printDetectedUsers() {
+        Minecraft mc = Minecraft.getInstance();
         java.util.List<String> foer = new java.util.ArrayList<>();
-        for (Map.Entry<UUID, String> e : this.USERS.entrySet()) {
-            if (!this.FOE_PLUS_USERS.containsKey(e.getKey())) foer.add(e.getValue());
+        java.util.List<String> plus = new java.util.ArrayList<>();
+        if (mc.player != null) plus.add(mc.player.getName().getString() + " (you)");
+        for (Map.Entry<UUID, String> e : this.SEEN.entrySet()) {
+            boolean online = mc.getConnection() != null && mc.getConnection().getPlayerInfo(e.getKey()) != null;
+            if (!online || (mc.player != null && e.getKey().equals(mc.player.getUUID()))) continue;
+            if (Boolean.TRUE.equals(this.SEEN_PLUS.get(e.getKey()))) plus.add(e.getValue());
+            else foer.add(e.getValue());
         }
-        java.util.List<String> plus = new java.util.ArrayList<>(this.FOE_PLUS_USERS.values());
-        java.util.Collections.sort(foer);
-        java.util.Collections.sort(plus);
+        java.util.Collections.sort(foer, String.CASE_INSENSITIVE_ORDER);
+        java.util.Collections.sort(plus, String.CASE_INSENSITIVE_ORDER);
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
+                .append(dannypx.foe.helper.FoeChat.text("FOE+ (" + plus.size() + "): "))
+                .append(dannypx.foe.helper.FoeChat.white(String.join(", ", plus))));
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
                 .append(dannypx.foe.helper.FoeChat.text("FOE-R (" + foer.size() + "): "))
                 .append(dannypx.foe.helper.FoeChat.white(foer.isEmpty() ? "none seen yet" : String.join(", ", foer))));
-        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("USERS", dannypx.foe.helper.FoeChat.AQUA)
-                .append(dannypx.foe.helper.FoeChat.text("FOE+ (" + plus.size() + "): "))
-                .append(dannypx.foe.helper.FoeChat.white(plus.isEmpty() ? "none seen yet" : String.join(", ", plus))));
+        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line(null, dannypx.foe.helper.FoeChat.AQUA)
+                .append(Component.literal("Online players you've been near this session. Mods only find each other nearby.").withStyle(net.minecraft.ChatFormatting.DARK_GRAY)));
     }
 
     /// The + colour other FOE+ users picked (index into NameTagMarker.PLUS_COLORS).
@@ -186,6 +204,8 @@ public class TextDisplayHandler extends Handler {
     }
 
     public void clear() {
+        SEEN.clear();
+        SEEN_PLUS.clear();
         USERS.clear();
         FOE_PLUS_USERS.clear();
         FOE_PLUS_COLORS.clear();

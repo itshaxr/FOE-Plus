@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.28+1.21.11",
+      "name": "FOE+ 1.0.28+1.21.11",
+      "datePublished": "2026-11-05",
+      "changelog": "## What's Changed\n- Timers & Crew panel: Vote line showing how many of the 7 sites you've voted on in the last 24 hours, and when you can vote again by @phckd\n- Tackle Shop gets a ✔ once you've opened it since it restocked by @phckd\n- /foe users lists every FOE+ and FOE-R user you've been near this session who's still online (and you), not only the ones in your instance by @phckd"
+    },
+    {
       "versionNumber": "1.0.27+1.21.11",
       "name": "FOE+ 1.0.27+1.21.11",
       "datePublished": "2026-11-05",

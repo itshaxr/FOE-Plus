@@ -111,6 +111,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
 
     private void onAfterInitScreen(Minecraft minecraft, Screen screen, int scaledWidth, int scaledHeight) {
         ScreenHander.instance().onAfterInitScreen(minecraft, screen, scaledWidth, scaledHeight);
+        if (ConnectionHandler.instance().isOnServer()) dannypx.foe.handler.logic.StoreTimerHandler.instance().onScreenOpened(screen.getTitle().getString());
     }
 
     private void onEntityUnload(Entity entity, ClientLevel clientLevel) {

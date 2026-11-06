@@ -14,7 +14,9 @@ import java.time.ZonedDateTime;
 /**
  * Countdowns for the server's shops: the Tackle Shop restocks every 4 hours (6pm EST is one of
  * them; FOE's timer, re-synced every time "TACKLE SHOP » Tackle items restocked!" shows in chat)
- * and the Cosmetic Store resets every day at 8pm New York time.
+ * and the Cosmetic Store resets every day at 8pm New York time. Also your votes: every
+ * "VOTE » You received ..." line is one site voted, which counts for 24 hours; and whether you've
+ * opened the Tackle Shop since it last restocked (the ✓).
  */
 public class StoreTimerHandler {
     private static StoreTimerHandler INSTANCE = new StoreTimerHandler();
@@ -30,8 +32,16 @@ public class StoreTimerHandler {
     static final ZoneId NEW_YORK = ZoneId.of("America/New_York");
     static final int COSMETIC_HOUR = 20;
 
+    /// Vote sites on the server.
+    public static final int VOTE_SITES = 7;
+    static final long VOTE_COOLDOWN_MS = 24L * 60 * 60 * 1000;
+
     private static final class Saved {
         long tackleAnchor = DEFAULT_TACKLE_ANCHOR;
+        /// When you last opened the Tackle Shop.
+        long tackleCheckedAt = 0L;
+        /// When each vote in the last 24 hours went through, oldest first.
+        java.util.List<Long> votes = new java.util.ArrayList<>();
     }
 
     private Saved saved;
@@ -46,7 +56,10 @@ public class StoreTimerHandler {
                 Path file = fileLocation.get();
                 if (Files.exists(file)) {
                     Saved read = new Gson().fromJson(Files.readString(file), Saved.class);
-                    if (read != null && read.tackleAnchor > 0) saved = read;
+                    if (read != null && read.tackleAnchor > 0) {
+                        if (read.votes == null) read.votes = new java.util.ArrayList<>();
+                        saved = read;
+                    }
                 }
             } catch (Exception | LinkageError e) {
                 LoggerHandler.error(e instanceof Exception ex ? ex : new RuntimeException(e));
@@ -73,7 +86,70 @@ public class StoreTimerHandler {
             long now = System.currentTimeMillis();
             saved().tackleAnchor = now - now % 1000L;
             save();
+        } else if (isVoteReward(plain)) {
+            addVote(saved().votes, System.currentTimeMillis());
+            save();
         }
+    }
+
+    /// "VOTE » You received a Rare Bait Box" (sometimes "... and an Epic Chummer"): one vote.
+    /// Package-private for tests.
+    static boolean isVoteReward(String plain) {
+        return VOTE_REWARD.matcher(plain.trim()).find();
+    }
+
+    private static final java.util.regex.Pattern VOTE_REWARD =
+            java.util.regex.Pattern.compile("^VOTE\\s*[»>]\\s*You received\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /// Records a vote and forgets the ones older than 24 hours. Package-private for tests.
+    static void addVote(java.util.List<Long> votes, long now) {
+        votes.removeIf(t -> now - t >= VOTE_COOLDOWN_MS);
+        votes.add(now);
+        votes.sort(null);
+        while (votes.size() > VOTE_SITES) votes.remove(0);
+    }
+
+    /// Votes in the last 24 hours (at most 7). Package-private for tests.
+    static int votesIn(java.util.List<Long> votes, long now) {
+        int n = 0;
+        for (long t : votes) if (now - t < VOTE_COOLDOWN_MS) n++;
+        return Math.min(VOTE_SITES, n);
+    }
+
+    /// Until your oldest vote of the last 24 hours runs out (you can vote on that site again).
+    static long nextVoteIn(java.util.List<Long> votes, long now) {
+        long oldest = Long.MAX_VALUE;
+        for (long t : votes) if (now - t < VOTE_COOLDOWN_MS) oldest = Math.min(oldest, t);
+        return oldest == Long.MAX_VALUE ? 0L : oldest + VOTE_COOLDOWN_MS - now;
+    }
+
+    public int votesToday() {
+        return votesIn(saved().votes, System.currentTimeMillis());
+    }
+
+    public long nextVoteInMs() {
+        return nextVoteIn(saved().votes, System.currentTimeMillis());
+    }
+
+    /// A screen opened: if it's the Tackle Shop, you've checked it this restock.
+    public void onScreenOpened(String title) {
+        if (title == null) return;
+        String plain = title.replaceAll("§.", "").replaceAll("[\\uE000-\\uF8FF]", "").toLowerCase(java.util.Locale.ROOT);
+        if (plain.contains("tackle shop") || plain.contains("tackleshop")) {
+            saved().tackleCheckedAt = System.currentTimeMillis();
+            save();
+        }
+    }
+
+    /// True when you've opened the Tackle Shop since it last restocked.
+    public boolean tackleShopChecked() {
+        return checkedSinceRestock(saved().tackleCheckedAt, System.currentTimeMillis(), saved().tackleAnchor);
+    }
+
+    /// Package-private for tests.
+    static boolean checkedSinceRestock(long checkedAt, long now, long anchor) {
+        long lastRestock = now - (TACKLE_PERIOD_MS - tackleRemaining(now, anchor));
+        return checkedAt >= lastRestock && checkedAt <= now;
     }
 
     public long tackleShopRemainingMs() {

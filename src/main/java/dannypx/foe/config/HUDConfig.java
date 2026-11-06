@@ -513,6 +513,10 @@ public class HUDConfig extends Config {
     @Desc("§7Resets every day at 8pm New York time")
     public ValidatedBoolean timersPanelCosmeticStore = new ValidatedBoolean(true);
 
+    @Name("Show your votes")
+    @Desc("§7How many of the 7 sites you've voted on in the last 24 hours (from the VOTE reward lines), and when the first one can be voted again")
+    public ValidatedBoolean timersPanelVote = new ValidatedBoolean(true);
+
     @Name("Show your crew and friends")
     public ValidatedBoolean timersPanelCrew = new ValidatedBoolean(true);
 
