@@ -24,6 +24,11 @@ public final class SessionStatsHandler {
     private final Map<String, Integer> rare = new HashMap<>();
     /// Fish count (this session) at the last catch of each thing, for "fish since".
     private final Map<String, Integer> lastAt = new HashMap<>();
+    /// Catches during each rare pull's event this session (Blood Moon for capsules, thunderstorm
+    /// or supercell for bottles), and that count at the last pull: their "since" only counts
+    /// those catches, like All-Time Stats.
+    private final Map<String, Integer> eventFish = new HashMap<>();
+    private final Map<String, Integer> eventFishAtLast = new HashMap<>();
     /// FOE+'s fishing timer when the session began (-1 = not yet read).
     private long activeAtStart = -1L;
 
@@ -37,10 +42,20 @@ public final class SessionStatsHandler {
         sizes.clear();
         rare.clear();
         lastAt.clear();
+        eventFish.clear();
+        eventFishAtLast.clear();
         activeAtStart = -1L;
     }
 
     public void onFish(String rarity, String variant, String size) {
+        onFish(rarity, variant, size, RareCatchHandler::eventOn);
+    }
+
+    /// Package-private for tests: {@code eventOn} says whether a rare pull's event is on now.
+    void onFish(String rarity, String variant, String size, java.util.function.Predicate<String> eventOn) {
+        for (String key : RareCatchHandler.EVENT_PULLS) {
+            if (eventOn.test(key)) eventFish.merge(key, 1, Integer::sum);
+        }
         fish++;
         add(rarities, key(rarity), "rarity:");
         add(variants, key(variant), "variant:");
@@ -61,6 +76,7 @@ public final class SessionStatsHandler {
     public void onRare(String key, int count) {
         rare.merge(key, Math.max(1, count), Integer::sum);
         lastAt.put("rare:" + key, fish);
+        eventFishAtLast.put(key, eventFish.getOrDefault(key, 0));
     }
 
     public void onQuest() {
@@ -89,6 +105,10 @@ public final class SessionStatsHandler {
     /// Fish caught this session since the last pet / shard / rare pull / variant ("variant:albino")
     /// or size ("size:gigantic"); all of this session's fish when there's been none yet.
     public int since(String what) {
+        if (what.startsWith("rare:") && RareCatchHandler.isEventPull(what.substring(5))) {
+            String key = what.substring(5);
+            return eventFish.getOrDefault(key, 0) - eventFishAtLast.getOrDefault(key, 0);
+        }
         Integer at = lastAt.get(what);
         return at == null ? fish : fish - at;
     }
