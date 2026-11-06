@@ -39,7 +39,6 @@ public class CrewHandler extends Handler {
     boolean isCrewNearby = false;
 
     int leaveDelay = 20;
-    private int idCheckTicks = 0;
 
     public List<Pair<UUID, String>> getCrewListOrdered() {
         return crewListOrdered;
@@ -70,12 +69,6 @@ public class CrewHandler extends Handler {
     public void tick() {
         if(!ScoreboardHandler.instance().getCrew().getString().isBlank()) {
             if(crewListOrdered.isEmpty()) this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
-            if(++idCheckTicks >= 20) {
-                idCheckTicks = 0;
-                if(CrewDataHandler.instance().swapInRealIds(minecraft.getConnection())) {
-                    this.updateCrewOrderedList(CrewDataHandler.instance().getCrewData().crewList);
-                }
-            }
         }
 
         if(minecraft.player != null
@@ -176,7 +169,6 @@ public class CrewHandler extends Handler {
 
     /// [FOE+] CREW Ewiksen is online / went offline (FOE-R's notification box is hidden in FOE+).
     private static void crewChat(String name, boolean online) {
-        if (name == null || name.isBlank()) return; // a head without a name: reopen /crew
         if (!dannypx.foe.config.Configs.hudConfig.crewStatusChat.get()) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.GOLD)
                 .append(dannypx.foe.helper.FoeChat.white(name))

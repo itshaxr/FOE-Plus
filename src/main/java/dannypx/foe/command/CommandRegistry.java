@@ -75,6 +75,7 @@ public class CommandRegistry {
                         .then(command("crew")
                                 .then(command("import").executes(Command.Crew::importCrew))
                                 .then(command("cancel").executes(Command.Crew::cancelCrew))
+                                .then(command("dump").executes(Command.Crew::dumpCrew))
                         )
                         .then(command("reset_to_defaults")
                                 .then(command("button").executes(Command.Reset::resetButton))
@@ -322,6 +323,20 @@ public class CommandRegistry {
                         Minecraft.getInstance().player.connection.sendCommand("c info");
                     }
                 });
+            }
+
+            /// Copies what the last /crew screen held (heads, names, lore, profiles) to the clipboard.
+            public static int dumpCrew(CommandContext<FabricClientCommandSource> context) {
+                String dump = dannypx.foe.handler.fetch.CrewScreenHandler.instance().lastDump();
+                if (dump.isEmpty()) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.RED)
+                            .append(dannypx.foe.helper.FoeChat.text("Open /crew first, then run this again.")));
+                    return 1;
+                }
+                Minecraft.getInstance().keyboardHandler.setClipboard(dump);
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.GREEN)
+                        .append(dannypx.foe.helper.FoeChat.text("/crew details copied to your clipboard")));
+                return 1;
             }
 
             public static int cancelCrew(CommandContext<FabricClientCommandSource> context) {

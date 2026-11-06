@@ -106,23 +106,6 @@ public final class TimersCrewBox {
                 .append(Component.literal("■").withColor(FRIEND_COLOR)).append(Component.literal("Friends").withStyle(ChatFormatting.GRAY));
     }
 
-    /// A name to show: the stored one, else the tab list's, else your friends list's, else "Unknown".
-    private static String nameOf(Minecraft mc, UUID id, String stored, Map<UUID, String> friends) {
-        if (stored != null && !stored.isBlank()) return stored;
-        if (mc.getConnection() != null) {
-            var info = mc.getConnection().getPlayerInfo(id);
-            if (info != null && !info.getProfile().name().isBlank()) return info.getProfile().name();
-        }
-        String friend = friends.get(id);
-        if (friend != null && !friend.isBlank()) return friend;
-        return "Unknown";
-    }
-
-    private static boolean onlineByName(Minecraft mc, String name) {
-        return mc.getConnection() != null && !name.isBlank() && !"Unknown".equals(name)
-                && mc.getConnection().getPlayerInfo(name) != null;
-    }
-
     public static Crew crew() {
         Minecraft mc = Minecraft.getInstance();
         UUID me = mc.player == null ? null : mc.player.getUUID();
@@ -142,40 +125,24 @@ public final class TimersCrewBox {
                             .append(Component.literal(" No Member in Range").withStyle(ChatFormatting.RED));
         }
 
-        String myName = mc.player == null ? "" : mc.player.getGameProfile().name();
         LinkedHashMap<UUID, String> crew = new LinkedHashMap<>();
         if (loaded) {
             for (Pair<UUID, String> m : CrewHandler.instance().getCrewListOrdered()) {
-                // A leftover from before 1.0.40: heads with no id and no name, saved as one entry.
-                if (net.minecraft.util.Util.NIL_UUID.equals(m.value1()) && (m.value2() == null || m.value2().isBlank())) continue;
-                String name = nameOf(mc, m.value1(), m.value2(), friends);
-                if (m.value1().equals(me) || name.equalsIgnoreCase(myName)) continue;
-                crew.put(m.value1(), name);
+                if (!m.value1().equals(me)) crew.put(m.value1(), m.value2());
             }
         }
-        // Friends matched to crew by id, or by name (a crew head's id isn't always the player's).
-        Set<String> crewNames = new HashSet<>();
-        crew.values().forEach(n -> crewNames.add(n.toLowerCase(Locale.ROOT)));
-        Set<String> friendNames = new HashSet<>();
-        friends.values().forEach(n -> { if (n != null) friendNames.add(n.toLowerCase(Locale.ROOT)); });
-
         List<Component> on = new ArrayList<>(), off = new ArrayList<>();
-        int total = 0;
         for (Map.Entry<UUID, String> m : crew.entrySet()) {
-            boolean isOn = FriendsHandler.isOnline(m.getKey()) || onlineByName(mc, m.getValue());
-            boolean friend = friends.containsKey(m.getKey()) || friendNames.contains(m.getValue().toLowerCase(Locale.ROOT));
-            (isOn ? on : off).add(person(m.getValue(), isOn, true, friend));
-            total++;
+            boolean isOn = FriendsHandler.isOnline(m.getKey());
+            (isOn ? on : off).add(person(m.getValue(), isOn, true, friends.containsKey(m.getKey())));
         }
         for (Map.Entry<UUID, String> f : friends.entrySet()) {
-            String name = f.getValue() == null ? "" : f.getValue();
-            if (crew.containsKey(f.getKey()) || f.getKey().equals(me) || crewNames.contains(name.toLowerCase(Locale.ROOT))) continue;
+            if (crew.containsKey(f.getKey()) || f.getKey().equals(me)) continue;
             boolean isOn = FriendsHandler.isOnline(f.getKey());
-            (isOn ? on : off).add(person(nameOf(mc, f.getKey(), name, Map.of()), isOn, false, true));
-            total++;
+            (isOn ? on : off).add(person(f.getValue(), isOn, false, true));
         }
         if (!Configs.inventoryScreenConfig.timersOffline.get()) off.clear();
-        return new Crew(range, on.size(), total, on, off);
+        return new Crew(range, on.size(), crew.size() + (int) friends.keySet().stream().filter(k -> !crew.containsKey(k) && !k.equals(me)).count(), on, off);
     }
 
     /// Draws the box with its right edge at {@code right}, from {@code top}, no lower than

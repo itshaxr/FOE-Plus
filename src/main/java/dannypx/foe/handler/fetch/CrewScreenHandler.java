@@ -28,8 +28,16 @@ public class CrewScreenHandler extends Handler {
     //endregion
 
     //region Methods
+    /// What the last /crew screen held, for /foe crew dump (read only: doesn't change the crew).
+    private String lastDump = "";
+
+    public String lastDump() {
+        return lastDump;
+    }
+
     public void checkCrewInfo(ChestMenu chestMenu) {
         ItemStack crewInfoStack = chestMenu.getSlot(13).getItem();
+        lastDump = dump(chestMenu);
         if(!ScoreboardHandler.instance().getCrew().getString().isBlank()
                 && crewInfoStack.get(DataComponents.LORE) != null
         ) {
@@ -44,19 +52,9 @@ public class CrewScreenHandler extends Handler {
                     ItemStack itemStack = chestMenu.getSlot(i).getItem();
                     if(itemStack.getItem() == Items.PLAYER_HEAD
                             && itemStack.get(DataComponents.PROFILE) != null
+                            && itemStack.get(DataComponents.PROFILE).partialProfile().id() != null
                     ) {
-                        var profile = itemStack.get(DataComponents.PROFILE).partialProfile();
-                        String name = profile.name();
-                        // Some heads come without a name in their profile: use the one on the item.
-                        if (name == null || name.isBlank()) name = nameFromText(itemStack.getHoverName().getString());
-                        UUID id = profile.id();
-                        // A head with only a skin has the all-zero id: every such head would land on
-                        // one entry (one blank member, the rest lost). Find the player by name instead.
-                        if (id == null || net.minecraft.util.Util.NIL_UUID.equals(id)) {
-                            if (name == null || name.isBlank()) continue;
-                            id = idForName(name);
-                        }
-                        crewMembers.put(id, Pair.of(name == null ? "" : name, itemStack));
+                        crewMembers.put(itemStack.get(DataComponents.PROFILE).partialProfile().id(), Pair.of(itemStack.get(DataComponents.PROFILE).partialProfile().name(), itemStack));
                     }
                 }
 
@@ -73,39 +71,28 @@ public class CrewScreenHandler extends Handler {
             }
         }
     }
-    /// The player's id from the tab list, else from the crew saved before, else one made from the
-    /// name (swapped for the real one when they come online).
-    private static UUID idForName(String name) {
-        var conn = net.minecraft.client.Minecraft.getInstance().getConnection();
-        if (conn != null) {
-            var info = conn.getPlayerInfo(name);
-            if (info != null) return info.getProfile().id();
+    /// Everything on the /crew screen's info item and member heads, as text.
+    private static String dump(ChestMenu menu) {
+        StringBuilder out = new StringBuilder("FOE+ /crew dump\n");
+        for (int i = 0; i < menu.slots.size() && i < 54; i++) {
+            ItemStack stack = menu.getSlot(i).getItem();
+            if (stack.isEmpty() || (i != 13 && stack.getItem() != Items.PLAYER_HEAD)) continue;
+            out.append("\n[slot ").append(i).append("] ").append(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()))
+                    .append("\nName: ").append(stack.getHoverName().getString());
+            var lore = stack.get(DataComponents.LORE);
+            if (lore != null) lore.lines().forEach(l -> out.append("\nLore: ").append(l.getString()));
+            var profile = stack.get(DataComponents.PROFILE);
+            if (profile != null) {
+                var p = profile.partialProfile();
+                out.append("\nProfile: id=").append(p.id()).append(" name='").append(p.name())
+                        .append("' optName=").append(profile.name().orElse("(none)"))
+                        .append(" properties=").append(p.properties().size());
+            }
+            var data = stack.get(DataComponents.CUSTOM_DATA);
+            if (data != null) out.append("\nData: ").append(data.copyTag());
+            out.append('\n');
         }
-        for (var e : CrewDataHandler.instance().getCrewData().crewList.entrySet()) {
-            String saved = e.getValue().value1();
-            if (saved != null && saved.equalsIgnoreCase(name) && !net.minecraft.util.Util.NIL_UUID.equals(e.getKey())) return e.getKey();
-        }
-        return nameId(name);
-    }
-
-    /// The made-up id for a name (the same one Minecraft uses for offline players).
-    public static UUID nameId(String name) {
-        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    }
-
-    private static final java.util.regex.Pattern MC_NAME = java.util.regex.Pattern.compile("[A-Za-z0-9_]{3,16}");
-
-    /// "[ADMIRAL] WatDaFrickle" (or with rank glyphs and colours) → "WatDaFrickle": the last
-    /// Minecraft-style name in the text, or "" when there's none. Public for the crew list.
-    public static String nameFromText(String text) {
-        if (text == null) return "";
-        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
-        if (plain == null) return "";
-        plain = plain.replaceAll("[\\uE000-\\uF8FF]", " ");
-        java.util.regex.Matcher m = MC_NAME.matcher(plain);
-        String last = "";
-        while (m.find()) last = m.group();
-        return last;
+        return out.toString();
     }
     //endregion
 
