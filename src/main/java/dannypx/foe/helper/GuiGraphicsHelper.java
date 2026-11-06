@@ -125,39 +125,40 @@ public class GuiGraphicsHelper {
         return it.next();
     }
 
+    /// A left-to-right gradient as one vertical gradient turned on its side (one draw instead of
+    /// one per column of pixels).
     public static void drawHorizontalGradient(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int leftColor, int rightColor) {
-        int width = x2 - x1;
-        for (int i = 0; i < width; i++) {
-            float t = i / (float) (width - 1);
-            int r = (int) ( ((leftColor >> 16 & 0xFF) * (1 - t)) + ((rightColor >> 16 & 0xFF) * t) );
-            int g = (int) ( ((leftColor >> 8 & 0xFF) * (1 - t)) + ((rightColor >> 8 & 0xFF) * t) );
-            int b = (int) ( ((leftColor & 0xFF) * (1 - t)) + ((rightColor & 0xFF) * t) );
-            int a = (int) ( ((leftColor >> 24 & 0xFF) * (1 - t)) + ((rightColor >> 24 & 0xFF) * t) );
-
-            int color = (a << 24) | (r << 16) | (g << 8) | b;
-            guiGraphics.fill(x1 + i, y1, x1 + i + 1, y2, color);
+        int width = x2 - x1, height = y2 - y1;
+        if (width <= 0 || height <= 0) return;
+        guiGraphics.pose().pushMatrix();
+        try {
+            guiGraphics.pose().translate(x1, y2);
+            guiGraphics.pose().rotate((float) (-Math.PI / 2));
+            guiGraphics.fillGradient(0, 0, height, width, leftColor, rightColor);
+        } finally {
+            guiGraphics.pose().popMatrix();
         }
     }
 
+    /// A 1px line as one thin rectangle turned to point from (x1, y1) to (x2, y2) (one draw
+    /// instead of one per pixel).
     public static void drawLine(GuiGraphics guiGraphics,
                                 int x1, int y1,
                                 int x2, int y2,
                                 int color) {
-
-        int dx = Math.abs(x2 - x1);
-        int dy = -Math.abs(y2 - y1);
-        int sx = x1 < x2 ? 1 : -1;
-        int sy = y1 < y2 ? 1 : -1;
-        int err = dx + dy;
-
-        while (true) {
-            guiGraphics.fill(x1, y1, x1 + 1, y1 + 1, color);
-
-            if (x1 == x2 && y1 == y2) break;
-            int e2 = 2 * err;
-            if (e2 >= dy) { err += dy; x1 += sx; }
-            if (e2 <= dx) { err += dx; y1 += sy; }
+        int dx = x2 - x1, dy = y2 - y1;
+        if (dx == 0 || dy == 0) {
+            guiGraphics.fill(Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2) + 1, Math.max(y1, y2) + 1, color);
+            return;
+        }
+        float length = (float) Math.hypot(dx, dy);
+        guiGraphics.pose().pushMatrix();
+        try {
+            guiGraphics.pose().translate(x1 + 0.5f, y1 + 0.5f);
+            guiGraphics.pose().rotate((float) Math.atan2(dy, dx));
+            guiGraphics.fill(0, -1, Math.round(length) + 1, 0, color);
+        } finally {
+            guiGraphics.pose().popMatrix();
         }
     }
 }
-
