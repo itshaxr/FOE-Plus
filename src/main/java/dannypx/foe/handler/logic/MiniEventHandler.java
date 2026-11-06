@@ -132,6 +132,8 @@ public class MiniEventHandler {
             return true;
         }
         if (!capturing) {
+            // The blank divider bar the server puts above its answer (spaces with a strike-through).
+            if (ours && (text.isBlank() || SEPARATOR.matcher(text).matches())) return true;
             // Ours but not an event answer ("There is no mini event right now"): none is on.
             if (ours && text.toLowerCase(java.util.Locale.ROOT).contains("mini event")) {
                 endsAt = 0L;
