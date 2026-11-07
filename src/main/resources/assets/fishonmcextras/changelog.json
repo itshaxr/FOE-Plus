@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.68+1.21.11",
+      "name": "FOE+ 1.0.68+1.21.11",
+      "datePublished": "2026-11-07",
+      "changelog": "## What's Changed\n- Fabled events caught while you were offline now clear from the Events panel: when FOE+'s quiet /events check (or one you type) lists no Fabled event, it's over by @phckd\n- FOE+'s first quiet /events check after joining now runs about 12 seconds in, instead of 25 by @phckd"
+    },
+    {
       "versionNumber": "1.0.67+1.21.11",
       "name": "FOE+ 1.0.67+1.21.11",
       "datePublished": "2026-11-06",

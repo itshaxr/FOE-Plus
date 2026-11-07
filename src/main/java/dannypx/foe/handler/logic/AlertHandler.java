@@ -368,6 +368,8 @@ public class AlertHandler {
     private boolean fabledActive = false;
     private long fabledStartedAt = 0L;
     private String fabledLocationName = "";
+    /// When we last heard the Fabled event is on (its announcement or "is active at").
+    private long fabledNotedAt = 0L;
 
     public boolean isFabledActive() {
         return fabledActive;
@@ -383,6 +385,7 @@ public class AlertHandler {
         Matcher active = FABLED_ACTIVE.matcher(text);
         if (visit.matches() || active.matches()) {
             String location = (visit.matches() ? visit.group(1) : active.group(1)).trim();
+            fabledNotedAt = now;
             if (!fabledActive) {
                 fabledActive = true;
                 // "Visit the X to ..." is the announcement itself; "is active at" is the reminder
@@ -406,6 +409,15 @@ public class AlertHandler {
             fabledActive = false;
             announceFabledCaught(new FabledRecord(fabledStartedAt, now, fabledLocationName, catcher));
         }
+    }
+
+    /// An /events answer from {@code answeredAt} listed no Fabled event: the one we still show was
+    /// caught (or ended) while you weren't on. Not when we heard it's on after that answer began.
+    public void clearFabled(long answeredAt) {
+        if (!fabledActive || fabledNotedAt >= answeredAt) return;
+        fabledActive = false;
+        fabledStartedAt = 0L;
+        fabledLocationName = "";
     }
 
     private void announceFabledCaught(FabledRecord record) {

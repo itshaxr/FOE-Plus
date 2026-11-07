@@ -32,7 +32,7 @@ public class EventTimesHandler {
 
     static final long FRENZY_MS = 60L * 60L * 1000L;
     private static final long REFRESH_MS = 15L * 60L * 1000L;
-    private static final long FIRST_CHECK_MS = 25_000L;
+    private static final long FIRST_CHECK_MS = 12_000L;
     private static final long HIDE_WINDOW_MS = 3_000L;
 
     static final Pattern HEADER = Pattern.compile("^\\s*EVENT TIMES\\s*\\(\\d+/\\d+\\)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -53,6 +53,11 @@ public class EventTimesHandler {
     private static final Pattern BRACKETS = Pattern.compile("\\(([^)]*)\\)");
     private static final Pattern ENDED = Pattern.compile("\\b(ended|over|finished|expired)\\b", Pattern.CASE_INSENSITIVE);
     static final Pattern EVENT_LINE = Pattern.compile("^\\s*[A-Z][A-Z ]+\\s*»");
+    /// Any "FABLED » ..." line: /events lists an active Fabled event as
+    /// "FABLED » A Fabled Event is active at Danube River".
+    static final Pattern FABLED_LINE = Pattern.compile("^\\s*FABLED\\s*[»>]", Pattern.CASE_INSENSITIVE);
+    /// The whole /events answer arrives at once; anything this long after its header is something else.
+    static final long ANSWER_MS = 2_000L;
     static final Pattern FRENZY_OVER = Pattern.compile("^\\s*FISH FRENZY\\s*[»>].*\\b(ended|over|finished)\\b.*$", Pattern.CASE_INSENSITIVE);
 
     /// An event shown by a symbol on the boss bar that lasts a set time (Blooming Oasis ♣,
@@ -103,12 +108,17 @@ public class EventTimesHandler {
     private long frenzyEndsAt = 0L;
     private long joinedAt = 0L, lastCheckAt = 0L, hideUntil = 0L;
     private boolean inOurAnswer = false;
+    /// The /events answer being read (ours or one you typed): when its header came (0 = none),
+    /// whether it was the whole list ("(1/1)") and whether it listed a Fabled event.
+    private long answerAt = 0L;
+    private boolean answerWhole = false, answerListsFabled = false;
 
     /// From chat: true when the line is part of our own quiet /events answer (hidden).
     public boolean onGameMessage(net.minecraft.network.chat.Component message) {
         String text = ChatFormatting.stripFormatting(message.getString());
         if (text == null) return false;
         long now = System.currentTimeMillis();
+        noteAnswer(text, now);
         boolean ours = now < hideUntil;
         // The server pads its answer with blank lines (before the header too): inside our own
         // answer's window they're hidden, or an empty chat line shows every 15 minutes.
@@ -257,14 +267,40 @@ public class EventTimesHandler {
         return any ? ms : -1;
     }
 
+    /// Package-private for tests: follows an /events answer, whoever ran it.
+    void noteAnswer(String text, long now) {
+        if (HEADER.matcher(text).matches()) {
+            answerAt = now;
+            answerWhole = text.replaceAll("\\s", "").contains("(1/1)");
+            answerListsFabled = false;
+        } else if (answerAt > 0L && now - answerAt <= ANSWER_MS && FABLED_LINE.matcher(text).find()) {
+            answerListsFabled = true;
+        }
+    }
+
+    /// Package-private for tests: once an /events answer is over, true when it was the whole list
+    /// and had no Fabled event in it (so any Fabled event FOE+ still shows is over). Each answer
+    /// is only looked at once.
+    boolean answerHadNoFabled(long now) {
+        if (answerAt == 0L || now - answerAt <= ANSWER_MS) return false;
+        boolean none = answerWhole && !answerListsFabled;
+        answerAt = 0L;
+        return none;
+    }
+
     /// Quiet /events now and then (only when nothing is open and you haven't just typed).
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         long now = System.currentTimeMillis();
         if (mc.player == null || mc.getConnection() == null || !TabOverlayHandler.instance().isInInstance()) {
             joinedAt = 0L;
+            answerAt = 0L;
             return;
         }
+        // A Fabled event caught while you were away never says so in chat: /events not listing it
+        // is how we know it's over.
+        long answeredAt = answerAt;
+        if (answerHadNoFabled(now)) AlertHandler.instance().clearFabled(answeredAt);
         if (joinedAt == 0L) joinedAt = now;
         try {
             onWeather(dannypx.foe.handler.fetch.BossEventHandler.instance().getWeather().getString(), now);
