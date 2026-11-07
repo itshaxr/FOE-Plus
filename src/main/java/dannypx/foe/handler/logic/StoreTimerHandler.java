@@ -101,15 +101,21 @@ public class StoreTimerHandler {
                 if (booster.luck()) saved().luckBoosterEnds = boosterEnd(saved().luckBoosterEnds, now, booster.ms());
                 else saved().scaleBoosterEnds = boosterEnd(saved().scaleBoosterEnds, now, booster.ms());
                 save();
+                // Luck & Scale come from /menu: read them again once the booster has kicked in.
+                SilentMenuHandler.instance().request(BOOSTER_REFRESH_DELAY_MS);
             }
         }
     }
 
-    /// "{name} has activated a global Luck booster for 30 minutes": which kind and how long.
+    /// "BOOSTER » makophobia_ has activated a Global Scale Booster » 2x for 60m! (/tipall)":
+    /// which kind and how long.
     record Booster(boolean luck, long ms) {}
 
+    static final long BOOSTER_REFRESH_DELAY_MS = 3_000L;
+
     private static final java.util.regex.Pattern BOOSTER = java.util.regex.Pattern.compile(
-            "has activated an? global (luck|scale) booster for (.+?)[.!]?\\s*$", java.util.regex.Pattern.CASE_INSENSITIVE);
+            "has activated an? global (luck|scale) booster\\b(?:\\s*[»>]?\\s*[\\d.]+\\s*x)?\\s*for\\s+([^!.(]+)",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
 
     /// Package-private for tests.
     static Booster parseBooster(String plain) {

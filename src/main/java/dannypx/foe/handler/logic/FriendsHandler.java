@@ -114,6 +114,21 @@ public class FriendsHandler {
         return null;
     }
 
+    /// A friend who's also in your crew gets the CREW alert (when that's on), so not a FRIEND
+    /// one as well. Package-private for tests.
+    static boolean announcedAsCrew(UUID uuid, String name) {
+        if (!Configs.hudConfig.crewStatusChat.get()) return false;
+        return inCrew(uuid, name, CrewHandler.instance().getCrewListOrdered());
+    }
+
+    static boolean inCrew(UUID uuid, String name, java.util.List<dannypx.foe.type.tuple.Pair<UUID, String>> crew) {
+        for (var m : crew) {
+            if (m.value1().equals(uuid)) return true;
+            if (name != null && !name.isBlank() && name.equalsIgnoreCase(m.value2())) return true;
+        }
+        return false;
+    }
+
     public void onPlayerJoin(UUID uuid) {
         if (!isFriend(uuid) || !ConnectionHandler.instance().isOnServer() || !LoadingHandler.instance().isLoadingDone()) return;
         if (pendingLeaves.remove(uuid) != null) return; // a server switch, not a real leave
@@ -123,7 +138,7 @@ public class FriendsHandler {
             friends().put(uuid, info.getProfile().name());
             save();
         }
-        if (Configs.hudConfig.friendStatusChat.get()) {
+        if (Configs.hudConfig.friendStatusChat.get() && !announcedAsCrew(uuid, friends().get(uuid))) {
             FoeChat.send(FoeChat.line("FRIEND", FoeChat.AQUA).append(FoeChat.white(friends().get(uuid))).append(FoeChat.text(" is online")));
         }
     }
@@ -141,7 +156,7 @@ public class FriendsHandler {
             if (now - e.getValue() < LEAVE_DELAY_MS) continue;
             it.remove();
             if (isOnline(e.getKey())) continue;
-            if (Configs.hudConfig.friendStatusChat.get()) {
+            if (Configs.hudConfig.friendStatusChat.get() && !announcedAsCrew(e.getKey(), friends().get(e.getKey()))) {
                 FoeChat.send(FoeChat.line("FRIEND", FoeChat.AQUA).append(FoeChat.white(friends().get(e.getKey()))).append(FoeChat.text(" went offline")));
             }
         }

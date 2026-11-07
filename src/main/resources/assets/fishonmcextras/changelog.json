@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.64+1.21.11",
+      "name": "FOE+ 1.0.64+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Luck & Scale: the booster timer works with the real chat line ('has activated a Global Scale Booster » 2x for 60m!'); Luck & Scale also re-read themselves from /menu a few seconds after a booster is popped and when it runs out by @phckd\n- A friend who's in your crew only gets the CREW join/leave alert, not a FRIEND one as well by @phckd"
+    },
+    {
       "versionNumber": "1.0.63+1.21.11",
       "name": "FOE+ 1.0.63+1.21.11",
       "datePublished": "2026-11-06",
