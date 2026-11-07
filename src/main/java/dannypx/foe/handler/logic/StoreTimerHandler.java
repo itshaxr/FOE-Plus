@@ -112,7 +112,9 @@ public class StoreTimerHandler {
                 if (s.boosterMultipliers == null) s.boosterMultipliers = new java.util.HashMap<>();
                 if (booster.multiplier() > 0) s.boosterMultipliers.put(booster.kind(), booster.multiplier());
                 save();
-                // Luck & Scale come from /menu: read them again once the booster has kicked in.
+                // Confirm the exact time with /active (boosters stack), and read Luck & Scale from
+                // /menu again once a Luck or Scale booster has kicked in.
+                ActiveBoostersHandler.instance().checkSoon(ActiveBoostersHandler.BOOSTER_LINE_CHECK_DELAY_MS);
                 if (booster.luck() || booster.kind().equals("scale")) SilentMenuHandler.instance().request(BOOSTER_REFRESH_DELAY_MS);
             }
         }

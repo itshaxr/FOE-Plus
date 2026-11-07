@@ -39,6 +39,9 @@ public final class ActiveBoostersHandler {
             Pattern.CASE_INSENSITIVE);
 
     private long joinedAt = 0L, lastCheckAt = 0L, hideUntil = 0L;
+    /// An extra check soon (after a booster's chat line, or when a booster timer runs out); 0 = none.
+    private long checkAt = 0L;
+    private final java.util.Map<String, Boolean> wasOn = new java.util.HashMap<>();
     /// Our quiet check is waiting for its answer: which boosters it listed so far.
     private boolean answering = false, sawAnswer = false;
     private final Set<String> listed = new HashSet<>();
@@ -47,9 +50,19 @@ public final class ActiveBoostersHandler {
 
     /// From chat: true when the line is part of our own quiet /active answer (hidden).
     public boolean onGameMessage(Component message) {
-        String text = ChatFormatting.stripFormatting(message.getString());
-        if (text == null) return false;
+        String whole = ChatFormatting.stripFormatting(message.getString());
+        if (whole == null) return false;
         boolean ours = System.currentTimeMillis() < hideUntil;
+        // The answer may come as one message with line breaks: every line is read.
+        boolean hide = false;
+        for (String line : whole.split("\n")) {
+            if (onLine(line, ours)) hide = true;
+        }
+        return hide;
+    }
+
+    /// One line; true when it's part of our own quiet answer (hidden). Package-private for tests.
+    boolean onLine(String text, boolean ours) {
         Booster b = parse(text);
         if (b != null) {
             StoreTimerHandler.instance().syncBooster(b.kind(), b.multiplier(), b.msLeft());
@@ -105,10 +118,18 @@ public final class ActiveBoostersHandler {
             return;
         }
         if (joinedAt == 0L) joinedAt = now;
+        // A booster timer just ran out: another may be queued behind it, so ask the server.
+        for (String kind : StoreTimerHandler.BOOSTER_KINDS) {
+            boolean on = StoreTimerHandler.instance().boosterRemainingMs(kind) > 0;
+            if (Boolean.TRUE.equals(wasOn.get(kind)) && !on) checkSoon(ENDED_CHECK_DELAY_MS);
+            wasOn.put(kind, on);
+        }
         if (!Configs.hudConfig.eventsAutoRefresh.get()) return;
-        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= REFRESH_MS;
+        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS
+                : (checkAt != 0L && now >= checkAt) || now - lastCheckAt >= REFRESH_MS;
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
         lastCheckAt = now;
+        checkAt = 0L;
         hideUntil = now + HIDE_WINDOW_MS;
         answering = true;
         sawAnswer = false;
@@ -120,6 +141,15 @@ public final class ActiveBoostersHandler {
     /// The server said to wait: check again after that.
     public void retryIn(long ms) {
         answering = false;
-        lastCheckAt = System.currentTimeMillis() - REFRESH_MS + ms;
+        checkSoon(ms);
     }
+
+    /// Check /active again in {@code ms} (the earliest asked for wins).
+    public void checkSoon(long ms) {
+        long at = System.currentTimeMillis() + ms;
+        if (checkAt == 0L || at < checkAt) checkAt = at;
+    }
+
+    static final long BOOSTER_LINE_CHECK_DELAY_MS = 5_000L;
+    private static final long ENDED_CHECK_DELAY_MS = 2_000L;
 }
