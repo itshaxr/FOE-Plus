@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.65+1.21.11",
+      "name": "FOE+ 1.0.65+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Events panel: global Money and XP boosters show with their multiplier and time left, counting down live (Luck and Scale boosters stay next to their numbers on the Luck & Scale panel) by @phckd\n- FOE+ checks /active quietly after you join and every 15 minutes (its answer hidden), so every booster timer is exact, including boosters popped before you logged in; ones that have ended are cleared by @phckd"
+    },
+    {
       "versionNumber": "1.0.64+1.21.11",
       "name": "FOE+ 1.0.64+1.21.11",
       "datePublished": "2026-11-06",

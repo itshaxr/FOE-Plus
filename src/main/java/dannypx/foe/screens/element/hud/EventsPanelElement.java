@@ -55,6 +55,31 @@ public class EventsPanelElement extends PanelElement {
         return Component.literal("ᴇᴠᴇɴᴛѕ").withStyle(ChatFormatting.BOLD);
     }
 
+    static final List<String> EVENT_BOOSTERS = List.of("money", "xp");
+
+    /// "⚡ Money Booster 2x · 59:12": a global booster and its time left, counting down.
+    static Component booster(String kind, double multiplier, long msLeft) {
+        String name = switch (kind) {
+            case "luck" -> "Luck";
+            case "scale" -> "Scale";
+            case "xp" -> "XP";
+            default -> "Money";
+        };
+        // The colours /active gives them.
+        int color = switch (kind) {
+            case "luck" -> 0x00AAAA;
+            case "scale" -> 0x5555FF;
+            case "xp" -> 0x55FFFF;
+            default -> 0x55FF55;
+        };
+        String times = multiplier <= 0 ? "" : " " + (multiplier == Math.rint(multiplier)
+                ? String.valueOf((long) multiplier) : String.valueOf(multiplier)) + "x";
+        return join(Component.literal("⚡ " + name + " Booster").withColor(color),
+                Component.literal(times).withStyle(ChatFormatting.WHITE),
+                Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
+                Component.literal(StoreTimerHandler.clock(msLeft)).withStyle(ChatFormatting.GOLD));
+    }
+
     /// " · Shards 1 in 25": what the event does, unless descriptions are turned off.
     private static Component description(String text) {
         if (!Configs.hudConfig.eventsShowDescriptions.get()) return Component.empty();
@@ -103,6 +128,13 @@ public class EventsPanelElement extends PanelElement {
         if (events.frenzyActive()) lines.add(frenzy(events.frenzyLocation(), events.frenzyRemainingMs()));
         if (events.oasisActive()) lines.add(oasis(events.oasisRemainingMs(), events.oasisExact()));
         if (events.goldRushActive()) lines.add(goldRush(events.goldRushRemainingMs(), events.goldRushExact()));
+        StoreTimerHandler boosters = StoreTimerHandler.instance();
+        // Money and XP boosters here; Luck and Scale ones show next to their numbers on the
+        // Luck & Scale panel.
+        for (String kind : EVENT_BOOSTERS) {
+            long left = boosters.boosterRemainingMs(kind);
+            if (left > 0) lines.add(booster(kind, boosters.boosterMultiplier(kind), left));
+        }
         AlertHandler alerts = AlertHandler.instance();
         if (alerts.isFabledActive()) {
             long since = -1;
@@ -116,6 +148,7 @@ public class EventsPanelElement extends PanelElement {
     protected List<Component> previewLines() {
         return List.of(frenzy("Hawaii", 33 * 60_000L + 37_000L), oasis(14 * 60_000L + 30_000L, false),
                 goldRush(11 * 60_000L + 12_000L, false),
+                booster("money", 2, 59 * 60_000L + 12_000L),
                 fabled("Danube River", 12 * 60_000L + 3_000L));
     }
 }

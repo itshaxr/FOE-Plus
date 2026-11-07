@@ -44,6 +44,10 @@ public class StoreTimerHandler {
         /// When the global Luck / Scale boosters run out (0 = none).
         long luckBoosterEnds = 0L;
         long scaleBoosterEnds = 0L;
+        /// The XP and Money boosters (for the Events panel), and each booster's multiplier.
+        long xpBoosterEnds = 0L;
+        long moneyBoosterEnds = 0L;
+        java.util.Map<String, Double> boosterMultipliers = new java.util.HashMap<>();
         /// When each vote in the last 24 hours went through, oldest first.
         java.util.List<Long> votes = new java.util.ArrayList<>();
     }
@@ -98,32 +102,53 @@ public class StoreTimerHandler {
             Booster booster = parseBooster(plain);
             if (booster != null) {
                 long now = System.currentTimeMillis();
-                if (booster.luck()) saved().luckBoosterEnds = boosterEnd(saved().luckBoosterEnds, now, booster.ms());
-                else saved().scaleBoosterEnds = boosterEnd(saved().scaleBoosterEnds, now, booster.ms());
+                Saved s = saved();
+                switch (booster.kind()) {
+                    case "luck" -> s.luckBoosterEnds = boosterEnd(s.luckBoosterEnds, now, booster.ms());
+                    case "scale" -> s.scaleBoosterEnds = boosterEnd(s.scaleBoosterEnds, now, booster.ms());
+                    case "xp" -> s.xpBoosterEnds = boosterEnd(s.xpBoosterEnds, now, booster.ms());
+                    default -> s.moneyBoosterEnds = boosterEnd(s.moneyBoosterEnds, now, booster.ms());
+                }
+                if (s.boosterMultipliers == null) s.boosterMultipliers = new java.util.HashMap<>();
+                if (booster.multiplier() > 0) s.boosterMultipliers.put(booster.kind(), booster.multiplier());
                 save();
                 // Luck & Scale come from /menu: read them again once the booster has kicked in.
-                SilentMenuHandler.instance().request(BOOSTER_REFRESH_DELAY_MS);
+                if (booster.luck() || booster.kind().equals("scale")) SilentMenuHandler.instance().request(BOOSTER_REFRESH_DELAY_MS);
             }
         }
     }
 
     /// "BOOSTER » makophobia_ has activated a Global Scale Booster » 2x for 60m! (/tipall)":
     /// which kind and how long.
-    record Booster(boolean luck, long ms) {}
+    record Booster(String kind, double multiplier, long ms) {
+        /// "luck", "scale", "xp" or "money".
+        public boolean luck() {
+            return kind.equals("luck");
+        }
+    }
+
+    /// The global boosters, in the order the Events panel lists them.
+    public static final java.util.List<String> BOOSTER_KINDS = java.util.List.of("luck", "scale", "money", "xp");
 
     static final long BOOSTER_REFRESH_DELAY_MS = 3_000L;
 
     private static final java.util.regex.Pattern BOOSTER = java.util.regex.Pattern.compile(
-            "has activated an? global (luck|scale) booster\\b(?:\\s*[»>]?\\s*[\\d.]+\\s*x)?\\s*for\\s+([^!.(]+)",
+            "has activated an? global (luck|scale|xp|money) booster\\b(?:\\s*[»>]?\\s*([\\d.]+)\\s*x)?\\s*for\\s+([^!(]+?)\\s*(?:[!(]|\\.?\\s*$)",
             java.util.regex.Pattern.CASE_INSENSITIVE);
 
     /// Package-private for tests.
     static Booster parseBooster(String plain) {
         java.util.regex.Matcher m = BOOSTER.matcher(plain.trim());
         if (!m.find()) return null;
-        long ms = EventTimesHandler.parseDuration(m.group(2));
+        long ms = EventTimesHandler.parseDuration(m.group(3));
         if (ms <= 0) return null;
-        return new Booster(m.group(1).equalsIgnoreCase("luck"), ms);
+        double multiplier = 0;
+        try {
+            if (m.group(2) != null) multiplier = Double.parseDouble(m.group(2));
+        } catch (NumberFormatException e) {
+            multiplier = 0;
+        }
+        return new Booster(m.group(1).toLowerCase(java.util.Locale.ROOT), multiplier, ms);
     }
 
     /// A new booster while one is running adds its time on top (they queue up).
@@ -133,8 +158,54 @@ public class StoreTimerHandler {
 
     /// Time left on the global Luck (or Scale) booster, 0 when none is on.
     public long boosterRemainingMs(boolean luck) {
-        long end = luck ? saved().luckBoosterEnds : saved().scaleBoosterEnds;
+        return boosterRemainingMs(luck ? "luck" : "scale");
+    }
+
+    /// Time left on a global booster ("luck", "scale", "xp", "money"), 0 when none is on.
+    public long boosterRemainingMs(String kind) {
+        Saved s = saved();
+        long end = switch (kind) {
+            case "luck" -> s.luckBoosterEnds;
+            case "scale" -> s.scaleBoosterEnds;
+            case "xp" -> s.xpBoosterEnds;
+            default -> s.moneyBoosterEnds;
+        };
         return Math.max(0L, end - System.currentTimeMillis());
+    }
+
+    /// /active says how long a booster has left: set it to exactly that.
+    public void syncBooster(String kind, double multiplier, long msLeft) {
+        Saved s = saved();
+        long end = System.currentTimeMillis() + Math.max(0L, msLeft);
+        switch (kind) {
+            case "luck" -> s.luckBoosterEnds = end;
+            case "scale" -> s.scaleBoosterEnds = end;
+            case "xp" -> s.xpBoosterEnds = end;
+            default -> s.moneyBoosterEnds = end;
+        }
+        if (s.boosterMultipliers == null) s.boosterMultipliers = new java.util.HashMap<>();
+        if (multiplier > 0) s.boosterMultipliers.put(kind, multiplier);
+        save();
+    }
+
+    /// /active doesn't list it: that booster isn't on.
+    public void clearBooster(String kind) {
+        if (boosterRemainingMs(kind) <= 0) return;
+        Saved s = saved();
+        switch (kind) {
+            case "luck" -> s.luckBoosterEnds = 0L;
+            case "scale" -> s.scaleBoosterEnds = 0L;
+            case "xp" -> s.xpBoosterEnds = 0L;
+            default -> s.moneyBoosterEnds = 0L;
+        }
+        save();
+    }
+
+    /// The booster's multiplier (2 for "2x"), 0 when unknown.
+    public double boosterMultiplier(String kind) {
+        Saved s = saved();
+        if (s.boosterMultipliers == null) return 0;
+        return s.boosterMultipliers.getOrDefault(kind, 0.0);
     }
 
     /// "VOTE » You received a Rare Bait Box" (sometimes "... and an Epic Chummer"): one vote.

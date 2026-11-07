@@ -132,6 +132,8 @@ public class SilentMenuHandler {
             EventTimesHandler.instance().retryIn(retryMs);
         } else if (lastBackgroundCommand.equals("minievent")) {
             MiniEventHandler.instance().retryIn(retryMs);
+        } else if (lastBackgroundCommand.equals("active")) {
+            ActiveBoostersHandler.instance().retryIn(retryMs);
         }
         lastBackgroundCommandAt = 0L;
         return true;

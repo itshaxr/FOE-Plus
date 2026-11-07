@@ -59,6 +59,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 overlay || (!dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
                         && !dannypx.foe.handler.logic.CommunityEventHandler.instance().onGameMessage(message.getString())
                         && !dannypx.foe.handler.logic.EventTimesHandler.instance().onGameMessage(message)
+                        && !dannypx.foe.handler.logic.ActiveBoostersHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.MiniEventHandler.instance().onGameMessage(message)
                         && ContestTrackerHandler.instance().filterGameMessage(message)));
         ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
@@ -213,6 +214,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 dannypx.foe.handler.logic.AlertHandler.instance().tick();
                 dannypx.foe.handler.logic.CommunityEventHandler.instance().tick();
                 dannypx.foe.handler.logic.EventTimesHandler.instance().tick();
+                dannypx.foe.handler.logic.ActiveBoostersHandler.instance().tick();
                 dannypx.foe.handler.logic.MiniEventHandler.instance().tick();
                 dannypx.foe.handler.logic.BobberTimerHandler.instance().tick();
                 dannypx.foe.handler.logic.SessionStatsHandler.instance().tick();

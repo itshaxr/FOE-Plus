@@ -516,7 +516,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat alertPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Events Panel")
-    @Desc("§7A Fish Frenzy (where and how long is left of its hour), a Blooming Oasis, a Gold Rush, and an active Fabled event (until it's caught)")
+    @Desc("§7A Fish Frenzy (where and how long is left of its hour), a Blooming Oasis, a Gold Rush, an active Fabled event (until it's caught), and global Money / XP boosters with their time left")
     public ConfigGroup eventsPanelGroup = new ConfigGroup("events_panel_group");
 
     @Name("Show Events Panel")
@@ -527,7 +527,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean eventsShowDescriptions = new ValidatedBoolean(true);
 
     @Name("Check /events quietly now and then")
-    @Desc("§7Every 15 minutes, never while a menu is open; its answer is hidden. Syncs the frenzy and the Tackle Shop / Cosmetic Store timers")
+    @Desc("§7/events and /active, after you join and every 15 minutes, never while a menu is open; their answers are hidden. Syncs the frenzy, the Tackle Shop / Cosmetic Store timers and the booster timers")
     public ValidatedBoolean eventsAutoRefresh = new ValidatedBoolean(true);
 
     @Name("X Position in %")
