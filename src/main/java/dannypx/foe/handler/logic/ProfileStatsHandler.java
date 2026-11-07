@@ -92,7 +92,7 @@ public class ProfileStatsHandler {
         // A global booster just ran out: read Luck & Scale again.
         boolean luck = StoreTimerHandler.instance().boosterRemainingMs(true) > 0;
         boolean scale = StoreTimerHandler.instance().boosterRemainingMs(false) > 0;
-        if ((luckBoosted && !luck) || (scaleBoosted && !scale)) SilentMenuHandler.instance().request(StoreTimerHandler.BOOSTER_REFRESH_DELAY_MS);
+        if ((luckBoosted && !luck) || (scaleBoosted && !scale)) SilentMenuHandler.instance().requestSoon(StoreTimerHandler.BOOSTER_REFRESH_DELAY_MS);
         luckBoosted = luck;
         scaleBoosted = scale;
         if (!(mc.screen instanceof AbstractContainerScreen<?> screen)) return;

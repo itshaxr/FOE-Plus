@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.67+1.21.11",
+      "name": "FOE+ 1.0.67+1.21.11",
+      "datePublished": "2026-11-06",
+      "changelog": "## What's Changed\n- Luck & Scale update within seconds when a Luck or Scale booster starts or ends, even while you keep fishing (the re-read used to wait until you stopped casting) by @phckd\n- The first quiet /active check runs about 5 seconds after you join (was 30) by @phckd"
+    },
+    {
       "versionNumber": "1.0.66+1.21.11",
       "name": "FOE+ 1.0.66+1.21.11",
       "datePublished": "2026-11-06",

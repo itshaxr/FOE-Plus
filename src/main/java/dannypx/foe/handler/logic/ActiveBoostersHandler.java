@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * Global Money Booster » 2x activated by makophobia_ with 51m 24s remaining. Use /tipall ...
  * </pre>
  * and sets each booster's time left from it, so boosters popped before you logged in show
- * too, and one /active no longer lists is cleared. FOE+ runs /active quietly after you join
+ * too, and one /active no longer lists is cleared. FOE+ runs /active quietly 5 s after you join
  * and every 15 minutes (never while a menu is open) and hides that answer; when you run it
  * yourself it shows as usual (and still updates the timers).
  */
@@ -30,7 +30,7 @@ public final class ActiveBoostersHandler {
         return INSTANCE;
     }
 
-    private static final long FIRST_CHECK_MS = 30_000L;
+    private static final long FIRST_CHECK_MS = 5_000L;
     private static final long REFRESH_MS = 15L * 60L * 1000L;
     private static final long HIDE_WINDOW_MS = 3_000L;
 

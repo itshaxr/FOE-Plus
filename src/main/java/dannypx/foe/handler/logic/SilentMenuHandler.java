@@ -144,6 +144,12 @@ public class SilentMenuHandler {
         schedule(Target.MENU, delayMs, false);
     }
 
+    /// A /menu read that can't wait for you to stop fishing (a booster started or ended, so Luck
+    /// and Scale just changed): it waits at most a few seconds for a moment between casts.
+    public void requestSoon(long delayMs) {
+        schedule(Target.MENU, delayMs, true);
+    }
+
     /// You arrived somewhere new: read /menu (Luck & Scale, Daily Quests) and, if wanted,
     /// /quests (Quests panel) right away, without the usual waits.
     public void requestLocationRefresh(long delayMs, boolean menu, boolean quests) {
