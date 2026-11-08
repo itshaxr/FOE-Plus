@@ -53,6 +53,12 @@ public class MiniEventHandler {
     /// A progress line: it has the "(0/2)" count (after a └ or similar).
     static final Pattern COUNT = Pattern.compile("\\(\\s*([\\d,]+)\\s*/\\s*([\\d,]+)\\s*\\)");
     private static final Pattern SEPARATOR = Pattern.compile("^[\\s\\-=_─━]+$");
+    /// The server saying no mini event is on ("There is no active mini event right now"). Only
+    /// a line that says so clears the panel: any other line that merely mentions a mini event
+    /// (a broadcast, someone's chat) never does.
+    static final Pattern NO_EVENT = Pattern.compile(
+            "\\b(?:no|not|isn't|none)\\b.*\\bmini\\s*events?\\b|\\bmini\\s*events?\\b.*\\b(?:not|no longer|isn't|none)\\b.*\\b(?:active|running|on|going)\\b",
+            Pattern.CASE_INSENSITIVE);
 
     /// One mission: its name line ("— ⛏ Kenai River GIGANTIC") and progress ("(0/2) One Timer").
     public record Mission(Component name, Component progress, long done, long goal) {
@@ -181,8 +187,10 @@ public class MiniEventHandler {
         if (!capturing) {
             // The blank divider bar the server puts above its answer (spaces with a strike-through).
             if (ours && (text.isBlank() || SEPARATOR.matcher(text).matches())) return true;
-            // Ours but not an event answer ("There is no mini event right now"): none is on.
-            if (ours && text.toLowerCase(java.util.Locale.ROOT).contains("mini event")) {
+            // Our check's answer saying none is on ("There is no active mini event right now").
+            // Nothing else clears the panel: it stays until the event's own end time.
+            // (Chat and broadcasts have a "»" after the name; the server's reply doesn't.)
+            if (ours && !text.contains("»") && NO_EVENT.matcher(text).find()) {
                 endsAt = 0L;
                 missions = new ArrayList<>();
                 return true;
@@ -242,6 +250,8 @@ public class MiniEventHandler {
         else if (catchRefreshAt != 0L && now >= catchRefreshAt) due = true;
         // Right after the daily missions reroll: show the new ones.
         else if (rerollAt > 0L && now >= rerollAt + 10_000L && lastCheckAt < rerollAt) due = true;
+        // Right after the event's end time: see whether it's over or a new one has started.
+        else if (endsAt > 0L && now >= endsAt + 10_000L && lastCheckAt < endsAt) due = true;
         else due = now - lastCheckAt >= (active() ? REFRESH_MS : IDLE_REFRESH_MS);
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
         lastCheckAt = now;

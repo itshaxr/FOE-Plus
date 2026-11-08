@@ -108,6 +108,8 @@ public class MiniEventPanelElement extends PanelElement {
         for (MiniEventHandler.Mission m : event.missions()) {
             if (event.shouldShow(m)) lines.add(mission(m));
         }
+        // Never an empty (hidden) panel while the event is on.
+        if (lines.isEmpty()) lines.add(Component.literal("All missions done ✔").withStyle(ChatFormatting.GREEN));
         return lines;
     }
 
