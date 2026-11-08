@@ -303,7 +303,7 @@ public class EventTimesHandler {
         if (answerHadNoFabled(now)) AlertHandler.instance().clearFabled(answeredAt);
         if (joinedAt == 0L) joinedAt = now;
         try {
-            onWeather(dannypx.foe.handler.fetch.BossEventHandler.instance().getWeather().getString(), now);
+            onWeather(dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons(), now);
         } catch (RuntimeException e) {
             // no boss bar yet
         }

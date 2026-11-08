@@ -33,6 +33,7 @@ public class BossEventHandler extends Handler {
     /// only cleared once its bar has been gone this long, so it doesn't blink.
     private static final long SUB_LOCATION_GRACE_MS = 3_000L;
     private long subLocationSeenAt = 0L;
+    private String iconsNearTime = "";
     private MutableComponent communityGoalCurrent = Component.empty();
     private MutableComponent communityGoalMax = Component.empty();
     private String prevBossEvent = "";
@@ -80,6 +81,7 @@ public class BossEventHandler extends Handler {
                 if(name.contains("\uF039")) {
                     if(Objects.equals(prevBossEvent, name)) return;
                     prevBossEvent = lerpingBossEvent.getName().getString();
+                    iconsNearTime = iconsBeforeTime(name);
                     String json = TextHelper.componentToJson(lerpingBossEvent.getName());
                     JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
 
@@ -96,15 +98,15 @@ public class BossEventHandler extends Handler {
 
                         JsonObject weatherObject = jsonObject.get("extra").getAsJsonArray().get(2).getAsJsonObject()
                                 .get("extra").getAsJsonArray().get(0).getAsJsonObject();
-                        weather = Component.literal(weatherObject.get("text").getAsString())
-                                .withColor(TextColor.parseColor(weatherObject.get("color").getAsString()).getOrThrow().getValue());
+                        // The weather icons, then sometimes the time: "⚡ 3:15 PM", or two icons at
+                        // once ("○⚡": the moon and a thunderstorm). Every icon is kept, so a storm
+                        // (or an oasis, a gold rush) is still seen when the moon is up too.
+                        String[] split = splitWeather(weatherObject.get("text").getAsString());
+                        int weatherColor = TextColor.parseColor(weatherObject.get("color").getAsString()).getOrThrow().getValue();
+                        weather = Component.literal(split[0]).withColor(weatherColor);
 
-                        if(weather.getString().trim().length() != 1) {
-                            weather = Component.literal(weatherObject.get("text").getAsString().substring(0, 1))
-                                    .withColor(TextColor.parseColor(weatherObject.get("color").getAsString()).getOrThrow().getValue());
-
-                            time = Component.literal(weatherObject.get("text").getAsString().substring(1).trim())
-                                    .withColor(TextColor.parseColor(weatherObject.get("color").getAsString()).getOrThrow().getValue());
+                        if(!split[1].isEmpty()) {
+                            time = Component.literal(split[1]).withColor(weatherColor);
 
                             if(weatherObject.get("extra") != null) {
                                 JsonObject temperatureObject = weatherObject.get("extra").getAsJsonArray().get(0).getAsJsonObject();
@@ -163,6 +165,35 @@ public class BossEventHandler extends Handler {
         }
     }
     //endregion
+
+    /// The icons just before the time on the location bar ("○⚡" in "... ○⚡ 11:30 PM ..."), read
+    /// from the whole bar so it doesn't depend on how the server splits it into parts.
+    /// Package-private for tests.
+    static String iconsBeforeTime(String bar) {
+        if (bar == null) return "";
+        java.util.regex.Matcher m = ICONS_BEFORE_TIME.matcher(bar);
+        return m.find() ? m.group(1) : "";
+    }
+
+    private static final java.util.regex.Pattern ICONS_BEFORE_TIME = java.util.regex.Pattern.compile("([^\\s\\d:]{1,4})\\s*\\d{1,2}:\\d{2}");
+
+    /// Every weather icon showing: the parsed weather plus whatever sits right before the time
+    /// (for spotting a thunderstorm, an oasis or a gold rush while the moon is up too).
+    public String weatherIcons() {
+        return weather.getString() + iconsNearTime;
+    }
+
+    /// "⚡ 3:15 PM" → {"⚡", "3:15 PM"}; "○⚡" → {"○⚡", ""}; "☀" → {"☀", ""}: the icons (everything
+    /// before the first digit) and the rest. Package-private for tests.
+    static String[] splitWeather(String raw) {
+        if (raw == null) return new String[]{"", ""};
+        int digit = -1;
+        for (int i = 0; i < raw.length(); i++) {
+            if (Character.isDigit(raw.charAt(i))) { digit = i; break; }
+        }
+        if (digit < 0) return new String[]{raw.trim(), ""};
+        return new String[]{raw.substring(0, digit).trim(), raw.substring(digit).trim()};
+    }
 
     //region Dev
     /// Field, Pair<Value, Tooltip>

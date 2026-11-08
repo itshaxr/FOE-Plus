@@ -47,14 +47,15 @@ public final class RareCatchHandler {
     public static boolean eventOn(String key) {
         try {
             if (INFUSION_CAPSULE.equals(key)) return MoonTimerHandler.instance().getCurrentMoon() == MoonTimerHandler.Moon.BLOOD;
-            if (LIGHTNING_BOTTLE.equals(key)) return isThunderstorm(dannypx.foe.handler.fetch.BossEventHandler.instance().getWeather().getString());
+            if (LIGHTNING_BOTTLE.equals(key)) return isThunderstorm(dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons());
         } catch (RuntimeException | LinkageError e) {
             return false;
         }
         return false;
     }
 
-    /// The boss bar's weather shows ⚡ in a thunderstorm. Rain (☂) doesn't count.
+    /// The boss bar's weather shows ⚡ in a thunderstorm (also at night, next to the moon's ○).
+    /// Rain (☂) doesn't count.
     /// Package-private for tests.
     static boolean isThunderstorm(String weather) {
         return weather != null && weather.contains("\u26A1");

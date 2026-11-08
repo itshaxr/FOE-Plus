@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.77+1.21.11",
+      "name": "FOE+ 1.0.77+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Fixed the Lightning in a Bottle dry streak not counting during a thunderstorm at night: with the moon up the boss bar shows two icons (moon and ⚡) and FOE+ only kept the first. Every weather icon is now kept, which also fixes Blooming Oasis and Gold Rush being missed at night by @phckd"
+    },
+    {
       "versionNumber": "1.0.76+1.21.11",
       "name": "FOE+ 1.0.76+1.21.11",
       "datePublished": "2026-11-08",
