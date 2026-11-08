@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.76+1.21.11",
+      "name": "FOE+ 1.0.76+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Community goal: when the goal is hit and the community total starts again, your contribution counter on the top bar starts again from 0 too (then FOE+ checks /communityevent a few seconds later for the exact number) by @phckd"
+    },
+    {
       "versionNumber": "1.0.75+1.21.11",
       "name": "FOE+ 1.0.75+1.21.11",
       "datePublished": "2026-11-08",

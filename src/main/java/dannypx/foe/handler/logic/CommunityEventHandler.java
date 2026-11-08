@@ -43,6 +43,10 @@ public class CommunityEventHandler {
     private long joinedAt = 0L;
     private long lastCheckAt = 0L;
     private long hideUntil = 0L;
+    /// The last community total we saw (boss bar or /communityevent), to spot the goal being hit.
+    private long lastTotal = -1L;
+    /// After the goal resets, check /communityevent this soon for your exact new contribution.
+    private static final long AFTER_RESET_CHECK_MS = 5_000L;
 
     //region Reading
     /// From chat: true when the line should be hidden (it's the answer to our own check).
@@ -53,10 +57,13 @@ public class CommunityEventHandler {
         if (ours && text.isBlank()) return true; // padding around our own answer
         Matcher m = TOTAL.matcher(text);
         if (m.matches()) {
-            kind = m.group(1).trim();
+            String newKind = m.group(1).trim();
+            if (!kind.isEmpty() && !newKind.equalsIgnoreCase(kind)) lastTotal = -1L; // a different event
+            kind = newKind;
             total = normalize(m.group(2));
             goal = normalize(m.group(3));
             lastReadAt = System.currentTimeMillis();
+            noteTotal(parse(total), lastReadAt);
             return ours;
         }
         m = YOURS.matcher(text);
@@ -86,6 +93,8 @@ public class CommunityEventHandler {
             return;
         }
         if (joinedAt == 0L) joinedAt = now;
+        String boss = BossEventHandler.instance().getCommunityGoalCurrent().getString().trim();
+        if (!boss.isEmpty()) noteTotal(parse(boss), now);
         if (!Configs.hudConfig.topBarShowCommunity.get() || !Configs.hudConfig.communityAutoRefresh.get()) return;
         boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= REFRESH_MS;
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
@@ -93,6 +102,26 @@ public class CommunityEventHandler {
         hideUntil = now + HIDE_WINDOW_MS;
         SilentMenuHandler.instance().noteBackgroundCommand("communityevent");
         mc.getConnection().sendCommand("communityevent");
+    }
+
+    /// A new reading of the community total. It only ever goes up during a goal, so a big drop
+    /// means the goal was hit and a new one began: your contribution starts again from 0 (it
+    /// counts up with your catches), and /communityevent is checked shortly for the exact number.
+    /// Package-private for tests.
+    void noteTotal(long value, long now) {
+        if (value < 0) return;
+        if (lastTotal >= 0 && isReset(lastTotal, value)) {
+            if (contribution >= 0) contribution = 0;
+            total = String.valueOf(value);
+            if (lastCheckAt != 0L) lastCheckAt = Math.min(lastCheckAt, now - REFRESH_MS + AFTER_RESET_CHECK_MS);
+        }
+        lastTotal = value;
+    }
+
+    /// True when the total fell by at least a tenth: the goal reset (rounding in "88.91K" never
+    /// moves it that much).
+    static boolean isReset(long before, long after) {
+        return after < before && before - after >= Math.max(10L, before / 10L);
     }
 
     /// The server said to wait: check again after that.
