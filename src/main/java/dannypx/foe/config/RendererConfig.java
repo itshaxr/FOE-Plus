@@ -96,6 +96,10 @@ public class RendererConfig extends Config {
     @Desc("§7A bright purple border round rod parts rolled at the highest their rarity can roll, and on rods with two different max stats")
     public ValidatedBoolean showMaxRodPartMarker = new ValidatedBoolean(true);
 
+    @Name("Show rod part calibration icon")
+    @Desc("§7A small icon in the bottom-left of a rod part for what it's calibrated for: XP, money, luck, scale, prospect, albino, melanistic, trophy or bite/reel speed")
+    public ValidatedBoolean showRodPartRollIcon = new ValidatedBoolean(true);
+
     @Name("Show Rarity marker")
     public ValidatedBoolean showRarityMarker = new ValidatedBoolean(true);
 

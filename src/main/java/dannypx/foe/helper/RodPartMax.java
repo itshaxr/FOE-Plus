@@ -56,22 +56,63 @@ public final class RodPartMax {
     /// What a slot shows: nothing, a maxed part, or a rod with two different max stats.
     public enum Mark { NONE, PART, ROD }
 
-    private static final java.util.Map<CompoundTag, Mark> CACHE = new java.util.IdentityHashMap<>();
+    /// What a slot shows: its mark, and for a rod part the stat it rolls ("pro", "elite", ...;
+    /// the maxed one first when it has several), or "" when it isn't a rod part.
+    public record Info(Mark mark, String roll) {
+        static final Info NONE = new Info(Mark.NONE, "");
+    }
+
+    private static final java.util.Map<CompoundTag, Info> CACHE = new java.util.IdentityHashMap<>();
 
     /// For an item's custom data (cached per tag, so it's cheap every frame): a rod part with a
     /// max roll → PART; a rod whose parts have at least two different max stats → ROD.
     public static Mark markFor(CompoundTag tag) {
-        if (tag == null || tag.isEmpty()) return Mark.NONE;
+        return infoFor(tag).mark();
+    }
+
+    public static Info infoFor(CompoundTag tag) {
+        if (tag == null || tag.isEmpty()) return Info.NONE;
         synchronized (CACHE) {
-            Mark cached = CACHE.get(tag);
+            Info cached = CACHE.get(tag);
             if (cached != null) return cached;
         }
-        Mark mark = compute(tag);
+        Info info = new Info(compute(tag), rollOf(tag));
         synchronized (CACHE) {
             if (CACHE.size() > 1024) CACHE.clear();
-            CACHE.put(tag, mark);
+            CACHE.put(tag, info);
         }
-        return mark;
+        return info;
+    }
+
+    /// Package-private for tests: the stat a rod part rolls (its max one first), "" for anything else.
+    static String rollOf(CompoundTag tag) {
+        String type = tag.getStringOr("type", "").toLowerCase(Locale.ROOT);
+        if (!type.equals("line") && !type.equals("pole") && !type.equals("reel")) return "";
+        Set<String> maxed = maxedStats(tag);
+        if (!maxed.isEmpty()) return maxed.iterator().next();
+        for (Tag t : tag.getListOrEmpty("calibration")) {
+            if (!(t instanceof CompoundTag c)) continue;
+            String kind = c.getStringOr("calibration", "").toLowerCase(Locale.ROOT);
+            if (!kind.isEmpty()) return kind;
+        }
+        return "";
+    }
+
+    /// The icon for a roll: xp, money, luck, scale, prospect, albino, melanistic, trophy or speed
+    /// ("" for one we don't know).
+    public static String iconFor(String roll) {
+        return switch (roll == null ? "" : roll.toLowerCase(Locale.ROOT)) {
+            case "carbon" -> "xp";
+            case "titanium" -> "money";
+            case "elite" -> "luck";
+            case "ultra" -> "scale";
+            case "extreme" -> "prospect";
+            case "ivory" -> "albino";
+            case "onyx" -> "melanistic";
+            case "gold" -> "trophy";
+            case "pro" -> "speed";
+            default -> "";
+        };
     }
 
     /// Package-private for tests.

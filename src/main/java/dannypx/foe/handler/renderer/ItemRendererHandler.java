@@ -167,12 +167,25 @@ public class ItemRendererHandler extends Handler {
     }
 
     private static final int MAX_ROD_PART_BORDER = 0xFFC040FF;
+    private final Map<String, Identifier> rollIcons = new HashMap<>();
 
     /// A bright purple frame round a rod part rolled at its rarity's max, and round a rod with two
     /// different max stats (on the slot's edge, so it doesn't cover the item).
     public void drawMaxRodPart(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
-        if (!Configs.rendererConfig.showMaxRodPartMarker.get() || stack.isEmpty()) return;
-        if (dannypx.foe.helper.RodPartMax.markFor(dannypx.foe.helper.ItemStackHelper.getTag(stack)) == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
+        if (stack.isEmpty()) return;
+        boolean icons = Configs.rendererConfig.showRodPartRollIcon.get();
+        boolean marker = Configs.rendererConfig.showMaxRodPartMarker.get();
+        if (!icons && !marker) return;
+        dannypx.foe.helper.RodPartMax.Info info = dannypx.foe.helper.RodPartMax.infoFor(dannypx.foe.helper.ItemStackHelper.getTag(stack));
+        // What the part is calibrated for: a small icon in the bottom-left corner.
+        if (icons && !info.roll().isEmpty()) {
+            String icon = dannypx.foe.helper.RodPartMax.iconFor(info.roll());
+            if (!icon.isEmpty()) {
+                Identifier id = rollIcons.computeIfAbsent(icon, k -> Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/roll_" + k));
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, id, x, y + 8, 8, 8, CommonColors.WHITE);
+            }
+        }
+        if (!marker || info.mark() == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
         int c = MAX_ROD_PART_BORDER;
         guiGraphics.fill(x - 1, y - 1, x + 17, y, c);
         guiGraphics.fill(x - 1, y + 16, x + 17, y + 17, c);

@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.70+1.21.11",
+      "name": "FOE+ 1.0.70+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Rod parts show a small icon in the bottom-left for what they're calibrated for: XP, money, luck, scale, prospect, albino, melanistic, trophy or bite/reel speed (Renderer Configuration > Item Marker > Show rod part calibration icon) by @phckd"
+    },
+    {
       "versionNumber": "1.0.69+1.21.11",
       "name": "FOE+ 1.0.69+1.21.11",
       "datePublished": "2026-11-08",
