@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.75+1.21.11",
+      "name": "FOE+ 1.0.75+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Update notice: FOE+ checks its GitHub releases and, only when there's a newer version for your Minecraft version, says so once in chat a few seconds after you join, with a link to download it. Nothing is said when you're up to date (Main Configuration > Tell me about FOE+ updates) by @phckd"
+    },
+    {
       "versionNumber": "1.0.74+1.21.11",
       "name": "FOE+ 1.0.74+1.21.11",
       "datePublished": "2026-11-08",

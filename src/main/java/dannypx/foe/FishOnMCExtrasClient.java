@@ -132,6 +132,8 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ParticleHandler.instance().init();
         PlaceholderHandler.instance().init();
         ChangelogFetcherHandler.instance().fetch(false);
+        // FOE+ updates: ask GitHub early so the answer is ready by the time you join.
+        if (Configs.mainConfig.updateCheck.get()) dannypx.foe.handler.io.UpdateCheckHandler.instance().fetch();
 
         NearbyDispatcher.init();
     }
@@ -144,6 +146,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         InventoryHandler.instance().onLeave();
         ChummerHandler.instance().onLeave();
         TextDisplayHandler.instance().onLeave();
+        dannypx.foe.handler.io.UpdateCheckHandler.instance().onLeave();
     }
 
     private void onJoin(ClientPacketListener clientPacketListener, PacketSender packetSender, Minecraft minecraft) {
@@ -189,6 +192,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
             // Check if done loading
             if(LoadingHandler.instance().isLoadingDone()) {
                 dannypx.foe.handler.logic.FriendsHandler.instance().tick();
+                dannypx.foe.handler.io.UpdateCheckHandler.instance().tick();
                 // Fetch
                 if(Configs.handlerConfig.tabOverlayHandler.get()) TabOverlayHandler.instance().tick();
                 if(Configs.handlerConfig.scoreboardHandler.get()) ScoreboardHandler.instance().tick();
