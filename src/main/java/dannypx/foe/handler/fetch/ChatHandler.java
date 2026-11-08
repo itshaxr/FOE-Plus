@@ -82,9 +82,12 @@ public class ChatHandler extends Handler {
         if(component.getString().startsWith("PETS » Equipped your")) {
             ProfileDataHandler.instance().updatePet(true);
             EventHandler.instance().onPetEquip();
+            // Your pet changes Luck & Scale: read /menu again in a few seconds.
+            dannypx.foe.handler.logic.SilentMenuHandler.instance().requestForPetChange();
         } else if (component.getString().startsWith("PETS » Pet unequipped!")) {
             ProfileDataHandler.instance().updatePet(false);
             EventHandler.instance().onPetUnequip();
+            dannypx.foe.handler.logic.SilentMenuHandler.instance().requestForPetChange();
         } else if(component.getString().startsWith("CREWS » Crew Chat has been enabled")) {
             ProfileDataHandler.instance().updateCrewChat(true);
         } else if(component.getString().startsWith("CREWS » Crew Chat has been disabled")) {

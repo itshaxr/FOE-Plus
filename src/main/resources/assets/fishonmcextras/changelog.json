@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.69+1.21.11",
+      "name": "FOE+ 1.0.69+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Luck & Scale now update a few seconds after you equip or unequip a pet, instead of waiting for the next routine /menu check by @phckd"
+    },
+    {
       "versionNumber": "1.0.68+1.21.11",
       "name": "FOE+ 1.0.68+1.21.11",
       "datePublished": "2026-11-07",

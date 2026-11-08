@@ -51,6 +51,8 @@ public class SilentMenuHandler {
 
     private final Map<Target, Long> dueAt = new EnumMap<>(Target.class);
     private final Map<Target, Boolean> priority = new EnumMap<>(Target.class);
+    /// How long a priority read may wait for your bobber to come in (shortest asked for wins).
+    private final Map<Target, Long> bobberWait = new EnumMap<>(Target.class);
     private final Map<Target, Long> lastRead = new EnumMap<>(Target.class);
     /// The read in progress (sent, waiting for its menu), or null.
     private Target current = null;
@@ -150,6 +152,23 @@ public class SilentMenuHandler {
         schedule(Target.MENU, delayMs, true);
     }
 
+    /// A /menu read for a change you just made yourself (you equipped or unequipped a pet), so
+    /// Luck & Scale catch up within a few seconds: it waits only a moment for your bobber.
+    public static final long PET_CHANGE_DELAY_MS = 1_000L;
+    public static final long PET_CHANGE_BOBBER_WAIT_MS = 2_500L;
+
+    public void requestForPetChange() {
+        schedule(Target.MENU, PET_CHANGE_DELAY_MS, true);
+        Long wait = bobberWait.get(Target.MENU);
+        if (wait == null || PET_CHANGE_BOBBER_WAIT_MS < wait) bobberWait.put(Target.MENU, PET_CHANGE_BOBBER_WAIT_MS);
+    }
+
+    /// Package-private for tests: true while a priority read due {@code sinceDueMs} ago should keep
+    /// waiting for a moment between casts.
+    static boolean waitForBobber(boolean bobberOut, long sinceDueMs, long maxWaitMs) {
+        return bobberOut && sinceDueMs < maxWaitMs;
+    }
+
     /// You arrived somewhere new: read /menu (Luck & Scale, Daily Quests) and, if wanted,
     /// /quests (Quests panel) right away, without the usual waits.
     public void requestLocationRefresh(long delayMs, boolean menu, boolean quests) {
@@ -171,6 +190,7 @@ public class SilentMenuHandler {
         if (mc.player == null || mc.getConnection() == null) {
             dueAt.clear();
             priority.clear();
+            bobberWait.clear();
             containerId = -1;
             current = null;
             return;
@@ -191,12 +211,13 @@ public class SilentMenuHandler {
             if (now - due > GIVE_UP_MS) {
                 dueAt.remove(target);
                 priority.remove(target);
+                bobberWait.remove(target);
                 continue;
             }
             boolean urgent = Boolean.TRUE.equals(priority.get(target));
             if (urgent) {
                 // Prefer a moment between casts, but don't wait for ever.
-                if (bobberOut && now - due < PRIORITY_WAIT_FOR_BOBBER_MS) continue;
+                if (waitForBobber(bobberOut, now - due, bobberWait.getOrDefault(target, PRIORITY_WAIT_FOR_BOBBER_MS))) continue;
             } else {
                 if (now - lastRead.getOrDefault(target, 0L) < MIN_GAP_MS) continue;
                 if (now - lastFishingSeen < QUIET_AFTER_FISHING_MS) continue;
@@ -209,6 +230,7 @@ public class SilentMenuHandler {
     private void send(Minecraft mc, Target target, long now) {
         dueAt.remove(target);
         priority.remove(target);
+        bobberWait.remove(target);
         lastRead.put(target, now);
         current = target;
         expectMenuUntil = now + ANSWER_MS;
