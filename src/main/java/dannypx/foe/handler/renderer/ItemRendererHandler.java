@@ -166,7 +166,7 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
-    private static final int MAX_ROD_PART_BORDER = 0xFFC040FF;
+    private static final Identifier MAX_ROLL_DOT = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_roll_dot");
     private final Map<String, Identifier> rollIcons = new HashMap<>();
 
     /// A bright purple frame round a rod part rolled at its rarity's max, and round a rod with two
@@ -186,36 +186,10 @@ public class ItemRendererHandler extends Handler {
             }
         }
         if (!marker || info.mark() == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
-        drawThinBorder(guiGraphics, x, y, MAX_ROD_PART_BORDER);
+        // A purple dot in the top-right corner (4x4, from an 8x8 sprite so it stays round).
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, MAX_ROLL_DOT, x + 12, y, 4, 4, CommonColors.WHITE);
     }
 
-    /// A frame round a 16x16 slot, just outside the item, about half a GUI pixel thick. It's laid
-    /// out in whole screen pixels (half a GUI pixel would fall between pixels at odd GUI scales and
-    /// come out uneven or missing): 1 screen pixel at GUI scale 2 or 3, 2 at scale 4 or 5, and so on.
-    private static void drawThinBorder(GuiGraphics g, int x, int y, int c) {
-        int scale = Math.max(1, (int) Math.round(net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale()));
-        if (scale < 2) {
-            g.fill(x - 1, y - 1, x + 17, y, c);
-            g.fill(x - 1, y + 16, x + 17, y + 17, c);
-            g.fill(x - 1, y, x, y + 16, c);
-            g.fill(x + 16, y, x + 17, y + 16, c);
-            return;
-        }
-        int t = borderThickness(scale);
-        g.pose().pushMatrix();
-        g.pose().scale(1f / scale, 1f / scale);
-        int left = x * scale, top = y * scale, right = (x + 16) * scale, bottom = (y + 16) * scale; // screen pixels
-        g.fill(left - t, top - t, right + t, top, c);
-        g.fill(left - t, bottom, right + t, bottom + t, c);
-        g.fill(left - t, top, left, bottom, c);
-        g.fill(right, top, right + t, bottom, c);
-        g.pose().popMatrix();
-    }
-
-    /// Package-private for tests: the border's thickness in screen pixels at a GUI scale.
-    static int borderThickness(int guiScale) {
-        return Math.max(1, guiScale / 2);
-    }
 
     private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");
 
