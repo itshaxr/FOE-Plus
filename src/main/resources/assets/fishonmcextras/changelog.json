@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.71+1.21.11",
+      "name": "FOE+ 1.0.71+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- The purple border round max-roll rod parts is now half as thick by @phckd"
+    },
+    {
       "versionNumber": "1.0.70+1.21.11",
       "name": "FOE+ 1.0.70+1.21.11",
       "datePublished": "2026-11-08",

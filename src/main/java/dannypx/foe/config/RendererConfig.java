@@ -93,7 +93,7 @@ public class RendererConfig extends Config {
     public ValidatedBoolean showMaxPetStatsMarker = new ValidatedBoolean(true);
 
     @Name("Show max stat rod part marker")
-    @Desc("§7A bright purple border round rod parts rolled at the highest their rarity can roll, and on rods with two different max stats")
+    @Desc("§7A thin bright purple border round rod parts rolled at the highest their rarity can roll, and on rods with two different max stats")
     public ValidatedBoolean showMaxRodPartMarker = new ValidatedBoolean(true);
 
     @Name("Show rod part calibration icon")

@@ -186,11 +186,27 @@ public class ItemRendererHandler extends Handler {
             }
         }
         if (!marker || info.mark() == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
-        int c = MAX_ROD_PART_BORDER;
-        guiGraphics.fill(x - 1, y - 1, x + 17, y, c);
-        guiGraphics.fill(x - 1, y + 16, x + 17, y + 17, c);
-        guiGraphics.fill(x - 1, y, x, y + 16, c);
-        guiGraphics.fill(x + 16, y, x + 17, y + 16, c);
+        drawThinBorder(guiGraphics, x, y, MAX_ROD_PART_BORDER);
+    }
+
+    /// A frame round a 16x16 slot, half a GUI pixel thick (one screen pixel at GUI scale 2), just
+    /// outside the item. At GUI scale 1 half a pixel can't be drawn, so it's a whole one there.
+    private static void drawThinBorder(GuiGraphics g, int x, int y, int c) {
+        if (net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale() < 2) {
+            g.fill(x - 1, y - 1, x + 17, y, c);
+            g.fill(x - 1, y + 16, x + 17, y + 17, c);
+            g.fill(x - 1, y, x, y + 16, c);
+            g.fill(x + 16, y, x + 17, y + 16, c);
+            return;
+        }
+        g.pose().pushMatrix();
+        g.pose().scale(0.5f, 0.5f);
+        int hx = x * 2, hy = y * 2; // in half pixels
+        g.fill(hx - 1, hy - 1, hx + 33, hy, c);
+        g.fill(hx - 1, hy + 32, hx + 33, hy + 33, c);
+        g.fill(hx - 1, hy, hx, hy + 32, c);
+        g.fill(hx + 32, hy, hx + 33, hy + 32, c);
+        g.pose().popMatrix();
     }
 
     private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");
