@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.72+1.21.11",
+      "name": "FOE+ 1.0.72+1.21.11",
+      "datePublished": "2026-11-08",
+      "changelog": "## What's Changed\n- Fixed the thin purple border on max-roll rod parts coming out uneven or missing a side at some GUI scales: it's now drawn in whole screen pixels by @phckd"
+    },
+    {
       "versionNumber": "1.0.71+1.21.11",
       "name": "FOE+ 1.0.71+1.21.11",
       "datePublished": "2026-11-08",

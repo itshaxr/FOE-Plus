@@ -189,24 +189,32 @@ public class ItemRendererHandler extends Handler {
         drawThinBorder(guiGraphics, x, y, MAX_ROD_PART_BORDER);
     }
 
-    /// A frame round a 16x16 slot, half a GUI pixel thick (one screen pixel at GUI scale 2), just
-    /// outside the item. At GUI scale 1 half a pixel can't be drawn, so it's a whole one there.
+    /// A frame round a 16x16 slot, just outside the item, about half a GUI pixel thick. It's laid
+    /// out in whole screen pixels (half a GUI pixel would fall between pixels at odd GUI scales and
+    /// come out uneven or missing): 1 screen pixel at GUI scale 2 or 3, 2 at scale 4 or 5, and so on.
     private static void drawThinBorder(GuiGraphics g, int x, int y, int c) {
-        if (net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale() < 2) {
+        int scale = Math.max(1, (int) Math.round(net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale()));
+        if (scale < 2) {
             g.fill(x - 1, y - 1, x + 17, y, c);
             g.fill(x - 1, y + 16, x + 17, y + 17, c);
             g.fill(x - 1, y, x, y + 16, c);
             g.fill(x + 16, y, x + 17, y + 16, c);
             return;
         }
+        int t = borderThickness(scale);
         g.pose().pushMatrix();
-        g.pose().scale(0.5f, 0.5f);
-        int hx = x * 2, hy = y * 2; // in half pixels
-        g.fill(hx - 1, hy - 1, hx + 33, hy, c);
-        g.fill(hx - 1, hy + 32, hx + 33, hy + 33, c);
-        g.fill(hx - 1, hy, hx, hy + 32, c);
-        g.fill(hx + 32, hy, hx + 33, hy + 32, c);
+        g.pose().scale(1f / scale, 1f / scale);
+        int left = x * scale, top = y * scale, right = (x + 16) * scale, bottom = (y + 16) * scale; // screen pixels
+        g.fill(left - t, top - t, right + t, top, c);
+        g.fill(left - t, bottom, right + t, bottom + t, c);
+        g.fill(left - t, top, left, bottom, c);
+        g.fill(right, top, right + t, bottom, c);
         g.pose().popMatrix();
+    }
+
+    /// Package-private for tests: the border's thickness in screen pixels at a GUI scale.
+    static int borderThickness(int guiScale) {
+        return Math.max(1, guiScale / 2);
     }
 
     private final Identifier selectedSlotMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/selected_slot");
