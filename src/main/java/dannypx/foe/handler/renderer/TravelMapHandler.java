@@ -45,7 +45,8 @@ public final class TravelMapHandler {
     static final int MAP_W = 320, MAP_H = 220, PAD = 6, TITLE_H = 14, FOOT_H = 22;
     static final int PANEL_W = MAP_W + PAD * 2, PANEL_H = TITLE_H + MAP_H + FOOT_H + PAD;
 
-    /// A place on the map: the start of the menu item's name (lower case), and where it sits (0-1).
+    /// A place on the map: the start of the menu item's name (lower case), the name shown on the map
+    /// (the start of the full name, cut short where its plate would run into a neighbour's), and where it sits (0-1).
     record Spot(String key, String label, float x, float y) {}
 
     static final List<Spot> SPOTS = List.of(
@@ -53,7 +54,7 @@ public final class TravelMapHandler {
             new Spot("great lakes", "Great Lakes", 0.335f, 0.24f), new Spot("cape cod", "Cape Cod", 0.60f, 0.215f),
             new Spot("lake biwa", "Lake Biwa", 0.835f, 0.24f), new Spot("toledo bend", "Toledo Bend", 0.19f, 0.395f),
             new Spot("danube river", "Danube River", 0.62f, 0.42f), new Spot("hawaii", "Hawaii", 0.10f, 0.555f),
-            new Spot("cypress lake", "Cypress Lake", 0.365f, 0.52f), new Spot("mediterranean sea", "Mediterranean Sea", 0.795f, 0.51f),
+            new Spot("cypress lake", "Cypress Lake", 0.365f, 0.52f), new Spot("mediterranean sea", "Mediterranean", 0.795f, 0.51f),
             new Spot("cairns", "Cairns", 0.935f, 0.50f), new Spot("amazon river", "Amazon River", 0.17f, 0.68f),
             new Spot("everglades", "Everglades", 0.335f, 0.76f), new Spot("nile river", "Nile River", 0.585f, 0.70f),
             new Spot("murray river", "Murray River", 0.82f, 0.79f), new Spot("key west", "Key West", 0.15f, 0.915f),
@@ -85,6 +86,32 @@ public final class TravelMapHandler {
         int star = n.indexOf('*');
         if (star > 0) n = n.substring(0, star).trim();
         return n;
+    }
+
+    /// Package-private for tests: the map's label for a place, in the colours the server gives that
+    /// place's name in its own menu (colour only: no bold, no special font). Plain white when the
+    /// item's name doesn't start with the label.
+    static Component colouredLabel(Component itemName, String label) {
+        if (itemName == null) return Component.literal(label);
+        String raw = itemName.getString();
+        int lead = 0;
+        while (lead < raw.length() && Character.isWhitespace(raw.charAt(lead))) lead++;
+        if (!raw.regionMatches(true, lead, label, 0, label.length())) return Component.literal(label);
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        int[] at = {0};
+        final int from = lead, to = lead + label.length();
+        itemName.visit((style, text) -> {
+            int start = at[0], end = start + text.length();
+            at[0] = end;
+            int a = Math.max(start, from), b = Math.min(end, to);
+            if (a < b) {
+                net.minecraft.network.chat.TextColor colour = style.getColor();
+                net.minecraft.network.chat.MutableComponent part = Component.literal(label.substring(a - from, b - from));
+                out.append(colour == null ? part : part.withStyle(st -> st.withColor(colour)));
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
     }
 
     /// A location item says its climate in its tooltip ("Climate: Subarctic").
@@ -182,6 +209,22 @@ public final class TravelMapHandler {
 
     private static final int BACK_W = 84, BACK_H = 16;
 
+    private static final int PLATE_PAD_X = 3, PLATE_PAD_Y = 2;
+
+    /// Package-private for tests: a name plate as {x, y, w, h} in screen pixels from the panel's corner.
+    /// `fontWidth` is the name's width in font pixels, `k` the screen pixels per font pixel, `pixels`
+    /// the screen pixels per panel unit, (cx, cy) the place in panel units.
+    static int[] plateRect(int fontWidth, int k, int pixels, int cx, int cy, boolean thickFrame) {
+        int w = (fontWidth - 1) * k + PLATE_PAD_X * 2;       // the last letter's spacing isn't part of the name
+        int h = 8 * k + PLATE_PAD_Y * 2 - k;                 // the empty row under the letters isn't needed
+        int edge = thickFrame ? 2 : 1;
+        int minX = (PAD + 1) * pixels, maxX = (PAD + MAP_W - 1) * pixels - w;
+        int x = Math.max(minX, Math.min(maxX, cx * pixels - w / 2));
+        int y = (cy - BOX - 1) * pixels - 2 - edge - h;      // 2 pixels clear of the picture's frame
+        if (y < (TITLE_H + 1) * pixels) y = (cy + BOX + 1) * pixels + 2 + edge; // no room above: under it
+        return new int[]{x, y, w, h};
+    }
+
     /// Package-private for tests: where the "Travel map" button sits on the plain menu, as {x, y}:
     /// centred just above the chest (rows of 9), or at the top of the window when there's no room.
     static int[] backButton(int screenW, int screenH, int rows) {
@@ -264,18 +307,18 @@ public final class TravelMapHandler {
             g.pose().popMatrix();
             if (e.spot() == null) continue;
             String label = e.spot().label();
-            // The name on a small plate above the picture, kept inside the map.
-            int textW = Math.round(font.width(label) * labelScale);
-            int plateW = textW + 3, plateH = Math.round(8 * labelScale) + 2;
-            int plateX = Math.max(PAD + 1, Math.min(PAD + MAP_W - 1 - plateW, cx - plateW / 2));
-            int plateY = cy - BOX - plateH - 2 - (current && !hot ? 1 : 0);
-            if (plateY < TITLE_H + 1) plateY = cy + BOX + 2; // no room above: under it
-            g.fill(plateX - 1, plateY - 1, plateX + plateW + 1, plateY + plateH + 1, frame);
-            g.fill(plateX, plateY, plateX + plateW, plateY + plateH, 0xF01A120C);
+            // The name on a plate fitted to it, above the picture and kept inside the map. Laid out in
+            // whole screen pixels, so the plate hugs the letters the same way at every size.
+            int k = Math.max(2, Math.round(pixels * 0.45f));          // screen pixels per font pixel
+            int[] r = plateRect(font.width(label), k, pixels, cx, cy, current && !hot);
             g.pose().pushMatrix();
-            g.pose().translate(plateX + 2, plateY + 1.5f);
-            g.pose().scale(labelScale, labelScale);
-            g.drawString(font, label, 0, 0, hot ? 0xFFFFF4D6 : current ? 0xFFFFD873 : 0xFFFFFFFF, false);
+            g.pose().scale(1f / pixels, 1f / pixels);
+            int edge = current && !hot ? 2 : 1;
+            g.fill(r[0] - edge, r[1] - edge, r[0] + r[2] + edge, r[1] + r[3] + edge, frame);
+            g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0xF01A120C);
+            g.pose().translate(r[0] + PLATE_PAD_X, r[1] + PLATE_PAD_Y);
+            g.pose().scale(k, k);
+            g.drawString(font, colouredLabel(e.stack().getHoverName(), label), 0, 0, 0xFFFFFFFF, false);
             g.pose().popMatrix();
         }
 
