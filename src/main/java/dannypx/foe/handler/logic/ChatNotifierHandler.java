@@ -41,8 +41,7 @@ public class ChatNotifierHandler extends Handler {
     public void sendChatMessage(Component message) {
         minecraft.gui.getChat().addMessage(
                 TextHelper.concat(
-                        Component.literal("FoER ").withStyle(ChatFormatting.DARK_GREEN, ChatFormatting.BOLD),
-                        Component.literal("» ").withStyle(ChatFormatting.DARK_GRAY),
+                        dannypx.foe.helper.FoeChat.prefix(),
                         message
                 )
         );

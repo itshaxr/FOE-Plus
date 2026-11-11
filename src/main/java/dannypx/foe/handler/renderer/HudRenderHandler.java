@@ -158,7 +158,7 @@ public class HudRenderHandler extends Handler {
         long time = System.currentTimeMillis();
         int dotCount = (int)((time / 1000) % 4);
 
-        Component loadingComponent = Component.literal("Loading FOER" + ".".repeat(dotCount));
+        Component loadingComponent = Component.literal("Loading FOE+" + ".".repeat(dotCount));
 
         GuiGraphicsHelper.drawString(guiGraphics, minecraft.font, loadingComponent,
                 minecraft.getWindow().getGuiScaledWidth() - minecraft.font.width(loadingComponent) - 8,

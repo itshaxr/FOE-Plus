@@ -48,6 +48,7 @@
     "inject.LivingEntityRenderStateMixin",
     "inject.LocatorBarMixin",
     "inject.PlayerModelMixin",
+    "inject.ObjectContentsMixin",
     "inject.PlayerTabOverlayMixin",
     "inject.RecipeBookWidgetMixin",
     "inject.TextDisplayRendererMixin"

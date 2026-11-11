@@ -21,6 +21,12 @@ public abstract class AbstractContainerScreenMixin {
         }
     }
 
+    /// FOE+'s travel map covers the Locations menu: the hidden items under it show no tooltip.
+    @Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
+    private void injectRenderTooltipUnderTravelMap(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, CallbackInfo ci) {
+        if (dannypx.foe.handler.renderer.TravelMapHandler.instance().covers((net.minecraft.client.gui.screens.Screen) (Object) this)) ci.cancel();
+    }
+
     /// While the search bar has focus, keys are for typing: the text box ignores letters and
     /// numbers (they arrive as characters), and without this Q would drop the hovered item and
     /// 1-9 would swap it with the hotbar. Escape still closes the screen.

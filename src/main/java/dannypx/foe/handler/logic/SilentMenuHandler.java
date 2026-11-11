@@ -157,6 +157,22 @@ public class SilentMenuHandler {
     public static final long PET_CHANGE_DELAY_MS = 1_000L;
     public static final long PET_CHANGE_BOBBER_WAIT_MS = 2_500L;
 
+    /// What you're wearing (item and name of each armor piece), to notice a change; null = not seen yet.
+    private String lastArmor = null;
+
+    private static String armorKey(net.minecraft.world.entity.player.Player player) {
+        StringBuilder key = new StringBuilder();
+        for (net.minecraft.world.entity.EquipmentSlot slot : ARMOR_SLOTS) {
+            net.minecraft.world.item.ItemStack stack = player.getItemBySlot(slot);
+            key.append(stack.isEmpty() ? "-" : stack.getItem() + "/" + stack.getHoverName().getString()).append('|');
+        }
+        return key.toString();
+    }
+
+    private static final net.minecraft.world.entity.EquipmentSlot[] ARMOR_SLOTS = {
+            net.minecraft.world.entity.EquipmentSlot.HEAD, net.minecraft.world.entity.EquipmentSlot.CHEST,
+            net.minecraft.world.entity.EquipmentSlot.LEGS, net.minecraft.world.entity.EquipmentSlot.FEET};
+
     public void requestForPetChange() {
         schedule(Target.MENU, PET_CHANGE_DELAY_MS, true);
         Long wait = bobberWait.get(Target.MENU);
@@ -193,8 +209,13 @@ public class SilentMenuHandler {
             bobberWait.clear();
             containerId = -1;
             current = null;
+            lastArmor = null;
             return;
         }
+        // Armor put on or taken off changes Luck & Scale: read /menu again in a few seconds.
+        String armor = armorKey(mc.player);
+        if (lastArmor != null && !armor.equals(lastArmor)) requestForPetChange();
+        lastArmor = armor;
         // The server never sent the contents: close the menu anyway.
         if (containerId != -1 && now - openedAt > ANSWER_MS) close(mc);
         // Asked, but the menu never came (e.g. the command doesn't exist here): stop waiting.

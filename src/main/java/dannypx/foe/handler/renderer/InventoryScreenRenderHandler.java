@@ -178,7 +178,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
                     14, 14,
                     button -> minecraft.setScreen(new MainScreen(minecraft.screen)))
                     .icon("F")
-                    .tooltip(Tooltip.create(Component.literal("Open FOER Menu")))
+                    .tooltip(Tooltip.create(Component.literal("Open FOE+ Menu")))
                     .build());
 
             widgets.add(new SmallButtonBuilder(

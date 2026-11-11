@@ -155,7 +155,7 @@ public class ChatHandler extends Handler {
                 });
             });
 
-            modified.set(modified.get().replace("FoER » ", ""));
+            modified.set(modified.get().replace("FoER » ", "").replace("[FOE+] ", ""));
 
             return modified.get();
         }

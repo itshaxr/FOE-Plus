@@ -33,6 +33,10 @@ public class MainConfig extends Config {
     @Desc("§7Google Sheets link (shared 'anyone with the link') for the pet price menu (U). Rating bands down column A, rarities across the top")
     public ValidatedString petPriceSheetUrl = new ValidatedString.Builder("https://docs.google.com/spreadsheets/d/1mmOt9-hvCfT3flCekELM7F3FcOrbygwKGOrNyLwA2dk/edit?gid=0#gid=0").withCorrector().build();
 
+    @Name("Travel map")
+    @Desc("§7Shows the Locations menu (/tt) as FOE+'s world map: click a place to travel, right-click to view its species. \"Classic menu\" on the map switches back any time")
+    public ValidatedBoolean travelMap = new ValidatedBoolean(true);
+
     @Name("Tell me about FOE+ updates")
     @Desc("§7When a newer FOE+ is on GitHub, a line in chat a few seconds after you join (nothing when you're up to date)")
     public ValidatedBoolean updateCheck = new ValidatedBoolean(true);

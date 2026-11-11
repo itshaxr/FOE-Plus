@@ -324,7 +324,7 @@ public class PlaceholderRegistry {
 
         register(node("key_bind")
                 .branch(node("open_main").valueString(KeyBindContext::getOpenMainKeyBind)
-                        .description("Returns the key bind of opening the main FOER screen.")
+                        .description("Returns the key bind of opening the main FOE+ screen.")
                 )
                 .branch(node("inspect").valueString(KeyBindContext::getInspectKeyBind)
                         .description("Returns the key bind of inspecting items if available.")

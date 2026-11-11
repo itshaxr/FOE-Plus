@@ -717,8 +717,7 @@ public class CommandRegistry {
     private static int sendFeedback(CommandContext<FabricClientCommandSource> context, Component feedback) {
         context.getSource().sendFeedback(
                 TextHelper.concat(
-                        Component.literal("FoER ").withStyle(ChatFormatting.DARK_GREEN, ChatFormatting.BOLD),
-                        Component.literal("» ").withStyle(ChatFormatting.DARK_GRAY),
+                        dannypx.foe.helper.FoeChat.prefix(),
                         feedback
                 )
 

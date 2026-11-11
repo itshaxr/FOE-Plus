@@ -56,6 +56,11 @@ public class MiniEventHandler {
     /// The server saying no mini event is on ("There is no active mini event right now"). Only
     /// a line that says so clears the panel: any other line that merely mentions a mini event
     /// (a broadcast, someone's chat) never does.
+    /// "KENAI MINI EVENT » There is no event running right now.": the line has to start with the
+    /// event's own prefix, so a player's chat (rank and name first) never matches.
+    static final Pattern NO_EVENT_REPLY = Pattern.compile(
+            "^\\s*[\\p{L} ]*MINI EVENT\\s*[»>]\\s*There (?:is|are) no (?:mini )?events? (?:running|active|on)\\b",
+            Pattern.CASE_INSENSITIVE);
     static final Pattern NO_EVENT = Pattern.compile(
             "\\b(?:no|not|isn't|none)\\b.*\\bmini\\s*events?\\b|\\bmini\\s*events?\\b.*\\b(?:not|no longer|isn't|none)\\b.*\\b(?:active|running|on|going)\\b",
             Pattern.CASE_INSENSITIVE);
@@ -189,7 +194,14 @@ public class MiniEventHandler {
             if (ours && (text.isBlank() || SEPARATOR.matcher(text).matches())) return true;
             // Our check's answer saying none is on ("There is no active mini event right now").
             // Nothing else clears the panel: it stays until the event's own end time.
-            // (Chat and broadcasts have a "»" after the name; the server's reply doesn't.)
+            // The server's real reply: "KENAI MINI EVENT » There is no event running right now."
+            // (mini events only run at weekends). Whoever asked, none is on; ours is hidden.
+            if (NO_EVENT_REPLY.matcher(text).find()) {
+                endsAt = 0L;
+                missions = new ArrayList<>();
+                return ours;
+            }
+            // (Chat and broadcasts have a "»" after the name; a plain reply doesn't.)
             if (ours && !text.contains("»") && NO_EVENT.matcher(text).find()) {
                 endsAt = 0L;
                 missions = new ArrayList<>();

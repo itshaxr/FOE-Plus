@@ -198,8 +198,7 @@ public class NotifierHandler extends Handler {
         if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(dannypx.foe.helper.FoeChat.text("You caught "))
-                .append(dannypx.foe.screens.element.hud.StatsPanelElement.GIGANTIC_BADGE)
-                .append(Component.literal(" "))
+                .append(dannypx.foe.helper.FoeChat.GIGANTIC_WORD) // copies as "GIGANTIC"
                 .append(dannypx.foe.helper.FoeChat.itemIcon(fish.getItemStack()))
                 .append(fish.getName())
                 .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));

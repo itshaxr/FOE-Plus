@@ -70,6 +70,14 @@ public final class FoeChat {
     /// A small picture of the item, drawn inside the chat line (from the item's own texture, so the
     /// server's resource pack fish show as they do in your inventory). Empty when there's no
     /// picture to show, e.g. before the item models are loaded.
+    /// The GIGANTIC badge for chat lines, written as the word "GIGANTIC" in FOE+'s own font: it
+    /// draws as the badge (the T is the badge, the C is a small gap after it, the other letters
+    /// take no space), but a copied line reads "GIGANTIC".
+    public static final Component GIGANTIC_WORD = Component.literal("GIGANTIC").withStyle(style -> style
+            .withColor(ChatFormatting.WHITE)
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gigantic_word"))));
+
     public static Component itemIcon(net.minecraft.world.item.ItemStack stack) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || stack == null || stack.isEmpty()) return Component.empty();

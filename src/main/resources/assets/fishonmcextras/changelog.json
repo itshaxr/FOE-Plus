@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.78+1.21.11",
+      "name": "FOE+ 1.0.78+1.21.11",
+      "datePublished": "2026-11-11",
+      "changelog": "## What's Changed\n- New: Travel map. The Locations menu (/tt) now opens as a detailed world map with every location on it: hover for the server's own tooltip, left-click to teleport, right-click to view species. 'Classic menu' on the map switches back to the plain menu, and it can be turned off in the settings (Travel map) by @phckd\n- The 'KENAI MINI EVENT » There is no event running right now.' line no longer shows in chat when it comes from FOE+'s own quiet check (mini events only run on weekends) by @phckd\n- Gigantic catch message: it can now be copied and shared in chat as plain text (the badge copies as GIGANTIC and the fish picture copies as nothing), and the fish picture sits one space after the badge by @phckd\n- Luck & Scale now refreshes right after you put on or take off armor by @phckd\n- Leftover 'FoER' text is now FOE+ everywhere (chat prefix, loading text, menu button, key bind) by @phckd"
+    },
+    {
       "versionNumber": "1.0.77+1.21.11",
       "name": "FOE+ 1.0.77+1.21.11",
       "datePublished": "2026-11-08",

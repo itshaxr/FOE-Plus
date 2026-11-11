@@ -45,6 +45,12 @@ public class ScreenHander extends Handler {
         } else if(screen instanceof ContainerScreen genericContainerScreen) {
             GenericContainerScreenHandler.instance().init(genericContainerScreen);
             ScreenEvents.afterRender(screen).register(GenericContainerScreenHandler.instance()::render);
+            // FOE+'s travel map over the Locations menu (/tt)
+            var travelMap = dannypx.foe.handler.renderer.TravelMapHandler.instance();
+            ScreenEvents.afterRender(screen).register(travelMap::render);
+            ScreenMouseEvents.allowMouseClick(screen).register(travelMap::allowClick);
+            ScreenMouseEvents.allowMouseRelease(screen).register((s, event) -> travelMap.allowOther(s));
+            ScreenMouseEvents.allowMouseDrag(screen).register((s, event, dx, dy) -> travelMap.allowOther(s));
         }
 
         this.dispatchLastScreen(screen.getTitle());

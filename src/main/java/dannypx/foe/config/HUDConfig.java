@@ -414,7 +414,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat questPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Pet Panel")
-    @Desc("§7FOE's pet panel: icon, name, level, XP and rating (replaces the FOE-R pet element while on)")
+    @Desc("§7FOE's pet panel: icon, name, level, XP and rating (replaces the older pet element while on)")
     public ConfigGroup petPanelGroup = new ConfigGroup("pet_panel_group");
 
     @Name("Show Pet Panel")

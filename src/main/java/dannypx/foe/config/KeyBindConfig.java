@@ -25,7 +25,7 @@ public class KeyBindConfig extends Config {
         super(Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "keybinding_config"));
     }
 
-    @Name("Open FOER Menu")
+    @Name("Open FOE+ Menu")
     public ValidatedKeybind openMainKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_O, ContextInput.KEYBOARD, false, false, false);
 
     @Name("Open Auto Tip menu")

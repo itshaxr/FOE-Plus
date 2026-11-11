@@ -130,7 +130,7 @@ public class FoeMainScreen extends Screen {
                 b -> dannypx.foe.handler.io.FoerStatsImporter.importNow());
         add(rightX, rowsY + ROW * 5, "Reset Fish Timer", Items.COMPASS, "Start fish/hour from zero (Fish Time follows the server)",
                 b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset());
-        add(rightX, rowsY + ROW * 6, "More (FOE-R)", Items.CHEST, "FOE-R's full menu: triggers, timers, notifications, snippets",
+        add(rightX, rowsY + ROW * 6, "More Tools", Items.CHEST, "The full menu: triggers, timers, notifications, snippets",
                 b -> this.minecraft.setScreen(new MainScreen(this)));
 
         // Bottom row

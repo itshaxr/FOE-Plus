@@ -14,11 +14,11 @@ public class LoggerHandler {
     }
 
     public static void error(String e) {
-        FishOnMCExtras.LOGGER.error("[FoER] {}", e);
+        FishOnMCExtras.LOGGER.error("[FOE+] {}", e);
     }
 
     public static void info(String m) {
-        FishOnMCExtras.LOGGER.info("[FoER] {}", m);
+        FishOnMCExtras.LOGGER.info("[FOE+] {}", m);
     }
 
     public static void info(Component m) {
