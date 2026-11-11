@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.79+1.21.11",
+      "name": "FOE+ 1.0.79+1.21.11",
+      "datePublished": "2026-11-11",
+      "changelog": "## What's Changed\n- Travel map: Cairns is now parted from the red Murray country by a channel of open water, and keeps its sandy beach all the way round by @phckd"
+    },
+    {
       "versionNumber": "1.0.78+1.21.11",
       "name": "FOE+ 1.0.78+1.21.11",
       "datePublished": "2026-11-11",
