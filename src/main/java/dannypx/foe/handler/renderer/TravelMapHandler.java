@@ -180,10 +180,21 @@ public final class TravelMapHandler {
         return hit;
     }
 
-    private static final int BACK_W = 54, BACK_H = 13;
-    /// Half the size of a place's picture box; the picture is drawn at three quarters size.
-    private static final int BOX = 7;
-    private static final float ICON = 0.75f;
+    private static final int BACK_W = 84, BACK_H = 16;
+
+    /// Package-private for tests: where the "Travel map" button sits on the plain menu, as {x, y}:
+    /// centred just above the chest (rows of 9), or at the top of the window when there's no room.
+    static int[] backButton(int screenW, int screenH, int rows) {
+        int menuTop = (screenH - (114 + rows * 18)) / 2;
+        return new int[]{(screenW - BACK_W) / 2, Math.max(2, menuTop - BACK_H - 6)};
+    }
+
+    private static int[] backButton(Screen screen) {
+        return backButton(screen.width, screen.height, ((ContainerScreen) screen).getMenu().getRowCount());
+    }
+    /// Half the size of a place's picture box; the picture is drawn at 9 of its 16 pixels.
+    private static final int BOX = 5;
+    private static final float ICON = 0.5625f;
     //endregion
 
     //region Drawing
@@ -193,8 +204,10 @@ public final class TravelMapHandler {
         Font font = mc.font;
         if (classic) {
             // The plain menu: a small button to come back to the map.
-            boolean hover = mouseX >= 4 && mouseX < 4 + BACK_W && mouseY >= 4 && mouseY < 4 + BACK_H;
-            button(g, font, 4, 4, BACK_W, BACK_H, "Map view", hover);
+            int[] b = backButton(screen);
+            boolean hover = mouseX >= b[0] && mouseX < b[0] + BACK_W && mouseY >= b[1] && mouseY < b[1] + BACK_H;
+            g.nextStratum();
+            button(g, font, b[0], b[1], BACK_W, BACK_H, "Back to travel map", hover);
             return;
         }
         drawMap(g, screen, entries((ContainerScreen) screen), mouseX, mouseY);
@@ -225,7 +238,7 @@ public final class TravelMapHandler {
         Entry hovered = entryAt(entries, mx, my);
         String here = BossEventHandler.instance().getLocation().getString().toLowerCase(Locale.ROOT);
         // Labels at a size that lands on whole screen pixels at every GUI scale.
-        float labelScale = Math.max(2, Math.round(pixels * 0.5f)) / (float) pixels;
+        float labelScale = Math.max(2, Math.round(pixels * 0.45f)) / (float) pixels;
 
         int other = 0;
         for (Entry e : entries) {
@@ -239,9 +252,11 @@ public final class TravelMapHandler {
                 cx = otherX(other++) + 8;
                 cy = otherY() + 8;
             }
-            int frame = hot ? 0xFFFFD34A : current ? 0xFF55FF55 : 0xFF120C08;
+            // Hovered: a light frame. Where you are: a warm gold one, a little thicker.
+            int frame = hot ? 0xFFFFF4D6 : current ? 0xFFF2B33D : 0xFF120C08;
+            if (current && !hot) g.fill(cx - BOX - 2, cy - BOX - 2, cx + BOX + 2, cy + BOX + 2, 0xFF7A4A12);
             g.fill(cx - BOX - 1, cy - BOX - 1, cx + BOX + 1, cy + BOX + 1, frame);
-            g.fill(cx - BOX, cy - BOX, cx + BOX, cy + BOX, hot ? 0xFF4A3524 : 0xFF2B1D12);
+            g.fill(cx - BOX, cy - BOX, cx + BOX, cy + BOX, hot ? 0xFF4A3524 : current ? 0xFF3A2812 : 0xFF2B1D12);
             g.pose().pushMatrix();
             g.pose().translate(cx - 8 * ICON, cy - 8 * ICON);
             g.pose().scale(ICON, ICON);
@@ -251,16 +266,16 @@ public final class TravelMapHandler {
             String label = e.spot().label();
             // The name on a small plate above the picture, kept inside the map.
             int textW = Math.round(font.width(label) * labelScale);
-            int plateW = textW + 4, plateH = Math.round(8 * labelScale) + 3;
+            int plateW = textW + 3, plateH = Math.round(8 * labelScale) + 2;
             int plateX = Math.max(PAD + 1, Math.min(PAD + MAP_W - 1 - plateW, cx - plateW / 2));
-            int plateY = cy - BOX - plateH - 2;
+            int plateY = cy - BOX - plateH - 2 - (current && !hot ? 1 : 0);
             if (plateY < TITLE_H + 1) plateY = cy + BOX + 2; // no room above: under it
             g.fill(plateX - 1, plateY - 1, plateX + plateW + 1, plateY + plateH + 1, frame);
             g.fill(plateX, plateY, plateX + plateW, plateY + plateH, 0xF01A120C);
             g.pose().pushMatrix();
-            g.pose().translate(plateX + 2, plateY + 2);
+            g.pose().translate(plateX + 2, plateY + 1.5f);
             g.pose().scale(labelScale, labelScale);
-            g.drawString(font, label, 0, 0, hot ? 0xFFFFE9A0 : current ? 0xFF9CFF9C : 0xFFFFFFFF, false);
+            g.drawString(font, label, 0, 0, hot ? 0xFFFFF4D6 : current ? 0xFFFFD873 : 0xFFFFFFFF, false);
             g.pose().popMatrix();
         }
 
@@ -298,7 +313,8 @@ public final class TravelMapHandler {
         if (!isLocationsMenu(screen)) return true;
         Minecraft mc = Minecraft.getInstance();
         if (classic) {
-            if (event.x() >= 4 && event.x() < 4 + BACK_W && event.y() >= 4 && event.y() < 4 + BACK_H) {
+            int[] b = backButton(screen);
+            if (event.x() >= b[0] && event.x() < b[0] + BACK_W && event.y() >= b[1] && event.y() < b[1] + BACK_H) {
                 classic = false;
                 click(mc);
                 return false;

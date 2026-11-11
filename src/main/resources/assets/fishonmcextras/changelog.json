@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.80+1.21.11",
+      "name": "FOE+ 1.0.80+1.21.11",
+      "datePublished": "2026-11-11",
+      "changelog": "## What's Changed\n- Travel map: the location pictures and name plates are smaller, so more of the map shows by @phckd\n- Travel map: the place you are at is now marked in warm gold instead of bright green by @phckd\n- Travel map: after choosing 'Classic menu', a clear 'Back to travel map' button sits just above the menu (it was a small button in the corner of the window) by @phckd"
+    },
+    {
       "versionNumber": "1.0.79+1.21.11",
       "name": "FOE+ 1.0.79+1.21.11",
       "datePublished": "2026-11-11",
