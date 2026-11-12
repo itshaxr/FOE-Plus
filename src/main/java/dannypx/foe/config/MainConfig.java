@@ -37,6 +37,10 @@ public class MainConfig extends Config {
     @Desc("§7Shows the Locations menu (/tt) as FOE+'s world map: click a place to travel, right-click to view its species. \"Classic menu\" on the map switches back any time")
     public ValidatedBoolean travelMap = new ValidatedBoolean(true);
 
+    @Name("Presets screen")
+    @Desc("§7Shows the Fishing Presets menu with all ten presets on one panel and an Armor / Rods switch, instead of paging through the server's menu. \"Classic menu\" on the panel switches back any time")
+    public ValidatedBoolean presetsPanel = new ValidatedBoolean(true);
+
     @Name("Tell me about FOE+ updates")
     @Desc("§7When a newer FOE+ is on GitHub, a line in chat a few seconds after you join (nothing when you're up to date)")
     public ValidatedBoolean updateCheck = new ValidatedBoolean(true);

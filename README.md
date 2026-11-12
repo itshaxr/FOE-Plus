@@ -13,6 +13,16 @@ Press **O** in game to open the FOE+ menu.
 
 ## Features
 
+**Travel map and presets** (new screens over the server's own menus)
+- Travel map: `/tt` opens a detailed world map with every location on it. Hover for the server's tooltip, left-click to teleport, right-click to view species.
+- Fishing presets: all ten armor presets (or all ten rod presets) on one screen, with no page arrows. Click a tick to wear a preset, click a piece to take it out; the one in use has a gold frame.
+- Both have a **Classic menu** button to get the server's plain menu back, and a setting to turn them off.
+
+<p align="center">
+  <img src="docs/images/foe-plus-travel-map.png" alt="FOE+ travel map" width="640"><br>
+  <img src="docs/images/foe-plus-presets.png" alt="FOE+ fishing presets" width="440">
+</p>
+
 **HUD panels** (move, anchor and resize them in *O → Move HUD Elements*; they never leave the screen or cover each other)
 - Contest: timer, type with the fish you need, best bait from a bait sheet, top 3 and your rank. Updates every minute, on a new personal best and when you change area.
 - Daily Quests: exact progress after every catch.

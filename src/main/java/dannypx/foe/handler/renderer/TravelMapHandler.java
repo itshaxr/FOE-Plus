@@ -128,7 +128,9 @@ public final class TravelMapHandler {
     private List<Entry> entries(ContainerScreen screen) {
         ChestMenu menu = screen.getMenu();
         long now = System.currentTimeMillis();
-        if (menu.containerId == cachedFor && now - cachedAt < 200L) return cached;
+        // Only a found list is kept for a moment: an empty one is looked at again at once, so the map
+        // comes up the very frame the server's items arrive.
+        if (menu.containerId == cachedFor && now - cachedAt < 200L && !cached.isEmpty()) return cached;
         List<Entry> out = new ArrayList<>();
         int size = menu.getRowCount() * 9;
         for (int i = 0; i < size && i < menu.slots.size(); i++) {
@@ -147,7 +149,47 @@ public final class TravelMapHandler {
         if (!(screen instanceof ContainerScreen chest)) return false;
         if (!Configs.mainConfig.enableMod.get() || !Configs.mainConfig.travelMap.get()) return false;
         if (!dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer()) return false;
-        return entries(chest).size() >= 3;
+        long now = System.currentTimeMillis();
+        int id = chest.getMenu().containerId;
+        if (id != openFor) { openFor = id; openAt = now; }
+        String title = chest.getTitle().getString();
+        if (isLocationList(entries(chest).stream().map(Entry::name).toList())) {
+            locationsTitle = title;
+            return true;
+        }
+        return coverWhileLoading(title, locationsTitle, menuIsEmpty(chest.getMenu()), now - openAt);
+    }
+
+    /// The Locations menu's title (the server draws it with its own font; from a real /foe menu dump).
+    /// Kept up to date from the menu itself, should the server ever change it.
+    static final String LOCATIONS_TITLE = "\uEEE4\uD501";
+    private String locationsTitle = LOCATIONS_TITLE;
+    private int openFor = -1;
+    private long openAt;
+
+    private static boolean menuIsEmpty(ChestMenu menu) {
+        int size = menu.getRowCount() * 9;
+        for (int i = 0; i < size && i < menu.slots.size(); i++) if (!menu.getSlot(i).getItem().isEmpty()) return false;
+        return true;
+    }
+
+    /// Package-private for tests: a menu opens a moment before the server fills it. A menu with the
+    /// Locations title that is still empty is covered by the map already (for a second at most), so
+    /// the plain menu never flashes up first.
+    static boolean coverWhileLoading(String title, String knownTitle, boolean empty, long sinceOpenMs) {
+        return knownTitle != null && knownTitle.equals(title) && empty && sinceOpenMs >= 0 && sinceOpenMs < 1000L;
+    }
+
+    /// Package-private for tests: true when these item names are the Locations menu's. Other menus
+    /// have items with a climate line too (armor in the Presets menu), so the names must be places
+    /// the map knows: at least five different ones, and most of the list.
+    static boolean isLocationList(List<String> names) {
+        java.util.Set<String> places = new java.util.HashSet<>();
+        for (String n : names) {
+            Spot s = spotFor(n);
+            if (s != null) places.add(s.key());
+        }
+        return places.size() >= 5 && places.size() * 2 >= names.size();
     }
 
     /// True while the map is drawn over this screen (the menu under it is then out of reach).
@@ -334,7 +376,7 @@ public final class TravelMapHandler {
         button(g, font, classicX(), classicY(), CLASSIC_W, CLASSIC_H, "Classic menu", overClassic);
         g.pose().popMatrix();
 
-        if (hovered != null) g.setTooltipForNextFrame(font, hovered.stack(), mouseX, mouseY);
+        if (hovered != null) ItemTooltip.draw(g, font, hovered.stack(), mouseX, mouseY);
     }
 
     private static void button(GuiGraphics g, Font font, int x, int y, int w, int h, String text, boolean hover) {

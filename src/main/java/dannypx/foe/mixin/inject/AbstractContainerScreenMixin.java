@@ -25,6 +25,8 @@ public abstract class AbstractContainerScreenMixin {
     @Inject(method = "renderTooltip", at = @At("HEAD"), cancellable = true)
     private void injectRenderTooltipUnderTravelMap(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, CallbackInfo ci) {
         if (dannypx.foe.handler.renderer.TravelMapHandler.instance().covers((net.minecraft.client.gui.screens.Screen) (Object) this)) ci.cancel();
+        // ...and so does the presets panel, where the mouse is on it.
+        else if (dannypx.foe.handler.renderer.PresetsPanelHandler.instance().covers((net.minecraft.client.gui.screens.Screen) (Object) this, mouseX, mouseY)) ci.cancel();
     }
 
     /// While the search bar has focus, keys are for typing: the text box ignores letters and

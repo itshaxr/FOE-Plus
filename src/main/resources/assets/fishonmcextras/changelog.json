@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.82+1.21.11",
+      "name": "FOE+ 1.0.82+1.21.11",
+      "datePublished": "2026-11-11",
+      "changelog": "## What's Changed\n- New: Fishing presets screen. The Presets menu now shows all ten armor presets (or all ten rod presets) at once, with Armor and Rods tabs and no page arrows. Click a tick to wear a preset, click a piece to take it out; the one in use has a gold frame. 'Classic menu' on the panel switches back, and it can be turned off in the settings (Presets screen) by @phckd\n- Fixed: the travel map no longer takes over the Presets menu (it now only appears for the Locations menu) by @phckd\n- Travel map and presets: the server's plain menu no longer flashes up for a moment when the menu opens or a page turns by @phckd\n- Travel map: hovering a location shows its tooltip by @phckd\n- New: /foe menu dump copies what the last few chest menus held to the clipboard (read only), for reporting menu layouts by @phckd"
+    },
+    {
       "versionNumber": "1.0.81+1.21.11",
       "name": "FOE+ 1.0.81+1.21.11",
       "datePublished": "2026-11-11",

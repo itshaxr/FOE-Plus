@@ -130,6 +130,28 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 ---
 
+## Travel map
+
+<p align="center"><img src="docs/images/foe-plus-travel-map.png" alt="FOE+ travel map" width="720"></p>
+
+The server's Locations menu (`/tt`, or the travel NPC) opens as a detailed world map.
+
+- **Every location on the map:** each one sits on its own landmark, with its name in the server's colours. The place you are at has a gold frame.
+- **Same clicks as the menu:** hover for the server's own tooltip, left-click to teleport, right-click to view species.
+- **Classic menu:** a button on the map switches to the server's plain menu; "Back to travel map" above that menu returns. Turn the map off altogether with **O → Travel map**.
+
+## Fishing presets
+
+<p align="center"><img src="docs/images/foe-plus-presets.png" alt="FOE+ fishing presets" width="440"></p>
+
+The server's Presets menu on one screen, without paging.
+
+- **All ten at once:** presets 1–5 on the left and 6–10 on the right, with **Armor** and **Rods** tabs at the top.
+- **Wear a preset:** click its tick. The preset in use shows the star and a gold frame; clicking the star takes it off.
+- **Change a piece:** click a piece to send it back to your inventory. To put one in, pick it up from your inventory (which stays below the panel) and click a place in the preset.
+- **Tooltips:** hovering a piece shows the server's full tooltip.
+- **Classic menu:** a small button on the panel switches to the server's plain menu; "FOE+ presets view" above that menu returns. Turn the panel off with **O → Presets screen**.
+
 ## Tools
 
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.

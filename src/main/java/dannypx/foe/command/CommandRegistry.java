@@ -72,6 +72,7 @@ public class CommandRegistry {
                                 .then(command("list").executes(Command.Friend::list))
                         )
                         .then(command("item").executes(Command.Foe::copyHeldItem))
+                        .then(command("menu").then(command("dump").executes(Command.Crew::dumpMenus)))
                         .then(command("crew")
                                 .then(command("import").executes(Command.Crew::importCrew))
                                 .then(command("cancel").executes(Command.Crew::cancelCrew))
@@ -336,6 +337,20 @@ public class CommandRegistry {
                 Minecraft.getInstance().keyboardHandler.setClipboard(dump);
                 dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.GREEN)
                         .append(dannypx.foe.helper.FoeChat.text("/crew details copied to your clipboard")));
+                return 1;
+            }
+
+            /// Copies what the last few chest menus held (slots, items, names, lore) to the clipboard. Read only.
+            public static int dumpMenus(CommandContext<FabricClientCommandSource> context) {
+                var menus = dannypx.foe.handler.fetch.MenuDumpHandler.instance();
+                if (menus.count() == 0) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MENU", dannypx.foe.helper.FoeChat.RED)
+                            .append(dannypx.foe.helper.FoeChat.text("Open the menu first (every page of it), then run this again.")));
+                    return 1;
+                }
+                Minecraft.getInstance().keyboardHandler.setClipboard(menus.all());
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MENU", dannypx.foe.helper.FoeChat.GREEN)
+                        .append(dannypx.foe.helper.FoeChat.text("Last " + menus.count() + " menu pages copied to your clipboard")));
                 return 1;
             }
 

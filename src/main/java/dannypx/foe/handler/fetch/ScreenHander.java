@@ -48,6 +48,13 @@ public class ScreenHander extends Handler {
             // FOE+'s travel map over the Locations menu (/tt)
             var travelMap = dannypx.foe.handler.renderer.TravelMapHandler.instance();
             ScreenEvents.afterRender(screen).register(travelMap::render);
+            ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> MenuDumpHandler.instance().look(s));
+            // FOE+'s presets panel over the Fishing Presets menu
+            var presetsPanel = dannypx.foe.handler.renderer.PresetsPanelHandler.instance();
+            ScreenEvents.afterRender(screen).register(presetsPanel::render);
+            ScreenMouseEvents.allowMouseClick(screen).register(presetsPanel::allowClick);
+            ScreenMouseEvents.allowMouseRelease(screen).register((s, event) -> presetsPanel.allowOther(s, event.x(), event.y()));
+            ScreenMouseEvents.allowMouseDrag(screen).register((s, event, dx, dy) -> presetsPanel.allowOther(s, event.x(), event.y()));
             ScreenMouseEvents.allowMouseClick(screen).register(travelMap::allowClick);
             ScreenMouseEvents.allowMouseRelease(screen).register((s, event) -> travelMap.allowOther(s));
             ScreenMouseEvents.allowMouseDrag(screen).register((s, event, dx, dy) -> travelMap.allowOther(s));
