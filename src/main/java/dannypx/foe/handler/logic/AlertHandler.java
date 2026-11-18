@@ -384,14 +384,16 @@ public class AlertHandler {
         return MoonTimerHandler.instance().getTimeSinceMoonrise();
     }
 
-    /// A moon is never longer than this (or shorter than a minute): anything else was a misreading
-    /// (a moon whose rise FOE+ didn't see) and isn't used.
-    static final long MAX_MOON_MS = 60 * 60_000L, MIN_MOON_MS = 60_000L;
+    /// How long a moon lasts, from the wiki: "Moon Events occur every full moon (once every 8
+    /// Minecraft days or 160 minutes) and last for 600 seconds".
+    public static final long MOON_MS = 600_000L;
+    /// A moon is over this long after its rise, even if its "has set" line was missed.
+    static final long MAX_MOON_MS = MOON_MS + 60_000L, MIN_MOON_MS = 60_000L;
 
-    /// How long moons last, when FOE+ has seen one from its rise to its set; otherwise -1.
+    /// How long moons last: 10 minutes (what FOE+ saw a moon last, when that's close to it).
     long moonDurationMs() {
         long known = learned().moonDurationMs;
-        return known >= MIN_MOON_MS && known <= MAX_MOON_MS ? known : -1L;
+        return known >= MOON_MS - 60_000L && known <= MAX_MOON_MS ? known : MOON_MS;
     }
 
     /// Time left on the moon that's up, or -1 when none is up, how long moons last isn't known yet,
