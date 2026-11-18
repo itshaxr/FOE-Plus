@@ -98,10 +98,17 @@ public final class FoerStatsImporter {
                 Optional<Candidate> best = best(found);
                 StatsDataHandler.StatsDataModel current = StatsDataHandler.instance().getStatsData();
                 if (best.isEmpty()) {
-                    message(Component.literal("No other FOE-R install with your stats found.").withStyle(ChatFormatting.RED));
+                    // nothing found on its own: let you point at it (a launcher FOE+ doesn't know)
+                    StatsDataHandler.StatsDataModel here = current;
+                    if (here.fishTotal > 0)
+                        message(Component.literal("No other FOE-R install found. Stats in this game folder (" + here.fishTotal
+                                + " fish) are already the ones FOE-R kept here. Pick another install's folder to import from it.").withStyle(ChatFormatting.YELLOW));
+                    else
+                        message(Component.literal("No other FOE-R install found on its own. Pick the game folder of the install that has your stats.").withStyle(ChatFormatting.YELLOW));
+                    chooseFolder(uuid);
                 } else if (best.get().fishTotal() <= current.fishTotal) {
                     message(Component.literal("Stats here are already the newest (" + current.fishTotal + " vs " + best.get().fishTotal()
-                            + " fish). Nothing changed.").withStyle(ChatFormatting.YELLOW));
+                            + " fish). Nothing changed. Shift-click the button to pick another install's folder.").withStyle(ChatFormatting.YELLOW));
                 } else {
                     apply(best.get(), true);
                 }
@@ -109,6 +116,51 @@ public final class FoerStatsImporter {
         }, "FOE-R stats import");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /// Opens your computer's folder window: pick the FOE-R install's game folder (or any folder
+    /// above it, or its stats.json) and its stats come in, the current ones backed up first.
+    public static void chooseFolder(UUID uuid) {
+        Minecraft mc = Minecraft.getInstance();
+        Thread t = new Thread(() -> {
+            String picked;
+            try {
+                picked = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_selectFolderDialog(
+                        "Pick the game folder of the FOE-R install with your stats", System.getProperty("user.home"));
+            } catch (Throwable e) {
+                picked = null;
+            }
+            if (picked == null || picked.isBlank()) return;
+            Optional<Candidate> found = inPicked(Path.of(picked), uuid);
+            String where = picked;
+            mc.execute(() -> {
+                if (found.isEmpty()) {
+                    message(Component.literal("No FOE-R stats for you in " + where + " (looked for config/fishonmcextras/data/<your id>/stats.json).").withStyle(ChatFormatting.RED));
+                    return;
+                }
+                Path own = FabricLoader.getInstance().getConfigDir().resolve(FishOnMCExtras.MOD_ID).resolve("data").resolve(uuid.toString()).resolve("stats.json");
+                try {
+                    if (Files.exists(own) && Files.isSameFile(found.get().file(), own)) {
+                        message(Component.literal("That's this install's own stats file: they're already in use.").withStyle(ChatFormatting.YELLOW));
+                        return;
+                    }
+                } catch (IOException ignored) {
+                    // own file not there yet
+                }
+                apply(found.get(), true);
+            });
+        }, "FOE-R stats folder");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /// Your stats file in a folder you picked: the folder itself, its .minecraft/minecraft folder,
+    /// or anywhere up to a few folders below it (a launcher's instances folder). Package-private for tests.
+    static Optional<Candidate> inPicked(Path picked, UUID uuid) {
+        if (Files.isRegularFile(picked)) return readCandidate(picked);
+        List<Candidate> out = new ArrayList<>();
+        searchFor(picked, uuid, 6, new int[1], p -> readCandidate(p).ifPresent(out::add));
+        return best(out).or(() -> out.stream().findFirst());
     }
 
     /// The candidate with the most fish (then pets, then the newest file). Package-private for tests.
@@ -165,17 +217,145 @@ public final class FoerStatsImporter {
         Path gameDir = FabricLoader.getInstance().getGameDir().toAbsolutePath().normalize();
         Path own = gameDir.resolve(String.format(STATS_PATH, uuid)).normalize();
         List<Candidate> out = new ArrayList<>();
-        for (Path root : candidateGameDirs(gameDir, System.getProperty("user.home"), System.getenv("APPDATA"))) {
-            Path file = root.resolve(String.format(STATS_PATH, uuid)).normalize();
-            if (file.equals(own) || !Files.isRegularFile(file)) continue;
-            try {
-                if (Files.isSameFile(file, own)) continue;
-            } catch (IOException ignored) {
-                // own file may not exist yet
+        Set<Path> seen = new java.util.HashSet<>();
+        String home = System.getProperty("user.home"), appData = System.getenv("APPDATA"), local = System.getenv("LOCALAPPDATA");
+        Set<Path> roots = candidateGameDirs(gameDir, home, appData);
+        for (Path root : roots) {
+            addFile(out, seen, root.resolve(String.format(STATS_PATH, uuid)).normalize(), own);
+        }
+        // Then a careful search through every launcher's folders (any profile or instance name,
+        // a custom Prism instance folder, flatpak installs...), in case one is laid out differently.
+        int[] visited = {0};
+        for (Path base : launcherBases(home, appData, local, gameDir)) {
+            int[] here = {0}; // each launcher gets its own budget
+            searchFor(base, uuid, 6, here, p -> addFile(out, seen, p, own));
+            visited[0] += here[0];
+        }
+        LoggerHandler.info("FOE-R stats import: checked " + roots.size() + " game folders and " + visited[0]
+                + " launcher folders, found " + out.size() + (out.isEmpty() ? "" : ": " + out.stream().map(c -> c.file() + " (" + c.fishTotal() + " fish)").toList()));
+        return out;
+    }
+
+    private static void addFile(List<Candidate> out, Set<Path> seen, Path file, Path own) {
+        file = file.toAbsolutePath().normalize();
+        if (file.equals(own) || !seen.add(file) || !Files.isRegularFile(file)) return;
+        try {
+            if (Files.exists(own) && Files.isSameFile(file, own)) return;
+        } catch (IOException ignored) {
+            // own file may not exist yet
+        }
+        readCandidate(file).ifPresent(out::add);
+    }
+
+    /// Folders not worth going into while looking for a game folder.
+    private static final Set<String> SKIP = Set.of("mods", "resourcepacks", "saves", "shaderpacks", "screenshots", "logs",
+            "crash-reports", "libraries", "assets", "meta", "cache", "caches", "natives", "jre", "java", "runtime", "runtimes",
+            "node_modules", ".git", "downloads", "icons", "skins", "backups", "texturepacks", "schematics", "journeymap", "xaero");
+
+    /// Walks `base` (up to `depth` folders down) for config/fishonmcextras/data/<uuid>/stats.json.
+    static void searchFor(Path base, UUID uuid, int depth, int[] visited, java.util.function.Consumer<Path> found) {
+        if (base == null || !Files.isDirectory(base)) return;
+        Path target = Path.of(String.format(STATS_PATH, uuid));
+        try {
+            Files.walkFileTree(base, java.util.EnumSet.noneOf(java.nio.file.FileVisitOption.class), depth, new java.nio.file.SimpleFileVisitor<>() {
+                @Override
+                public java.nio.file.FileVisitResult preVisitDirectory(Path dir, java.nio.file.attribute.BasicFileAttributes attrs) {
+                    if (++visited[0] > 5_000) return java.nio.file.FileVisitResult.TERMINATE;
+                    String name = dir.getFileName() == null ? "" : dir.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+                    if (!dir.equals(base) && SKIP.contains(name)) return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                    // a game folder: check it directly instead of walking its config
+                    if (Files.isDirectory(dir.resolve("config"))) {
+                        Path f = dir.resolve(target);
+                        if (Files.isRegularFile(f)) found.accept(f);
+                        if (!dir.equals(base)) return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException e) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException | SecurityException ignored) {
+            // unreadable: skipped
+        }
+    }
+
+    /// Where the launchers keep their profiles and instances, on Windows, macOS and Linux:
+    /// Modrinth, CurseForge, Prism, MultiMC, ATLauncher, GDLauncher, the official launcher's
+    /// .minecraft, TLauncher; plus a Prism/MultiMC custom instance folder from its settings.
+    /// Package-private for tests.
+    static Set<Path> launcherBases(String home, String appData, String localAppData, Path gameDir) {
+        Set<Path> out = new LinkedHashSet<>();
+        List<Path> prismLike = new ArrayList<>();
+        if (appData != null && !appData.isBlank()) {
+            Path a = Path.of(appData);
+            for (String n : new String[]{"ModrinthApp", "com.modrinth.theseus", "PrismLauncher", "PolyMC", "MultiMC", "ATLauncher",
+                    "gdlauncher_next", "gdlauncher_carbon", ".minecraft", ".tlauncher", "SKlauncher"}) out.add(a.resolve(n));
+            prismLike.add(a.resolve("PrismLauncher"));
+            prismLike.add(a.resolve("PolyMC"));
+        }
+        if (localAppData != null && !localAppData.isBlank()) {
+            Path l = Path.of(localAppData);
+            out.add(l.resolve("Programs").resolve("PrismLauncher"));
+            prismLike.add(l.resolve("Programs").resolve("PrismLauncher"));
+            // the Microsoft Store launcher's .minecraft
+            out.add(l.resolve("Packages").resolve("Microsoft.4297127D64EC6_8wekyb3d8bbwe").resolve("LocalCache").resolve("Roaming"));
+        }
+        if (home != null && !home.isBlank()) {
+            Path h = Path.of(home);
+            out.add(h.resolve("curseforge").resolve("minecraft").resolve("Instances"));
+            out.add(h.resolve("Documents").resolve("Curse").resolve("Minecraft").resolve("Instances"));
+            out.add(h.resolve("Documents").resolve("CurseForge").resolve("Minecraft").resolve("Instances"));
+            out.add(h.resolve(".minecraft"));
+            out.add(h.resolve("ATLauncher"));
+            out.add(h.resolve("MultiMC"));
+            Path mac = h.resolve("Library").resolve("Application Support");
+            for (String n : new String[]{"minecraft", "ModrinthApp", "com.modrinth.theseus", "PrismLauncher", "PolyMC", "ATLauncher", "gdlauncher_next", "gdlauncher_carbon"})
+                out.add(mac.resolve(n));
+            prismLike.add(mac.resolve("PrismLauncher"));
+            Path share = h.resolve(".local").resolve("share");
+            for (String n : new String[]{"ModrinthApp", "com.modrinth.theseus", "PrismLauncher", "PolyMC", "multimc", "ATLauncher", "gdlauncher_next", "gdlauncher_carbon"})
+                out.add(share.resolve(n));
+            prismLike.add(share.resolve("PrismLauncher"));
+            Path flatpak = h.resolve(".var").resolve("app");
+            out.add(flatpak.resolve("org.prismlauncher.PrismLauncher").resolve("data").resolve("PrismLauncher"));
+            out.add(flatpak.resolve("com.modrinth.ModrinthApp").resolve("data").resolve("ModrinthApp"));
+            out.add(flatpak.resolve("com.atlauncher.ATLauncher").resolve("data"));
+            prismLike.add(flatpak.resolve("org.prismlauncher.PrismLauncher").resolve("data").resolve("PrismLauncher"));
+        }
+        // Prism / MultiMC can keep instances anywhere: their settings say where
+        for (Path root : prismLike) {
+            for (String cfg : new String[]{"prismlauncher.cfg", "polymc.cfg", "multimc.cfg"}) {
+                Path dir = instanceDirFrom(root, root.resolve(cfg));
+                if (dir != null) out.add(dir);
             }
-            readCandidate(file).ifPresent(out::add);
+        }
+        // the launcher this game was started from, whichever it is: two folders up from here
+        if (gameDir != null) {
+            Path up = gameDir.getParent();
+            if (up != null && isGameFolderName(gameDir)) up = up.getParent();
+            if (up != null) out.add(up);
         }
         return out;
+    }
+
+    /// The InstanceDir= line of a Prism/MultiMC settings file (relative to the launcher's folder), or null.
+    static Path instanceDirFrom(Path root, Path cfg) {
+        try {
+            if (!Files.isRegularFile(cfg)) return null;
+            for (String line : Files.readAllLines(cfg)) {
+                if (!line.startsWith("InstanceDir=")) continue;
+                String v = line.substring("InstanceDir=".length()).trim();
+                if (v.isEmpty()) return null;
+                Path p = Path.of(v);
+                return p.isAbsolute() ? p : root.resolve(p);
+            }
+        } catch (Exception ignored) {
+            // unreadable settings
+        }
+        return null;
     }
 
     private static Optional<Candidate> readCandidate(Path file) {
@@ -208,12 +388,22 @@ public final class FoerStatsImporter {
             launcherRoots.add(a.resolve("ModrinthApp").resolve("profiles"));
             launcherRoots.add(a.resolve("com.modrinth.theseus").resolve("profiles"));
             launcherRoots.add(a.resolve("PrismLauncher").resolve("instances"));
+            launcherRoots.add(a.resolve("ATLauncher").resolve("instances"));
+            launcherRoots.add(a.resolve("gdlauncher_next").resolve("instances"));
+            launcherRoots.add(a.resolve("gdlauncher_carbon").resolve("data").resolve("instances"));
+            launcherRoots.add(a.resolve(".minecraft").resolve("versions")); // TLauncher keeps a folder per version
+            launcherRoots.add(a.resolve("MultiMC").resolve("instances"));
         }
         if (home != null && !home.isBlank()) {
             Path h = Path.of(home);
             roots.add(h.resolve(".minecraft"));
             roots.add(h.resolve("Library").resolve("Application Support").resolve("minecraft"));
             launcherRoots.add(h.resolve("curseforge").resolve("minecraft").resolve("Instances"));
+            launcherRoots.add(h.resolve("Documents").resolve("Curse").resolve("Minecraft").resolve("Instances"));
+            launcherRoots.add(h.resolve("Documents").resolve("CurseForge").resolve("Minecraft").resolve("Instances"));
+            launcherRoots.add(h.resolve("ATLauncher").resolve("instances"));
+            launcherRoots.add(h.resolve("MultiMC").resolve("instances"));
+            launcherRoots.add(h.resolve(".lunarclient").resolve("profiles"));
             launcherRoots.add(h.resolve("Library").resolve("Application Support").resolve("ModrinthApp").resolve("profiles"));
             launcherRoots.add(h.resolve("Library").resolve("Application Support").resolve("PrismLauncher").resolve("instances"));
             launcherRoots.add(h.resolve(".local").resolve("share").resolve("ModrinthApp").resolve("profiles"));

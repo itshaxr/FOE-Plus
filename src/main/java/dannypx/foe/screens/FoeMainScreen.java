@@ -183,7 +183,12 @@ public class FoeMainScreen extends Screen {
                 out.add(tile("Edit Dry Streaks", Items.NAME_TAG, "Set your dry streaks by hand", b -> mc.setScreen(new DryStreakEditScreen(this))));
                 out.add(tile("Edit All-Time Stats", Items.KNOWLEDGE_BOOK, "Fix any total that counted wrong", b -> mc.setScreen(new StatsEditScreen(this))));
                 out.add(tile("Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from FOE", b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false)));
-                out.add(tile("Import FOE-R Stats", Items.WRITABLE_BOOK, "Another FOE-R's stats, if it has more fish", b -> dannypx.foe.handler.io.FoerStatsImporter.importNow()));
+                out.add(tile("Import FOE-R Stats", Items.WRITABLE_BOOK, "Another FOE-R's stats, if it has more fish. Shift-click: pick the install's folder yourself",
+                        b -> {
+                            if (net.minecraft.client.Minecraft.getInstance().hasShiftDown() && net.minecraft.client.Minecraft.getInstance().player != null)
+                                dannypx.foe.handler.io.FoerStatsImporter.chooseFolder(net.minecraft.client.Minecraft.getInstance().player.getUUID());
+                            else dannypx.foe.handler.io.FoerStatsImporter.importNow();
+                        }));
                 out.add(tile("Reset Fish Timer", Items.COMPASS, "Start fish/hour from zero", b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset()));
             }
             case SOCIAL -> {

@@ -140,7 +140,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Import Dry Streaks:** pulls streaks (including pets, shards, Infusion Capsules and Lightning Bottles) from your newest old FOE or FOE-R install, plus your pet, shard, capsule and bottle totals where they're higher there. A streak you've reset since then is never overwritten by an older, higher one.
 - **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles). Manual edits count as newest, so an import won't undo them.
 - **Edit All-Time Stats:** fix any total by hand (fish caught, pets, shards, Infusion Capsules, Lightning Bottles, quests, rarities, variants and Gigantic). Dry streaks stay as they are.
-- **Import FOE-R stats:** uses another install's stats if it has more fish, after backing yours up.
+- **Import FOE-R stats:** finds your FOE-R install on its own (Modrinth, CurseForge, Prism, PolyMC, MultiMC, ATLauncher, GDLauncher, the official launcher and TLauncher, on Windows, macOS and Linux, including a Prism instance folder you moved) and uses its stats if it has more fish, after backing yours up. Not found? It opens a folder window to pick the install yourself (Shift-click the button to go straight there).
 - **Reset Fish Timer:** start fish per hour from zero (Fish Time follows the server's "Time Fishing").
 
 ---
