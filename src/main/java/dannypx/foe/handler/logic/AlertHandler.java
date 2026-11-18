@@ -384,18 +384,38 @@ public class AlertHandler {
         return MoonTimerHandler.instance().getTimeSinceMoonrise();
     }
 
-    /// Time left on the moon that's up, or -1 when none is up or how long moons last isn't known yet.
+    /// A moon is never longer than this (or shorter than a minute): anything else was a misreading
+    /// (a moon whose rise FOE+ didn't see) and isn't used.
+    static final long MAX_MOON_MS = 60 * 60_000L, MIN_MOON_MS = 60_000L;
+
+    /// How long moons last, when FOE+ has seen one from its rise to its set; otherwise -1.
+    long moonDurationMs() {
+        long known = learned().moonDurationMs;
+        return known >= MIN_MOON_MS && known <= MAX_MOON_MS ? known : -1L;
+    }
+
+    /// Time left on the moon that's up, or -1 when none is up, how long moons last isn't known yet,
+    /// or when the moon's rise wasn't seen and the timer's guess of it doesn't fit.
     public long moonMsLeft() {
         if (!isMoonUp()) return -1L;
-        long known = learned().moonDurationMs, since = moonElapsedMs();
-        if (known <= 0 || since < 0) return -1L;
+        return moonMsLeft(moonDurationMs(), MoonTimerHandler.instance().getTimeSinceSeenRise(), moonElapsedMs());
+    }
+
+    /// Package-private for tests: {@code seen} is the time since a rise seen in chat (-1 if none),
+    /// {@code guessed} the time since the rise the moon timer works out from the cycle.
+    static long moonMsLeft(long known, long seen, long guessed) {
+        if (known <= 0) return -1L;
+        long since = seen >= 0 ? seen : guessed;
+        // a guessed rise from longer ago than a moon lasts is a stale guess, not a moon about to end
+        if (since < 0 || since > known + 60_000L) return -1L;
         return Math.max(0L, known - since);
     }
 
-    /// Called when chat says the moon has set: remembers how long moons last.
+    /// Called when chat says the moon has set: remembers how long moons last, but only from a moon
+    /// whose rise FOE+ saw (the timer's worked-out rise can be far off, which taught it a 2.5 hour moon).
     public void onMoonSet() {
-        long elapsed = moonElapsedMs();
-        if (elapsed > 30_000L && elapsed < MoonTimerHandler.instance().getCycleMs()) {
+        long elapsed = MoonTimerHandler.instance().getTimeSinceSeenRise();
+        if (elapsed >= MIN_MOON_MS && elapsed <= MAX_MOON_MS) {
             learned().moonDurationMs = elapsed;
             saveLearned();
         }
@@ -563,9 +583,8 @@ public class AlertHandler {
                 }
                 case MOON -> {
                     if (!isMoonUp()) continue;
-                    long known = learned().moonDurationMs;
-                    long since = moonElapsedMs();
-                    out.add(new Active(alert, known > 0 && since >= 0 ? smooth("end:" + alert.name(), Math.max(0L, known - since)) : -1L));
+                    long left = moonMsLeft();
+                    out.add(new Active(alert, left >= 0 ? smooth("end:" + alert.name(), left) : -1L));
                 }
                 case RAINBOW -> {
                     if (!isRainbowUp()) continue;

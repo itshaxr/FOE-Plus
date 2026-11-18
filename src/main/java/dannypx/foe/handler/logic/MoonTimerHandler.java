@@ -110,7 +110,25 @@ public class MoonTimerHandler {
         return Math.floorMod(System.currentTimeMillis() - saved().lastRiseAt, saved().cycleMs);
     }
 
+    /// When this game session last saw a moon rise in chat (0: not yet). Unlike the saved timer,
+    /// which is worked out from the cycle, this is the real start of the moon that's up.
+    private long riseSeenAt = 0L;
+
+    /// Milliseconds since a moonrise seen in chat this session, or -1 (not seen, or from an older moon).
+    public long getTimeSinceSeenRise() {
+        if (riseSeenAt <= 0L) return -1L;
+        long since = System.currentTimeMillis() - riseSeenAt;
+        return since >= 0L && since < saved().cycleMs ? since : -1L;
+    }
+
+    /// The moon that's up now, or null. A moon whose "has set" line was missed (you were away, or
+    /// in a menu) doesn't stay up for ever: once its rise is longer ago than any moon lasts, it's over.
     public Moon getCurrentMoon() {
+        if (currentMoon != null) {
+            long seen = getTimeSinceSeenRise();
+            long since = seen >= 0 ? seen : getTimeSinceMoonrise();
+            if (since > AlertHandler.MAX_MOON_MS) currentMoon = null;
+        }
         return currentMoon;
     }
 
@@ -146,6 +164,7 @@ public class MoonTimerHandler {
             }
         }
         s.lastRiseAt = now;
+        riseSeenAt = now;
         save();
     }
 
