@@ -47,11 +47,14 @@ public class TooltipHandler extends Handler {
             } else {
                 if(itemStack.getItem() == Items.ENDER_EYE
                         && itemStack.get(DataComponents.LORE) != null
+                        && !itemStack.get(DataComponents.LORE).lines().isEmpty()
                         && itemStack.get(DataComponents.LORE).lines().getFirst().getString().contains("Bonus Slot")
                 ) {
                     this.setArmorRoll(itemStack, components);
                 }
             }
+
+            if (Configs.mainConfig.baitTooltipValue.get()) addBaitValue(itemStack, components);
 
             if(SearchHandler.instance().isOnScreen()
                     && !SearchHandler.instance().getQuery().isEmpty()
@@ -62,6 +65,57 @@ public class TooltipHandler extends Handler {
                 components.addAll(SearchHandler.instance().getMatchLines(itemStack));
             }
         }
+    }
+
+    /// A bait's tooltip: what its stack is worth at your bait prices, on its "Stock: 18x" line
+    /// ("Stock: 18x · $4,500"), or on a line of its own when there's no such line.
+    static void addBaitValue(ItemStack itemStack, List<Component> components) {
+        long value = dannypx.foe.handler.logic.BaitboxHandler.stackValue(itemStack);
+        if (value < 0) return;
+        withValue(components, value);
+    }
+
+    /// Package-private for tests.
+    static void withValue(List<Component> components, long value) {
+        Component worth = Component.literal(dannypx.foe.handler.logic.BaitboxHandler.money(value)).withStyle(net.minecraft.ChatFormatting.GOLD);
+        for (int i = 0; i < components.size(); i++) {
+            if (dannypx.foe.handler.logic.BaitboxHandler.stockOf(components.get(i).getString()) >= 0) {
+                components.set(i, components.get(i).copy()
+                        .append(Component.literal("  ·  ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+                        .append(worth));
+                return;
+            }
+        }
+        int at = components.isEmpty() ? 0 : Math.min(components.size(), 2);
+        // the line starts with the same frame pieces as the line above it, so it sits inside the server's box
+        Component frame = at > 0 ? framePrefix(components.get(at - 1)) : Component.empty();
+        components.add(at, Component.empty().append(frame)
+                .append(Component.literal("Stack value: ").withStyle(net.minecraft.ChatFormatting.GRAY)).append(worth));
+    }
+
+    /// Package-private for tests: the server's frame pieces and spacing at the start of a tooltip line (its
+    /// private-use glyphs and the spaces among them, in their own styles), or nothing when it has none.
+    static Component framePrefix(Component line) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        boolean[] done = {false}, any = {false};
+        StringBuilder pending = new StringBuilder();
+        line.visit((style, text) -> {
+            if (done[0]) return java.util.Optional.empty();
+            StringBuilder run = new StringBuilder();
+            for (int i = 0; i < text.length(); ) {
+                int cp = text.codePointAt(i);
+                boolean frame = (cp >= 0xE000 && cp <= 0xF8FF) || (cp >= 0xD000 && cp <= 0xD7FF);
+                if (frame) { run.append(pending).appendCodePoint(cp); pending.setLength(0); any[0] = true; }
+                else if (cp == ' ') pending.append(' ');
+                else { done[0] = true; break; }
+                i += Character.charCount(cp);
+            }
+            if (run.length() > 0) out.append(Component.literal(run.toString()).setStyle(style));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        if (!any[0]) return Component.empty();
+        if (pending.length() > 0) out.append(Component.literal(pending.toString()));
+        return out;
     }
 
     private void setArmorRoll(ItemStack itemStack, List<Component> components) {
@@ -121,7 +175,7 @@ public class TooltipHandler extends Handler {
             ) qualityLine = i;
             if(Objects.equals(seperatorComponent, Component.empty())
                     && components.get(i).getString().contains("                                               ")
-                    && components.get(i).getSiblings().get(1).getStyle().isStrikethrough()
+                    && components.get(i).getSiblings().stream().anyMatch(part -> part.getStyle().isStrikethrough())
             ) seperatorComponent = components.get(i);
         }
 

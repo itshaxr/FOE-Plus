@@ -21,6 +21,10 @@ import java.util.concurrent.TimeUnit;
  * price cell highlighted. Type a rating in the box to jump to (and highlight) that row.
  */
 public class PetPriceScreen extends Screen {
+    /// Switched off while the prices are reworked: the U key, the O-menu button and the sheet download all
+    /// check this. Set to true to bring the menu back.
+    public static final boolean ENABLED = false;
+
     private static final int ROW_HEIGHT = 14;
     private static final int HEADER_HEIGHT = 16;
     private static final int SCROLLBAR_WIDTH = 6;

@@ -44,11 +44,11 @@ public class NotifierElement extends Element implements ScreenConstants {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.hudConfig.notifierElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.hudConfig.notifierElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.notifierElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.notifierElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.hudConfig.notifierElementScale.get(), Configs.hudConfig.notifierElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.notifierElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.notifierElementScale.get()));
         if(LoadingHandler.instance().isLoadingDone()
                 && Configs.hudConfig.showNotifierElement.get()
         ) {

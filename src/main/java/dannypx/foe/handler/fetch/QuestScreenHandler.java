@@ -40,9 +40,9 @@ public class QuestScreenHandler extends Handler {
     public void init(ContainerScreen screen) {
         isScanned = false;
 
-        ScreenEvents.afterTick(screen).register(screen1 -> {
+        ScreenEvents.afterTick(screen).register(dannypx.foe.helper.SafeScreen.tick("QuestScreenHandler:43", screen1 -> {
             this.tick(screen);
-        });
+        }));
     }
 
     public void tick(ContainerScreen screen) {
@@ -98,20 +98,56 @@ public class QuestScreenHandler extends Handler {
 
     private QuestDataHandler.Quest extractQuestData(ItemStack stack) {
         if(stack.get(DataComponents.LORE) != null) {
-            List<Component> lines = stack.get(DataComponents.LORE).lines();
-            if(lines.size() > 6) {
-                String goal = lines.get(3).getSiblings().get(3).getString().toLowerCase(Locale.US).trim();
-                int max = Integer.parseInt(lines.get(6).getSiblings().get(5).getString());
-                int current = Integer.parseInt(lines.get(6).getSiblings().get(3).getString());
+            return parseQuest(stack.get(DataComponents.LORE).lines(), BossEventHandler.instance().getLocation().getString().trim());
+        }
+        return null;
+    }
 
-                String location = lines.get(4).getString();
+    static final java.util.regex.Pattern PROGRESS = java.util.regex.Pattern.compile("\\((\\d+)/(\\d+)\\)");
+    static final java.util.regex.Pattern CATCH = java.util.regex.Pattern.compile("Catch (\\d+)x (.+)");
 
-                if(location.contains(BossEventHandler.instance().getLocation().getString().trim())) {
-                    return new QuestDataHandler.Quest(goal, max, current);
+    /// A quest's goal and progress from its tooltip, if it's for `here`. Read by what the lines say
+    /// ("Catch 26x Epic fish", "at Cypress Lake", "ɪɴ ᴘʀᴏɢʀᴇss (24/26)"), not by how they're split up,
+    /// which the server changes. Package-private for tests.
+    static QuestDataHandler.Quest parseQuest(List<Component> lines, String here) {
+        int catchLine = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            String t = textOf(lines.get(i));
+            if (t.startsWith("Catch ")) { catchLine = i; break; }
+        }
+        if (catchLine < 0) return null;
+        // the goal: the coloured part after "26x " ("Epic" of "Epic fish", "Largemouth Bass")
+        String goal = null;
+        List<dannypx.foe.item.LoreReader.Run> runs = dannypx.foe.item.LoreReader.content(lines.get(catchLine));
+        for (int i = 0; i + 1 < runs.size(); i++) {
+            if (runs.get(i).text().trim().matches("\\d+x")) { goal = runs.get(i + 1).text(); break; }
+        }
+        if (goal == null) {
+            java.util.regex.Matcher m = CATCH.matcher(textOf(lines.get(catchLine)));
+            if (!m.find()) return null;
+            goal = m.group(2).replaceAll("(?i) fish$", "");
+        }
+        goal = goal.toLowerCase(Locale.US).trim();
+        // where: the line after it ("at Cypress Lake")
+        String where = catchLine + 1 < lines.size() ? textOf(lines.get(catchLine + 1)) : "";
+        if (here != null && !here.isEmpty() && !where.contains(here)) return null;
+        for (int i = catchLine + 1; i < lines.size(); i++) {
+            java.util.regex.Matcher m = PROGRESS.matcher(textOf(lines.get(i)));
+            if (m.find()) {
+                try {
+                    return new QuestDataHandler.Quest(goal, Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
+                } catch (NumberFormatException e) {
+                    return null;
                 }
             }
         }
         return null;
+    }
+
+    /// A line's text without the tooltip frame in front.
+    static String textOf(Component line) {
+        String t = line.getString();
+        return t.substring(dannypx.foe.item.LoreReader.frameLength(t)).trim();
     }
 
     public void checkForCompletedQuests() {

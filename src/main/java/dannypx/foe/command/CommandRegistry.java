@@ -54,7 +54,7 @@ public class CommandRegistry {
                                 .then(command("cancel").executes(Command.Stats::cancelStats))
                                 .then(command("reset").executes(Command.Stats::resetStats))
                         )
-                        .then(command("friend")
+                        .then(command("friend").executes(Command.Friend::open)
                                 .then(command("add").then(ClientCommandManager.argument("name", StringArgumentType.word())
                                         .suggests((context, builder) -> {
                                             if (Minecraft.getInstance().getConnection() != null) {
@@ -73,6 +73,63 @@ public class CommandRegistry {
                         )
                         .then(command("item").executes(Command.Foe::copyHeldItem))
                         .then(command("menu").then(command("dump").executes(Command.Crew::dumpMenus)))
+                        .then(command("memory").executes(ctx -> {
+                            var report = dannypx.foe.handler.logic.MemoryGuard.writeReport("asked for");
+                            dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MEMORY", dannypx.foe.helper.FoeChat.GOLD)
+                                    .append(dannypx.foe.helper.FoeChat.text(dannypx.foe.handler.logic.MemoryGuard.summaryLine()
+                                            + (report == null ? "" : ". Report saved: config/fishonmcextras/memory/" + report.getFileName()))));
+                            return 1;
+                        }).then(command("free").executes(ctx -> {
+                            int n = dannypx.foe.handler.logic.MemoryGuard.clearAll();
+                            System.gc();
+                            dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MEMORY", dannypx.foe.helper.FoeChat.GOLD)
+                                    .append(dannypx.foe.helper.FoeChat.text("Emptied FOE+'s caches (" + n + " things). " + dannypx.foe.handler.logic.MemoryGuard.summaryLine())));
+                            return 1;
+                        })))
+                        .then(command("bossbar").then(command("dump").executes(ctx -> {
+                            // what the server's bars say, for fitting the top bar to them
+                            java.util.List<String> lines = dannypx.foe.handler.fetch.BossEventHandler.instance().dump();
+                            try {
+                                java.nio.file.Path dir = dannypx.foe.handler.logic.MemoryGuard.folder();
+                                java.nio.file.Files.createDirectories(dir);
+                                java.nio.file.Path f = dir.resolve("bossbars_" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")) + ".txt");
+                                java.nio.file.Files.write(f, lines);
+                                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("BOSS BARS", dannypx.foe.helper.FoeChat.GOLD)
+                                        .append(dannypx.foe.helper.FoeChat.text("Saved config/fishonmcextras/memory/" + f.getFileName() + ". Please send it to the FOE+ team.")));
+                            } catch (Exception e) {
+                                dannypx.foe.handler.logic.LoggerHandler.error(e);
+                            }
+                            return 1;
+                        })))
+                        .then(command("profile").executes(ctx -> {
+                            // what each part of FOE+ costs, for 30 seconds of normal play
+                            dannypx.foe.handler.logic.FoeProfiler.begin(30, "asked for");
+                            dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("PROFILE", dannypx.foe.helper.FoeChat.GOLD)
+                                    .append(dannypx.foe.helper.FoeChat.text("Measuring FOE+ for 30 seconds: keep fishing as you were (open your inventory once too).")));
+                            return 1;
+                        }))
+                        .then(command("minigame").then(command("dump").executes(Command.Crew::dumpMinigame)))
+                        .then(command("item").then(command("dump")
+                                .executes(ctx -> {
+                                    dannypx.foe.handler.logic.ItemDumpHandler.instance().arm();
+                                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("ITEMS", dannypx.foe.helper.FoeChat.GOLD)
+                                            .append(dannypx.foe.helper.FoeChat.text("Now hover each kind of item (a pet, a fish, a bait, a piece of armour...): each is saved as you go. /foe item dump stop when done.")));
+                                    return 1;
+                                })
+                                .then(command("stop").executes(ctx -> {
+                                    dannypx.foe.handler.logic.ItemDumpHandler.instance().stop();
+                                    return 1;
+                                }))))
+                        .then(command("tooltip").then(command("dump").executes(ctx -> {
+                            dannypx.foe.handler.renderer.SkinTooltip.armDump();
+                            dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("TOOLTIP", dannypx.foe.helper.FoeChat.GOLD)
+                                    .append(dannypx.foe.helper.FoeChat.text("Now hover an item: the pet wearing a skin (and then, with another /foe tooltip dump, a bait).")));
+                            return 1;
+                        })))
+                        .then(command("map")
+                                .then(command("scan").executes(Command.Crew::mapScan))
+                                .then(command("export").executes(Command.Crew::mapExport))
+                                .then(command("clear").executes(Command.Crew::mapClear)))
                         .then(command("crew")
                                 .then(command("import").executes(Command.Crew::importCrew))
                                 .then(command("cancel").executes(Command.Crew::cancelCrew))
@@ -277,6 +334,10 @@ public class CommandRegistry {
         }
 
         static class Friend {
+            public static int open(CommandContext<FabricClientCommandSource> context) {
+                return executeCommand(() -> Minecraft.getInstance().setScreen(new dannypx.foe.screens.FriendsScreen(null)));
+            }
+
             private static void say(Component line) {
                 dannypx.foe.helper.FoeChat.send(line);
             }
@@ -351,6 +412,79 @@ public class CommandRegistry {
                 Minecraft.getInstance().keyboardHandler.setClipboard(menus.all());
                 dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MENU", dannypx.foe.helper.FoeChat.GREEN)
                         .append(dannypx.foe.helper.FoeChat.text("Last " + menus.count() + " menu pages copied to your clipboard")));
+                return 1;
+            }
+
+            /// Starts recording the reel-in minigame; run again to stop and copy what it saw.
+            public static int dumpMinigame(CommandContext<FabricClientCommandSource> context) {
+                var dump = dannypx.foe.handler.logic.MinigameDumpHandler.instance();
+                if (dump.toggle()) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MINIGAME", dannypx.foe.helper.FoeChat.GOLD)
+                            .append(dannypx.foe.helper.FoeChat.text("Recording: catch a fish or two, then run /foe minigame dump again.")));
+                } else {
+                    Minecraft.getInstance().keyboardHandler.setClipboard(dump.all());
+                    java.nio.file.Path file = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("fishonmcextras").resolve("minigame_dump.txt");
+                    try {
+                        java.nio.file.Files.createDirectories(file.getParent());
+                        java.nio.file.Files.writeString(file, dump.all());
+                    } catch (java.io.IOException e) {
+                        dannypx.foe.handler.logic.LoggerHandler.error(e);
+                    }
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MINIGAME", dannypx.foe.helper.FoeChat.GREEN)
+                            .append(dannypx.foe.helper.FoeChat.text(dump.count() + " moments saved to config/fishonmcextras/minigame_dump.txt, and "
+                                    + dannypx.foe.handler.logic.GlyphDump.count() + " pictures to config/fishonmcextras/minigame_glyphs. Zip both and send them over.")));
+                }
+                return 1;
+            }
+
+            private static boolean mapScanAllowed() {
+                if (dannypx.foe.handler.logic.MapScanHandler.available()) return true;
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.RED)
+                        .append(dannypx.foe.helper.FoeChat.text("Only in FOE+ test builds.")));
+                return false;
+            }
+
+            /// Test builds: starts or stops scanning the places you walk through, for the travel map.
+            public static int mapScan(CommandContext<FabricClientCommandSource> context) {
+                if (!mapScanAllowed()) return 1;
+                var scan = dannypx.foe.handler.logic.MapScanHandler.instance();
+                boolean on = scan.toggle();
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", on ? dannypx.foe.helper.FoeChat.GREEN : dannypx.foe.helper.FoeChat.GOLD)
+                        .append(dannypx.foe.helper.FoeChat.text(on
+                                ? "Scanning. Walk or fly round the place until the green square covers it, teleport to each of its spots from the travel map, then /foe map export."
+                                : "Stopped (" + scan.chunkCount() + " chunks, " + scan.poiCount() + " spots kept). /foe map export writes the file.")));
+                return 1;
+            }
+
+            public static int mapExport(CommandContext<FabricClientCommandSource> context) {
+                if (!mapScanAllowed()) return 1;
+                var scan = dannypx.foe.handler.logic.MapScanHandler.instance();
+                if (scan.chunkCount() == 0) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.RED)
+                            .append(dannypx.foe.helper.FoeChat.text("Nothing scanned yet: /foe map scan first.")));
+                    return 1;
+                }
+                try {
+                    java.nio.file.Path file = scan.export(Minecraft.getInstance());
+                    for (String line : scan.summary()) {
+                        dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.GREEN)
+                                .append(dannypx.foe.helper.FoeChat.text(line)));
+                    }
+                    Minecraft.getInstance().keyboardHandler.setClipboard(file.toAbsolutePath().toString());
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.GREEN)
+                            .append(dannypx.foe.helper.FoeChat.text("Saved " + file.getFileName() + " in the foe-plus-scans folder of your game folder (its full path is on your clipboard).")));
+                } catch (java.io.IOException e) {
+                    dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.RED)
+                            .append(dannypx.foe.helper.FoeChat.text("Couldn't write the file: " + e.getMessage())));
+                }
+                return 1;
+            }
+
+            public static int mapClear(CommandContext<FabricClientCommandSource> context) {
+                if (!mapScanAllowed()) return 1;
+                dannypx.foe.handler.logic.MapScanHandler.instance().clear();
+                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("MAP SCAN", dannypx.foe.helper.FoeChat.GOLD)
+                        .append(dannypx.foe.helper.FoeChat.text("Forgot everything scanned.")));
                 return 1;
             }
 

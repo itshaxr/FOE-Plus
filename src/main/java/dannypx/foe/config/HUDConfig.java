@@ -28,6 +28,10 @@ public class HUDConfig extends Config {
         super(Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "hud_config"));
     }
 
+    @Name("Use FOE+'s XP bars")
+    @Desc("§7Off: XP bars look like the game's (a line with the numbers after it, like a pet's tooltip). On: FOE+'s own filled bars")
+    public ValidatedBoolean foeXpBars = new ValidatedBoolean(false);
+
     @Name("Profile Element")
     @Desc("§7This is your profile shown on the hud. (Name, Level, Picture)")
     public ConfigGroup profileElementGroup = new ConfigGroup("profile_element_group");
@@ -258,6 +262,10 @@ public class HUDConfig extends Config {
     @Desc("§7How many empty slots before it shows the notification")
     public ValidatedInt showNotificationAtEmptySlots = new ValidatedInt(3, 36, 0, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("HUD style")
+    @Desc("§7FOE+: FOE+'s panels. FOE-R: the look FOE-R's HUDs have (a see-through box between dark bars)")
+    public ValidatedEnum<dannypx.foe.type.HudStyle> hudStyle = new ValidatedEnum<>(dannypx.foe.type.HudStyle.FOE_PLUS, ValidatedEnum.WidgetType.CYCLING);
+
     // FOE-style info panels (ported from FOECollab)
     @Name("Info panel border style")
     @Desc("§7Border style of the Contest, Quests, Daily Quests and All-Time Stats panels")
@@ -294,6 +302,14 @@ public class HUDConfig extends Config {
     @Desc("§7Look up the best bait for the current contest in the bait sheet")
     public ValidatedBoolean showContestBestBait = new ValidatedBoolean(true);
 
+    @Name("Best bait as pictures")
+    @Desc("§7Show the best baits as their pictures in a row, instead of by name (one or the other, never both)")
+    public ValidatedBoolean contestBaitPictures = new ValidatedBoolean(false);
+
+    @Name("Show every best bait")
+    @Desc("§7List every best bait in the box. Off: only the best one, with the rest when you hover it (chat open)")
+    public ValidatedBoolean contestAllBaits = new ValidatedBoolean(false);
+
     @Name("Bait sheet link")
     @Desc("§7Google Sheets link (shared 'anyone with the link'). Columns: Location, Family, Fish, Rarity, Habitat, Bait Strategy")
     public ValidatedString contestBaitSheetUrl = new ValidatedString.Builder("https://docs.google.com/spreadsheets/d/1CJDgpV0FFdlJ4RuuZIHJEoZ02FJiCWRG/edit?usp=sharing").withCorrector().build();
@@ -309,6 +325,10 @@ public class HUDConfig extends Config {
 
     @Name("Show Daily Quests Panel")
     public ValidatedBoolean showDailyQuestPanel = new ValidatedBoolean(true);
+
+    @Name("Number each mission")
+    @Desc("§7#1, #2... before each mission in the Daily Quests panel")
+    public ValidatedBoolean dailyQuestNumbers = new ValidatedBoolean(false);
 
     @Name("Update after every catch")
     @Desc("§7Quietly reads Daily Missions from /menu after each catch (the menu never shows), so progress is exact")
@@ -349,6 +369,10 @@ public class HUDConfig extends Config {
 
     @Name("Background opacity in %")
     public ValidatedInt statsPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Text alignment")
+    @Desc("§7Follow corner (right when the panel is on the right), or always left, centred or right")
+    public ValidatedEnum<dannypx.foe.type.TextAlign> statsPanelTextAlign = new ValidatedEnum<>(dannypx.foe.type.TextAlign.AUTO, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("Show gigantic fish")
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
@@ -396,6 +420,10 @@ public class HUDConfig extends Config {
     @Name("Show Quests Panel")
     public ValidatedBoolean showQuestPanel = new ValidatedBoolean(true);
 
+    @Name("Show location name")
+    @Desc("§7The location's name at the top of the panel")
+    public ValidatedBoolean questPanelShowLocation = new ValidatedBoolean(false);
+
     @Name("X Position in %")
     public ValidatedInt questPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
@@ -431,6 +459,10 @@ public class HUDConfig extends Config {
 
     @Name("Background opacity in %")
     public ValidatedInt petPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Green clover on Max Luck")
+    @Desc("§7\"Max Luck\" with the green clover, in green. Off: the clover and text in the Luck colour")
+    public ValidatedBoolean petPanelGreenCloverIcon = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Scale")
@@ -530,6 +562,10 @@ public class HUDConfig extends Config {
     @Desc("§7/events and /active, after you join and every 15 minutes, never while a menu is open; their answers are hidden. Syncs the frenzy, the Tackle Shop / Cosmetic Store timers and the booster timers")
     public ValidatedBoolean eventsAutoRefresh = new ValidatedBoolean(true);
 
+    @Name("Show weather events")
+    @Desc("§7Rain showers, thunderstorms, supercells and moons, with how long they have left once FOE+ has seen one end")
+    public ValidatedBoolean eventsShowWeather = new ValidatedBoolean(true);
+
     @Name("X Position in %")
     public ValidatedInt eventsPanelXPosition = new ValidatedInt(22, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
@@ -577,12 +613,16 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat miniEventPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
-    @Name("Timers & Crew Panel")
-    @Desc("§7The Timers & Crew box from your inventory as a HUD panel too (what it shows is set in the inventory settings)")
+    @Name("Timers Panel")
+    @Desc("§7The Moon, Tackle Shop, Cosmetic Store and Vote timers (what it shows is set in the inventory settings). Your crew and friends have their own panel")
     public ConfigGroup timersPanelGroup = new ConfigGroup("timers_panel_group");
 
-    @Name("Show Timers & Crew Panel")
+    @Name("Show Timers Panel")
     public ValidatedBoolean showTimersPanel = new ValidatedBoolean(true);
+
+    @Name("Show community catches")
+    @Desc("§7The community goal under the timers, below a line: how far along it is, catches per hour, when it'll be reached")
+    public ValidatedBoolean timersShowCommunity = new ValidatedBoolean(true);
 
     @Name("X Position in %")
     public ValidatedInt timersPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
@@ -600,6 +640,29 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat timersPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("Social Panel")
+    @Desc("§7Who of your crew and friends is on, and the instance they're on; whether a crew member is in range")
+    public ConfigGroup crewPanelGroup = new ConfigGroup("crew_panel_group");
+
+    @Name("Show Social Panel")
+    public ValidatedBoolean showCrewPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt crewPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt crewPanelYPosition = new ValidatedInt(62, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> crewPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt crewPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat crewPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
     @Name("Luck & Scale Panel")
     @Desc("§7Your current Luck and Scale as shown on your profile in /menu (boosters included)")
     public ConfigGroup luckScalePanelGroup = new ConfigGroup("luck_scale_panel_group");
@@ -613,6 +676,10 @@ public class HUDConfig extends Config {
 
     @Name("Show when the numbers were read from /menu")
     public ValidatedBoolean luckScalePanelBreakdown = new ValidatedBoolean(true);
+
+    @Name("Green clover for Luck")
+    @Desc("§7The Luck line with a green clover, in green. Off: the clover and Luck in the Luck colour")
+    public ValidatedBoolean luckScaleGreenClover = new ValidatedBoolean(false);
 
     @Name("X Position in %")
     public ValidatedInt luckScalePanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
@@ -654,6 +721,10 @@ public class HUDConfig extends Config {
     @Name("Show Wrong Gear Warning")
     public ValidatedBoolean showGearWarning = new ValidatedBoolean(true);
 
+    @Name("Warn about the wrong rod")
+    @Desc("§7A saltwater rod (line, pole, reel or bait) at a freshwater place, or the other way round")
+    public ValidatedBoolean showWrongRodWarning = new ValidatedBoolean(true);
+
     @Name("Show inventory almost full warning")
     public ValidatedBoolean showInventoryWarning = new ValidatedBoolean(true);
 
@@ -692,11 +763,52 @@ public class HUDConfig extends Config {
     @Name("Show Top Bar")
     public ValidatedBoolean showTopBar = new ValidatedBoolean(true);
 
+    @Name("Show your name")
+    public ValidatedBoolean topBarShowName = new ValidatedBoolean(true);
+
+    @Name("Show your level")
+    public ValidatedBoolean topBarShowLevel = new ValidatedBoolean(true);
+
+    @Name("Show the level progress bar")
+    public ValidatedBoolean topBarShowLevelBar = new ValidatedBoolean(true);
+
+    @Name("Show location")
+    @Desc("§7The place you're in (Cypress Lake, Cairns...)")
+    public ValidatedBoolean topBarShowLocation = new ValidatedBoolean(true);
+
+    @Name("Show spot")
+    @Desc("§7The spot you're at within the place (Big Bear Lake, Spawn...)")
+    public ValidatedBoolean topBarShowSpot = new ValidatedBoolean(true);
+
+    @Name("Show catch range")
+    @Desc("§7The place's level range, like (1/50)")
+    public ValidatedBoolean topBarShowRange = new ValidatedBoolean(true);
+
     @Name("Show climate")
     public ValidatedBoolean topBarShowClimate = new ValidatedBoolean(true);
 
+    @Name("Show weather")
+    public ValidatedBoolean topBarShowWeather = new ValidatedBoolean(true);
+
+    @Name("Show time")
+    public ValidatedBoolean topBarShowTime = new ValidatedBoolean(true);
+
+    @Name("Show balance")
+    public ValidatedBoolean topBarShowBalance = new ValidatedBoolean(true);
+
+    @Name("Show credits")
+    public ValidatedBoolean topBarShowCredits = new ValidatedBoolean(true);
+
+    @Name("Show catches")
+    @Desc("§7Your catches and catch rate, on the right of the bar")
+    public ValidatedBoolean topBarShowCatches = new ValidatedBoolean(true);
+
+    @Name("Show TPS & ping")
+    @Desc("§7The server's TPS and your ping, on the right of the bar")
+    public ValidatedBoolean topBarShowTpsPing = new ValidatedBoolean(true);
+
     @Name("Show community event")
-    @Desc("§7The community event total and your contribution")
+    @Desc("§7The community event total and your contribution (only while the Timers panel doesn't show it)")
     public ValidatedBoolean topBarShowCommunity = new ValidatedBoolean(true);
 
     @Name("Check the community event in the background")
@@ -710,9 +822,31 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat topBarScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
 
+    @Name("Catch Ring")
+    @Desc("§7While you reel a fish in: a ring that fills clockwise in green as the catch goes on. Move and size it in Move HUD Elements")
+    public ConfigGroup catchRingGroup = new ConfigGroup("catch_ring_group");
+
+    // a new name, so it starts off for everyone (it used to be on)
+    @Name("Show the catch ring")
+    public ValidatedBoolean catchRingOn = new ValidatedBoolean(false);
+
+    @Name("X Position in % (its centre)")
+    public ValidatedFloat catchRingX = new ValidatedFloat(45f, 100f, 0f);
+
+    @Name("Y Position in % (its centre)")
+    public ValidatedFloat catchRingY = new ValidatedFloat(50f, 100f, 0f);
+
+    @ConfigGroup.Pop
+    @Name("Size")
+    public ValidatedFloat catchRingScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 3.0f, 0.5f), 0.05f);
+
     @Name("FOE Catch Popup")
     @Desc("§7The floating catch text used when Fish catch style is FOE")
     public ConfigGroup catchPopupGroup = new ConfigGroup("catch_popup_group");
+
+    @Name("Show the catch popup")
+    public ValidatedBoolean showCatchPopup = new ValidatedBoolean(true);
+
 
     @Name("X Position in %")
     public ValidatedInt catchPopupXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);

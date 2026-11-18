@@ -17,14 +17,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class HumanoidArmorLayerMixin<S extends HumanoidRenderState> {
     @Inject(method = "renderArmorPiece", at = @At("HEAD"), cancellable = true)
     public void injectRenderArmorPiece(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, ItemStack stack, EquipmentSlot slot, int light, S state, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && (slot == EquipmentSlot.CHEST
-                || slot == EquipmentSlot.LEGS
-                || slot == EquipmentSlot.FEET)
-                && Configs.rendererConfig.hideArmor.get()
-                && Configs.mixinConfig.humanoidArmorLayerMixinRenderArmorPiece.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && (slot == EquipmentSlot.CHEST
+                    || slot == EquipmentSlot.LEGS
+                    || slot == EquipmentSlot.FEET)
+                    && Configs.rendererConfig.hideArmor.get()
+                    && Configs.mixinConfig.humanoidArmorLayerMixinRenderArmorPiece.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("HumanoidArmorLayerMixin.injectRenderArmorPiece", foe$t);
         }
     }
 }

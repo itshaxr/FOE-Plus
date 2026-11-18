@@ -30,17 +30,25 @@ import java.util.function.Supplier;
 public final class VaultSortHandler {
     private VaultSortHandler() {}
 
-    public enum Mode { AMOUNT, RARITY, NAME, PERCENT }
+    /// LUCK and SCALE: a pet's luck or scale (its climate and location base, together). CLIMATE: an armor
+    /// piece's climate, then its quality. ROLLS: what an armor piece's bonus rolls add up to.
+    public enum Mode { AMOUNT, RARITY, NAME, PERCENT, LUCK, SCALE, CLIMATE, ROLLS }
 
-    /// What a sort moves: baits and lures (the Bait Sorter), or pets (the Pet Sorter).
-    public enum Kind { BAITS, PETS }
+    /// What a sort moves: baits and lures (the Bait Sorter), pets (the Pet Sorter) or armor (the Armor Sorter).
+    public enum Kind { BAITS, PETS, ARMOR }
 
     /// Vault item slots: rows 1-5 of the 6-row vault.
     static final int ITEM_SLOTS = 45;
 
     /// One item in the vault. Compared by identity while planning. {@code movable}: a bait or
     /// lure (the only things the sort moves).
-    record Item(int slot, String name, int amount, int rarityRank, boolean movable, float percent) {
+    /// {@code percent}: a pet's percent, or an armor piece's quality. {@code climate}: an armor piece's climate.
+    record Item(int slot, String name, int amount, int rarityRank, boolean movable, float percent,
+                float luck, float scale, String climate, float rolls) {
+        Item(int slot, String name, int amount, int rarityRank, boolean movable, float percent) {
+            this(slot, name, amount, rarityRank, movable, percent, 0f, 0f, "", 0f);
+        }
+
         Item(int slot, String name, int amount, int rarityRank, boolean movable) {
             this(slot, name, amount, rarityRank, movable, 0f);
         }
@@ -53,9 +61,20 @@ public final class VaultSortHandler {
     /// Sorts the pets on the open vault page by percent (highest first), rarity or name;
     /// {@code reverse} flips it (Shift-click). Baits and everything else stay where they are.
     public static boolean sortPets(Mode mode, boolean reverse) {
+        return sortKind(Kind.PETS, mode, reverse);
+    }
+
+    /// Sorts the armor on the open page by quality, rarity, climate or rolls; everything else stays put.
+    public static boolean sortArmor(Mode mode, boolean reverse) {
+        return sortKind(Kind.ARMOR, mode, reverse);
+    }
+
+    private static boolean sortKind(Kind kind, Mode mode, boolean reverse) {
+        // sorting another way ends the saved layout (B goes back to the order it had before)
+        VaultLayoutHandler.leaveSavedOrder();
         return BaitSorterHandler.instance().queueSort(Minecraft.getInstance(), () -> {
             List<Integer> slots = new ArrayList<>();
-            List<Item> items = scan(slots, Kind.PETS);
+            List<Item> items = scan(slots, kind);
             return plan(items, slots, mode, reverse);
         });
     }
@@ -75,6 +94,7 @@ public final class VaultSortHandler {
 
     /// A sort of the open vault page in {@code order}, planned when it runs.
     public static Supplier<List<List<SortPlanner.Click>>> planner(BaitSortOrder order) {
+        if (order == BaitSortOrder.SAVED_LAYOUT) return VaultLayoutHandler.planner();
         Mode mode = order.byName() ? Mode.NAME : order.byAmount() ? Mode.AMOUNT : Mode.RARITY;
         boolean reverse = order.isVaultReverse();
         return () -> {
@@ -120,13 +140,37 @@ public final class VaultSortHandler {
             }
             boolean bait = SortPlanner.BAIT.equals(type) || SortPlanner.LURE.equals(type);
             boolean pet = "pet".equals(type);
-            float percent = 0f;
-            if (pet) percent = ValidateItem.isPet(tag.value2()).value2().getTotalPercent();
+            boolean armor = "armor".equals(type);
+            float percent = 0f, luck = 0f, scale = 0f, rolls = 0f;
+            String climate = "";
+            if (pet) {
+                dannypx.foe.item.PetTagObject p = ValidateItem.isPet(tag.value2()).value2();
+                percent = p.getTotalPercent();
+                luck = (p.getClimatePercentMaxLuck() + p.getLocationPercentMaxLuck()) / 2f;
+                scale = (p.getClimatePercentMaxScale() + p.getLocationPercentMaxScale()) / 2f;
+            } else if (armor) {
+                dannypx.foe.item.ArmorTagObject a = ValidateItem.isArmor(tag.value2()).value2();
+                percent = a.contains("quality") ? a.getInt("quality") : 0f;
+                climate = a.contains("name") ? a.getString("name") : "";
+                rolls = armorRolls(a.getArmorRolls());
+            }
+            boolean movable = switch (kind) { case PETS -> pet; case ARMOR -> armor; default -> bait; };
             items.add(new Item(slot.index, stack.getHoverName().getString(), amount, rarityRank(rarity),
-                    kind == Kind.PETS ? pet : bait, percent));
+                    movable, percent, luck, scale, climate, rolls));
         }
         slots.sort(Comparator.naturalOrder());
         return items;
+    }
+
+    /// What an armor piece's rolled bonuses add up to (each "+8%" counts 8). Package-private for tests.
+    static float armorRolls(net.minecraft.nbt.ListTag bonuses) {
+        float sum = 0f;
+        for (int i = 0; i < bonuses.size(); i++) {
+            net.minecraft.nbt.CompoundTag b = bonuses.getCompound(i).orElse(null);
+            if (b == null || !b.getBoolean("rolled").orElse(false)) continue;
+            sum += b.getFloat("cur").orElse(0f);
+        }
+        return sum;
     }
 
     /// Higher is rarer; unknown rarities sort last.
@@ -149,11 +193,19 @@ public final class VaultSortHandler {
         Comparator<Item> byRarity = Comparator.comparingInt(Item::rarityRank).reversed();
         Comparator<Item> byName = Comparator.comparing((Item i) -> BaitSortOrder.nameKey(i.name()));
         Comparator<Item> byPercent = Comparator.comparingDouble((Item i) -> i.percent()).reversed();
+        Comparator<Item> byLuck = Comparator.comparingDouble((Item i) -> i.luck()).reversed();
+        Comparator<Item> byScale = Comparator.comparingDouble((Item i) -> i.scale()).reversed();
+        Comparator<Item> byClimate = Comparator.comparing((Item i) -> i.climate() == null ? "" : i.climate().toLowerCase(Locale.ROOT));
+        Comparator<Item> byRolls = Comparator.comparingDouble((Item i) -> i.rolls()).reversed();
         Comparator<Item> order = switch (mode) {
             case AMOUNT -> byAmount.thenComparing(byRarity);
             case RARITY -> byRarity.thenComparing(byPercent).thenComparing(byAmount);
             case NAME -> byName.thenComparing(byRarity);
             case PERCENT -> byPercent.thenComparing(byRarity);
+            case LUCK -> byLuck.thenComparing(byPercent).thenComparing(byRarity);
+            case SCALE -> byScale.thenComparing(byPercent).thenComparing(byRarity);
+            case CLIMATE -> byClimate.thenComparing(byPercent).thenComparing(byRarity);
+            case ROLLS -> byRolls.thenComparing(byPercent).thenComparing(byRarity);
         };
         if (reverse) order = order.reversed();
         order = order.thenComparing(Item::name).thenComparingInt(Item::slot);

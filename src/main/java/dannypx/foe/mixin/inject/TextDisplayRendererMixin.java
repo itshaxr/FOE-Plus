@@ -20,24 +20,30 @@ public abstract class TextDisplayRendererMixin {
 
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Display$TextDisplay;Lnet/minecraft/client/renderer/entity/state/TextDisplayEntityRenderState;F)V", at = @At("TAIL"))
     private void injectExtractRenderState(Display.TextDisplay textDisplay, TextDisplayEntityRenderState textDisplayEntityRenderState, float f, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.textDisplayRendererMixinExtractRenderState.get()
-        ) {
-            Display.TextDisplay.TextRenderState data = textDisplayEntityRenderState.textRenderState;
-            if (data == null) return;
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.textDisplayRendererMixinExtractRenderState.get()
+            ) {
+                Display.TextDisplay.TextRenderState data = textDisplayEntityRenderState.textRenderState;
+                if (data == null) return;
 
-            TextDisplayHandler.Entry entry = TextDisplayHandler.instance().get(textDisplay, data.text(), data.lineWidth(), this::splitLines);
-            if (entry.info() == null) return;
+                TextDisplayHandler.Entry entry = TextDisplayHandler.instance().get(textDisplay, data.text(), data.lineWidth(), this::splitLines);
+                if (entry.info() == null) return;
 
-            textDisplayEntityRenderState.textRenderState = new Display.TextDisplay.TextRenderState(
-                    entry.prefixed(),
-                    data.lineWidth(),
-                    data.textOpacity(),
-                    data.backgroundColor(),
-                    data.flags()
-            );
-            textDisplayEntityRenderState.cachedInfo = entry.info();
+                textDisplayEntityRenderState.textRenderState = new Display.TextDisplay.TextRenderState(
+                        entry.prefixed(),
+                        data.lineWidth(),
+                        data.textOpacity(),
+                        data.backgroundColor(),
+                        data.flags()
+                );
+                textDisplayEntityRenderState.cachedInfo = entry.info();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("TextDisplayRendererMixin.injectExtractRenderState", foe$t);
         }
     }
 

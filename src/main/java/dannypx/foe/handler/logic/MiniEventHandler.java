@@ -41,7 +41,7 @@ public class MiniEventHandler {
     private static final long REFRESH_MS = 10L * 60L * 1000L;
     /// With no event on, check far less often.
     private static final long IDLE_REFRESH_MS = 30L * 60L * 1000L;
-    private static final long FIRST_CHECK_MS = 40_000L;
+    private static final long FIRST_CHECK_MS = 3_000L;
     /// After a catch, refresh the progress at most this often, a few seconds later.
     private static final long CATCH_REFRESH_GAP_MS = 60L * 1000L;
     private static final long CATCH_REFRESH_DELAY_MS = 5_000L;
@@ -49,6 +49,15 @@ public class MiniEventHandler {
     private static final long CAPTURE_MS = 750L;
 
     static final Pattern HEADER = Pattern.compile("^\\s*(.*?\\bMINI EVENT)\\s*[»>]\\s*Ends in\\s*(.+?)\\s*$", Pattern.CASE_INSENSITIVE);
+    /// The server telling you a mission moved: "MED SEA MINI EVENT » MISSION COMPLETE", the mission's name and its
+    /// new progress on the lines after.
+    static final Pattern UPDATE = Pattern.compile("^\\s*.*?\\bMINI EVENT\\s*[»>]\\s*MISSION\\b.*$", Pattern.CASE_INSENSITIVE);
+    /// "PET DROP! You pulled a COMMON Lynx Pet": pet missions move, which FOE+ can't count itself.
+    static final Pattern PET_DROP = Pattern.compile("^\\s*PET DROP!", Pattern.CASE_INSENSITIVE);
+    private static final long UPDATE_MS = 1_500L;
+    private boolean updating = false;
+    private long updateUntil = 0L;
+    private Component updateName = null;
     static final Pattern REROLL = Pattern.compile("^\\s*Daily missions?\\s+rerolls?\\s+in\\s*(.+?)\\s*$", Pattern.CASE_INSENSITIVE);
     /// A progress line: it has the "(0/2)" count (after a └ or similar).
     static final Pattern COUNT = Pattern.compile("\\(\\s*([\\d,]+)\\s*/\\s*([\\d,]+)\\s*\\)");
@@ -189,6 +198,31 @@ public class MiniEventHandler {
             incoming = new ArrayList<>();
             return true;
         }
+        if (!capturing && PET_DROP.matcher(text).find() && active()) {
+            catchRefreshAt = now + CATCH_REFRESH_DELAY_MS;
+            return false;
+        }
+        if (!capturing && UPDATE.matcher(text).matches()) {
+            updating = true;
+            updateUntil = now + UPDATE_MS;
+            updateName = null;
+            if (active()) catchRefreshAt = now + CATCH_REFRESH_DELAY_MS;   // and the server's full numbers soon after
+            return false;
+        }
+        if (!capturing && updating) {
+            if (now > updateUntil) updating = false;
+            else if (!text.isBlank() && !SEPARATOR.matcher(text).matches()) {
+                Matcher uc = COUNT.matcher(text);
+                if (uc.find() && updateName != null) {
+                    applyUpdate(new Mission(updateName, dropLeading(line, uc.start()),
+                            Long.parseLong(uc.group(1).replace(",", "")), Long.parseLong(uc.group(2).replace(",", ""))), now);
+                    updating = false;
+                } else if (!uc.find(0)) {
+                    updateName = dropLeading(line, leadingSpaces(text));
+                }
+                return false;
+            }
+        }
         if (!capturing) {
             // The blank divider bar the server puts above its answer (spaces with a strike-through).
             if (ours && (text.isBlank() || SEPARATOR.matcher(text).matches())) return true;
@@ -237,6 +271,20 @@ public class MiniEventHandler {
         // follows. Hidden only when the answer is ours.
         pendingName = dropLeading(line, leadingSpaces(text));
         return ours;
+    }
+
+    /// Package-private for tests: a mission's new progress from the server's message, put in place of the one
+    /// on the panel with the same name.
+    void applyUpdate(Mission fresh, long now) {
+        List<Mission> next = new ArrayList<>(missions);
+        for (int i = 0; i < next.size(); i++) {
+            Mission old = next.get(i);
+            if (!old.key().equalsIgnoreCase(fresh.key())) continue;
+            next.set(i, fresh);
+            if (fresh.complete() && !old.complete()) completedAt.put(fresh.key(), now);
+            missions = next;
+            return;
+        }
     }
 
     private void finishCapture() {
@@ -297,8 +345,18 @@ public class MiniEventHandler {
         if (missions.isEmpty()) return;
         List<Mission> next = new ArrayList<>(missions.size());
         boolean changed = false;
+        boolean lapped = false;
         for (Mission m : missions) {
-            if (!m.complete() && m.goal() > 0 && countsCatch(m, caught)) {
+            if (m.repeatable() && m.goal() > 0 && countsCatch(m, caught)) {
+                // A repeatable mission starts again when its goal is hit, like the server does: "(99/100) ∞ x0"
+                // becomes "(0/100) ∞ x1". (One the server still shows full counts on from 1.)
+                long done = m.complete() ? 1 : m.done() + 1;
+                boolean lap = done >= m.goal();
+                if (lap) done = 0;
+                next.add(new Mission(m.name(), restarted(replaceFirstNumber(m.progress(), done), lap), done, m.goal()));
+                lapped |= lap;
+                changed = true;
+            } else if (!m.complete() && m.goal() > 0 && countsCatch(m, caught)) {
                 Mission up = new Mission(m.name(), replaceFirstNumber(m.progress(), m.done() + 1), m.done() + 1, m.goal());
                 if (up.complete()) completedAt.put(up.key(), now);
                 next.add(up);
@@ -308,6 +366,8 @@ public class MiniEventHandler {
             }
         }
         if (changed) missions = next;
+        // The server's own numbers soon after a lap (its reward may have counted it a little differently).
+        if (lapped && active() && catchRefreshAt == 0L) catchRefreshAt = now + CATCH_REFRESH_DELAY_MS;
     }
 
     /// Whether a catch counts for a mission. Everything the mission names has to match the
@@ -346,10 +406,29 @@ public class MiniEventHandler {
         if (variant != null && !variant.equals(lower(c.variant()))) return false;
         if (rarity != null && !rarity.equals(lower(c.rarity()))) return false;
         if (!fish.isEmpty()) {
+            // The fish ("Blue Runner") or its family ("Tunas", "Seabreams", "Rays"): the server counts
+            // every fish of a family for a family's mission.
             String caught = normalize(c.fishName() == null ? "" : c.fishName());
-            if (caught == null || !hasWord(caught.replaceAll("[^a-z' ]", " ").replaceAll("\\s+", " "), fish)) return false;
+            boolean byName = caught != null && hasWord(caught.replaceAll("[^a-z' ]", " ").replaceAll("\\s+", " "), fish);
+            if (!byName && !sameFamily(fish, c.group())) return false;
         }
         return true;
+    }
+
+    /// Whether a mission's words name the fish's family: "Tunas" for a Tuna, "Seabreams" for the
+    /// Sea Breams, "Rays" for a Ray; ignoring spaces, case and the plural. Package-private for tests.
+    static boolean sameFamily(String words, String group) {
+        String g = normalize(group == null ? "" : group);
+        if (g == null) return false;
+        String a = singular(words.replaceAll("[^a-z]", "")), b = singular(g.replaceAll("[^a-z]", ""));
+        return !a.isEmpty() && a.equals(b);
+    }
+
+    private static String singular(String w) {
+        if (w.length() > 4 && w.endsWith("ies")) return w.substring(0, w.length() - 3) + "y";
+        if (w.length() > 4 && (w.endsWith("ches") || w.endsWith("shes") || w.endsWith("xes") || w.endsWith("sses"))) return w.substring(0, w.length() - 2);
+        if (w.length() > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.substring(0, w.length() - 1);
+        return w;
     }
 
     private static final List<String> SIZES = List.of("baby", "juvenile", "adult", "large", "gigantic");
@@ -402,6 +481,33 @@ public class MiniEventHandler {
         if (!m.complete() || m.repeatable()) return true;
         Long at = completedAt.get(m.key());
         return at != null && System.currentTimeMillis() - at < SHOW_DONE_MS;
+    }
+
+    /// A repeatable mission's line after a catch: with one more lap ("∞ x0" → "∞ x1") when it just started
+    /// again, and without a finished tick ("✓"), keeping the colours. Package-private for tests.
+    static MutableComponent restarted(Component progress, boolean lap) {
+        MutableComponent out = Component.empty();
+        boolean[] afterInfinity = {false}, bumped = {!lap};
+        progress.visit((style, text) -> {
+            String t = text.replace("✓", "").replace("✔", "");
+            if (!bumped[0]) {
+                int from = 0;
+                int inf = t.indexOf('∞');
+                if (inf >= 0) { afterInfinity[0] = true; from = inf + 1; }
+                if (afterInfinity[0]) {
+                    Matcher x = Pattern.compile("[xX×]\\s*(\\d+)").matcher(t);
+                    if (x.find(from)) {
+                        long laps = Long.parseLong(x.group(1)) + 1;
+                        t = t.substring(0, x.start(1)) + laps + t.substring(x.end(1));
+                        bumped[0] = true;
+                    }
+                }
+            }
+            if (!t.isEmpty()) out.append(Component.literal(t).setStyle(style));
+            return Optional.empty();
+        }, Style.EMPTY);
+        // Trailing spaces left where a tick was.
+        return out;
     }
 
     /// "(46/100) ∞ x0" with its first number changed, keeping the colours.

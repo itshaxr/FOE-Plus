@@ -72,11 +72,11 @@ public class HotbarElement extends Element {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.hudConfig.hotbarElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.hudConfig.hotbarElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.hotbarElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.hotbarElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.hudConfig.hotbarElementScale.get(), Configs.hudConfig.hotbarElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.hotbarElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.hotbarElementScale.get()));
 
         if(LoadingHandler.instance().isLoadingDone() && Configs.hudConfig.showHotbarElement.get()) {
             // Position

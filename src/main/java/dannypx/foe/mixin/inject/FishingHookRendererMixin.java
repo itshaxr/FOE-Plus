@@ -47,124 +47,154 @@ public abstract class FishingHookRendererMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void injectInit(EntityRendererProvider.Context context, CallbackInfo ci) {
-        this.fishingHookModel = new FishingHookEntityModel<>(context.bakeLayer(FishingHookEntityModel.MODEL_LAYER));
+        try {
+            this.fishingHookModel = new FishingHookEntityModel<>(context.bakeLayer(FishingHookEntityModel.MODEL_LAYER));
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectInit", foe$t);
+        }
     }
 
     @Inject(method = "vertex", at = @At("HEAD"), cancellable = true)
     private static void injectVertex(CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showNewFishingHook.get()
-                && Configs.mixinConfig.fishingHookRendererMixinVertex.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showNewFishingHook.get()
+                    && Configs.mixinConfig.fishingHookRendererMixinVertex.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectVertex", foe$t);
         }
     }
 
     @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/FishingHookRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At("RETURN"))
     private void injectRender(FishingHookRenderState fishingHookRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showNewFishingHook.get()
-                && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
-        ) {
-            // Your preset on your bobber, other FOE+ users' presets on theirs, Classic otherwise.
-            IFishingHookRenderState hookState = (IFishingHookRenderState) fishingHookRenderState;
-            dannypx.foe.type.BobberStyle style = dannypx.foe.type.BobberStyle.CLASSIC;
-            if (hookState.foe$isOwn()) {
-                style = Configs.rendererConfig.bobberStyle.get();
-            } else if (Configs.rendererConfig.showOtherBobberStyles.get()) {
-                dannypx.foe.type.BobberStyle theirs = dannypx.foe.nearby_dispatcher.types.ModUserType.bobberStyleOf(hookState.foe$getOwner());
-                if (theirs != null) style = theirs;
-            }
-            poseStack.pushPose();
-            poseStack.translate(0f, -0.0075f, 0f);
-            submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
-            poseStack.popPose();
-        }
-
-        ItemStack bait = ((IFishingHookRenderState) fishingHookRenderState).foer$getBaitStack();
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showBaitOnFishingHook.get()
-                && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
-                && bait != null
-                && !bait.isEmpty()
-                && !((IFishingHookRenderState) fishingHookRenderState).foer$isDisabledBait()
-        ) {
-            Minecraft minecraft = Minecraft.getInstance();
-            if(minecraft.getEntityRenderDispatcher().camera != null) {
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showNewFishingHook.get()
+                    && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
+            ) {
+                // Your preset on your bobber, other FOE+ users' presets on theirs, Classic otherwise.
+                IFishingHookRenderState hookState = (IFishingHookRenderState) fishingHookRenderState;
+                dannypx.foe.type.BobberStyle style = dannypx.foe.type.BobberStyle.CLASSIC;
+                if (hookState.foe$isOwn()) {
+                    style = Configs.rendererConfig.bobberStyle.get();
+                } else if (Configs.rendererConfig.showOtherBobberStyles.get()) {
+                    dannypx.foe.type.BobberStyle theirs = dannypx.foe.nearby_dispatcher.types.ModUserType.bobberStyleOf(hookState.foe$getOwner());
+                    if (theirs != null) style = theirs;
+                }
                 poseStack.pushPose();
-                poseStack.translate(0, -0.4, 0);
-
-                poseStack.mulPose(Axis.YP.rotationDegrees(-minecraft.getEntityRenderDispatcher().camera.yRot()));
-
-                ItemModelResolver itemModelManager = minecraft.getItemModelResolver();
-                TrackingItemStackRenderState itemRenderState = new TrackingItemStackRenderState();
-
-                itemModelManager.updateForTopItem(itemRenderState, bait, ItemDisplayContext.GROUND, minecraft.level, null, 0);
-                itemRenderState.submit(poseStack, submitNodeCollector, fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, 0);
-
+                poseStack.translate(0f, -0.0075f, 0f);
+                submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
                 poseStack.popPose();
             }
+
+            ItemStack bait = ((IFishingHookRenderState) fishingHookRenderState).foer$getBaitStack();
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showBaitOnFishingHook.get()
+                    && Configs.mixinConfig.fishingHookRendererMixinSubmit.get()
+                    && bait != null
+                    && !bait.isEmpty()
+                    && !((IFishingHookRenderState) fishingHookRenderState).foer$isDisabledBait()
+            ) {
+                Minecraft minecraft = Minecraft.getInstance();
+                if(minecraft.getEntityRenderDispatcher().camera != null) {
+                    poseStack.pushPose();
+                    poseStack.translate(0, -0.4, 0);
+
+                    poseStack.mulPose(Axis.YP.rotationDegrees(-minecraft.getEntityRenderDispatcher().camera.yRot()));
+
+                    ItemModelResolver itemModelManager = minecraft.getItemModelResolver();
+                    TrackingItemStackRenderState itemRenderState = new TrackingItemStackRenderState();
+
+                    itemModelManager.updateForTopItem(itemRenderState, bait, ItemDisplayContext.GROUND, minecraft.level, null, 0);
+                    itemRenderState.submit(poseStack, submitNodeCollector, fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, 0);
+
+                    poseStack.popPose();
+                }
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectRender", foe$t);
         }
     }
 
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/projectile/FishingHook;Lnet/minecraft/client/renderer/entity/state/FishingHookRenderState;F)V", at = @At("TAIL"))
     private void injectUpdateRenderState(FishingHook fishingHookEntity, FishingHookRenderState fishingHookEntityState, float f, CallbackInfo ci) {
-        Player owner = fishingHookEntity.getPlayerOwner();
-        ((IFishingHookRenderState) fishingHookEntityState).foe$setOwn(owner != null && owner == Minecraft.getInstance().player);
-        ((IFishingHookRenderState) fishingHookEntityState).foe$setOwner(owner != null ? owner.getUUID() : null);
-        // Bobber timer: seconds since the cast, as a label over your own bobber.
-        if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
-            net.minecraft.network.chat.Component timer = dannypx.foe.handler.logic.BobberTimerHandler.instance().label(fishingHookEntity, f);
-            if (timer != null) {
-                fishingHookEntityState.nameTag = timer;
-                fishingHookEntityState.nameTagAttachment = new Vec3(0, 0.6, 0);
+        try {
+            Player owner = fishingHookEntity.getPlayerOwner();
+            ((IFishingHookRenderState) fishingHookEntityState).foe$setOwn(owner != null && owner == Minecraft.getInstance().player);
+            ((IFishingHookRenderState) fishingHookEntityState).foe$setOwner(owner != null ? owner.getUUID() : null);
+            // Bobber timer: seconds since the cast, as a label over your own bobber.
+            if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
+                net.minecraft.network.chat.Component timer = dannypx.foe.handler.logic.BobberTimerHandler.instance().label(fishingHookEntity, f);
+                if (timer != null) {
+                    fishingHookEntityState.nameTag = timer;
+                    fishingHookEntityState.nameTagAttachment = new Vec3(0, 0.6, 0);
+                }
             }
-        }
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showFishingRodPositions.get()
-                && Configs.mixinConfig.fishingHookRendererMixinExtractRenderState.get()
-        ) {
-            ((IFishingHookRenderState) fishingHookEntityState).foer$setBaitStack(((IFishingHookEntity) fishingHookEntity).foer$getBaitStack());
-            ((IFishingHookRenderState) fishingHookEntityState).foer$setDisabledBait(((IFishingHookEntity) fishingHookEntity).foer$isDisabledBait());
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showFishingRodPositions.get()
+                    && Configs.mixinConfig.fishingHookRendererMixinExtractRenderState.get()
+            ) {
+                ((IFishingHookRenderState) fishingHookEntityState).foer$setBaitStack(((IFishingHookEntity) fishingHookEntity).foer$getBaitStack());
+                ((IFishingHookRenderState) fishingHookEntityState).foer$setDisabledBait(((IFishingHookEntity) fishingHookEntity).foer$isDisabledBait());
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectUpdateRenderState", foe$t);
         }
     }
 
     @Inject(method = "getPlayerHandPos", at = @At("RETURN"), cancellable = true)
     private void injectGetPlayerHandPos(Player player, float f, float g, CallbackInfoReturnable<Vec3> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showFishingRodPositions.get()
-                && Configs.mixinConfig.fishingHookRendererMixinGetPlayerHandPos.get()
-        ) {
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.options.getCameraType().isFirstPerson() && player == minecraft.player) return;
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showFishingRodPositions.get()
+                    && Configs.mixinConfig.fishingHookRendererMixinGetPlayerHandPos.get()
+            ) {
+                Minecraft minecraft = Minecraft.getInstance();
+                if (minecraft.options.getCameraType().isFirstPerson() && player == minecraft.player) return;
 
-            RodRendererHandler.RodSettings settings = RodRendererHandler.instance().get(player.getUUID());
-            if (settings.isDefault()) return;
+                RodRendererHandler.RodSettings settings = RodRendererHandler.instance().get(player.getUUID());
+                if (settings.isDefault()) return;
 
-            HumanoidArm holdingArm = player.getMainHandItem().is(Items.FISHING_ROD)
-                    ? player.getMainArm() : player.getMainArm().getOpposite();
-            float side = holdingArm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+                HumanoidArm holdingArm = player.getMainHandItem().is(Items.FISHING_ROD)
+                        ? player.getMainArm() : player.getMainArm().getOpposite();
+                float side = holdingArm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
 
-            float scaleChange = settings.scale() - 1.0f;
-            float outward = settings.offsetRight() + settings.lineOffsetRight() + TIP_OUTWARD * scaleChange;
-            float up = settings.offsetUp() + settings.lineOffsetUp() + TIP_UP * scaleChange;
-            float forward = settings.offsetForward() + settings.lineOffsetForward() + TIP_FORWARD * scaleChange;
+                float scaleChange = settings.scale() - 1.0f;
+                float outward = settings.offsetRight() + settings.lineOffsetRight() + TIP_OUTWARD * scaleChange;
+                float up = settings.offsetUp() + settings.lineOffsetUp() + TIP_UP * scaleChange;
+                float forward = settings.offsetForward() + settings.lineOffsetForward() + TIP_FORWARD * scaleChange;
 
-            float bodyYawRadians = Mth.lerp(g, player.yBodyRotO, player.yBodyRot) * (float) (Math.PI / 180.0);
-            double sine = Math.sin(bodyYawRadians);
-            double cosine = Math.cos(bodyYawRadians);
-            float playerScale = player.getScale();
+                float bodyYawRadians = Mth.lerp(g, player.yBodyRotO, player.yBodyRot) * (float) (Math.PI / 180.0);
+                double sine = Math.sin(bodyYawRadians);
+                double cosine = Math.cos(bodyYawRadians);
+                float playerScale = player.getScale();
 
-            double worldX = (-cosine * side * outward - sine * forward) * playerScale;
-            double worldY = up * playerScale;
-            double worldZ = (-sine * side * outward + cosine * forward) * playerScale;
+                double worldX = (-cosine * side * outward - sine * forward) * playerScale;
+                double worldY = up * playerScale;
+                double worldZ = (-sine * side * outward + cosine * forward) * playerScale;
 
-            cir.setReturnValue(cir.getReturnValue().add(worldX, worldY, worldZ));
+                cir.setReturnValue(cir.getReturnValue().add(worldX, worldY, worldZ));
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectGetPlayerHandPos", foe$t);
         }
     }
 }

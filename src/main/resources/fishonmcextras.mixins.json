@@ -17,10 +17,18 @@
   "client": [
     "accessor.AbstractSelectionListAccessor",
     "accessor.BossHealthOverlayAccessor",
+    "accessor.ContainerScreenPosAccessor",
+    "accessor.MinecraftFontAccessor",
+    "accessor.FontManagerAccessor",
+    "accessor.FontSetAccessor",
+    "accessor.BitmapGlyphAccessor",
+    "accessor.ClientTextTooltipAccessor",
+    "accessor.ModelManagerAccessor",
     "accessor.GuiAccessor",
     "accessor.LevelRendererAccessor",
     "accessor.MinecraftAccessor",
     "accessor.PlayerTabOverlayAccessor",
+    "accessor.SpriteContentsAccessor",
     "inject.AbstractContainerScreenMixin",
     "inject.AbstractRecipeBookScreenMixin",
     "inject.AbstractSelectionListMixin",
@@ -51,6 +59,7 @@
     "inject.ObjectContentsMixin",
     "inject.PlayerTabOverlayMixin",
     "inject.RecipeBookWidgetMixin",
-    "inject.TextDisplayRendererMixin"
+    "inject.TextDisplayRendererMixin",
+    "inject.TooltipRenderUtilMixin"
   ]
 }

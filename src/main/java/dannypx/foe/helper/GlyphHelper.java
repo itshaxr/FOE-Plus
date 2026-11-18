@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GlyphHelper {
     private static final Map<Long, OptionalInt> CACHE = new ConcurrentHashMap<>();
+    static { dannypx.foe.handler.logic.MemoryGuard.register("glyphColours", CACHE::size, CACHE::clear); }
 
     public static OptionalInt getColor(Identifier font, int codepoint) {
         long key = ((long) font.hashCode() << 32) | (codepoint & 0xFFFFFFFFL);

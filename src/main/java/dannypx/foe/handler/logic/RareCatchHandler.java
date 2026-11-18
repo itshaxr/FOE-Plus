@@ -57,7 +57,7 @@ public final class RareCatchHandler {
     /// The boss bar's weather shows ⚡ in a thunderstorm (also at night, next to the moon's ○).
     /// Rain (☂) doesn't count.
     /// Package-private for tests.
-    static boolean isThunderstorm(String weather) {
+    public static boolean isThunderstorm(String weather) {
         return weather != null && weather.contains("\u26A1");
     }
 

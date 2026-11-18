@@ -17,25 +17,31 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class PlayerModelMixin {
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V", at = @At("TAIL"))
     private void injectSetupAnim(AvatarRenderState avatarRenderState, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.useBothHandsHoldingFishThirdPerson.get()
-                && Configs.mixinConfig.playerModelMixinSetupAnim.get()
-        ) {
-            if(!((IFishPoseState) avatarRenderState).foer$isHoldingFish()) return;
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.useBothHandsHoldingFishThirdPerson.get()
+                    && Configs.mixinConfig.playerModelMixinSetupAnim.get()
+            ) {
+                if(!((IFishPoseState) avatarRenderState).foer$isHoldingFish()) return;
 
-            PlayerModel self = (PlayerModel) (Object) this;
+                PlayerModel self = (PlayerModel) (Object) this;
 
-            self.rightArm.xRot = HoldingFishRenderHandler.FIRST_PERSON_FISH_ARM_X_ROT;
-            self.rightArm.yRot = 0.0F;
-            self.rightArm.zRot = 0.0F;
+                self.rightArm.xRot = HoldingFishRenderHandler.FIRST_PERSON_FISH_ARM_X_ROT;
+                self.rightArm.yRot = 0.0F;
+                self.rightArm.zRot = 0.0F;
 
-            self.leftArm.xRot = HoldingFishRenderHandler.FIRST_PERSON_FISH_ARM_X_ROT;
-            self.leftArm.yRot = 0.0F;
-            self.leftArm.zRot = 0.0F;
+                self.leftArm.xRot = HoldingFishRenderHandler.FIRST_PERSON_FISH_ARM_X_ROT;
+                self.leftArm.yRot = 0.0F;
+                self.leftArm.zRot = 0.0F;
 
-            HoldingFishRenderHandler.bobAnimation(self.rightArm, avatarRenderState.ageInTicks, HoldingFishRenderHandler.FIRST_PERSON_FISH_SWAY_STRENGTH);
-            HoldingFishRenderHandler.bobAnimation(self.leftArm, avatarRenderState.ageInTicks, -HoldingFishRenderHandler.FIRST_PERSON_FISH_SWAY_STRENGTH);
+                HoldingFishRenderHandler.bobAnimation(self.rightArm, avatarRenderState.ageInTicks, HoldingFishRenderHandler.FIRST_PERSON_FISH_SWAY_STRENGTH);
+                HoldingFishRenderHandler.bobAnimation(self.leftArm, avatarRenderState.ageInTicks, -HoldingFishRenderHandler.FIRST_PERSON_FISH_SWAY_STRENGTH);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("PlayerModelMixin.injectSetupAnim", foe$t);
         }
     }
 

@@ -17,39 +17,63 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class GuiMixin {
     @Inject(method = "setTitle", at = @At("HEAD"))
     private void injectSetTitle(Component title, CallbackInfo ci) {
-        if(LoadingHandler.instance().isLoadingDone()
-                && Configs.mixinConfig.guiMixinSetTitle.get()
-        ) {
-            TitleHandler.instance().setTitle(title);
+        try {
+            if(LoadingHandler.instance().isLoadingDone()
+                    && Configs.mixinConfig.guiMixinSetTitle.get()
+            ) {
+                TitleHandler.instance().setTitle(title);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("GuiMixin.injectSetTitle", foe$t);
         }
     }
 
     @Inject(method = "setSubtitle", at = @At("HEAD"))
     private void injectSetSubtitle(Component subtitle, CallbackInfo ci) {
-        if(LoadingHandler.instance().isLoadingDone()
-                && Configs.mixinConfig.guiMixinSetSubtitle.get()
-        ) {
-            TitleHandler.instance().setSubTitle(subtitle);
+        try {
+            if(LoadingHandler.instance().isLoadingDone()
+                    && Configs.mixinConfig.guiMixinSetSubtitle.get()
+            ) {
+                TitleHandler.instance().setSubTitle(subtitle);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("GuiMixin.injectSetSubtitle", foe$t);
         }
     }
 
     @Inject(method = "renderSelectedItemName", at = @At("HEAD"),  cancellable = true)
     private void injectRenderSelectedItemName(GuiGraphics guiGraphics, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.guiMixinRenderSelectedItemName.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.guiMixinRenderSelectedItemName.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("GuiMixin.injectRenderSelectedItemName", foe$t);
         }
     }
 
     @Inject(method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"), cancellable = true)
     private void injectRenderScoreboardSidebar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.guiMixinRenderScoreBoardSidebar.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.guiMixinRenderScoreBoardSidebar.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("GuiMixin.injectRenderScoreboardSidebar", foe$t);
         }
     }
 
@@ -57,8 +81,14 @@ public abstract class GuiMixin {
     // FOE-R's custom hotbar was removed in favour of FOE's HUD, so the vanilla hotbar is used again.
     @Inject(method = "renderSlot", at = @At("HEAD"))
     private void injectRenderSlotEquippedPet(GuiGraphics guiGraphics, int x, int y, DeltaTracker deltaTracker, net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack stack, int seed, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
-            dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawEquippedPetHighlight(guiGraphics, stack, x, y);
+        try {
+            if(ConnectionHandler.instance().isOnServer() && Configs.mainConfig.enableMod.get()) {
+                dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawEquippedPetHighlight(guiGraphics, stack, x, y);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("GuiMixin.injectRenderSlotEquippedPet", foe$t);
         }
     }
 }

@@ -50,6 +50,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     AbstractWidget buttonMenuToggle;
     dannypx.foe.search.editbox.SearchBarEditBox searchBar;
     AbstractWidget addFriendButton;
+    AbstractWidget offlineButton;
     AbstractWidget buttonMenuEditor;
     List<AbstractWidget> buttons = new ArrayList<>();
     Pair<String, Element> buttonBox;
@@ -67,6 +68,12 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     //endregion
 
     //region Methods
+    /// The buttons and boxes need nothing the load scan finds, so they're there from the first time the inventory
+    /// opens on the server, not only once loading is done.
+    private static boolean ready() {
+        return LoadingHandler.instance().isLoadingDone() || dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer();
+    }
+
     public void init(Screen screen) {
         buttonBoxRows = (CustomButtonDataHandler.instance().getCustomButtonData().buttonList.getOrDefault(CustomButtonDataHandler.CustomButtonDataModel.INVENTORY_SCREEN, Pair.of(new ArrayList<>(), false)).value1().size() + buttonsPerRow - 1) / buttonsPerRow;
 
@@ -75,7 +82,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     }
 
     public void render(Screen screen, GuiGraphics guiGraphics, int mouseX, int mouseY, float tickDelta) {
-        if(LoadingHandler.instance().isLoadingDone()
+        if(ready()
                 && Configs.mainConfig.enableMod.get()
         ) {
             this.renderButtonHelp(guiGraphics, true, false);
@@ -96,7 +103,10 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
 
     /// Clicking the search bar focuses it; clicking anywhere else lets go of it.
     public boolean onMouseClicked(Screen screen, net.minecraft.client.input.MouseButtonEvent context, boolean consumed) {
-        if(searchBar != null) searchBar.setFocused(searchBar.isMouseOver(context.x(), context.y()));
+        boolean over = searchBar != null && searchBar.isMouseOver(context.x(), context.y());
+        if(searchBar != null) searchBar.setFocused(over);
+        // while it has focus, keys are for typing (E, number keys and the like don't act on the inventory)
+        dannypx.foe.handler.logic.SearchHandler.instance().setFocused(over);
         return consumed;
     }
 
@@ -113,7 +123,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
         int right = minecraft.getWindow().getGuiScaledWidth() / 2 - 88 - 4;
         int top = minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP;
         int maxBottom = minecraft.getWindow().getGuiScaledHeight() / 2 + INVENTORY_TOP + 2;
-        TimersCrewBox.render(guiGraphics, font, right, top, maxBottom, addFriendButton);
+        TimersCrewBox.render(guiGraphics, font, right, top, maxBottom, addFriendButton, offlineButton);
     }
 
     private void renderButtonBoxString(GuiGraphics guiGraphics) {
@@ -143,7 +153,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     }
 
     private void initWidgets(Screen screen) {
-        if(LoadingHandler.instance().isLoadingDone()
+        if(ready()
                 && Configs.mainConfig.enableMod.get()
         ) {
             widgets.clear();
@@ -171,6 +181,17 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
                     .build();
             addFriendButton.visible = false;
             if(Configs.inventoryScreenConfig.showMoonTimer.get()) widgets.add(addFriendButton);
+            // Beside it: show or hide the offline names (they come back as soon as they're online)
+            offlineButton = new SmallButtonBuilder(0, 0, 10, 10,
+                    button -> {
+                        Configs.inventoryScreenConfig.timersOffline.accept(!Configs.inventoryScreenConfig.timersOffline.get());
+                        Configs.inventoryScreenConfig.save();
+                    })
+                    .icon("\u25D0")
+                    .tooltip(Tooltip.create(Component.literal("Hide offline names")))
+                    .build();
+            offlineButton.visible = false;
+            if(Configs.inventoryScreenConfig.showMoonTimer.get()) widgets.add(offlineButton);
 
             widgets.add(new SmallButtonBuilder(
                     minecraft.getWindow().getGuiScaledWidth() / 2 + 66,

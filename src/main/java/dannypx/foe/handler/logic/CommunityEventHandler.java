@@ -31,9 +31,12 @@ public class CommunityEventHandler {
     /// How often to check while an event is on.
     private static final long REFRESH_MS = 10L * 60L * 1000L;
     /// First check after joining.
-    private static final long FIRST_CHECK_MS = 30_000L;
+    /// First after logging in (before the other background reads), so the box fills straight away.
+    private static final long FIRST_CHECK_MS = 1_000L;
     /// Lines arriving this soon after our own /communityevent are its answer and are hidden.
-    private static final long HIDE_WINDOW_MS = 3_000L;
+    private static final long HIDE_WINDOW_MS = 5_000L;
+    /// How often to check when the Community panel is on and the boss bar isn't showing the count.
+    private static final long PANEL_REFRESH_MS = 2L * 60L * 1000L;
 
     private String kind = "";        // "Catches"
     private String total = "";       // "88.91K"
@@ -47,6 +50,10 @@ public class CommunityEventHandler {
     private long lastTotal = -1L;
     /// After the goal resets, check /communityevent this soon for your exact new contribution.
     private static final long AFTER_RESET_CHECK_MS = 5_000L;
+    /// How long a drop in the total must hold before it counts as the goal resetting.
+    static final long RESET_CONFIRM_MS = 20_000L;
+    /// When the current drop was first seen (0: none).
+    private long resetSeenAt = 0L;
 
     //region Reading
     /// From chat: true when the line should be hidden (it's the answer to our own check).
@@ -64,6 +71,8 @@ public class CommunityEventHandler {
             goal = normalize(m.group(3));
             lastReadAt = System.currentTimeMillis();
             noteTotal(parse(total), lastReadAt);
+            fromLastSession = false;
+            saveLast();
             return ours;
         }
         m = YOURS.matcher(text);
@@ -71,6 +80,7 @@ public class CommunityEventHandler {
             long value = parse(m.group(2));
             if (value >= 0) contribution = value;
             lastReadAt = System.currentTimeMillis();
+            saveLast();
             return ours;
         }
         // Any other line about the community event in our own answer.
@@ -92,11 +102,18 @@ public class CommunityEventHandler {
             joinedAt = 0L;
             return;
         }
-        if (joinedAt == 0L) joinedAt = now;
+        if (joinedAt == 0L) {
+            joinedAt = now;
+            loadLast(now);
+        }
         String boss = BossEventHandler.instance().getCommunityGoalCurrent().getString().trim();
-        if (!boss.isEmpty()) noteTotal(parse(boss), now);
-        if (!Configs.hudConfig.topBarShowCommunity.get() || !Configs.hudConfig.communityAutoRefresh.get()) return;
-        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= REFRESH_MS;
+        long bossValue = parse(boss);
+        if (bossValue >= 0) noteTotal(bossValue, now);
+        // Checked for the top bar's readout or the Community panel, whichever is on.
+        boolean wanted = Configs.hudConfig.topBarShowCommunity.get() || communityInTimers();
+        if (!wanted || !Configs.hudConfig.communityAutoRefresh.get()) return;
+        long every = communityInTimers() && bossValue < 0 ? PANEL_REFRESH_MS : REFRESH_MS;
+        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= every;
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
         lastCheckAt = now;
         hideUntil = now + HIDE_WINDOW_MS;
@@ -107,22 +124,79 @@ public class CommunityEventHandler {
     /// A new reading of the community total. It only ever goes up during a goal, so a big drop
     /// means the goal was hit and a new one began: your contribution starts again from 0 (it
     /// counts up with your catches), and /communityevent is checked shortly for the exact number.
-    /// Package-private for tests.
+    ///
+    /// A drop has to hold for a while first: one odd reading (the boss bar mid-update, another bar
+    /// read by mistake) never wipes what you've helped with. Package-private for tests.
     void noteTotal(long value, long now) {
         if (value < 0) return;
         if (lastTotal >= 0 && isReset(lastTotal, value)) {
-            if (contribution >= 0) contribution = 0;
+            if (resetSeenAt == 0L) {
+                resetSeenAt = now;
+                // check /communityevent soon: its answer has your exact contribution either way
+                if (lastCheckAt != 0L) lastCheckAt = Math.min(lastCheckAt, now - REFRESH_MS + AFTER_RESET_CHECK_MS);
+            }
+            if (now - resetSeenAt < RESET_CONFIRM_MS) return; // not sure yet: keep the old total to compare with
+            if (contribution >= 0 && lastReadAt < resetSeenAt) contribution = 0; // no fresher answer came
             total = String.valueOf(value);
-            if (lastCheckAt != 0L) lastCheckAt = Math.min(lastCheckAt, now - REFRESH_MS + AFTER_RESET_CHECK_MS);
+            resetSeenAt = 0L;
+            lastTotal = value;
+            return;
         }
+        resetSeenAt = 0L; // back where it was: just a blip
         lastTotal = value;
     }
 
-    /// True when the total fell by at least a tenth: the goal reset (rounding in "88.91K" never
-    /// moves it that much).
+    /// True when the total fell to under half of what it was: the goal reset (to near nothing), not
+    /// rounding or a misread.
     static boolean isReset(long before, long after) {
-        return after < before && before - after >= Math.max(10L, before / 10L);
+        return after < before / 2 && before - after >= 10L;
     }
+
+    //region Last reading, kept between sessions
+    /// The last /communityevent answer is saved, so after logging in the box shows it at once
+    /// (until the fresh answer a second later replaces it). Older than this, it isn't used.
+    static final long LAST_MAX_AGE_MS = 12L * 60L * 60L * 1000L;
+    /// True while what's shown is the saved reading from last time (no fresh answer yet).
+    private boolean fromLastSession = false;
+    public boolean fromLastSession() { return fromLastSession; }
+
+    private static final class Last { String kind, total, goal; long contribution = -1, savedAt; }
+    private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
+    static java.util.function.Supplier<java.nio.file.Path> LAST_FILE = () -> net.fabricmc.loader.api.FabricLoader.getInstance()
+            .getConfigDir().resolve(dannypx.foe.FishOnMCExtras.MOD_ID).resolve("community_last.json");
+
+    private void saveLast() {
+        try {
+            java.nio.file.Path f = LAST_FILE.get();
+            if (f == null || total.isEmpty()) return;
+            Last l = new Last();
+            l.kind = kind; l.total = total; l.goal = goal; l.contribution = contribution; l.savedAt = System.currentTimeMillis();
+            java.nio.file.Files.createDirectories(f.getParent());
+            java.nio.file.Files.writeString(f, GSON.toJson(l));
+        } catch (Throwable ignored) {
+            // shown from the next answer instead
+        }
+    }
+
+    /// Package-private for tests.
+    void loadLast(long now) {
+        if (!total.isEmpty()) return;
+        try {
+            java.nio.file.Path f = LAST_FILE.get();
+            if (f == null || !java.nio.file.Files.exists(f)) return;
+            Last l = GSON.fromJson(java.nio.file.Files.readString(f), Last.class);
+            if (l == null || l.total == null || l.total.isEmpty() || now - l.savedAt > LAST_MAX_AGE_MS || l.savedAt > now) return;
+            kind = l.kind == null ? "" : l.kind;
+            total = l.total;
+            goal = l.goal == null ? "" : l.goal;
+            contribution = l.contribution;
+            fromLastSession = true;
+            // not lastTotal: a goal hit while you were away mustn't look like one hit just now
+        } catch (Throwable ignored) {
+            // nothing saved
+        }
+    }
+    //endregion
 
     /// The server said to wait: check again after that.
     public void retryIn(long ms) {
@@ -132,18 +206,18 @@ public class CommunityEventHandler {
 
     //region For the top bar
     public boolean hasData() {
-        return !total.isEmpty() || contribution >= 0 || !BossEventHandler.instance().getCommunityGoalCurrent().getString().isBlank();
+        return !total.isEmpty() || contribution >= 0 || parse(BossEventHandler.instance().getCommunityGoalCurrent().getString().trim()) >= 0;
     }
 
     /// The event total: the boss bar's live number when shown, else the last /communityevent.
     public String total() {
         String boss = BossEventHandler.instance().getCommunityGoalCurrent().getString().trim();
-        return boss.isEmpty() ? total : boss;
+        return parse(boss) < 0 ? total : boss;
     }
 
     public String goal() {
         String boss = BossEventHandler.instance().getCommunityGoalMax().getString().trim();
-        return boss.isEmpty() ? goal : boss;
+        return parse(boss) <= 0 ? goal : boss;
     }
 
     public long contribution() {
@@ -191,4 +265,9 @@ public class CommunityEventHandler {
         }
     }
     //endregion
+
+    /// The Timers panel shows the community catches.
+    public static boolean communityInTimers() {
+        return Configs.hudConfig.showTimersPanel.get() && Configs.hudConfig.timersShowCommunity.get();
+    }
 }

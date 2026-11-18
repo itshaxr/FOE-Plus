@@ -142,20 +142,22 @@ public class BossEventHandler extends Handler {
                                     .withColor(TextColor.parseColor(communityGoalMaxObject.get("color").getAsString()).getOrThrow().getValue());
                         }
                     }
-                } else if(name.contains("\uA201\uEEE1\uA208")) {
+                } else if(name.contains("\uA201\uEEE1\uA208") || looksLikeSpot(name)) {
                     // The spot within the location (Big Bear Dock...). Before, every other boss bar
                     // (even the location bar itself) cleared this, so it flickered or never showed.
                     sawSubLocation[0] = true;
                     subLocationSeenAt = System.currentTimeMillis();
                     if(Objects.equals(prevSubLocationBar, name)) return;
                     prevSubLocationBar = name;
-                    JsonObject jsonObject = JsonParser.parseString(TextHelper.componentToJson(lerpingBossEvent.getName())).getAsJsonObject();
-
-                    if(jsonObject.get("extra") != null) {
-                        JsonObject locationObject = jsonObject.get("extra").getAsJsonArray().get(0).getAsJsonObject();
-                        subLocation = Component.literal(locationObject.get("text").getAsString())
-                                .withColor(TextColor.parseColor(locationObject.get("color").getAsString()).getOrThrow().getValue());
-                    }
+                    // the name, without the server's icons and spacing glyphs, in the colour of its letters
+                    String plain = spotText(name);
+                    TextColor[] color = {null};
+                    lerpingBossEvent.getName().visit((style, part) -> {
+                        if (color[0] == null && style.getColor() != null && part.replaceAll("[\\uE000-\\uF8FF\\uA000-\\uA4CF\\s]", "").length() > 0) color[0] = style.getColor();
+                        return java.util.Optional.empty();
+                    }, net.minecraft.network.chat.Style.EMPTY);
+                    subLocation = Component.literal(plain);
+                    if (color[0] != null) subLocation.withColor(color[0].getValue());
                 }
             }));
         }
@@ -165,6 +167,82 @@ public class BossEventHandler extends Handler {
         }
     }
     //endregion
+
+    /// Package-private for tests: a boss bar that's only a place's name ("Big Bear Dock"): the spot you're at,
+    /// even if the server changes the spacing glyphs around it. Timers, goals and events have numbers or colons.
+    static boolean looksLikeSpot(String bar) {
+        if (bar == null || bar.contains("\uF039")) return false;
+        String plain = spotText(bar);
+        if (plain.length() < 3 || plain.length() > 40) return false;
+        // timers, goals, money and percentages aren't places
+        if (plain.matches(".*[:/%$].*") || plain.matches(".*\\d+\\.?\\d*[KkMm]?\\b.*\\d.*") || Character.isDigit(plain.charAt(0))) return false;
+        long letters = plain.chars().filter(Character::isLetter).count();
+        if (letters < 3) return false;
+        String lower = plain.toLowerCase(java.util.Locale.ROOT);
+        for (String word : NOT_SPOTS) if (lower.contains(word)) return false;
+        return true;
+    }
+
+    /// Package-private for tests: a bar's words without the server's icons and spacing glyphs ("⚓ Big Bear Dock" →
+    /// "Big Bear Dock").
+    static String spotText(String bar) {
+        String t = bar.replaceAll("[\\uE000-\\uF8FF\\uA000-\\uA4CF]", "");
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < t.length(); ) {
+            int cp = t.codePointAt(i);
+            int type = Character.getType(cp);
+            boolean keep = Character.isLetterOrDigit(cp) || Character.isSpaceChar(cp) || "'&.-,()#/:%$".indexOf(cp) >= 0;
+            if (type == Character.OTHER_SYMBOL || type == Character.SURROGATE || type == Character.PRIVATE_USE) keep = false;
+            if (keep) b.appendCodePoint(cp);
+            i += Character.charCount(cp);
+        }
+        return b.toString().replaceAll("\\s+", " ").trim();
+    }
+
+    /// Every boss bar's text as the server sent it (for /foe bossbar dump).
+    public java.util.List<String> dump() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        try {
+            var map = ((BossHealthOverlayAccessor) (minecraft.gui.getBossOverlay())).getEvents();
+            for (var e : map.values()) {
+                String name = e.getName().getString();
+                out.add("TEXT: " + name);
+                out.add("CODES: " + name.codePoints().mapToObj(c -> c < 0x7F && c >= 0x20 ? String.valueOf((char) c) : String.format("\\u%04X", c))
+                        .collect(java.util.stream.Collectors.joining()));
+                out.add("JSON: " + TextHelper.componentToJson(e.getName()));
+                out.add("spot? " + looksLikeSpot(name) + "  as: " + spotText(name));
+                out.add("");
+            }
+        } catch (RuntimeException ex) {
+            out.add("failed: " + ex);
+        }
+        out.add("location: " + getLocation().getString() + "  spot: " + getSubLocation().getString());
+        // the sidebar and the tab list's footer too, in case the spot is shown there now
+        try {
+            var level = minecraft.level;
+            if (level != null) {
+                var board = level.getScoreboard();
+                var obj = board.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
+                if (obj != null) {
+                    out.add("");
+                    out.add("SIDEBAR: " + obj.getDisplayName().getString());
+                    for (var entry : board.listPlayerScores(obj)) {
+                        var team = board.getPlayersTeam(entry.owner());
+                        Component line = net.minecraft.world.scores.PlayerTeam.formatNameForTeam(team, entry.ownerName());
+                        out.add("  " + line.getString());
+                    }
+                }
+            }
+            var footer = ((dannypx.foe.mixin.accessor.PlayerTabOverlayAccessor) minecraft.gui.getTabList()).getFooter();
+            if (footer != null) out.add("TAB FOOTER: " + footer.getString().replace("\n", " | "));
+        } catch (RuntimeException ex) {
+            out.add("sidebar failed: " + ex);
+        }
+        return out;
+    }
+
+    private static final String[] NOT_SPOTS = {"contest", "event", "frenzy", "community", "goal", "boost", "oasis", "rush",
+            "storm", "moon", "fabled", "cryptid", "crew", "quest", "loading", "teleport"};
 
     /// The icons just before the time on the location bar ("○⚡" in "... ○⚡ 11:30 PM ..."), read
     /// from the whole bar so it doesn't depend on how the server splits it into parts.

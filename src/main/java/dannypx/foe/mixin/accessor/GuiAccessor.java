@@ -9,4 +9,13 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface GuiAccessor {
     @Accessor
     int getOverlayMessageTime();
+
+    @Accessor
+    net.minecraft.network.chat.Component getOverlayMessageString();
+
+    @Accessor("title")
+    net.minecraft.network.chat.Component foe$getTitle();
+
+    @Accessor("subtitle")
+    net.minecraft.network.chat.Component foe$getSubtitle();
 }

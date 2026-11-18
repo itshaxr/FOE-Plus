@@ -55,11 +55,18 @@ public class CustomHudDataHandler extends Handler {
             customHudData.uuid = minecraft.player.getUUID();
         } else if(customHudData.uuid != null && this.needsUpdate) {
             this.updateCustomHudData();
-        } else if(!CustomHudDataModel.CUSTOM_HUD_DATA_MODEL_VERSION.equals(customHudData.version)) {
-            this.hideUntouchedDefaults();
-            this.updateDefault();
+        } else if(customHudData.uuid != null && !CustomHudDataModel.CUSTOM_HUD_DATA_MODEL_VERSION.equals(customHudData.version)) {
+            // Older data (FOE-R's, or FOE+ from before 0.6): every HUD in it is left behind, once, for everyone,
+            // so no FOE-R HUD (its examples or ones carried over) shows up. A copy of what was there is kept next
+            // to the data file (custom_hud.removed.json). Only HUDs made from now on are kept.
+            if (!customHudData.customHudRawDataList.isEmpty()) {
+                dannypx.foe.handler.logic.LoggerHandler.info("Custom HUDs: removing " + customHudData.customHudRawDataList.size() + " HUD(s) left from FOE-R / older FOE+ (copy kept)");
+                dannypx.foe.handler.io.DataFileHandler.instance().saveCopy(dannypx.foe.handler.io.DataModels.DataModelType.CUSTOM_HUD_DATA, "removed");
+            }
+            customHudData.customHudRawDataList = new HashMap<>();
             customHudData.version = CustomHudDataModel.CUSTOM_HUD_DATA_MODEL_VERSION;
             needsUpdate = true;
+            needsRenderUpdate = true;
         }
     }
 
@@ -154,6 +161,11 @@ public class CustomHudDataHandler extends Handler {
         needsUpdate = true;
     }
 
+    /// Nothing but the example HUDs (a fresh install).
+    public boolean onlyExamples() {
+        return CustomHudDataModel.defaultHuds().keySet().containsAll(customHudData.customHudRawDataList.keySet());
+    }
+
     public void resetHuds() {
         customHudData.customHudRawDataList = new HashMap<>(CustomHudDataModel.defaultHuds());
 
@@ -163,60 +175,11 @@ public class CustomHudDataHandler extends Handler {
 
     //region Model
     public static class CustomHudDataModel extends DataModels.DataModel {
-        private static final String CUSTOM_HUD_DATA_MODEL_VERSION = "0.5";
+        private static final String CUSTOM_HUD_DATA_MODEL_VERSION = "0.6";
 
-        /// FOE-R's example HUDs. They are listed under Custom HUDs but start hidden: nothing shows
-        /// up on a fresh install until you turn it on. Fresh objects every call, so editing a HUD
-        /// never changes the defaults themselves.
+        /// No HUDs come with FOE+: FOE-R's examples are gone for good. Custom HUDs are only ever the ones you make.
         static Map<String, CustomHud> defaultHuds() {
-            return Map.of(
-                "Quest Hud",
-                new CustomHud(new ArrayList<>(Arrays.asList(
-                        Triplet.of("%hide_line.(<is_blank.(<quest_data.data.0.goal>)>)%&7&l- &fQuests &7-", true, true),
-                        Triplet.of("%hide_line.(<is_blank.(<quest_data.data.0.goal>)>)%", false, false),
-                        Triplet.of("%quest_data.data.0.goal% &e%quest_data.data.0.current%&7/&f%quest_data.data.0.max%", false, true),
-                        Triplet.of("%quest_data.data.1.goal% &e%quest_data.data.1.current%&7/&f%quest_data.data.1.max%", false, true),
-                        Triplet.of("%quest_data.data.2.goal% &e%quest_data.data.2.current%&7/&f%quest_data.data.2.max%", false, true),
-                        Triplet.of("%quest_data.data.3.goal% &e%quest_data.data.3.current%&7/&f%quest_data.data.3.max%", false, true),
-                        Triplet.of("%quest_data.data.4.goal% &e%quest_data.data.4.current%&7/&f%quest_data.data.4.max%", false, true),
-                        Triplet.of("%quest_data.data.5.goal% &e%quest_data.data.5.current%&7/&f%quest_data.data.5.max%", false, true),
-                        Triplet.of("%quest_data.data.6.goal% &e%quest_data.data.6.current%&7/&f%quest_data.data.6.max%", false, true),
-                        Triplet.of("%quest_data.data.7.goal% &e%quest_data.data.7.current%&7/&f%quest_data.data.7.max%", false, true)
-                )),
-                        Alignment.TOP_RIGHT,
-                        1,
-                        15,
-                        1.0f,
-                        true,
-                        true,
-                        false
-                ),
-                "Contest Hud",
-                new CustomHud(new ArrayList<>(Arrays.asList(
-                        Triplet.of("&7&l- &fContest &7-", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_on>)%", false, false),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_on>)%&fStarts in: &e%timer.Contest Timer.time.off.minute%&7:&e%timer.Contest Timer.time.off.second%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%", false, false),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)% %substring.(<chat.trigger.Contest Location>,<expression.(<index_of.(<chat.trigger.Contest Location>,\":\")>+2)>)%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)% %substring.(<chat.trigger.Contest Type>,<expression.(<index_of.(<chat.trigger.Contest Type>,\":\")>+2)>)%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%&fEnds in: &e%timer.Contest Timer.time.on.minute%&7:&e%timer.Contest Timer.time.on.second%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest 1st>,\"lb\")>)>)%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%chat.trigger.Contest 1st%", false, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%chat.trigger.Contest 2nd%", false, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%chat.trigger.Contest 3rd%", false, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Placement>,\"You\")>)>)%", false, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>,\"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>,<boss_bar.location>)>)>)%%substring.(<chat.trigger.Contest Placement>,0,<expression.(<index_of.(<chat.trigger.Contest Placement>,\"out of\")>-2)>)%", true, true),
-                        Triplet.of("%hide_line.(<timer.Contest Timer.is_off>)%%hide_line.(<contains.(<chat.trigger.Contest Placement>, \"Unranked\")>)%%hide_line.(<not.(<contains.(<chat.trigger.Contest Location>, <boss_bar.location>)>)>)%%substring.(<chat.trigger.Contest Placement>,<expression.(<index_of.(<chat.trigger.Contest Placement>, \"out of\")> - 1)>)%", true, true)
-                )),
-                        Alignment.RIGHT,
-                        1,
-                        50,
-                        1.0f,
-                        true,
-                        true,
-                        false
-                )
-            );
+            return Map.of();
         }
 
         // ID of the HUD

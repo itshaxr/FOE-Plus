@@ -53,7 +53,12 @@ public class ContestBaitSheetHandler {
         return INSTANCE;
     }
 
-    public record Row(String location, String family, String fish, String strategy) {}
+    /// One row of the sheet; `rarity` is the fish's rarity as the sheet writes it ("Rare"), or "".
+    public record Row(String location, String family, String fish, String strategy, String rarity) {
+        public Row(String location, String family, String fish, String strategy) {
+            this(location, family, fish, strategy, "");
+        }
+    }
 
     public String getLastError() {
         return lastError;
@@ -132,13 +137,14 @@ public class ContestBaitSheetHandler {
         int family = column(header, "family", 1);
         int fish = column(header, "fish", 2);
         int strategy = column(header, "bait", 5);
+        int rarity = column(header, "rarity", 3);
 
         for (int i = 1; i < table.size(); i++) {
             List<String> cells = table.get(i);
             String loc = cell(cells, location);
             String bait = cell(cells, strategy);
             if (loc.isBlank() || bait.isBlank()) continue;
-            out.add(new Row(loc, cell(cells, family), cell(cells, fish), bait));
+            out.add(new Row(loc, cell(cells, family), cell(cells, fish), bait, cell(cells, rarity)));
         }
         return out;
     }

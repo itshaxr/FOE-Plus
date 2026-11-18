@@ -60,9 +60,9 @@ public class FishTagObject extends TagObject {
         ) {
             try {
                 List<Component> componentList = this.getLore();
-                Component variant = componentList.get(VARIANT_LINE).getSiblings().get(VARIANT_SIBLING);
-                return TextHelper.trim(variant);
-            } catch (ArrayIndexOutOfBoundsException e) {
+                // after the rarity badge on the line under the name
+                return componentList.size() > VARIANT_LINE ? LoreReader.afterGlyphs(componentList.get(VARIANT_LINE)) : Component.empty();
+            } catch (IndexOutOfBoundsException e) {
                 return Component.empty();
             }
         }
@@ -79,9 +79,9 @@ public class FishTagObject extends TagObject {
         ) {
             try {
                 List<Component> componentList = this.getLore();
-                Component fishSize = componentList.get(FISH_SIZE_LINE).getSiblings().get(FISH_SIZE_SIBLING);;
-                return TextHelper.trim(fishSize);
-            } catch (ArrayIndexOutOfBoundsException e) {
+                // "sɪᴢᴇ: ᴀᴅᴜʟᴛ ♀" → "ᴀᴅᴜʟᴛ"
+                return LoreReader.valueAfter(LoreReader.findLine(componentList, "size:"), "size:");
+            } catch (IndexOutOfBoundsException e) {
                 return Component.empty();
             }
         }

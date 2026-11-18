@@ -121,7 +121,7 @@ public class CatchPopupElement extends Element {
     }
 
     private void updateSize(Font font, List<Component> big, List<Component> small) {
-        float scale = Configs.hudConfig.catchPopupScale.get();
+        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
         int widest = 0;
         for (Component line : big) widest = Math.max(widest, Math.round(font.width(line) * BIG));
         for (Component line : small) widest = Math.max(widest, Math.round(font.width(line) * SMALL));
@@ -149,7 +149,7 @@ public class CatchPopupElement extends Element {
         }
         this.updateSize(font, big, small);
 
-        float scale = Configs.hudConfig.catchPopupScale.get();
+        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
         float centerX = mc.getWindow().getGuiScaledWidth() * xPos / scale;
         float y = mc.getWindow().getGuiScaledHeight() * yPos / scale;
 

@@ -57,11 +57,25 @@ public class MiniEventPanelElement extends PanelElement {
                 m.complete() && !serverTicked ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty());
     }
 
+    /// Long place names, shorter, so the panel stays narrow.
+    private static final String[][] SHORT = {
+            {"Toledo Bend Reservoir", "Toledo Bend"}, {"Mediterranean Sea", "Med Sea"}, {"Lofoten Islands", "Lofoten"},
+            {"Danube River", "Danube"}, {"Amazon River", "Amazon"}, {"Murray River", "Murray"}, {"Kenai River", "Kenai"},
+            {"Nile River", "Nile"}, {"Cypress Lake", "Cypress"}, {"Lake Biwa", "Biwa"}};
+
+    /// Package-private for tests: "Mediterranean Sea Tunas" → "Med Sea Tunas".
+    static String shortPlaces(String text) {
+        if (text == null || text.isEmpty()) return text;
+        for (String[] s : SHORT) text = text.replace(s[0], s[1]);
+        return text;
+    }
+
     /// The server writes GIGANTIC as plain red text: shown as the GIGANTIC badge instead (the one
     /// on the All-Time Stats panel).
     static Component badged(Component name) {
         net.minecraft.network.chat.MutableComponent out = Component.empty();
-        name.visit((style, text) -> {
+        name.visit((style, whole) -> {
+            String text = shortPlaces(whole);
             String plain = ChatFormatting.stripFormatting(text);
             String word = plain == null ? "" : plain.trim();
             if (word.equalsIgnoreCase("gigantic") || word.equals("ɢɪɢᴀɴᴛɪᴄ")) {

@@ -42,6 +42,7 @@ public class NearbyDispatcher {
     private static final Map<Integer, Handler> HANDLERS = new HashMap<>();
     private static final Map<UUID, FrameAssembler> ASSEMBLERS = new HashMap<>();
     private static final ArrayDeque<Outgoing> OUTBOX = new ArrayDeque<>();
+    static { dannypx.foe.handler.logic.MemoryGuard.register("nearbyFrames", () -> ASSEMBLERS.size() + OUTBOX.size(), ASSEMBLERS::clear); }
 
     private static BlockPos lastBlockPosition;
     private static int stableTicks;

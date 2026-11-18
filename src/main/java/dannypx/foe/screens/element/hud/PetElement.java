@@ -50,11 +50,11 @@ public class PetElement extends Element {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.hudConfig.petElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.hudConfig.petElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.hudConfig.petElementScale.get(), Configs.hudConfig.petElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get()));
         if(LoadingHandler.instance().isLoadingDone()
                 && Configs.hudConfig.showPetElement.get() && !Configs.hudConfig.showPetPanel.get()
                 && TabOverlayHandler.instance().isInInstance()
@@ -121,7 +121,7 @@ public class PetElement extends Element {
             int progress = (int) (bars * InventoryHandler.instance().getCurrentPet().getProgress());
             int progressLeft = bars - progress;
             Component progressComponent = Component.literal(" ".repeat(Math.max(0, progress)))
-                    .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GOLD);
+                    .withStyle(s -> s.withStrikethrough(true).withColor(GameXpBar.gameStyle() ? net.minecraft.network.chat.TextColor.fromRgb(GameXpBar.FILL) : net.minecraft.network.chat.TextColor.fromLegacyFormat(ChatFormatting.GOLD)));
             Component progressLeftComponent = Component.literal(" ".repeat(Math.min(bars, progressLeft)))
                     .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.DARK_GRAY);
 

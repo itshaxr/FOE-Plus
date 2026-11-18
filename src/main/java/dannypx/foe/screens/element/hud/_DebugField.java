@@ -45,11 +45,11 @@ public class _DebugField extends Element {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.debugConfig.debugFieldElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.debugConfig.debugFieldElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.debugConfig.debugFieldElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.debugConfig.debugFieldElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.debugConfig.debugFieldElementScale.get(), Configs.debugConfig.debugFieldElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.debugConfig.debugFieldElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.debugConfig.debugFieldElementScale.get()));
         if(LoadingHandler.instance().isLoadingDone()
                 && Configs.debugConfig.debugFieldElement.get()
                 && Configs.debugConfig.debugMode.get()

@@ -100,6 +100,8 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.luckScalePanelAlignment, hud.luckScalePanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.TimersPanelElement(true), hud.showTimersPanel, hud.timersPanelXPosition, hud.timersPanelYPosition,
                 hud.timersPanelAlignment, hud.timersPanelScale, Alignment.getCorners());
+        addPanel(new dannypx.foe.screens.element.hud.CrewPanelElement(true), hud.showCrewPanel, hud.crewPanelXPosition, hud.crewPanelYPosition,
+                hud.crewPanelAlignment, hud.crewPanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.EventsPanelElement(true), hud.showEventsPanel, hud.eventsPanelXPosition, hud.eventsPanelYPosition,
                 hud.eventsPanelAlignment, hud.eventsPanelScale, Alignment.getCornersAndCenters());
         addPanel(new dannypx.foe.screens.element.hud.MiniEventPanelElement(true), hud.showMiniEventPanel, hud.miniEventPanelXPosition, hud.miniEventPanelYPosition,
@@ -108,8 +110,27 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.sessionStatsPanelAlignment, hud.sessionStatsPanelScale, Alignment.getCorners());
         addPanel(new GearWarningPanelElement(true), hud.showGearWarning, hud.gearWarningXPosition, hud.gearWarningYPosition,
                 hud.gearWarningAlignment, hud.gearWarningScale, Alignment.getCornersAndCenters());
-        addPanel(new CatchPopupElement(true), null, hud.catchPopupXPosition, hud.catchPopupYPosition,
+        addPanel(new CatchPopupElement(true), hud.showCatchPopup, hud.catchPopupXPosition, hud.catchPopupYPosition,
                 null, hud.catchPopupScale, List.of(Alignment.TOP));
+        if (hud.catchRingOn.get()) {
+            dannypx.foe.screens.element.hud.CatchRingElement ring = new dannypx.foe.screens.element.hud.CatchRingElement();
+            MovableBoxWidget ringWidget = new MovableBoxWidget(this.minecraft, ring, List.of(Alignment.TOP_LEFT), new MovableBoxWidget.Callback() {
+                @Override
+                public void onRelease(int xPercent, int yPercent, Alignment newAlignment) {
+                    float[] c = ring.centrePercent();
+                    hud.catchRingX.accept(c[0]);
+                    hud.catchRingY.accept(c[1]);
+                    Configs.hudConfig.save();
+                }
+
+                @Override
+                public void onConfig() {
+                    ConfigApiJava.INSTANCE.openScreen(hud.catchRingOn.translationKey());
+                }
+            });
+            scales.put(ringWidget, hud.catchRingScale);
+            this.addRenderableWidget(ringWidget);
+        }
         addPanel(new NotifierElement(true), hud.showNotifierElement, hud.notifierElementXPosition, hud.notifierElementYPosition,
                 hud.notifierElementAlignment, hud.notifierElementScale, Alignment.getCorners());
 
@@ -183,6 +204,7 @@ public class MoveElementScreen extends DefaultModScreen {
         Component help = Component.literal("Drag to move • Click to change anchor • Scroll to resize • Middle-click for settings")
                 .withStyle(ChatFormatting.GRAY);
         guiGraphics.drawString(this.font, help, this.width / 2 - this.font.width(help) / 2, this.height - this.font.lineHeight - 4, 0xFFFFFFFF, true);
+        renderSize(guiGraphics);
     }
 
     @Override
@@ -211,5 +233,53 @@ public class MoveElementScreen extends DefaultModScreen {
         scale.accept(next);
         Configs.hudConfig.save();
         this.rebuildWidgets();
+        sized = scale;
+        sizedAt = net.minecraft.util.Util.getMillis();
+    }
+
+    /// The box last resized and when: its size shows as a percentage for a moment after each scroll.
+    private ValidatedFloat sized;
+    private long sizedAt;
+    private static final long SIZE_SHOWN_MS = 1500;
+
+    /// How big a box is, from 0% (the smallest it can be) to 100% (the biggest).
+    static int percent(float value, float min, float max) {
+        if (max <= min) return 100;
+        return Math.max(0, Math.min(100, Math.round((value - min) / (max - min) * 100f)));
+    }
+
+    private static int percent(ValidatedFloat scale) {
+        try {
+            java.lang.reflect.Method lo = me.fzzyhmstrs.fzzy_config.validation.number.ValidatedNumber.class.getDeclaredMethod("getMinValue");
+            java.lang.reflect.Method hi = me.fzzyhmstrs.fzzy_config.validation.number.ValidatedNumber.class.getDeclaredMethod("getMaxValue");
+            lo.setAccessible(true); hi.setAccessible(true);
+            return percent(scale.get(), ((Number) lo.invoke(scale)).floatValue(), ((Number) hi.invoke(scale)).floatValue());
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return percent(scale.get(), 0.5f, 2.0f);
+        }
+    }
+
+    private void renderSize(GuiGraphics g) {
+        if (sized == null || net.minecraft.util.Util.getMillis() - sizedAt > SIZE_SHOWN_MS) return;
+        int cx, y;
+        if (sized == Configs.hudConfig.topBarScale) {
+            cx = this.width / 2;
+            y = barStripHeight() + 4;
+        } else {
+            MovableBoxWidget box = null;
+            for (Map.Entry<MovableBoxWidget, ValidatedFloat> entry : scales.entrySet())
+                if (entry.getValue() == sized) box = entry.getKey();
+            if (box == null) return;
+            cx = box.getX() + box.getWidth() / 2;
+            // above the box, or below it when there's no room above
+            y = box.getY() - 14 >= 2 ? box.getY() - 14 : box.getY() + box.getHeight() + 3;
+        }
+        Component text = Component.literal("Size ").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(percent(sized) + "%").withStyle(ChatFormatting.WHITE));
+        int w = this.font.width(text) + 8;
+        int x = Math.max(2, Math.min(this.width - w - 2, cx - w / 2));
+        g.fill(x, y, x + w, y + 12, 0xCC000000);
+        g.renderOutline(x, y, w, 12, 0xFF555555);
+        g.drawString(this.font, text, x + 4, y + 2, 0xFFFFFFFF, true);
     }
 }

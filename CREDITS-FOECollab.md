@@ -1,8 +1,12 @@
 # Bait Sorter credit
 
+Bait sorter by **landofif (dofi)** (Minecraft: merryfish).
+
 The bait sorter (`helper/SortPlanner.java`, `handler/logic/BaitSorterHandler.java`,
-`type/baitsorter/BaitSortOrder.java`) was ported from **FOECollab**
-(https://github.com/Kimberlyow/FOECollab), licensed under the GNU AGPL-3.0.
+`type/baitsorter/BaitSortOrder.java`) was written by landofif for **FOECollab**
+(https://github.com/Kimberlyow/FOECollab) in pull requests
+[#10](https://github.com/Kimberlyow/FOECollab/pull/10) and [#11](https://github.com/Kimberlyow/FOECollab/pull/11),
+and ported from there. It is licensed under the GNU AGPL-3.0.
 It was modified: rewritten from Yarn to Mojang mappings and from Cloth Config to Fzzy Config.
 If you redistribute a build containing it, those files remain under AGPL-3.0
 (GPL-3.0 §13 permits combining them with this GPL-3.0 project).

@@ -67,7 +67,7 @@ public class GenericContainerScreenHandler extends Handler {
         // Main Menu (holds the Daily Missions item for the Daily Quests panel)
         else if (Objects.equals(genericContainerScreen.getTitle().getString(), dannypx.foe.handler.logic.DailyQuestHandler.MAIN_MENU_SCREEN_CONTAINER)) {
             dannypx.foe.handler.logic.DailyQuestHandler.instance().setMenuOpen(true);
-            ScreenEvents.remove(genericContainerScreen).register(screen -> dannypx.foe.handler.logic.DailyQuestHandler.instance().setMenuOpen(false));
+            ScreenEvents.remove(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.remove("GenericContainerScreenHandler:70", screen -> dannypx.foe.handler.logic.DailyQuestHandler.instance().setMenuOpen(false)));
         }
 
         // Stats Screen
@@ -78,31 +78,31 @@ public class GenericContainerScreenHandler extends Handler {
         // Auction House Screen
         else if (Objects.equals(genericContainerScreen.getTitle().getString(), AUCTION_HOUSE_SCREEN_CONTAINER)) {
             AuctionHouseScreenRenderHandler.instance().init(genericContainerScreen);
-            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(AuctionHouseScreenRenderHandler.instance()::checkMouseScroll);
-            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(AuctionHouseScreenRenderHandler.instance()::checkMouseClick);
-            ScreenEvents.remove(genericContainerScreen).register(AuctionHouseScreenRenderHandler.instance()::onClose);
+            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.scroll("GenericContainerScreenHandler:81", AuctionHouseScreenRenderHandler.instance()::checkMouseScroll));
+            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.click("GenericContainerScreenHandler:82", AuctionHouseScreenRenderHandler.instance()::checkMouseClick));
+            ScreenEvents.remove(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.remove("GenericContainerScreenHandler:83", AuctionHouseScreenRenderHandler.instance()::onClose));
         }
 
         // Personal Vault Screen
         else if (genericContainerScreen.getTitle().getString().startsWith(PERSONAL_VAULT_SCREEN_CONTAINER)) {
             PersonalVaultScreenRenderHandler.instance().init(genericContainerScreen);
-            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(PersonalVaultScreenRenderHandler.instance()::checkMouseScroll);
-            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(PersonalVaultScreenRenderHandler.instance()::checkMouseClick);
-            ScreenEvents.remove(genericContainerScreen).register(PersonalVaultScreenRenderHandler.instance()::onClose);
+            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.scroll("GenericContainerScreenHandler:89", PersonalVaultScreenRenderHandler.instance()::checkMouseScroll));
+            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.click("GenericContainerScreenHandler:90", PersonalVaultScreenRenderHandler.instance()::checkMouseClick));
+            ScreenEvents.remove(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.remove("GenericContainerScreenHandler:91", PersonalVaultScreenRenderHandler.instance()::onClose));
         }
 
         // Tackle Box Screen
         else if(genericContainerScreen.getTitle().getString().startsWith(TACKLE_BOX_SCREEN_CONTAINER)) {
             TackleBoxScreenRenderHandler.instance().init(genericContainerScreen);
-            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(TackleBoxScreenRenderHandler.instance()::checkMouseClick);
-            ScreenEvents.remove(genericContainerScreen).register(TackleBoxScreenRenderHandler.instance()::onClose);
+            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.click("GenericContainerScreenHandler:97", TackleBoxScreenRenderHandler.instance()::checkMouseClick));
+            ScreenEvents.remove(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.remove("GenericContainerScreenHandler:98", TackleBoxScreenRenderHandler.instance()::onClose));
         }
 
         // Any Container Screen
         else if (Objects.equals(genericContainerScreen.getTitle().getString(), STORAGE_SCREEN_CONTAINER)) {
             ChestScreenRenderHandler.instance().init(genericContainerScreen);
-            ScreenEvents.remove(genericContainerScreen).register(ChestScreenRenderHandler.instance()::onClose);
-            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(ChestScreenRenderHandler.instance()::checkMouseClick);
+            ScreenEvents.remove(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.remove("GenericContainerScreenHandler:104", ChestScreenRenderHandler.instance()::onClose));
+            ScreenMouseEvents.afterMouseClick(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.click("GenericContainerScreenHandler:105", ChestScreenRenderHandler.instance()::checkMouseClick));
         }
 
         // Armor Menu Screen
@@ -112,7 +112,7 @@ public class GenericContainerScreenHandler extends Handler {
 
         // Presets Screen
         else if (Objects.equals(genericContainerScreen.getTitle().getString(), PRESETS_SCREEN_CONTAINER)) {
-            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(PresetsScreenRenderHandler.instance()::checkMouseScroll);
+            ScreenMouseEvents.afterMouseScroll(genericContainerScreen).register(dannypx.foe.helper.SafeScreen.scroll("GenericContainerScreenHandler:115", PresetsScreenRenderHandler.instance()::checkMouseScroll));
         }
 
         // Other Generic Screen

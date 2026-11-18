@@ -13,11 +13,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class BlockLightSectionStorageMixin {
     @Inject(method = "getLightValue", at = @At("RETURN"), cancellable = true)
     private void injectGetLightValue(long blockPos, CallbackInfoReturnable<Integer> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.blockLightSectionStorageMixinGetLightValue.get()
-        ) {
-            cir.setReturnValue(LightHandler.instance().calculateFishingHookLight(blockPos, cir.getReturnValue()));
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.blockLightSectionStorageMixinGetLightValue.get()
+            ) {
+                cir.setReturnValue(LightHandler.instance().calculateFishingHookLight(blockPos, cir.getReturnValue()));
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("BlockLightSectionStorageMixin.injectGetLightValue", foe$t);
         }
     }
 }

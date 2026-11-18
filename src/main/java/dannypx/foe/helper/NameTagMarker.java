@@ -29,6 +29,72 @@ public final class NameTagMarker {
 
     private static final Component FOE_PLUS_MARKER = plus(0xFFAA00);
 
+    /// The tab list's + : a size smaller (5x5) and two pixels from the name, to sit neatly in the list's small rows.
+    private static final net.minecraft.network.chat.FontDescription PLUS_SMALL_FONT = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "plus_small"));
+    /// A one-pixel space, for lining things up to the pixel.
+    public static final Component GAP_ONE = Component.literal("\uE001").withStyle(style -> style
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gap_one"))));
+
+    /// `icon` padded with one-pixel spaces to `width` pixels, so words after icons of different
+    /// widths (♣ and ⚓) start at the same place. Unpadded when the font isn't there (tests).
+    public static Component padIcon(Component icon, int width) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty().append(icon);
+        try {
+            int have = net.minecraft.client.Minecraft.getInstance().font.width(icon);
+            for (int i = have; i < width; i++) out.append(GAP_ONE);
+        } catch (Throwable ignored) {
+            // no font yet
+        }
+        return out;
+    }
+
+    /// The width of the widest of these, in pixels (0 without a font).
+    public static int widest(String... texts) {
+        try {
+            int w = 0;
+            for (String t : texts) w = Math.max(w, net.minecraft.client.Minecraft.getInstance().font.width(t));
+            return w;
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
+
+    /// FOE+'s green four-leaf clover icon (font fishonmcextras:clover), drawn in its own colours.
+    public static Component clover() {
+        return Component.literal("\uE020").withStyle(style -> style.withColor(0xFFFFFF)
+                .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "clover"))));
+    }
+
+    /// The same clover in one colour (the Luck colour, say).
+    public static Component clover(int color) {
+        return Component.literal("\uE021").withStyle(style -> style.withColor(color)
+                .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "clover"))));
+    }
+
+    /// The width of the widest of these, in pixels (0 without a font).
+    public static int widest(Component... texts) {
+        try {
+            int w = 0;
+            for (Component t : texts) w = Math.max(w, net.minecraft.client.Minecraft.getInstance().font.width(t));
+            return w;
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
+
+    public static final Component GAP_WIDE = Component.literal("\uE001").withStyle(style -> style
+            .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gap_wide"))));
+
+    /// The same + in the tab list's smaller size.
+    public static Component small(Component marker) {
+        return marker.copy().withStyle(style -> style.withFont(PLUS_SMALL_FONT));
+    }
+
     /// Puts a + right after the first FOE+ user's name in the name tag, keeping every other part
     /// (colours, fonts, the line below) exactly as the server sent it. 
     public static Component insertAfterName(Component original, Pattern names) {
@@ -86,13 +152,37 @@ public final class NameTagMarker {
     /// unchanged when the name isn't in it.
     public static Component insertAfter(Component original, String name, Component marker) {
         if (name == null || name.isEmpty()) return original;
-        java.util.regex.Matcher m = Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(name) + "(?![A-Za-z0-9_])")
-                .matcher(original.getString());
+        java.util.regex.Matcher m = wordPattern(name).matcher(original.getString());
         if (!m.find()) return original;
         return insertAt(original, m.end(), marker);
     }
 
+    /// The marker right after the name in a line (the tab list's "rank badge name"), or at its end when the name isn't
+    /// found in it.
+    public static Component afterName(Component original, String name, Component marker) {
+        return afterName(original, name, marker, GAP);
+    }
+
+    /// The same with this space between the name and the marker.
+    public static Component afterName(Component original, String name, Component marker, Component gap) {
+        java.util.regex.Matcher m = name == null || name.isEmpty() ? null : wordPattern(name).matcher(original.getString());
+        if (m != null && m.find()) return insertAt(original, m.end(), marker, gap);
+        return Component.empty().append(original).append(gap).append(marker);
+    }
+
+    /// A name as a whole word, made once per name (the tab list asks for every player, every frame).
+    private static final java.util.Map<String, Pattern> WORDS = new java.util.concurrent.ConcurrentHashMap<>();
+
+    static Pattern wordPattern(String name) {
+        if (WORDS.size() > 512) WORDS.clear();
+        return WORDS.computeIfAbsent(name, n -> Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(n) + "(?![A-Za-z0-9_])"));
+    }
+
     private static Component insertAt(Component original, int end, Component marker) {
+        return insertAt(original, end, marker, GAP);
+    }
+
+    private static Component insertAt(Component original, int end, Component marker, Component gap) {
         MutableComponent out = Component.empty();
         int[] offset = {0};
         boolean[] done = {false};
@@ -101,7 +191,7 @@ public final class NameTagMarker {
             int stop = start + text.length();
             if (!done[0] && end > start && end <= stop) {
                 out.append(Component.literal(text.substring(0, end - start)).withStyle(style));
-                out.append(GAP);
+                out.append(gap);
                 out.append(marker);
                 if (end < stop) out.append(Component.literal(text.substring(end - start)).withStyle(style));
                 done[0] = true;

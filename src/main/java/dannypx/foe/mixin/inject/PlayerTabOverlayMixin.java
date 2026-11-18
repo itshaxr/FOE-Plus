@@ -43,59 +43,87 @@ public abstract class PlayerTabOverlayMixin {
 
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V"))
     private void redirectRender(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int color) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.playerTabOverlayMixinRedirectRender.get()
-                && color == this.minecraft.options.getBackgroundColor(0x20ffffff)) {
-            TabRendererHandler.instance().renderCrewTab(guiGraphics, x1, y1, x2, y2, color, indexPlayerEntry, this.getPlayerInfos());
-        }
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.playerTabOverlayMixinRedirectRender.get()
+                    && color == this.minecraft.options.getBackgroundColor(0x20ffffff)) {
+                TabRendererHandler.instance().renderCrewTab(guiGraphics, x1, y1, x2, y2, color, indexPlayerEntry, this.getPlayerInfos());
+            }
 
-        guiGraphics.fill(x1, y1, x2, y2, color);
+            guiGraphics.fill(x1, y1, x2, y2, color);
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("PlayerTabOverlayMixin.redirectRender", foe$t);
+        }
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Ljava/util/List;get(I)Ljava/lang/Object;"))
     private void injectRender(GuiGraphics guiGraphics, int scaledWindowWidth, Scoreboard scoreboard, Objective objective, CallbackInfo ci, @Local(ordinal = 13) int w) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.playerTabOverlayMixinInjectRender.get()
-        ) {
-            indexPlayerEntry = w;
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.playerTabOverlayMixinInjectRender.get()
+            ) {
+                indexPlayerEntry = w;
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("PlayerTabOverlayMixin.injectRender", foe$t);
         }
     }
 
-    // FOE's clean tab list: rank tags drawn as compact lettered squares (ported from FOECollab).
+    // FOE's clean tab list: rank tags drawn as compact lettered squares (ported from FOECollab), and FOE+ users'
+    // + after their name in the colour they picked (rank, badge, name, +). One handler: once a handler sets the
+    // name, Mixin calls no others after it.
     @Inject(method = "getNameForDisplay", at = @At("RETURN"), cancellable = true)
     private void injectCleanTabTags(net.minecraft.client.multiplayer.PlayerInfo playerInfo, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<net.minecraft.network.chat.Component> cir) {
-        if (ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.cleanTabListTags.get()
-        ) {
-            cir.setReturnValue(dannypx.foe.helper.SimpleTagFont.apply(cir.getReturnValue(), true, true));
+        try {
+            if (!ConnectionHandler.instance().isOnServer() || !Configs.mainConfig.enableMod.get()) return;
+            net.minecraft.network.chat.Component name = cir.getReturnValue();
+            net.minecraft.network.chat.Component out = name;
+            if (Configs.rendererConfig.cleanTabListTags.get()) out = dannypx.foe.helper.SimpleTagFont.apply(out, true, true);
+            net.minecraft.network.chat.Component marker = dannypx.foe.handler.logic.TextDisplayHandler.instance().tabMarker(playerInfo.getProfile().id());
+            if (marker != null) out = dannypx.foe.helper.NameTagMarker.afterName(out, playerInfo.getProfile().name(),
+                    dannypx.foe.helper.NameTagMarker.small(marker), dannypx.foe.helper.NameTagMarker.GAP_WIDE);
+            if (out != name) cir.setReturnValue(out);
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("PlayerTabOverlayMixin.injectCleanTabTags", foe$t);
         }
     }
 
     @Inject(method = "getPlayerInfos", at = @At("RETURN"), cancellable = true)
     private void injectGetPlayerInfos(@NotNull CallbackInfoReturnable<List<PlayerInfo>> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.showOnlineCrewMembers.get()
-                && Configs.mixinConfig.playerTabOverlayMixinCollectPlayerEntries.get()
-                && ProfileDataHandler.instance().getProfileData().hasImportedCrew
-                && !ScoreboardHandler.instance().getCrew().getString().isBlank()
-        ) {
-            Set<UUID> priorityUUIDs = CrewHandler.instance().getOnlineMembers().stream()
-                    .map(Pair::value1)
-                    .collect(Collectors.toSet());
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.showOnlineCrewMembers.get()
+                    && Configs.mixinConfig.playerTabOverlayMixinCollectPlayerEntries.get()
+                    && ProfileDataHandler.instance().getProfileData().hasImportedCrew
+                    && !ScoreboardHandler.instance().getCrew().getString().isBlank()
+            ) {
+                Set<UUID> priorityUUIDs = CrewHandler.instance().getOnlineMembers().stream()
+                        .map(Pair::value1)
+                        .collect(Collectors.toSet());
 
-            Stream<PlayerInfo> sorted = this.minecraft.player.connection.getListedOnlinePlayers().stream().sorted(PLAYER_COMPARATOR);
+                Stream<PlayerInfo> sorted = this.minecraft.player.connection.getListedOnlinePlayers().stream().sorted(PLAYER_COMPARATOR);
 
-            sorted = sorted.sorted(Comparator.comparing(
-                    e -> !priorityUUIDs.contains(e.getProfile().id())
-            ));
+                sorted = sorted.sorted(Comparator.comparing(
+                        e -> !priorityUUIDs.contains(e.getProfile().id())
+                ));
 
-            cir.setReturnValue(sorted.limit(80L).toList());
-        } else {
-            cir.setReturnValue(cir.getReturnValue());
+                cir.setReturnValue(sorted.limit(80L).toList());
+            } else {
+                cir.setReturnValue(cir.getReturnValue());
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("PlayerTabOverlayMixin.injectGetPlayerInfos", foe$t);
         }
     }
 }

@@ -1,0 +1,18 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/clover.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [""]
+    },
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/clover_tint.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [""]
+    }
+  ]
+}

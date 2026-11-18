@@ -41,11 +41,19 @@ public class ItemRendererHandler extends Handler {
     /// Amulet colour per pet stack (slot stacks are replaced when the held item changes), so the
     /// held item isn't decoded every frame. -1 = no colour, use the gold star.
     private final java.util.Map<ItemStack, Integer> amuletColors = new java.util.IdentityHashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("amuletColours", amuletColors::size, amuletColors::clear); }
     // Max pet stat markers, ported from FOECollab (AGPL-3.0)
     private final Identifier maxLuckMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_luck");
     private final Identifier maxScaleMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_scale");
-    private final Identifier maxPerfectMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_perfect");
+    private final Identifier maxPerfectMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/max_hundred");   // FOE's 💯, in both icon styles
     private final Identifier rarityMarker = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/rarity");
+    /// FOE's rarity marker: a small corner in the top left, for the FOE icon style.
+    private final Identifier rarityMarkerFoe = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/rarity_foe");
+
+    /// True when the markers should look like FOE's.
+    private static boolean foeIcons() {
+        return Configs.rendererConfig.iconStyle.get() == dannypx.foe.type.IconStyle.FOE;
+    }
     //endregion
 
     //region Methods
@@ -56,28 +64,43 @@ public class ItemRendererHandler extends Handler {
 
         Pair<Boolean, TagObject> validateItem = ValidateItem.isServerItem(stack, true);
 
-        if(!this.checkIfBlacklisted(validateItem.value2())
-                && !validateItem.value2().getRarity().isBlank()
-        ) {
-            Component rarityComponent = Component.literal(ConstantDataHandler.instance().getConstantData().fishData
-                    .getOrDefault(FishTagObject.RARITY, new HashMap<>())
-                    .getOrDefault(validateItem.value2().getRarity().toLowerCase(Locale.US), Component.empty()).getString().trim());
-            if(rarityComponent.getString().isBlank()) rarityComponent = Component.literal(validateItem.value2().getRarityComponent().getString());
-
-            if(!Objects.equals(rarityComponent, Component.empty())) {
-                int color = GlyphHelper.getColor(rarityComponent.getString()).orElse(-1);
-                if(color != -1) guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, rarityMarker, x, y, 16, 16, ARGB.color(0xFFFFFF, color));
-            }
+        String rarity = validateItem.value2().getRarity();
+        if(!rarity.isBlank() && !this.checkIfBlacklisted(validateItem.value2())) {
+            // the marker's colour, worked out once per rarity (it was every item, every frame)
+            String key = rarity.toLowerCase(Locale.US);
+            Integer known = rarityColors.get(key);
+            int color = known != null ? known : ((java.util.function.Function<String, Integer>) r -> {
+                Component rarityComponent = Component.literal(ConstantDataHandler.instance().getConstantData().fishData
+                        .getOrDefault(FishTagObject.RARITY, new HashMap<>())
+                        .getOrDefault(r, Component.empty()).getString().trim());
+                if(rarityComponent.getString().isBlank()) rarityComponent = Component.literal(validateItem.value2().getRarityComponent().getString());
+                return rarityComponent.getString().isEmpty() ? -1 : GlyphHelper.getColor(rarityComponent.getString()).orElse(-1);
+            }).apply(key);
+            // kept only once found (before the server's data arrives there's none yet)
+            if (known == null && color != -1) rarityColors.put(key, color);
+            if(color != -1) guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, foeIcons() ? rarityMarkerFoe : rarityMarker, x, y, 16, 16, ARGB.color(0xFFFFFF, color));
         }
     }
+
+    private final java.util.Map<String, Integer> rarityColors = new java.util.concurrent.ConcurrentHashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("rarityColours", rarityColors::size, rarityColors::clear); }
+
+    /// The blacklist setting, split once for each time it changes.
+    private String blacklistText = null;
+    private List<String> blacklist = List.of();
 
     private boolean checkIfBlacklisted(TagObject tagObject) {
-        if(!Configs.rendererConfig.blackListItems.get().isBlank()) {
-            List<String> blacklistedItems = Arrays.stream(Configs.rendererConfig.blackListItems.get().split(",")).map(String::trim).toList();
-            return blacklistedItems.contains(tagObject.getType());
+        String text = Configs.rendererConfig.blackListItems.get();
+        if (text.isBlank()) return false;
+        if (!text.equals(blacklistText)) {
+            blacklistText = text;
+            blacklist = Arrays.stream(text.split(",")).map(String::trim).toList();
         }
-        return false;
+        return blacklist.contains(tagObject.getType());
     }
+
+    private final java.util.Map<Integer, Component> counts = new java.util.concurrent.ConcurrentHashMap<>(), smallCounts = new java.util.concurrent.ConcurrentHashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("stackCounts", () -> counts.size() + smallCounts.size(), () -> { counts.clear(); smallCounts.clear(); }); }
 
     public void drawStackCount(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
         this.drawStackCount(guiGraphics, font, stack, x, y, true);
@@ -89,12 +112,16 @@ public class ItemRendererHandler extends Handler {
         int count = Configs.rendererConfig.showStackCountOnBait.get()
                 ? validatedItem.value2().getCount()
                 : stack.getCount();
-        Component countComponent = isSmall
-                ? TextHelper.literal(TextHelper.smallCaps(TextHelper.shortenNumber(count, 0)))
-                : TextHelper.literal(TextHelper.shortenNumber(count, 0));
+        if (count <= 1) return;
+        // the number's text, made once for each count (it was every item, every frame)
+        java.util.Map<Integer, Component> made = isSmall ? smallCounts : counts;
+        if (made.size() > 512) made.clear();     // bait counts tick down every cast: don't keep them all
+        Component countComponent = made.computeIfAbsent(count, n -> isSmall
+                ? TextHelper.literal(TextHelper.smallCaps(TextHelper.shortenNumber(n, 0)))
+                : TextHelper.literal(TextHelper.shortenNumber(n, 0)));
         int countWidth = font.width(countComponent);
 
-        if(count > 1) {
+        {
             if(isSmall) {
                 GuiGraphicsHelper.drawString(guiGraphics, font, countComponent,
                         x + 19 - 2 - countWidth, y + 6 + 4,
@@ -135,13 +162,14 @@ public class ItemRendererHandler extends Handler {
 
         // Only for a held item (an amulet): a skin or trail alone gets no marker.
         if(validatedPet.value1() && validatedPet.value2().contains(PetTagObject.ITEM)) {
+            // The star in the amulet's colour, in both icon styles.
             int rgb = amuletColor(stack, validatedPet.value2());
             if (rgb < 0) guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
             else guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarkerTint, x, y, 16, 16, 0xFF000000 | rgb);
         }
     }
 
-    /// Clover = max luck, anchor = max scale, combined icon = both (climate AND location base at 100%).
+    /// Clover = max luck, anchor = max scale, 💯 = both, a perfect pet (climate AND location base at 100%).
     /// Ported from FOECollab's ItemMarkerHandler.
     public void drawMaxPetStats(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
         if(!Configs.rendererConfig.showMaxPetStatsMarker.get()) {
@@ -177,16 +205,27 @@ public class ItemRendererHandler extends Handler {
         boolean marker = Configs.rendererConfig.showMaxRodPartMarker.get();
         if (!icons && !marker) return;
         dannypx.foe.helper.RodPartMax.Info info = dannypx.foe.helper.RodPartMax.infoFor(dannypx.foe.helper.ItemStackHelper.getTag(stack));
-        // What the part is calibrated for: a small icon in the bottom-left corner.
-        if (icons && !info.roll().isEmpty()) {
-            String icon = dannypx.foe.helper.RodPartMax.iconFor(info.roll());
-            if (!icon.isEmpty()) {
-                Identifier id = rollIcons.computeIfAbsent(icon, k -> Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/roll_" + k));
-                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, id, x, y + 8, 8, 8, CommonColors.WHITE);
+        // What the part (or each part of a rod) is calibrated for: small icons in the bottom-right
+        // corner, stacked upwards, all purple for a stat rolled at its max, half purple when
+        // only one of two parts with that stat has it maxed (maxed ones at the bottom).
+        boolean drewMaxIcon = false;
+        if (icons) {
+            java.util.List<dannypx.foe.helper.RodPartMax.Roll> rolls = info.rolls();
+            int n = Math.min(3, rolls.size());
+            int size = n >= 3 ? 5 : 6;
+            for (int i = 0; i < n; i++) {
+                dannypx.foe.helper.RodPartMax.Roll roll = rolls.get(i);
+                String icon = dannypx.foe.helper.RodPartMax.iconFor(roll.kind());
+                String key = icon + roll.suffix();
+                Identifier id = rollIcons.computeIfAbsent(key, k -> Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/roll_" + k));
+                // flush with the item's bottom-right corner, inside the slot
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, id, x + 16 - size, y + 16 - size * (i + 1), size, size, CommonColors.WHITE);
+                drewMaxIcon |= roll.maxed() || roll.half();
             }
         }
-        if (!marker || info.mark() == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
-        // A purple dot in the top-right corner (4x4, from an 8x8 sprite so it stays round).
+        // With the icons off (or none to show), a purple dot in the top-right corner instead
+        // (4x4, from an 8x8 sprite so it stays round).
+        if (!marker || drewMaxIcon || info.mark() == dannypx.foe.helper.RodPartMax.Mark.NONE) return;
         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, MAX_ROLL_DOT, x + 12, y, 4, 4, CommonColors.WHITE);
     }
 
@@ -252,7 +291,25 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
-    /// Rating letter (S, A, B...) in the bottom-right of a pet slot, shown at all times like FOECollab.
+    /// FOE's rating marker: a small corner in the bottom right of a pet slot, in the rating's colour.
+    /// Ported from FOECollab (AGPL-3.0), its pet percent marker.
+    private final Identifier ratingMarkerFoe = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "icons/rating_foe");
+
+    /// Package-private for tests: the colour of a pet's rating (RGB): the server's own colour for the rating
+    /// word when it has one, otherwise FOE's colour for the rating's percentage (0-1).
+    static int ratingColor(Component rating, float percent) {
+        if (rating != null) {
+            java.util.Optional<Integer> c = rating.visit((style, text) -> !text.isBlank() && style.getColor() != null
+                    ? java.util.Optional.of(style.getColor().getValue() & 0xFFFFFF) : java.util.Optional.empty(), net.minecraft.network.chat.Style.EMPTY);
+            if (c.isPresent()) return c.get();
+        }
+        float p = percent * 100f;
+        return p <= 20f ? 0x74403B : p < 30f ? 0xFF5555 : p < 40f ? 0xFCFC54 : p < 50f ? 0xFCA800 : p < 60f ? 0x54FC54
+                : p < 80f ? 0x00A800 : p < 90f ? 0x54FCFC : p < 100f ? 0xFC54FC : 0xA800A8;
+    }
+
+    /// Rating letter (S, A, B...) in the bottom-right of a pet slot, shown at all times like FOECollab; with FOE's
+    /// icons, FOE's small corner in the rating's colour instead.
     /// While the inspect key is held, drawPetRating shows the full percentage instead.
     public void drawPetRatingLetter(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
         if(!Configs.rendererConfig.showPetRatingLetter.get()) {
@@ -262,6 +319,12 @@ public class ItemRendererHandler extends Handler {
         Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
         if(validatedPet.value1()) {
             Component ratingComponent = validatedPet.value2().getRatingComponent();
+            if (foeIcons()) {
+                if (ratingComponent.getString().isBlank() && validatedPet.value2().getTotalPercent() <= 0f) return;
+                int rgb = ratingColor(ratingComponent, validatedPet.value2().getTotalPercent());
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, ratingMarkerFoe, x, y, 16, 16, 0xFF000000 | rgb);
+                return;
+            }
             if(!ratingComponent.getString().isBlank()) {
                 Component letter = TextHelper.substring(ratingComponent, 0, 1);
                 guiGraphics.drawString(font, letter, x + 17 - font.width(letter), y + 18 - font.lineHeight, CommonColors.WHITE, true);

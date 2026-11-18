@@ -17,8 +17,8 @@ import java.util.List;
  * move to another area (the numbers depend on where you fish).
  */
 public class LuckScalePanelElement extends PanelElement {
-    private static final int LUCK_COLOR = 0x80DAC3;
-    private static final int SCALE_COLOR = 0x4C88F1;
+    public static final int LUCK_COLOR = 0x80DAC3;
+    public static final int SCALE_COLOR = 0x4C88F1;
 
     public LuckScalePanelElement() {
         this(false);
@@ -55,13 +55,13 @@ public class LuckScalePanelElement extends PanelElement {
         if (Minecraft.getInstance().player == null) return lines;
         ProfileStatsHandler profile = ProfileStatsHandler.instance();
         if (!profile.hasData()) {
-            lines.add(statLine("♣ ʟᴜᴄᴋ ", "?", LUCK_COLOR));
-            lines.add(statLine("⚓ ѕᴄᴀʟᴇ ", "?", SCALE_COLOR));
+            lines.add(luckLine("ʟᴜᴄᴋ ", "?"));
+            lines.add(scaleLine("ѕᴄᴀʟᴇ ", "?"));
             lines.add(join(label("ᴏᴘᴇɴ "), Component.literal("/menu").withStyle(ChatFormatting.AQUA), label(" ᴛᴏ ʟᴏᴀᴅ")));
             return lines;
         }
-        lines.add(withBooster(statLine("♣ ʟᴜᴄᴋ ", profile.getLuck(), LUCK_COLOR), true));
-        lines.add(withBooster(statLine("⚓ ѕᴄᴀʟᴇ ", profile.getScale(), SCALE_COLOR), false));
+        lines.add(withBooster(luckLine("ʟᴜᴄᴋ ", profile.getLuck()), true));
+        lines.add(withBooster(scaleLine("ѕᴄᴀʟᴇ ", profile.getScale()), false));
         if (profile.isFromOtherLocation()) {
             lines.add(join(Component.literal("⚠ ").withStyle(ChatFormatting.YELLOW), label("ᴀʀᴇᴀ ᴄʜᴀɴɢᴇᴅ, ᴏᴘᴇɴ "),
                     Component.literal("/menu").withStyle(ChatFormatting.AQUA)));
@@ -87,14 +87,40 @@ public class LuckScalePanelElement extends PanelElement {
         return (s / 3600) + "h " + (s / 60) % 60 + "m";
     }
 
-    private static Component statLine(String name, String value, int color) {
-        return join(Component.literal(name).withColor(color),
+    /// Green for Luck with the green clover setting on (the clover icon's own green).
+    public static final int GREEN_LUCK_COLOR = 0x58DC4C;
+
+    static boolean greenClover() {
+        try {
+            return Configs.hudConfig.luckScaleGreenClover.get();
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /// "♣ ʟᴜᴄᴋ 729": the clover in the Luck colour (or green, with the luck in green too, with that setting on).
+    private static Component luckLine(String name, String value) {
+        boolean green = greenClover();
+        return statLine(green ? dannypx.foe.helper.NameTagMarker.clover() : dannypx.foe.helper.NameTagMarker.clover(LUCK_COLOR),
+                name, value, green ? GREEN_LUCK_COLOR : LUCK_COLOR);
+    }
+
+    private static Component scaleLine(String name, String value) {
+        return statLine(Component.literal("⚓").withColor(SCALE_COLOR), name, value, SCALE_COLOR);
+    }
+
+    /// The icon in a column as wide as the widest icon, so "ʟᴜᴄᴋ" and "ѕᴄᴀʟᴇ" start at the same
+    /// place (the icons aren't the same width).
+    private static Component statLine(Component icon, String name, String value, int color) {
+        int col = dannypx.foe.helper.NameTagMarker.widest(dannypx.foe.helper.NameTagMarker.clover(), Component.literal("⚓"));
+        return join(dannypx.foe.helper.NameTagMarker.padIcon(icon, col),
+                Component.literal(" " + name).withColor(color),
                 Component.literal(value == null ? "-" : value).withStyle(ChatFormatting.WHITE));
     }
 
     @Override
     protected List<Component> previewLines() {
-        return List.of(statLine("♣ ʟᴜᴄᴋ ", "1,245", LUCK_COLOR), statLine("⚓ ѕᴄᴀʟᴇ ", "530", SCALE_COLOR),
+        return List.of(luckLine("ʟᴜᴄᴋ ", "1,245"), scaleLine("ѕᴄᴀʟᴇ ", "530"),
                 join(label("ᴜᴘᴅᴀᴛᴇᴅ "), Component.literal("2m").withStyle(ChatFormatting.GREEN), label(" ᴀɢᴏ ᴠɪᴀ "), Component.literal("/menu").withStyle(ChatFormatting.AQUA)));
     }
 }

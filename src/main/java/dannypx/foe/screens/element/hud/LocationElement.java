@@ -49,11 +49,11 @@ public class LocationElement extends Element {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.hudConfig.locationElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.hudConfig.locationElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.hudConfig.locationElementScale.get(), Configs.hudConfig.locationElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get()));
         if(LoadingHandler.instance().isLoadingDone()
                 && Configs.hudConfig.showLocationElement.get() && !Configs.hudConfig.showTopBar.get()
                 && TabOverlayHandler.instance().isInInstance()

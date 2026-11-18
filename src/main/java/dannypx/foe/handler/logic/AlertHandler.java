@@ -57,6 +57,41 @@ public class AlertHandler {
         FABLED("Fabled Fish", 0xFC3E35, null, Kind.FABLED, 0, 0,
                 "Fabled 1/3000 (better with Variant Chance)", "Fabled Shard · 30x value");
 
+        /// The cryptid's own little icon (FOE+'s stat_icons font) and its colour: Bigfoot's footprints, Titan's fang,
+        /// the Rougarou's moon, the wizard's crystal, Bessie's waves. Null for the Fabled fish.
+        public String icon() {
+            return switch (this) {
+                case WITCHING_HOUR -> "\uE017";
+                case TITANOBOA -> "\uE018";
+                case ROUGAROU -> "\uE019";
+                case GARABONCIAS -> "\uE01A";
+                case BESSIE_NIGHT, BESSIE_MOON -> "\uE01B";
+                case FABLED -> null;
+            };
+        }
+
+        public int iconColor() {
+            return switch (this) {
+                case WITCHING_HOUR -> 0xE09A5B;
+                case TITANOBOA -> 0x7CD67C;
+                case ROUGAROU -> 0xB7A2EC;
+                case GARABONCIAS -> 0xD6A2EC;
+                case BESSIE_NIGHT, BESSIE_MOON -> 0x7FC4F0;
+                case FABLED -> color;
+            };
+        }
+
+        /// The icon as text, ready to put before a name ("" for none).
+        public net.minecraft.network.chat.Component iconText() {
+            String i = icon();
+            if (i == null) return net.minecraft.network.chat.Component.empty();
+            int c = iconColor();
+            return net.minecraft.network.chat.Component.empty()
+                    .append(net.minecraft.network.chat.Component.literal(i).withStyle(st -> st.withFont(
+                            new net.minecraft.network.chat.FontDescription.Resource(net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "stat_icons"))).withColor(c)))
+                    .append(net.minecraft.network.chat.Component.literal(" "));
+        }
+
         public final String displayName;
         public final int color;
         public final FoeLocations.Location location;
@@ -96,7 +131,7 @@ public class AlertHandler {
     static final class Learned {
         double msPerGameMinute = DEFAULT_MS_PER_GAME_MINUTE;
         long moonDurationMs = 0L;
-        long rainbowDurationMs = 0L;
+        long rainbowLastedMs = 0L;
         // The most recent Fabled event (0 = not seen yet; start 0 with an end = start not seen)
         long lastFabledStart = 0L;
         long lastFabledEnd = 0L;
@@ -349,6 +384,14 @@ public class AlertHandler {
         return MoonTimerHandler.instance().getTimeSinceMoonrise();
     }
 
+    /// Time left on the moon that's up, or -1 when none is up or how long moons last isn't known yet.
+    public long moonMsLeft() {
+        if (!isMoonUp()) return -1L;
+        long known = learned().moonDurationMs, since = moonElapsedMs();
+        if (known <= 0 || since < 0) return -1L;
+        return Math.max(0L, known - since);
+    }
+
     /// Called when chat says the moon has set: remembers how long moons last.
     public void onMoonSet() {
         long elapsed = moonElapsedMs();
@@ -480,7 +523,7 @@ public class AlertHandler {
     private void tickRainbow(long now) {
         if (rainbowStartedAt == 0L) return;
         long elapsed = now - rainbowStartedAt;
-        long known = learned().rainbowDurationMs;
+        long known = learned().rainbowLastedMs;
         if (elapsed > 45 * 60_000L || (known > 0 && elapsed > known * 3 / 2)) {
             endRainbow(false, elapsed);
             return;
@@ -489,16 +532,14 @@ public class AlertHandler {
         String weather = BossEventHandler.instance().getWeather().getString().trim();
         if (weather.isEmpty()) return;
         // The boss bar shows the rainbow's weather a moment after the message.
-        if (rainbowWeather == null) {
-            if (elapsed > 3_000L) rainbowWeather = weather;
-        } else if (!weather.equals(rainbowWeather)) {
-            endRainbow(true, elapsed);
-        }
+        // (The weather changing doesn't end it: a rain shower clearing up under a rainbow ended it early, and taught
+        // FOE+ too short a rainbow. Only the server's "has faded" line, or the time running out, ends one.)
+        if (rainbowWeather == null && elapsed > 3_000L) rainbowWeather = weather;
     }
 
     private void endRainbow(boolean sawItEnd, long elapsed) {
         if (sawItEnd && elapsed > 30_000L) {
-            learned().rainbowDurationMs = elapsed;
+            learned().rainbowLastedMs = Math.max(learned().rainbowLastedMs, elapsed);
             saveLearned();
         }
         rainbowStartedAt = 0L;
@@ -528,7 +569,7 @@ public class AlertHandler {
                 }
                 case RAINBOW -> {
                     if (!isRainbowUp()) continue;
-                    long known = learned().rainbowDurationMs;
+                    long known = learned().rainbowLastedMs;
                     out.add(new Active(alert, known > 0 ? smooth("end:" + alert.name(), Math.max(0L, known - (now() - rainbowStartedAt))) : -1L));
                 }
                 case FABLED -> {

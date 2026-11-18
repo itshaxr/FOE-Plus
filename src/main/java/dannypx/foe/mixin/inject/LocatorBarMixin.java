@@ -14,21 +14,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LocatorBarMixin {
     @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
     private void injectRenderBackground(GuiGraphics guiGraphics, DeltaTracker tickCounter, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.locatorBarMixinRenderBackground.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.locatorBarMixinRenderBackground.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("LocatorBarMixin.injectRenderBackground", foe$t);
         }
     }
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void injectRender(GuiGraphics context, DeltaTracker tickCounter, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.locatorBarMixinRender.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.locatorBarMixinRender.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("LocatorBarMixin.injectRender", foe$t);
         }
     }
 }

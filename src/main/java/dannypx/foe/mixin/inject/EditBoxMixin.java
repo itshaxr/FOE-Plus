@@ -88,79 +88,115 @@ public abstract class EditBoxMixin extends AbstractWidget implements ICrewInputH
 
     @Inject(method = "renderWidget", at = @At("HEAD"))
     private void injectRenderWidgetHead(GuiGraphics guiGraphics, int i, int j, float f, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinRenderWidgetHead.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            this.push();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinRenderWidgetHead.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                this.push();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectRenderWidgetHead", foe$t);
         }
     }
 
     @Inject(method = "renderWidget", at = @At("RETURN"))
     private void injectRenderWidgetReturn(GuiGraphics guiGraphics, int i, int j, float f, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinRenderWidgetReturn.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            boolean was = this.shifted;
-            this.pop();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinRenderWidgetReturn.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                boolean was = this.shifted;
+                this.pop();
 
-            if (!was) return;
+                if (!was) return;
 
-            int x = this.getX() - 2, y = this.getY() - 2;
+                int x = this.getX() - 2, y = this.getY() - 2;
 
-            guiGraphics.fill(x, y, x + this.badgeWidth(), y + this.getHeight(), 0xFF4B724A);
-            guiGraphics.drawString(this.font, this.badge, x + 3, getY(), CommonColors.WHITE, false);
+                guiGraphics.fill(x, y, x + this.badgeWidth(), y + this.getHeight(), 0xFF4B724A);
+                guiGraphics.drawString(this.font, this.badge, x + 3, getY(), CommonColors.WHITE, false);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectRenderWidgetReturn", foe$t);
         }
     }
 
     @Inject(method = "onClick", at = @At("HEAD"))
     private void injectOnClickHead(MouseButtonEvent mouseButtonEvent, boolean bl, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinOnClickHead.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            this.push();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinOnClickHead.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                this.push();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectOnClickHead", foe$t);
         }
     }
     @Inject(method = "onClick", at = @At("RETURN"))
     private void injectOnClickReturn(MouseButtonEvent mouseButtonEvent, boolean bl, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinOnClickReturn.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            this.pop();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinOnClickReturn.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                this.pop();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectOnClickReturn", foe$t);
         }
     }
 
     @Inject(method = "onDrag", at = @At("HEAD"))
     private void injectOnDragHead(MouseButtonEvent e, double dx, double dy, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinOnDragHead.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            this.push();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinOnDragHead.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                this.push();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectOnDragHead", foe$t);
         }
     }
     @Inject(method = "onDrag", at = @At("RETURN"))
     private void injectOnDragReturn(MouseButtonEvent e, double dx, double dy, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.editBoxMixinOnDragReturn.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            this.pop();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.editBoxMixinOnDragReturn.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                this.pop();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EditBoxMixin.injectOnDragReturn", foe$t);
         }
     }
 }

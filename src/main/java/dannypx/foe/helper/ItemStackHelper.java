@@ -42,6 +42,7 @@ public class ItemStackHelper {
     private static final int TAG_CACHE_MAX = 1024;
     /// Keyed by identity: comparing custom data by value would walk the whole tag every lookup.
     private static final java.util.Map<CustomData, CompoundTag> TAG_CACHE = new java.util.IdentityHashMap<>();
+    static { dannypx.foe.handler.logic.MemoryGuard.register("itemTags", () -> { synchronized (TAG_CACHE) { return TAG_CACHE.size(); } }, () -> { synchronized (TAG_CACHE) { TAG_CACHE.clear(); } }); }
 
     public static ItemStack jsonToItemStack(String json) {
         return ItemStack.CODEC

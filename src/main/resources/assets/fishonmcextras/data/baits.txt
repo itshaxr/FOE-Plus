@@ -1,0 +1,103 @@
+Bread|common|bait_bread
+Dough Balls|common|bait_doughballs
+Pink Salmon Roe|common|bait_pink_salmon_roe
+Worms|common|bait_worm
+Zebra Mussels|common|bait_zebra_mussels
+Banana Chunks|rare|bait_banana_chunks
+Chicken Nugget|rare|bait_chickennugget
+Cut Shad|rare|bait_cut_shad
+French Fry|rare|bait_french_fry
+Minnow Live Bait|rare|bait_minnow
+Nightcrawler|rare|bait_nightcrawler
+Shiner Live Bait|rare|bait_shiner
+Small Chunk Of Meat|rare|bait_chunkofmeat_small
+Sweet Corn|rare|bait_sweetcorn
+Trout Dough|rare|bait_powerbait_dough
+Chicken Liver|epic|bait_chickenliver
+Chinook Salmon Roe|epic|bait_chinook_salmon_roe
+Cut Bream|epic|bait_cut_bream
+Cut Carp|epic|bait_cut_carp
+Cut Roach|epic|bait_cut_roach
+Nightcrawlers|epic|bait_hooknightcrawlers
+Shad Live Bait|epic|bait_shad
+Carp Head|legendary|bait_carp_head
+Large Chunk Of Meat|legendary|bait_chunkofmeat_large
+Rotten Chicken|legendary|bait_rottenchickenbait
+Clam|common|bait_clam
+Grass Shrimp|common|bait_grass_shrimp
+Sand Flea|common|bait_sandflea
+Sand Shrimp|common|bait_sandshrimp
+Sand Worm|common|bait_ragworm
+Scallop|common|bait_scallop
+Small Cut Squid|common|bait_cut_squid
+Cut Octopus|rare|bait_cut_octopus
+Fiddler Crab|rare|bait_fiddler_crab
+Herring Live Bait|rare|bait_threadfin_herring
+Medium Cut Squid|rare|bait_cut_squid
+Menhaden Live Bait|rare|bait_gulf_menhaden
+Mullet Live Bait|rare|bait_mulletbait
+Mussels|rare|bait_mussels
+Small Chunk Of Bonito Cutbait|rare|bait_bonito_cutbait
+White Shrimp|rare|bait_white_shrimp
+Cut Mullet|epic|bait_cut_mullet
+Mackerel Live Bait|epic|bait_mackerel_livebait
+Pinfish Live Bait|epic|bait_pinfishbait
+Sardine Live Bait|epic|bait_sardine
+Ballyhoo Live Bait|legendary|bait_ballyhoo
+Bonito Live Bait|legendary|bait_bonito_livebait
+Cownose Ray Cutbait|legendary|bait_cownose_ray_cutbait
+Large Chunk Of Bonito Cutbait|legendary|bait_cutbait
+Large Cut Squid|legendary|bait_cut_squid
+Salmon Head|legendary|bait_sea_run_salmon_head
+Bardi Grub|rare|bait_bardi_grub
+Chicken Scraps|rare|bait_chicken_scraps
+Cut Piranha|rare|bait_cut_piranha
+Sand Eel|rare|bait_sandeel
+Florida Crawfish|epic|bait_florida_crawfish
+Lambari Live Bait|epic|bait_lambari_livebait
+Louisiana Crawfish|epic|bait_louisiana_crawfish
+Mozzarella Cube|epic|bait_mozzarella
+Rusty Crawfish|epic|bait_rusty_crawfish
+Yabby Crawfish|epic|bait_yabby_crawfish
+Murray Crawfish|legendary|bait_murray_crawfish
+Stone Crab|special|bait_stone_crab
+Creepy Crawlers|special|bait_creepycrawlers
+Frozen Crawlers|special|bait_frozencrawlers
+Southern Ray Cutbait|special|bait_southern_ray_cutbait
+Crankbait (Tiger Craw)|rare|lure_crankbait_tigercraw
+Crankbait (Smokin' Shad)|rare|lure_crankbait_sexyshad
+Roostertail (Fire Tiger)|rare|lure_roostertail_firetiger
+Roostertail (Bubblegum)|rare|lure_roostertail_pinkfluorescent
+Roostertail (White Chartreuse)|rare|lure_roostertail_whitechartreuse
+Crankbait (Bluegill)|epic|lure_crankbait_bluegill
+Spinner Bait (Chartreuse)|epic|lure_spinnerbait_chartreuse
+Frog (Leopard)|epic|lure_frog_leopard
+Spinnerbait (White Shad)|legendary|lure_spinnerbait_whiteshad
+Spinner Bait (Golden Shiner)|legendary|lure_spinnerbait_goldenshiner
+Frog (Rainforest Yellow)|legendary|lure_frog_rainforestyellow
+Glide Bait (Rainbow Trout)|legendary|lure_glidebaitrainbowtrout
+Diving Plug (Olive)|legendary|lure_divingplugolive
+Diving Plug (Fire Tiger)|legendary|lure_divingplugfiretiger
+Diving Plug (Banana)|legendary|lure_divingplugbanana
+Popper (Black Magic)|legendary|lure_popperblackmagic
+Popper (Ghost)|legendary|lure_popperghost
+Glide Bait (Crystal)|mythical|lure_glidebaitcrystal
+Glide Bait (Bluegill)|mythical|lure_glidebaitbluegill
+Bucktail Jig (Chartreuse)|epic|lure_bucktail_jig_chartreuse
+Bucktail Jig (Dark Shad)|epic|lure_bucktail_jig_dark_shad
+Bucktail Jig (Ghost)|epic|lure_bucktail_jig_white
+Jerkbait (Blueback Herring)|epic|lure_jerkbait_blueback_herring
+Jerkbait (Redhead)|epic|lure_jerkbait_redhead
+Saltwater Spoon (Gold)|epic|lure_saltwater_spoon_gold
+Saltwater Spoon (Silver)|epic|lure_saltwater_spoon_silver
+Jerkbait (Mullet)|legendary|lure_jerkbait_mullet
+Marlin Lure (Blue)|legendary|lure_marlin_lure_blue
+Marlin Lure (Mini Mahi)|legendary|lure_marlin_lure_mini_mahi
+Marlin Lure (Purple)|legendary|lure_marlin_lure_purple
+Marlin Lure (Blue Green)|mythical|lure_marlinlure_greenblue
+Frog (Dark Rainforest)|epic|lure_frog_darkrainforest
+Spinner Bait (Lime)|legendary|lure_spinnerbait_lime
+Popper (Volcano)|legendary|lure_poppervolcano
+Roostertail (White Shimmer)|mythical|lure_roostertail_albino_cropped
+Roostertail (Black Shimmer)|mythical|lure_roostertail_melanistic_cropped
+Roostertail (Golden Shimmer)|mythical|lure_roostertail_trophy_cropped

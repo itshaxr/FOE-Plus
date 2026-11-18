@@ -29,7 +29,7 @@ import java.util.Random;
 /**
  * The FOE title screen: a FishOnMC background, the logo, a "Join FishOnMC" button with the live
  * player count and ping, and the usual menu buttons. Ported from FOECollab's FoETitleScreen
- * (AGPL-3.0), rewritten for Mojang mappings. Press F5 to pick a new background.
+ * (AGPL-3.0), rewritten for Mojang mappings. The background drifts across each picture and fades into the next; F5 moves on to the next one.
  */
 public class FoeTitleScreen extends Screen {
     private static final String SERVER_ADDRESS = "play.fishonmc.net";
@@ -60,7 +60,11 @@ public class FoeTitleScreen extends Screen {
     private static final int BUTTON_HEIGHT = 20;
     private static final int BUTTON_LINE_HEIGHT = 4 + BUTTON_HEIGHT;
 
-    private static Identifier background;
+    /// The background drifts slowly across each picture, then fades into the next, like a moving panorama.
+    static final long SHOW_MS = 22_000L, FADE_MS = 2_500L;
+    static final float ZOOM = 1.14f;
+    private static int shown = -1;
+    private static long shownSince;
 
     /// Latest ping of play.fishonmc.net; null while the first ping is running. Shared across
     /// title screen visits so it shows straight away when you come back.
@@ -89,7 +93,7 @@ public class FoeTitleScreen extends Screen {
 
     @Override
     protected void init() {
-        if (background == null) background = BACKGROUNDS.get(new Random().nextInt(BACKGROUNDS.size()));
+        if (shown < 0) { shown = new Random().nextInt(BACKGROUNDS.size()); shownSince = System.currentTimeMillis(); }
 
         pingIfNeeded();
 
@@ -199,21 +203,60 @@ public class FoeTitleScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
-        // Cover the screen at 16:9, cropping whichever side is too long.
-        int drawWidth = width;
-        int drawHeight = (int) (width * 9f / 16f);
-        if (drawHeight < height) {
-            drawHeight = height;
-            drawWidth = (int) (height * 16f / 9f);
+        long now = System.currentTimeMillis();
+        if (shown < 0) { shown = 0; shownSince = now; }
+        // On to the next picture once this one has had its turn (the next began fading in before it ended).
+        while (now - shownSince >= SHOW_MS) {
+            shown = (shown + 1) % BACKGROUNDS.size();
+            shownSince += SHOW_MS - FADE_MS;
         }
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, background, 0, 0, 0, 0, drawWidth, drawHeight, drawWidth, drawHeight);
+        drawPicture(guiGraphics, shown, now - shownSince, 1f);
+        long fadeStart = shownSince + SHOW_MS - FADE_MS;
+        if (now >= fadeStart) {
+            drawPicture(guiGraphics, (shown + 1) % BACKGROUNDS.size(), now - fadeStart, fade(now - fadeStart));
+        }
+    }
+
+    /// One picture, covering the screen a little zoomed in, at its place in the drift.
+    private void drawPicture(GuiGraphics g, int index, long sinceMs, float alpha) {
+        // Cover the screen at 16:9, cropping whichever side is too long, then zoom in so there is room to move.
+        float drawWidth = width, drawHeight = width * 9f / 16f;
+        if (drawHeight < height) { drawHeight = height; drawWidth = height * 16f / 9f; }
+        drawWidth *= ZOOM; drawHeight *= ZOOM;
+        float[] at = drift(sinceMs, index % 2 == 0);
+        float ox = (drawWidth - width) * at[0], oy = (drawHeight - height) * at[1];
+        int w = Math.round(drawWidth), h = Math.round(drawHeight);
+        int a = Math.max(0, Math.min(255, Math.round(alpha * 255f)));
+        g.pose().pushMatrix();
+        g.pose().translate(-ox, -oy);
+        g.blit(RenderPipelines.GUI_TEXTURED, BACKGROUNDS.get(index), 0, 0, 0, 0, w, h, w, h, (a << 24) | 0xFFFFFF);
+        g.pose().popMatrix();
+    }
+
+    /// Package-private for tests: where the view is across a picture (0-1 of the room to move, x and y),
+    /// `sinceMs` into its turn: across from one side to the other (rightward or leftward), easing at both ends,
+    /// with a gentle rise and fall.
+    static float[] drift(long sinceMs, boolean rightward) {
+        float t = Math.max(0f, Math.min(1f, sinceMs / (float) SHOW_MS));
+        float e = t * t * (3f - 2f * t);
+        float x = rightward ? e : 1f - e;
+        float y = 0.5f + 0.35f * (float) Math.sin(t * Math.PI * 2.0) * 0.5f;
+        return new float[]{x, y};
+    }
+
+    /// Package-private for tests: how far the next picture has faded in (0-1), `sinceMs` into the fade.
+    static float fade(long sinceMs) {
+        float t = Math.max(0f, Math.min(1f, sinceMs / (float) FADE_MS));
+        return t * t * (3f - 2f * t);
     }
 
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (super.keyPressed(event)) return true;
         if (event.key() == GLFW.GLFW_KEY_F5) {
-            background = BACKGROUNDS.get(new Random().nextInt(BACKGROUNDS.size()));
+            // On to the next picture: it starts fading in now.
+            long now = System.currentTimeMillis();
+            if (now - shownSince < SHOW_MS - FADE_MS) shownSince = now - (SHOW_MS - FADE_MS);
             return true;
         }
         return false;

@@ -30,7 +30,7 @@ public final class ActiveBoostersHandler {
         return INSTANCE;
     }
 
-    private static final long FIRST_CHECK_MS = 5_000L;
+    private static final long FIRST_CHECK_MS = 2_000L;
     private static final long REFRESH_MS = 15L * 60L * 1000L;
     private static final long HIDE_WINDOW_MS = 3_000L;
 

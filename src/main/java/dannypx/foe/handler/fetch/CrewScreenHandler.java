@@ -42,10 +42,12 @@ public class CrewScreenHandler extends Handler {
                 && crewInfoStack.get(DataComponents.LORE) != null
         ) {
             List<Component> componentList = crewInfoStack.get(DataComponents.LORE).lines();
-            if(componentList.size() > 3
-                    && componentList.get(2).getSiblings().size() > 4
-                    && Objects.equals(componentList.get(2).getSiblings().get(3).getString(), ScoreboardHandler.instance().getCrew().getString())
-            ) {
+            // your crew's name on the info item (found in its text: how the line is split up changes)
+            String crew = ScoreboardHandler.instance().getCrew().getString().trim();
+            boolean ours = false;
+            for (int l = 0; l < Math.min(5, componentList.size()) && !ours; l++)
+                ours = !crew.isEmpty() && componentList.get(l).getString().contains(crew);
+            if(componentList.size() > 3 && ours) {
                 Map<UUID, Pair<String, ItemStack>> crewMembers = new HashMap<>();
 
                 for (int i = 28; i < 44; i++) {

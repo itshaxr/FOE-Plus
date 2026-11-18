@@ -15,12 +15,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public interface LevelRendererBrightnessGetterMixin {
     @Inject(method = "method_68890", at = @At("TAIL"), cancellable = true)
     private static void injectGetBrightness(BlockAndTintGetter blockAndTintGetter, BlockPos blockPos, CallbackInfoReturnable<Integer> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.levelRendererBrightnessGetterMixinMethod_68890.get()
-                && !blockAndTintGetter.getBlockState(blockPos).isSolidRender()
-        ) {
-            cir.setReturnValue(LightHandler.instance().calculateFishingHookLight(blockPos, cir.getReturnValue()));
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.levelRendererBrightnessGetterMixinMethod_68890.get()
+                    && !blockAndTintGetter.getBlockState(blockPos).isSolidRender()
+            ) {
+                cir.setReturnValue(LightHandler.instance().calculateFishingHookLight(blockPos, cir.getReturnValue()));
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("LevelRendererBrightnessGetterMixin.injectGetBrightness", foe$t);
         }
     }
 }

@@ -34,6 +34,14 @@ public class KeyBindConfig extends Config {
     @Name("Open Pet Prices menu")
     public ValidatedKeybind openPetPricesKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_U, ContextInput.KEYBOARD, false, false, false);
 
+    @Name("Open Presets menu")
+    @Desc("§7Runs /presets, which opens in FOE+'s presets panel. Not set by default: pick a key")
+    public ValidatedKeybind openPresetsKeybind = new ValidatedKeybind();
+
+    @Name("Open Quests menu")
+    @Desc("§7Runs /quests. Not set by default: pick a key")
+    public ValidatedKeybind openQuestsKeybind = new ValidatedKeybind();
+
     @Name("Hide/show the warning box at this location")
     public ValidatedKeybind dismissWarningKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_MINUS, ContextInput.KEYBOARD, false, false, false);
 
@@ -58,7 +66,7 @@ public class KeyBindConfig extends Config {
     public ValidatedBoolean scrollWheelScrolling = new ValidatedBoolean(true);
 
 
-    // Bait sorter (ported from FOECollab)
+    // Bait sorter by landofif (dofi) (ported from FOECollab)
     @Name("Bait Sorter")
     public ConfigGroup baitSorterGroup = new ConfigGroup("bait_sorter_group");
 
@@ -66,7 +74,7 @@ public class KeyBindConfig extends Config {
     public ValidatedKeybind sortBaitsKeybind = new ValidatedKeybind(GLFW.GLFW_KEY_B, ContextInput.KEYBOARD, false, false, false);
 
     @Name("Sort order")
-    @Desc("§7By rarity or by amount. The vault's Amount / Rarity buttons change this too, so B keeps the order you picked last")
+    @Desc("§7By rarity, amount or name, or Saved layout (set by the vault's Save Layout button: B puts the page back the way you saved it). The vault's sort buttons change this too, so B keeps the order you picked last")
     public ValidatedEnum<BaitSortOrder> baitSortOrder = new ValidatedEnum<>(BaitSortOrder.COMMON_TO_LEGENDARY, ValidatedEnum.WidgetType.CYCLING);
 
     @ConfigGroup.Pop

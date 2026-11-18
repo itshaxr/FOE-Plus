@@ -26,6 +26,23 @@ import java.util.Objects;
  */
 public class TopBarElement extends Element {
     private static final int PADDING = 8;
+    /// The least space kept between the middle and either side.
+    private static final int SIDE_GAP = 12;
+    /// What's shown at each step down: level bar (1/0), right side level (0 all, 1 no TPS/ping,
+    /// 2 no labels either), middle level (see [#middleText]).
+    private static final int[][] STEPS = {
+            {1, 0, 0}, {1, 0, 1}, {1, 0, 2}, {0, 0, 2}, {0, 1, 2}, {0, 2, 2}, {0, 2, 3}};
+
+    /// `text` cut to `width`, ending in "…", keeping its colours.
+    static Component cut(Font font, Component text, int width) {
+        if (font.width(text) <= width) return text;
+        int dots = font.width("…");
+        net.minecraft.network.chat.FormattedText kept = font.substrByWidth(text, Math.max(0, width - dots));
+        MutableComponent out = Component.empty();
+        kept.visit((style, str) -> { out.append(Component.literal(str).withStyle(style)); return java.util.Optional.empty(); },
+                net.minecraft.network.chat.Style.EMPTY);
+        return out.append(Component.literal("…").withStyle(ChatFormatting.DARK_GRAY));
+    }
 
     /// Climate per location (from FOECollab's LocationInfo), drawn as a two-colour gradient.
     private static final Map<String, Climate> CLIMATES = Map.ofEntries(
@@ -57,7 +74,7 @@ public class TopBarElement extends Element {
         if (!Configs.hudConfig.showTopBar.get() || !LoadingHandler.instance().isLoadingDone()) return 0;
         Font font = Minecraft.getInstance().font;
         if (font == null) return 0;
-        return Math.round((PADDING * 2 + font.lineHeight) * Configs.hudConfig.topBarScale.get());
+        return Math.round((PADDING * 2 + font.lineHeight) * dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.topBarScale.get()));
     }
 
     @Override
@@ -66,97 +83,156 @@ public class TopBarElement extends Element {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        float scale = Configs.hudConfig.topBarScale.get();
+        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.topBarScale.get());
         int screenWidth = Math.round(mc.getWindow().getGuiScaledWidth() / scale);
 
-        Component left = leftText();
-        Component middle = middleText();
-        Component right = rightText();
+        int alpha = Math.round(Configs.hudConfig.topBarOpacity.get() / 100f * 255f) << 24;
+
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(scale, scale);
+        drawBar(guiGraphics, font, screenWidth, alpha, TopBarElement::leftText, TopBarElement::middleText, TopBarElement::rightText, communityText());
+        guiGraphics.pose().popMatrix();
+    }
+
+    /// Lays the bar out across `screenWidth` and draws it. The left comes with or without its level
+    /// bar, the right in levels 0-2 (see [#rightText]) and the middle in levels 0-3 (see
+    /// [#middleText]); the shorter ones are only built when the fuller ones don't fit.
+    public static void drawBar(GuiGraphics guiGraphics, Font font, int screenWidth, int alpha,
+                               java.util.function.Function<Boolean, Component> lefts,
+                               java.util.function.IntFunction<Component> middles,
+                               java.util.function.IntFunction<Component> rights, Component community0) {
+        // On a narrow screen (a laptop, a big GUI scale) things give way one at a time, the least
+        // missed first, until the middle fits between the sides: the catch range, the weather and
+        // time, the level bar, the TPS/ping, the "Balance:"/"Catches:" words, then the spot. If even
+        // the place alone doesn't fit, it's cut short with "…". Nothing ever draws over anything else.
+        Component left = null, right = null, middle = null;
+        int leftEnd = 0, rightStart = 0;
+        for (int[] step : STEPS) {
+            left = lefts.apply(step[0] == 1);
+            right = rights.apply(step[1]);
+            leftEnd = PADDING + font.width(left);
+            rightStart = screenWidth - PADDING - font.width(right);
+            Component m = middles.apply(step[2]);
+            if (font.width(m) <= rightStart - leftEnd - SIDE_GAP * 2) { middle = m; break; }
+        }
+        if (middle == null) middle = cut(font, middles.apply(3), Math.max(0, rightStart - leftEnd - SIDE_GAP * 2));
+        int middleW = font.width(middle);
+        int middleX = screenWidth / 2 - middleW / 2;
+        middleX = Math.max(middleX, leftEnd + SIDE_GAP);
+        middleX = Math.min(middleX, rightStart - SIDE_GAP - middleW);
         // The community event goes in the bigger gap: after the level bar or before the balance.
         // If neither gap fits it, it's left out, so it never runs into the location in the middle.
-        Component community = communityText();
+        Component community = community0;
         int communityX = -1;
         if (community != null) {
             int gap = PADDING;
             int w = font.width(community);
-            int middleLeft = screenWidth / 2 - font.width(middle) / 2;
-            int middleRight = screenWidth / 2 + font.width(middle) / 2;
-            int leftEnd = PADDING + font.width(left);
-            int rightStart = screenWidth - PADDING - font.width(right);
+            int middleLeft = middleX;
+            int middleRight = middleX + middleW;
             int leftRoom = middleLeft - leftEnd;
             int rightRoom = rightStart - middleRight;
             if (leftRoom >= rightRoom && leftRoom >= w + gap * 2) communityX = leftEnd + (leftRoom - w) / 2;
             else if (rightRoom >= w + gap * 2) communityX = middleRight + (rightRoom - w) / 2;
         }
 
-        int alpha = Math.round(Configs.hudConfig.topBarOpacity.get() / 100f * 255f) << 24;
-
-        guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(scale, scale);
         guiGraphics.fill(0, 0, screenWidth, PADDING * 2 + font.lineHeight, alpha);
         guiGraphics.drawString(font, left, PADDING, PADDING, 0xFFFFFFFF, true);
-        guiGraphics.drawString(font, middle, screenWidth / 2 - font.width(middle) / 2, PADDING, 0xFFFFFFFF, true);
+        guiGraphics.drawString(font, middle, middleX, PADDING, 0xFFFFFFFF, true);
         guiGraphics.drawString(font, right, screenWidth - font.width(right) - PADDING, PADDING, 0xFFFFFFFF, true);
         if (communityX >= 0) guiGraphics.drawString(font, community, communityX, PADDING, 0xFFFFFFFF, true);
-        guiGraphics.pose().popMatrix();
     }
 
-    private static Component leftText() {
+    /// Name and level, and the level progress bar when `withBar`; each piece can be turned off.
+    private static Component leftText(boolean withBar) {
+        var cfg = Configs.hudConfig;
         Minecraft mc = Minecraft.getInstance();
         float progress = mc.player != null ? mc.player.experienceProgress : 0f;
         int filled = Math.round(progress * 20);
 
-        return Component.empty()
-                .append(TabOverlayHandler.instance().getPlayerName())
-                .append(Component.literal(" [").withStyle(ChatFormatting.DARK_GRAY))
-                .append(ScoreboardHandler.instance().getLevel().copy().withStyle(ChatFormatting.LIGHT_PURPLE))
-                .append(Component.literal("] ").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(" ".repeat(filled)).withStyle(ChatFormatting.GREEN, ChatFormatting.STRIKETHROUGH))
-                .append(Component.literal(" ".repeat(20 - filled)).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.STRIKETHROUGH))
+        MutableComponent out = Component.empty();
+        if (cfg.topBarShowName.get()) out.append(TabOverlayHandler.instance().getPlayerName());
+        if (cfg.topBarShowLevel.get()) {
+            if (!out.getSiblings().isEmpty()) out.append(Component.literal(" "));
+            // in the colours your level has in chat (a gradient at high levels), once one of your
+            // messages has been seen; until then the old purple
+            String lv = ScoreboardHandler.instance().getLevel().getString().trim();
+            Component chatColours = dannypx.foe.handler.logic.LevelStyleHandler.instance().level(lv);
+            if (chatColours != null) out.append(chatColours);
+            else out.append(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(ScoreboardHandler.instance().getLevel().copy().withStyle(ChatFormatting.LIGHT_PURPLE))
+                    .append(Component.literal("]").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (!withBar || !cfg.topBarShowLevelBar.get()) return out;
+        if (!out.getSiblings().isEmpty()) out.append(Component.literal(" "));
+        return out
+                .append(GameXpBar.gameStyle() ? GameXpBar.bar(progress, 20) : Component.empty()
+                        .append(Component.literal(" ".repeat(filled)).withStyle(ChatFormatting.GREEN, ChatFormatting.STRIKETHROUGH))
+                        .append(Component.literal(" ".repeat(20 - filled)).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.STRIKETHROUGH)))
                 .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(Math.round(progress * 100) + "%").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
     }
 
-    private static Component middleText() {
+    /// The middle, from everything (`drop` 0) to the least (`drop` 3): 1 drops the catch range and
+    /// climate, 2 also the weather and time, 3 also the spot. Each piece can be turned off too.
+    private static Component middleText(int drop) {
+        var cfg = Configs.hudConfig;
         BossEventHandler boss = BossEventHandler.instance();
         Component location = boss.getLocation();
-        MutableComponent text = Component.literal(" ").withStyle(ChatFormatting.WHITE).append(location);
+        MutableComponent text = Component.empty().withStyle(ChatFormatting.WHITE);
+        // in the place's own colour, as the travel map shows it
+        if (cfg.topBarShowLocation.get()) {
+            String place = location.getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+            text.append(place.isEmpty() ? location : dannypx.foe.helper.FoeLocations.styledName(place));
+        }
         // The spot you're at within the location (Big Bear Dock, Thunderwood Marina...), from the
         // server's second boss bar; "Spawn" in Cypress Lake's hub before the water.
         String spot = boss.getSubLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
-        if (!spot.isEmpty()) {
-            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal(spot).withStyle(boss.getSubLocation().getStyle().getColor() == null
-                            ? net.minecraft.network.chat.Style.EMPTY.withColor(ChatFormatting.GRAY) : boss.getSubLocation().getStyle()));
-        } else if (dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) {
-            text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal("Spawn").withStyle(ChatFormatting.GRAY));
+        // the server no longer says on most places: the spot FOE+ learned you're at (see SpotHandler)
+        String learnedSpot = spot.isEmpty() ? dannypx.foe.handler.logic.SpotHandler.instance().current() : null;
+        Component spotText = null;
+        if (learnedSpot != null) spotText = Component.literal(learnedSpot).withStyle(ChatFormatting.GRAY);
+        else if (!spot.isEmpty()) spotText = Component.literal(spot).withStyle(boss.getSubLocation().getStyle().getColor() == null
+                ? net.minecraft.network.chat.Style.EMPTY.withColor(ChatFormatting.GRAY) : boss.getSubLocation().getStyle());
+        else if (dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) spotText = Component.literal("Spawn").withStyle(ChatFormatting.GRAY);
+        if (drop < 3 && spotText != null && cfg.topBarShowSpot.get()) {
+            if (!text.getSiblings().isEmpty()) text.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY));
+            text.append(spotText);
         }
 
         String min = ScoreboardHandler.instance().getLocationMin().getString().trim();
         String max = ScoreboardHandler.instance().getLocationMax().getString().trim();
-        if (!min.isEmpty() && !max.isEmpty() && !Objects.equals(min, max)) {
-            text.append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+        if (drop < 1 && cfg.topBarShowRange.get() && !min.isEmpty() && !max.isEmpty() && !Objects.equals(min, max)) {
+            if (!text.getSiblings().isEmpty()) text.append(Component.literal(" "));
+            text.append(Component.literal("(").withStyle(ChatFormatting.DARK_GRAY))
                     .append(Component.literal(min).withStyle(ChatFormatting.GOLD))
                     .append(Component.literal("/").withStyle(ChatFormatting.GRAY))
                     .append(Component.literal(max).withStyle(ChatFormatting.GOLD))
                     .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
         }
 
-        if (Configs.hudConfig.topBarShowClimate.get()) {
+        // the spot takes the climate's place, keeping the bar short
+        boolean atSpot = spotText != null && cfg.topBarShowSpot.get() && !"Spawn".equals(spotText.getString());
+        if (drop < 1 && cfg.topBarShowClimate.get() && !atSpot) {
             Climate climate = CLIMATES.get(location.getString().toLowerCase(Locale.ROOT).replaceAll("[^a-z]", ""));
             if (climate != null) {
-                text.append(Component.literal(" [").withStyle(ChatFormatting.DARK_GRAY))
+                if (!text.getSiblings().isEmpty()) text.append(Component.literal(" "));
+                text.append(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY))
                         .append(climate.tag())
                         .append(Component.literal("]").withStyle(ChatFormatting.DARK_GRAY));
             }
         }
 
         String time = boss.getTime().getString().trim();
-        if (!time.isEmpty()) {
-            text.append(Component.literal(" ")).append(boss.getWeather())
-                    .append(Component.literal(" ")).append(boss.getTime());
+        if (drop < 2 && !time.isEmpty()) {
+            if (cfg.topBarShowWeather.get()) {
+                if (!text.getSiblings().isEmpty()) text.append(Component.literal(" "));
+                text.append(boss.getWeather());
+            }
+            if (cfg.topBarShowTime.get()) {
+                if (!text.getSiblings().isEmpty()) text.append(Component.literal(" "));
+                text.append(dannypx.foe.helper.SmoothClock.topBar(boss.getTime()));
+            }
         }
         return text;
     }
@@ -164,7 +240,7 @@ public class TopBarElement extends Element {
     /// "ᴄᴏᴍ 88.9K/100K (352)": the community total, the goal and (in brackets) your contribution,
     /// or null before it's been read (or when turned off).
     private static Component communityText() {
-        if (!Configs.hudConfig.topBarShowCommunity.get()) return null;
+        if (!Configs.hudConfig.topBarShowCommunity.get() || dannypx.foe.handler.logic.CommunityEventHandler.communityInTimers()) return null;
         dannypx.foe.handler.logic.CommunityEventHandler event = dannypx.foe.handler.logic.CommunityEventHandler.instance();
         if (!event.hasData() || event.total().isEmpty()) return null;
         MutableComponent text = Component.empty()
@@ -182,21 +258,46 @@ public class TopBarElement extends Element {
         return text;
     }
 
-    private static Component rightText() {
+    /// Balance, credits, catches and TPS/ping, each one can be turned off; `level` 1 leaves off the
+    /// TPS/ping, 2 also the labels.
+    private static Component rightText(int level) {
+        var cfg = Configs.hudConfig;
         ScoreboardHandler scoreboard = ScoreboardHandler.instance();
-        return Component.empty()
-                .append(Component.literal("ʙᴀʟᴀɴᴄᴇ: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("$").withStyle(ChatFormatting.DARK_GREEN))
-                // The scoreboard's wallet already starts with its own "$"; keep only ours.
-                .append(Component.literal(scoreboard.getWallet().getString().trim().replaceFirst("^\\$\\s*", "")).withStyle(ChatFormatting.GREEN))
-                .append(Component.literal(" ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(scoreboard.getCredits().getString().trim()).withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal("    "))
-                .append(Component.literal("ᴄᴀᴛᴄʜᴇѕ: ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(scoreboard.getCatches().getString().trim()).withStyle(ChatFormatting.RED))
-                .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(scoreboard.getCatchRate().getString().trim()).withStyle(ChatFormatting.GREEN))
-                .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        boolean labels = level < 2;
+        String gap = labels ? "    " : "   ";
+        MutableComponent out = Component.empty();
+        boolean balance = cfg.topBarShowBalance.get(), credits = cfg.topBarShowCredits.get();
+        if (balance || credits) {
+            if (labels) out.append(Component.literal("ʙᴀʟᴀɴᴄᴇ: ").withStyle(ChatFormatting.GRAY));
+            if (balance) out.append(Component.literal("$").withStyle(ChatFormatting.DARK_GREEN))
+                    .append(dannypx.foe.helper.NameTagMarker.GAP_WIDE)   // a two-pixel gap after the "$"
+                    // The scoreboard's wallet already starts with its own "$"; keep only ours.
+                    .append(Component.literal(scoreboard.getWallet().getString().trim().replaceFirst("^\\$\\s*", "")).withStyle(ChatFormatting.GREEN));
+            if (balance && credits) out.append(Component.literal(" "));
+            if (credits) {
+                // the server's coin icon, in its own font: it's on the credits line but not always
+                // in the number's part of it
+                // part of it, and in its own font, which plain text would lose
+                Component inValue = dannypx.foe.handler.fetch.ScoreboardHandler.glyphs(scoreboard.getCredits());
+                out.append(inValue.getString().isEmpty() ? scoreboard.getCreditsIcon() : inValue);
+                String value = scoreboard.getCredits().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+                out.append(Component.literal(value).withStyle(ChatFormatting.YELLOW));
+            }
+        }
+        if (cfg.topBarShowCatches.get()) {
+            if (!out.getSiblings().isEmpty()) out.append(Component.literal(gap));
+            if (labels) out.append(Component.literal("ᴄᴀᴛᴄʜᴇѕ: ").withStyle(ChatFormatting.GRAY));
+            out.append(Component.literal(scoreboard.getCatches().getString().trim()).withStyle(ChatFormatting.RED))
+                    .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(scoreboard.getCatchRate().getString().trim()).withStyle(ChatFormatting.GREEN))
+                    .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (level == 0 && cfg.topBarShowTpsPing.get() && Minecraft.getInstance().player != null) {
+            // the same space as between the others (no divider)
+            if (!out.getSiblings().isEmpty()) out.append(Component.literal(gap));
+            out.append(dannypx.foe.screens.element.hud.TpsPing.now());
+        }
+        return out;
     }
 
     private enum Climate {

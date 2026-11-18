@@ -38,7 +38,7 @@ public class EquipmentBarElement extends Element {
     public static dannypx.foe.helper.HudLayout.Rect bounds() {
         Minecraft mc = Minecraft.getInstance();
         if (!Configs.hudConfig.showEquipmentBar.get() || mc.player == null || !LoadingHandler.instance().isLoadingDone() || mc.options.hideGui) return null;
-        float scale = Configs.hudConfig.equipmentBarScale.get();
+        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.equipmentBarScale.get());
         int centerX = Math.round(mc.getWindow().getGuiScaledWidth() / 2f / scale);
         int top = Math.round(mc.getWindow().getGuiScaledHeight() / scale) - Configs.hudConfig.equipmentBarOffsetFromBottom.get() - BOX;
         int left = centerX - 64 - 1;
@@ -54,7 +54,7 @@ public class EquipmentBarElement extends Element {
         if (mc.options.hideGui) return;
 
         Font font = mc.font;
-        float scale = Configs.hudConfig.equipmentBarScale.get();
+        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.equipmentBarScale.get());
         int centerX = Math.round(mc.getWindow().getGuiScaledWidth() / 2f / scale);
         int top = Math.round(mc.getWindow().getGuiScaledHeight() / scale) - Configs.hudConfig.equipmentBarOffsetFromBottom.get() - BOX;
         int alpha = Math.round(Configs.hudConfig.equipmentBarOpacity.get() / 100f * 255f) << 24;

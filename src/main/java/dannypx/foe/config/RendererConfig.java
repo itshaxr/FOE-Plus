@@ -66,9 +66,17 @@ public class RendererConfig extends Config {
     @Name("Show Equipped Pet Item")
     public ValidatedBoolean showPetEquippedMarker = new ValidatedBoolean(true);
 
-    @Name("+ next to FOE+ users' names")
+    @Name("+ above FOE+ users' heads")
     @Desc("§7Players near you who use this mod get a + after their name above their head")
     public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
+
+    @Name("FOE+ icon above FOE+ users' heads")
+    @Desc("§7The FOE+ icon before the name above the head of players who use this mod")
+    public ValidatedBoolean showFoePlusIcon = new ValidatedBoolean(true);
+
+    @Name("+ in the tab list")
+    @Desc("§7Players who use this mod get their + after their name in the tab list (Tab)")
+    public ValidatedBoolean showFoePlusTabMarker = new ValidatedBoolean(true);
 
     @Name("Floating text backgrounds")
     @Desc("§7The dark box behind server text like FISH MERCHANT. Some shaders (Photon) draw it solid black. AUTO hides it only while a shader pack is on")
@@ -93,15 +101,24 @@ public class RendererConfig extends Config {
     public ValidatedBoolean showMaxPetStatsMarker = new ValidatedBoolean(true);
 
     @Name("Show max stat rod part marker")
-    @Desc("§7A purple dot in the top-right corner of rod parts rolled at the highest their rarity can roll, and on rods with two different max stats")
+    @Desc("§7A purple dot in the top-right corner of rod parts rolled at the highest their rarity can roll, and on rods with two different max stats (only with the calibration icons off: those turn purple instead)")
     public ValidatedBoolean showMaxRodPartMarker = new ValidatedBoolean(true);
 
     @Name("Show rod part calibration icon")
-    @Desc("§7A small icon in the bottom-left of a rod part for what it's calibrated for: XP, money, luck, scale, prospect, albino, melanistic, trophy or bite/reel speed")
+    @Desc("§7A small icon in the bottom-right of a rod part (and of a rod, for its parts) for what it's calibrated for: XP, money, luck, scale, prospect, albino, melanistic, trophy or bite/reel speed. All purple when rolled at its max")
     public ValidatedBoolean showRodPartRollIcon = new ValidatedBoolean(true);
 
     @Name("Show Rarity marker")
     public ValidatedBoolean showRarityMarker = new ValidatedBoolean(true);
+
+    @Name("Item icon style")
+    @Desc("§7How the markers on items look: FOE+ (the rarity dot and the rating letter) or FOE (the rarity corner and a corner in the rating's colour, for players coming from FOE). The held-item star takes the amulet's colour in both. Also in O → Icons")
+    public me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<dannypx.foe.type.IconStyle> iconStyle =
+            new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.IconStyle.FOE_PLUS, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Skin-coloured pet tooltips")
+    @Desc("§7A pet wearing a skin: its tooltip framed in the skin's colours")
+    public ValidatedBoolean skinTooltipFrames = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Blacklist items from rendering rarity marker")

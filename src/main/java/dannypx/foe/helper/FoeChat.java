@@ -37,6 +37,15 @@ public final class FoeChat {
         return out;
     }
 
+    /// A line whose tag sits beside a badge ("EVENT PET!" before the EPIC box): the tag in small caps, so it is
+    /// no taller than the badge.
+    public static MutableComponent badgeLine(String tag, int color) {
+        MutableComponent out = prefix();
+        if (tag != null && !tag.isEmpty())
+            out.append(Component.literal(TextHelper.smallCaps(tag.toLowerCase(java.util.Locale.ROOT)) + " ").withColor(color).withStyle(ChatFormatting.BOLD));
+        return out;
+    }
+
     public static Component sep() {
         return Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY);
     }

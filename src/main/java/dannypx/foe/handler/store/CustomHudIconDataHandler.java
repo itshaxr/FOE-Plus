@@ -54,10 +54,17 @@ public class CustomHudIconDataHandler extends Handler {
             customHudIconData.uuid = minecraft.player.getUUID();
         } else if(customHudIconData.uuid != null && this.needsUpdate) {
             this.updateCustomHudData();
-        } else if(!CustomHudIconDataModel.CUSTOM_HUD_ICON_DATA_MODEL_VERSION.equals(customHudIconData.version)) {
+        } else if(customHudIconData.uuid != null && !CustomHudIconDataModel.CUSTOM_HUD_ICON_DATA_MODEL_VERSION.equals(customHudIconData.version)) {
+            // Older data (FOE-R's, or FOE+ from before 0.2): its icon HUDs are left behind once, for everyone
+            // (a copy kept as custom_hud_icon.removed.json). Only icon HUDs made from now on are kept.
+            if (!customHudIconData.customHudIconDataList.isEmpty()) {
+                dannypx.foe.handler.logic.LoggerHandler.info("Custom HUD icons: removing " + customHudIconData.customHudIconDataList.size() + " left from FOE-R / older FOE+ (copy kept)");
+                dannypx.foe.handler.io.DataFileHandler.instance().saveCopy(dannypx.foe.handler.io.DataModels.DataModelType.CUSTOM_HUD_ICON_DATA, "removed");
+            }
+            customHudIconData.customHudIconDataList = new HashMap<>();
             customHudIconData.version = CustomHudIconDataModel.CUSTOM_HUD_ICON_DATA_MODEL_VERSION;
-            this.updateDefault();
             needsUpdate = true;
+            needsRenderUpdate = true;
         }
     }
 
@@ -131,6 +138,11 @@ public class CustomHudIconDataHandler extends Handler {
         needsUpdate = true;
     }
 
+    /// Nothing but the example icon HUDs (a fresh install).
+    public boolean onlyExamples() {
+        return CustomHudIconDataModel.defaultHudsIcon.keySet().containsAll(customHudIconData.customHudIconDataList.keySet());
+    }
+
     public void resetHudIcons() {
         customHudIconData.customHudIconDataList = new HashMap<>(CustomHudIconDataModel.defaultHudsIcon);
 
@@ -140,7 +152,7 @@ public class CustomHudIconDataHandler extends Handler {
 
     //region Model
     public static class CustomHudIconDataModel extends DataModels.DataModel {
-        private static final String CUSTOM_HUD_ICON_DATA_MODEL_VERSION = "0.1";
+        private static final String CUSTOM_HUD_ICON_DATA_MODEL_VERSION = "0.2";
 
         private static final Map<String, CustomHudIcon> defaultHudsIcon = Map.of(
 

@@ -76,8 +76,10 @@ public class ArmorTagObject extends TagObject {
             List<Component> components = this.getLore();
             Component qualityComponent;
             try {
-                qualityComponent = components.get(ARMOR_QUALITY_LINE).getSiblings().get(ARMOR_QUALITY_SIBLING);
-                return qualityComponent.getString().contains("%") ? qualityComponent : components.get(ARMOR_QUALITY_LINE).getSiblings().get(ARMOR_QUALITY_SIBLING + 1);
+                // "ꞯᴜᴀʟɪᴛʏ: sᴜᴘᴇʀɪᴏʀ [96%]" → "96%", in its colour
+                Component line = LoreReader.findLine(components, "quality:");
+                qualityComponent = LoreReader.percent(line != null ? line : components.size() > ARMOR_QUALITY_LINE ? components.get(ARMOR_QUALITY_LINE) : null);
+                return qualityComponent;
             } catch (IndexOutOfBoundsException e) {
                 return Component.empty();
             }

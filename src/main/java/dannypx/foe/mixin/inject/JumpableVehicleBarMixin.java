@@ -14,21 +14,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class JumpableVehicleBarMixin {
     @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
     private void injectRenderBackground(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.jumpableVehicleBarMixinRenderBackground.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.jumpableVehicleBarMixinRenderBackground.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("JumpableVehicleBarMixin.injectRenderBackground", foe$t);
         }
     }
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void injectRender(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.jumpableVehicleBarMixinRender.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.jumpableVehicleBarMixinRender.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("JumpableVehicleBarMixin.injectRender", foe$t);
         }
     }
 }

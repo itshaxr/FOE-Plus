@@ -59,11 +59,11 @@ public class CustomHudElement extends Element implements ScreenConstants {
     public void render(GuiGraphics guiGraphics) {
         if(!customHud.isShowElement()) { return; }
 
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / customHud.getScale()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / customHud.getScale()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(customHud.getScale())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(customHud.getScale())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(customHud.getScale(), customHud.getScale());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(customHud.getScale()), dannypx.foe.utils.HudScale.crisp(customHud.getScale()));
         if(LoadingHandler.instance().isLoadingDone()
                 && TabOverlayHandler.instance().isInInstance()
         ) {
@@ -103,7 +103,7 @@ public class CustomHudElement extends Element implements ScreenConstants {
                 };
 
                 // Same as the FOE panels: kept on screen, otherwise exactly where you put it.
-                float scale = customHud.getScale();
+                float scale = dannypx.foe.utils.HudScale.crisp(customHud.getScale());
                 dannypx.foe.helper.HudLayout.Rect wanted = new dannypx.foe.helper.HudLayout.Rect(
                         Math.round(x * scale), Math.round(y * scale), Math.round(boxWidth * scale), Math.round(boxHeight * scale));
                 dannypx.foe.helper.HudLayout.Rect placed = dannypx.foe.helper.HudLayout.clamp(wanted,

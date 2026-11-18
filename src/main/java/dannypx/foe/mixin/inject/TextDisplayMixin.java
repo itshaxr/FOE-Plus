@@ -19,12 +19,18 @@ public abstract class TextDisplayMixin {
 
     @Inject(method = "onSyncedDataUpdated", at = @At("TAIL"))
     private void injectOnSyncedDataUpdated(EntityDataAccessor<?> entityDataAccessor, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.textDisplayMixinOnSyncedDataUpdated.get()
-        ) {
-            Display.TextDisplay self = (Display.TextDisplay) (Object) this;
-            ChummerHandler.instance().onTextUpdate(self, getText());
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.textDisplayMixinOnSyncedDataUpdated.get()
+            ) {
+                Display.TextDisplay self = (Display.TextDisplay) (Object) this;
+                ChummerHandler.instance().onTextUpdate(self, getText());
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("TextDisplayMixin.injectOnSyncedDataUpdated", foe$t);
         }
     }
 }

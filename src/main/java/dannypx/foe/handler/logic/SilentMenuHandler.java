@@ -65,7 +65,7 @@ public class SilentMenuHandler {
     /// The server makes you wait 5 s between some commands ("Wait 5 seconds."), so background
     /// commands keep at least this far from your own commands and from each other.
     private static final long QUIET_AFTER_ACTIVITY_MS = 6_000L;
-    private static final long BACKGROUND_COMMAND_GAP_MS = 6_000L;
+    private static final long BACKGROUND_COMMAND_GAP_MS = 5_500L;
     private long lastBackgroundCommandAt = 0L;
     private String lastBackgroundCommand = "";
     /// …nor right after you closed a screen (or the chat box).
@@ -103,6 +103,16 @@ public class SilentMenuHandler {
         return containerId == -1 && now > expectMenuUntil;
     }
 
+    /// For a background command that opens no menu and isn't held up by one (/find): not while our own
+    /// silent menu is on its way, nor just after you typed something or after another background command.
+    public boolean isQuietForChatCommand(long gapMs) {
+        Minecraft mc = Minecraft.getInstance();
+        long now = System.currentTimeMillis();
+        if (mc.player == null || mc.getConnection() == null) return false;
+        if (now - lastUserActivity < 2_500L || now - lastBackgroundCommandAt < gapMs) return false;
+        return containerId == -1 && now > expectMenuUntil;
+    }
+
     /// Called just before a background command is sent.
     public void noteBackgroundCommand(String command) {
         lastBackgroundCommandAt = System.currentTimeMillis();
@@ -136,6 +146,8 @@ public class SilentMenuHandler {
             MiniEventHandler.instance().retryIn(retryMs);
         } else if (lastBackgroundCommand.equals("active")) {
             ActiveBoostersHandler.instance().retryIn(retryMs);
+        } else if (lastBackgroundCommand.startsWith("find ")) {
+            FindHandler.instance().retryIn(retryMs);
         }
         lastBackgroundCommandAt = 0L;
         return true;

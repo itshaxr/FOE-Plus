@@ -106,6 +106,7 @@ public final class FoeLocations {
     public static Location fromName(String displayName) {
         String name = displayName.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
         if (name.isEmpty()) return null;
+        if (name.equals("medsea")) return Location.MEDITERRANEAN_SEA;     // the panels' short name
         for (Location location : Location.values()) {
             if (name.startsWith(location.key) || location.key.startsWith(name)) return location;
         }
@@ -196,6 +197,8 @@ public final class FoeLocations {
     }
 
     /// FOE's rarity colours, by rarity ID.
+    /// The game's own rarity colours (the server's tooltips colour "MYTHICAL" #C93832, and so on).
+    /// Everything in FOE+ that colours a rarity uses these, so they always match the game.
     public static int rarityColor(String rarity) {
         return switch (rarity == null ? "" : rarity.toLowerCase(Locale.ROOT)) {
             case "common" -> 0xFFFFFF;

@@ -91,11 +91,14 @@ public class CatchingHandler extends Handler {
                 Triplet<Pair<String, Integer>, Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setFish(foundFish.value2());
                 NotifierHandler.instance().notifyFish(foundFish.value2(), prevStats.value1(), prevStats.value2(), prevStats.value3());
 
-                QuestDataHandler.instance().setFish(foundFish.value2());
-                ContestTrackerHandler.instance().onFishCaught(foundFish.value2());
-                DailyQuestHandler.instance().onFishCaught(foundFish.value2());
-                CommunityEventHandler.instance().onFishCaught();
-                MiniEventHandler.instance().onFishCaught(foundFish.value2());
+                // Each panel gets the catch on its own: one that fails can't keep the catch from the others (a
+                // failure here used to leave the daily quests waiting for /menu).
+                FishTagObject caught = foundFish.value2();
+                safely("quests", () -> QuestDataHandler.instance().setFish(caught));
+                safely("contest", () -> ContestTrackerHandler.instance().onFishCaught(caught));
+                safely("daily quests", () -> DailyQuestHandler.instance().onFishCaught(caught));
+                safely("community event", () -> CommunityEventHandler.instance().onFishCaught());
+                safely("mini event", () -> MiniEventHandler.instance().onFishCaught(caught));
                 LoggerHandler._debug("Found Fish: " + foundFish.value2().getName().getString());
 
                 CodeExecuterHandler.runLater(Configs.handlerConfig.catchingItemsDelayCheck.get(), this::checkForCaughtItems);
@@ -108,6 +111,14 @@ public class CatchingHandler extends Handler {
         } else if (!scanDone && System.currentTimeMillis() > startScanTime + (Configs.handlerConfig.catchingStatusCooldown.get() * 1000L)){
             this.scanDone = true;
             LoggerHandler._debug("Did not find fish");
+        }
+    }
+
+    private static void safely(String what, Runnable r) {
+        try {
+            r.run();
+        } catch (RuntimeException e) {
+            LoggerHandler.error(e);
         }
     }
 
@@ -131,9 +142,16 @@ public class CatchingHandler extends Handler {
             // Store to Stats
             Pair<Boolean, PetTagObject> validatePet = ValidateItem.isPet(validatedItem.value2());
             if(validatePet.value1()) {
-                Pair<Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setPet(validatePet.value2());
-                lastCaughtPet = validatePet.value2();
-                lastDataPet = prevStats;
+                // Only a pet fished up counts; one from a contest or an event that lands now gets its own popup
+                PetSourceHandler.Source source = PetSourceHandler.instance().sourceOfNewPet();
+                PetSourceHandler.instance().used(source);
+                if (source == PetSourceHandler.Source.FISHED) {
+                    Pair<Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setPet(validatePet.value2());
+                    lastCaughtPet = validatePet.value2();
+                    lastDataPet = prevStats;
+                } else {
+                    RewardPets.notify(itemStack, validatePet.value2(), source);
+                }
             } else {
                 Pair<String, Integer> prevStats = StatsDataHandler.instance().setOtherItem(validatedItem.value2(), count);
                 lastCaughtItems.add(Triplet.of(validatedItem.value2(), count, prevStats));

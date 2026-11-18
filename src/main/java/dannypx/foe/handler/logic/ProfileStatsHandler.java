@@ -119,7 +119,9 @@ public class ProfileStatsHandler {
             if (!profileItem && stack.getItem() != Items.PLAYER_HEAD) continue;
             ItemLore lore = stack.get(DataComponents.LORE);
             if (lore == null || lore.lines().isEmpty()) continue;
-            List<String> lines = lore.lines().stream().map(Component::getString).toList();
+            // plain letters ("ʟᴜᴄᴋ" reads as "luck"), the tooltip frame taken off the front
+            List<String> lines = lore.lines().stream().map(Component::getString)
+                    .map(t -> dannypx.foe.helper.TextHelper.normalLetter(t.substring(dannypx.foe.item.LoreReader.frameLength(t)))).toList();
             if (lines.stream().noneMatch(l -> hasWord(l, "luck") || hasWord(l, "scale"))) continue;
             // Your own head first; another head only as a fallback in the main menu.
             String myName = mc.player.getGameProfile().name();

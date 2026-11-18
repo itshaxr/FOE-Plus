@@ -37,31 +37,41 @@ public class ScreenHander extends Handler {
 
     //region Methods
     public void onAfterInitScreen(Minecraft minecraft, Screen screen, int scaledWidth, int scaledHeight) {
+        // the HUD's hover tooltips (the contest's other baits), over chat and any screen the HUD shows under
+        ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:41", (s, g, mx, my, d) -> dannypx.foe.screens.element.hud.HudHover.render(g, mx, my)));
         if(screen instanceof InventoryScreen inventoryScreen) {
             InventoryScreenRenderHandler.instance().init(inventoryScreen);
-            ScreenMouseEvents.afterMouseScroll(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onMouseScrolled);
-            ScreenMouseEvents.afterMouseClick(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onMouseClicked);
-            ScreenEvents.remove(inventoryScreen).register(InventoryScreenRenderHandler.instance()::onClose);
+            ScreenMouseEvents.afterMouseScroll(inventoryScreen).register(dannypx.foe.helper.SafeScreen.scroll("ScreenHander:44", InventoryScreenRenderHandler.instance()::onMouseScrolled));
+            ScreenMouseEvents.afterMouseClick(inventoryScreen).register(dannypx.foe.helper.SafeScreen.click("ScreenHander:45", InventoryScreenRenderHandler.instance()::onMouseClicked));
+            ScreenEvents.remove(inventoryScreen).register(dannypx.foe.helper.SafeScreen.remove("ScreenHander:46", InventoryScreenRenderHandler.instance()::onClose));
         } else if(screen instanceof ContainerScreen genericContainerScreen) {
             GenericContainerScreenHandler.instance().init(genericContainerScreen);
-            ScreenEvents.afterRender(screen).register(GenericContainerScreenHandler.instance()::render);
+            ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:49", (s, g, mx, my, d) -> {
+                long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
+                GenericContainerScreenHandler.instance().render(s, g, mx, my, d);
+                dannypx.foe.handler.logic.FoeProfiler.end("screen menu boxes", _p);
+            }));
             // FOE+'s travel map over the Locations menu (/tt)
             var travelMap = dannypx.foe.handler.renderer.TravelMapHandler.instance();
-            ScreenEvents.afterRender(screen).register(travelMap::render);
-            ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> MenuDumpHandler.instance().look(s));
+            ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:56", travelMap::render));
+            ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:57", (s, g, mx, my, d) -> {
+                long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
+                MenuDumpHandler.instance().look(s);
+                dannypx.foe.handler.logic.FoeProfiler.end("screen menu dump", _p);
+            }));
             // FOE+'s presets panel over the Fishing Presets menu
             var presetsPanel = dannypx.foe.handler.renderer.PresetsPanelHandler.instance();
-            ScreenEvents.afterRender(screen).register(presetsPanel::render);
-            ScreenMouseEvents.allowMouseClick(screen).register(presetsPanel::allowClick);
-            ScreenMouseEvents.allowMouseRelease(screen).register((s, event) -> presetsPanel.allowOther(s, event.x(), event.y()));
-            ScreenMouseEvents.allowMouseDrag(screen).register((s, event, dx, dy) -> presetsPanel.allowOther(s, event.x(), event.y()));
-            ScreenMouseEvents.allowMouseClick(screen).register(travelMap::allowClick);
-            ScreenMouseEvents.allowMouseRelease(screen).register((s, event) -> travelMap.allowOther(s));
-            ScreenMouseEvents.allowMouseDrag(screen).register((s, event, dx, dy) -> travelMap.allowOther(s));
+            ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:64", presetsPanel::render));
+            ScreenMouseEvents.allowMouseClick(screen).register(dannypx.foe.helper.SafeScreen.allowClick("ScreenHander:65", presetsPanel::allowClick));
+            ScreenMouseEvents.allowMouseRelease(screen).register(dannypx.foe.helper.SafeScreen.allowRelease("ScreenHander:66", (s, event) -> presetsPanel.allowOther(s, event.x(), event.y())));
+            ScreenMouseEvents.allowMouseDrag(screen).register(dannypx.foe.helper.SafeScreen.allowDrag("ScreenHander:67", (s, event, dx, dy) -> presetsPanel.allowOther(s, event.x(), event.y())));
+            ScreenMouseEvents.allowMouseClick(screen).register(dannypx.foe.helper.SafeScreen.allowClick("ScreenHander:68", travelMap::allowClick));
+            ScreenMouseEvents.allowMouseRelease(screen).register(dannypx.foe.helper.SafeScreen.allowRelease("ScreenHander:69", (s, event) -> travelMap.allowOther(s)));
+            ScreenMouseEvents.allowMouseDrag(screen).register(dannypx.foe.helper.SafeScreen.allowDrag("ScreenHander:70", (s, event, dx, dy) -> travelMap.allowOther(s)));
         }
 
         this.dispatchLastScreen(screen.getTitle());
-        ScreenEvents.remove(screen).register(this::onRemoveScreen);
+        ScreenEvents.remove(screen).register(dannypx.foe.helper.SafeScreen.remove("ScreenHander:74", this::onRemoveScreen));
     }
 
     public void dispatchLastScreen(Component lastScreen) {

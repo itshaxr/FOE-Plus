@@ -22,11 +22,14 @@ public class CodeExecuterHandler extends Handler {
     //region Fields
     private static final List<ScheduledTask> TASKS = new ArrayList<>();
     private static final List<ScheduledTask> PENDING = new ArrayList<>();
+    static { MemoryGuard.register("scheduled", () -> TASKS.size() + PENDING.size(), () -> {}); }
 
     public void init() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            TASKS.addAll(PENDING);
-            PENDING.clear();
+            synchronized (PENDING) {
+                TASKS.addAll(PENDING);
+                PENDING.clear();
+            }
 
             Iterator<ScheduledTask> iterator = TASKS.iterator();
             while (iterator.hasNext()) {
@@ -41,7 +44,7 @@ public class CodeExecuterHandler extends Handler {
     }
 
     public static void runLater(int ticks, Runnable runnable) {
-        PENDING.add(new ScheduledTask(ticks, runnable));
+        synchronized (PENDING) { PENDING.add(new ScheduledTask(ticks, runnable)); }
     }
 
     private static class ScheduledTask {

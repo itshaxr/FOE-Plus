@@ -44,15 +44,15 @@ public class TackleBoxScreenRenderHandler extends ScreenHandler {
                 && Configs.mainConfig.enableMod.get()
         ) {
             List<AbstractWidget> widgets = new ArrayList<>();
-
-            searchBarWidget = SearchHandler.getSearchBar(
-                    minecraft.getWindow().getGuiScaledWidth() / 2 - 80,
-                    minecraft.getWindow().getGuiScaledHeight() / 2 - 143,
-                    160,
-                    20
-            );
-
-            widgets.add(searchBarWidget);
+            if (Configs.inventoryScreenConfig.showSearchBar.get()) {
+                searchBarWidget = SearchHandler.getSearchBar(
+                        minecraft.getWindow().getGuiScaledWidth() / 2 - 80,
+                        minecraft.getWindow().getGuiScaledHeight() / 2 - 143,
+                        160,
+                        20
+                );
+                widgets.add(searchBarWidget);
+            }
 
             widgets.forEach(Screens.getButtons(screen)::add);
         }
@@ -66,8 +66,9 @@ public class TackleBoxScreenRenderHandler extends ScreenHandler {
     }
 
     public boolean checkMouseClick(Screen screen, MouseButtonEvent context, boolean consumed) {
-        searchBarWidget.setFocused(searchBarWidget.isMouseOver(context.x(), context.y()));
-        SearchHandler.instance().setFocused(searchBarWidget.isMouseOver(context.x(), context.y()));
+        boolean over = searchBarWidget != null && searchBarWidget.isMouseOver(context.x(), context.y());
+        if (searchBarWidget != null) searchBarWidget.setFocused(over);
+        SearchHandler.instance().setFocused(over);
 
         return consumed;
     }

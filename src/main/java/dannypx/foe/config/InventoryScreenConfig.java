@@ -52,6 +52,13 @@ public class InventoryScreenConfig extends Config {
     @Name("Show offline crew members and friends")
     public ValidatedBoolean timersOffline = new ValidatedBoolean(true);
 
+    @Name("Show what your fish are worth beside chests and your vault")
+    public ValidatedBoolean showFishValue = new ValidatedBoolean(true);
+
+    @Name("Show which instance each is on")
+    @Desc("§7\"InfernalShadow (Instance 5)\": FOE+ runs /find quietly for each of them (all at once when you join, then every so often) and hides the answers")
+    public ValidatedBoolean timersInstances = new ValidatedBoolean(true);
+
     @Override
     public @NotNull FileType fileType() {
         return FileType.JSON;

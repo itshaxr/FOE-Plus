@@ -1,5 +1,7 @@
 package dannypx.foe.handler.store;
 
+import dannypx.foe.handler.logic.LoggerHandler;
+
 import dannypx.foe.handler.Handler;
 import dannypx.foe.handler.io.DataFileHandler;
 import dannypx.foe.handler.io.DataModels;
@@ -58,6 +60,10 @@ public class StatsDataHandler extends Handler {
             statsData.version = StatsDataModel.STATS_DATA_MODEL_VERSION;
             this.fixDefault();
             needsUpdate = true;
+        }
+        if (statsData.uuid != null) {
+            String shown = dannypx.foe.handler.fetch.ScoreboardHandler.instance().getCatches().getString().trim();
+            if (!shown.isEmpty()) keepInLineWith(shown, System.currentTimeMillis());
         }
     }
 
@@ -328,6 +334,60 @@ public class StatsDataHandler extends Handler {
         statsData.fishData.put(category, categoryMap);
         this.needsUpdate = true;
     }
+
+    //region Kept in line with the server's count
+    /// The scoreboard's "Catches: 71.38K" is the server's own count. FOE+ counts every catch itself,
+    /// and if it ever misses one (a catch while the game was busy, a disconnect mid-catch) the two
+    /// drift apart. When FOE+'s total sits outside what the scoreboard's rounded number can mean
+    /// (71.38K is 71,375 to 71,384) for a while, it's moved to the nearest number that fits, keeping
+    /// every dry streak as it was. Only small drift is fixed: a big gap means something else (stats
+    /// never imported), which is left to the import.
+    static final long DRIFT_HOLD_MS = 30_000L;
+    static final double MAX_DRIFT = 0.02;
+    private long driftSince = 0L;
+
+    /// {lowest, highest} total the scoreboard's text can mean, or null if it isn't a count.
+    public static long[] range(String shown) {
+        if (shown == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([0-9][0-9,]*(?:\\.([0-9]+))?)\\s*([KMB]?)").matcher(shown.replace(" ", ""));
+        if (!m.find()) return null;
+        try {
+            java.math.BigDecimal v = new java.math.BigDecimal(m.group(1).replace(",", ""));
+            int decimals = m.group(2) == null ? 0 : m.group(2).length();
+            long unit = switch (m.group(3)) { case "K" -> 1_000L; case "M" -> 1_000_000L; case "B" -> 1_000_000_000L; default -> 1L; };
+            if (unit == 1L) { long n = v.longValue(); return new long[]{n, n}; }
+            java.math.BigDecimal step = java.math.BigDecimal.ONE.movePointLeft(decimals); // 0.01
+            java.math.BigDecimal half = step.divide(java.math.BigDecimal.valueOf(2));
+            long lo = v.subtract(half).multiply(java.math.BigDecimal.valueOf(unit)).setScale(0, java.math.RoundingMode.CEILING).longValue();
+            long hi = v.add(half).multiply(java.math.BigDecimal.valueOf(unit)).setScale(0, java.math.RoundingMode.CEILING).longValue() - 1;
+            return new long[]{Math.max(0, lo), Math.max(0, hi)};
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /// The total FOE+ should have for the scoreboard's text, or -1 to leave it (it fits, or the
+    /// gap is too big to be drift). Package-private for tests.
+    static long fitted(long ours, String shown) {
+        long[] r = range(shown);
+        if (r == null || ours <= 0 || r[1] <= 0) return -1;
+        if (ours >= r[0] && ours <= r[1]) return -1;
+        long target = ours < r[0] ? r[0] : r[1];
+        if (Math.abs(target - ours) > Math.max(10, ours * MAX_DRIFT)) return -1;
+        return target;
+    }
+
+    /// Called every tick with the scoreboard's catches.
+    public void keepInLineWith(String shown, long now) {
+        long target = fitted(statsData.fishTotal, shown);
+        if (target < 0) { driftSince = 0L; return; }
+        if (driftSince == 0L) { driftSince = now; return; }
+        if (now - driftSince < DRIFT_HOLD_MS) return;   // a catch FOE+ just counted, the scoreboard not yet
+        driftSince = 0L;
+        LoggerHandler.info("Total caught " + statsData.fishTotal + " moved to " + target + " to match the scoreboard (" + shown + ")");
+        setFishTotalKeepingStreaks((int) target);
+    }
+    //endregion
 
     public void markChanged() {
         this.needsUpdate = true;

@@ -54,9 +54,9 @@ public class StatsScreenHandler extends Handler {
     public void init(ContainerScreen screen) {
         isScanned = false;
 
-        ScreenEvents.afterTick(screen).register(screen1 -> {
+        ScreenEvents.afterTick(screen).register(dannypx.foe.helper.SafeScreen.tick("StatsScreenHandler:57", screen1 -> {
             this.tick(screen);
-        });
+        }));
     }
 
     public void tick(ContainerScreen screen) {
@@ -176,13 +176,23 @@ public class StatsScreenHandler extends Handler {
                 return Triplet.ofTrue(key, amount);
             }
         }
+        // the line split up another way (the frame as the line, the text nested in it): its text
+        // without the frame is the field, then the amount
+        var runs = dannypx.foe.item.LoreReader.content(line);
+        if (runs.size() >= 2) {
+            String field = runs.get(0).text().trim();
+            String key = ConstantDataHandler.keysFromField(constants, field).findFirst().orElse(null);
+            if (key != null) return Triplet.ofTrue(key, TextHelper.toIntFromString(runs.get(1).text()));
+        }
         return Triplet.ofFalse("", 0);
     }
 
     private int extractTotal(Component component) {
-        if(component.getSiblings().size() > 1) {
+        if(component.getSiblings().size() > 2) {
             return TextHelper.toIntFromString(component.getSiblings().get(2).getString());
         }
+        var runs = dannypx.foe.item.LoreReader.content(component);
+        if (runs.size() >= 2) return TextHelper.toIntFromString(runs.get(1).text());
         return 1;
     }
     //endregion

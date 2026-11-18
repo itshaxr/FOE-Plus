@@ -1,6 +1,6 @@
 package dannypx.foe.type.baitsorter;
 
-/// How the bait sorter (B) and the vault sort buttons order things. Ported from FOECollab's
+/// How the bait sorter (B) and the vault sort buttons order things. The bait sorter is by landofif (dofi), ported from FOECollab's
 /// BaitSorterConfig.SortOrder; FOE+ added the amount orders. The vault's Amount and Rarity
 /// buttons set this too, so B keeps whatever order you picked last.
 public enum BaitSortOrder {
@@ -10,7 +10,10 @@ public enum BaitSortOrder {
     FEWEST_TO_MOST("Fewest > Most"),
     /// By kind (the last word, so every Crankbait sits together), then by full name.
     NAME_A_TO_Z("Name A > Z"),
-    NAME_Z_TO_A("Name Z > A");
+    NAME_Z_TO_A("Name Z > A"),
+    /// The vault page exactly as you saved it with Save Layout (baits in your inventory are only
+    /// merged, not moved).
+    SAVED_LAYOUT("Saved layout");
 
     private final String displayName;
 

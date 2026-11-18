@@ -50,10 +50,14 @@ public class AlertPanelElement extends PanelElement {
         AlertHandler alerts = AlertHandler.instance();
         for (AlertHandler.Active active : alerts.active()) {
             AlertHandler.Alert alert = active.alert();
+            // A cryptid that's out is an event: it's on the Events panel (here only while it's counting down to
+            // its start). A Fabled fish flashes up here for a few seconds, then stays on the Events panel.
+            if (alert != AlertHandler.Alert.FABLED) continue;
+            if (active.msSince() < 0 || active.msSince() > FABLED_MS) continue;
             if (!lines.isEmpty()) lines.add(Component.empty());
             FoeLocations.Location where = alerts.locationOf(alert);
             boolean here = where != null && where == PetLocationHandler.currentLocation();
-            lines.add(join(Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
+            lines.add(join(alert.iconText(), Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                     Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                     dannypx.foe.helper.FoeLocations.styledName(alerts.locationLabel(alert)),
                     here ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty()));
@@ -80,6 +84,9 @@ public class AlertPanelElement extends PanelElement {
         return lines;
     }
 
+    /// How long a Fabled fish shows here when it appears.
+    static final long FABLED_MS = 3_000L;
+
     private static ChatFormatting timerColor(long ms) {
         if (ms < 0) return ChatFormatting.GRAY;
         if (ms < 60_000L) return ChatFormatting.RED;
@@ -91,7 +98,7 @@ public class AlertPanelElement extends PanelElement {
     protected List<Component> previewLines() {
         AlertHandler.Alert alert = AlertHandler.Alert.WITCHING_HOUR;
         return List.of(
-                join(Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
+                join(alert.iconText(), Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                         Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                         dannypx.foe.helper.FoeLocations.styledName("Cypress Lake")),
                 join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),

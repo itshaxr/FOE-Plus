@@ -33,6 +33,9 @@ public class ScoreboardHandler extends Handler {
     private MutableComponent level = Component.empty();
     private MutableComponent wallet = Component.empty();
     private MutableComponent credits = Component.empty();
+    /// The server's credits icon from the scoreboard's credits line (its own font and colour kept),
+    /// wherever on the line it sits; empty when the line has none.
+    private MutableComponent creditsIcon = Component.empty();
 
     private MutableComponent catches = Component.empty();
     private MutableComponent locationMin = Component.empty();
@@ -51,6 +54,29 @@ public class ScoreboardHandler extends Handler {
 
     public MutableComponent getWallet() {
         return wallet;
+    }
+
+    public MutableComponent getCreditsIcon() {
+        return creditsIcon;
+    }
+
+    /// Just the icon glyphs (private-use characters) in `line`, each with its own style.
+    /// Part `i` of a scoreboard line, or `fallback` (what was read before) when the line has fewer
+    /// parts than it used to: the server changing its scoreboard never crashes FOE+.
+    static MutableComponent sib(Component line, int i, MutableComponent fallback) {
+        var parts = line.getSiblings();
+        return i < parts.size() ? parts.get(i).copy() : fallback;
+    }
+
+    public static MutableComponent glyphs(Component line) {
+        MutableComponent out = Component.empty();
+        line.visit((style, str) -> {
+            StringBuilder g = new StringBuilder();
+            str.codePoints().filter(cp -> cp >= 0xE000 && cp <= 0xF8FF).forEach(g::appendCodePoint);
+            if (!g.isEmpty()) out.append(Component.literal(g.toString()).withStyle(style));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
     }
 
     public MutableComponent getCredits() {
@@ -121,6 +147,7 @@ public class ScoreboardHandler extends Handler {
         level = Component.empty();
         wallet = Component.empty();
         credits = Component.empty();
+        creditsIcon = Component.empty();
 
         catches = Component.empty();
         locationMin = Component.empty();
@@ -150,27 +177,28 @@ public class ScoreboardHandler extends Handler {
     private void extractData(List<Component> components) {
         components.forEach(component -> {
             date = checkComponent(component, "/") && !checkComponent(component, "┠ ʟᴏᴄᴀᴛɪᴏɴ")
-                    ? component.getSiblings().get(0).copy() : date;
+                    ? sib(component, 0, date) : date;
             version = checkComponent(component, "/") && !checkComponent(component, "┠ ʟᴏᴄᴀᴛɪᴏɴ")
-                    ? component.getSiblings().get(1).copy() : version;
+                    ? sib(component, 1, version) : version;
             level = checkComponent(component, "┏ ʟᴇᴠᴇʟ") && component.getSiblings().size() > 2
-                    ? component.getSiblings().get(3).copy() : level;
+                    ? sib(component, 3, level) : level;
             wallet = checkComponent(component, "ᴡᴀʟʟᴇᴛ")
-                    ? component.getSiblings().get(2).copy() : wallet;
+                    ? sib(component, 2, wallet) : wallet;
             credits = checkComponent(component, "ᴄʀᴇᴅɪᴛꜱ")
-                    ? component.getSiblings().get(3).copy() : credits;
+                    ? sib(component, 3, credits) : credits;
+            if (checkComponent(component, "ᴄʀᴇᴅɪᴛꜱ")) creditsIcon = glyphs(component);
             catches = checkComponent(component, "ᴄᴀᴛᴄʜᴇꜱ")
-                    ? component.getSiblings().get(2).copy() : catches;
+                    ? sib(component, 2, catches) : catches;
             locationMin = checkComponent(component, "┠ ʟᴏᴄᴀᴛɪᴏɴ") && !checkComponent(component, "---")
-                    ? component.getSiblings().get(2).copy() : locationMin;
+                    ? sib(component, 2, locationMin) : locationMin;
             locationMax = checkComponent(component, "┠ ʟᴏᴄᴀᴛɪᴏɴ") && !checkComponent(component, "---")
-                    ? component.getSiblings().get(4).copy() : locationMax;
+                    ? sib(component, 4, locationMax) : locationMax;
             catchRate = checkComponent(component, "ᴄᴀᴛᴄʜ ʀᴀᴛᴇ")
-                    ? component.getSiblings().get(2).copy() : catchRate;
+                    ? sib(component, 2, catchRate) : catchRate;
             crew = checkComponent(component, "ᴄʀᴇᴡ:")
-                    ? component.getSiblings().get(3).copy() : crew;
+                    ? sib(component, 3, crew) : crew;
             crewNearby = checkComponent(component, "ᴄʀᴇᴡ ɴᴇᴀʀʙʏ")
-                    ? component.getSiblings().get(2).copy() : crewNearby;
+                    ? sib(component, 2, crewNearby) : crewNearby;
         });
     }
 

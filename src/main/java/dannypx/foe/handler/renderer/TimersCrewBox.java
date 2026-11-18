@@ -56,11 +56,49 @@ public final class TimersCrewBox {
     /// One person: a green (online) or grey (offline) square, then the name: orange for crew,
     /// blue for a friend, light blue with an orange (crew) star for a friend who's in your crew.
     static Component person(String name, boolean online, boolean crew, boolean friend) {
+        return person(name, online, crew, friend, null);
+    }
+
+    /// The same, with the instance they're on after the name: "InfernalShadow (Instance 5)".
+    static Component person(String name, boolean online, boolean crew, boolean friend, String instance) {
         int color = !online ? 0xAAAAAA : crew && friend ? CREW_FRIEND_COLOR : crew ? CREW_COLOR : FRIEND_COLOR;
         Component line = Component.empty()
                 .append(Component.literal("■ ").withStyle(online ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
         if (crew && friend) line = line.copy().append(Component.literal("★ ").withColor(online ? CREW_COLOR : STAR_OFFLINE_COLOR));
-        return line.copy().append(Component.literal(name).withColor(color));
+        line = line.copy().append(Component.literal(name).withColor(color));
+        if (online && instance != null && !instance.isBlank()) {
+            line = line.copy().append(Component.literal(" (").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(instance).withStyle(ChatFormatting.GREEN))
+                    .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
+        }
+        return line;
+    }
+
+    /// The instance /find last put someone on (null when off, unknown or turned off).
+    private static String instanceOf(String name) {
+        return Configs.inventoryScreenConfig.timersInstances.get() ? dannypx.foe.handler.logic.FindHandler.instance().instanceOf(name) : null;
+    }
+
+    /// Online: on the server's player list, or put on an instance by a recent /find.
+    private static boolean on(UUID id, String name) {
+        return FriendsHandler.isOnline(id) || instanceOf(name) != null;
+    }
+
+    /// Your crew and friends' names, online ones then the rest (for the quiet /find).
+    @SuppressWarnings("unchecked")
+    public static List<String>[] peopleByStatus() {
+        Minecraft mc = Minecraft.getInstance();
+        UUID me = mc.player == null ? null : mc.player.getUUID();
+        LinkedHashMap<UUID, String> all = new LinkedHashMap<>();
+        boolean loaded = !ScoreboardHandler.instance().getCrew().getString().isBlank() && ProfileDataHandler.instance().getProfileData().hasImportedCrew;
+        if (loaded) for (Pair<UUID, String> m : CrewHandler.instance().getCrewListOrdered()) all.put(m.value1(), m.value2());
+        all.putAll(FriendsHandler.instance().all());
+        List<String> on = new ArrayList<>(), off = new ArrayList<>();
+        for (Map.Entry<UUID, String> e : all.entrySet()) {
+            if (e.getKey().equals(me) || e.getValue() == null) continue;
+            (FriendsHandler.isOnline(e.getKey()) ? on : off).add(e.getValue());
+        }
+        return new List[]{on, off};
     }
 
     public static List<Component> timers() {
@@ -107,6 +145,11 @@ public final class TimersCrewBox {
     }
 
     public static Crew crew() {
+        return crew(Configs.inventoryScreenConfig.timersOffline.get());
+    }
+
+    /// Your crew and friends, online first; `offline`: the offline ones listed too.
+    public static Crew crew(boolean offline) {
         Minecraft mc = Minecraft.getInstance();
         UUID me = mc.player == null ? null : mc.player.getUUID();
         boolean inCrew = !ScoreboardHandler.instance().getCrew().getString().isBlank();
@@ -133,21 +176,27 @@ public final class TimersCrewBox {
         }
         List<Component> on = new ArrayList<>(), off = new ArrayList<>();
         for (Map.Entry<UUID, String> m : crew.entrySet()) {
-            boolean isOn = FriendsHandler.isOnline(m.getKey());
-            (isOn ? on : off).add(person(m.getValue(), isOn, true, friends.containsKey(m.getKey())));
+            boolean isOn = on(m.getKey(), m.getValue());
+            (isOn ? on : off).add(person(m.getValue(), isOn, true, friends.containsKey(m.getKey()), instanceOf(m.getValue())));
         }
         for (Map.Entry<UUID, String> f : friends.entrySet()) {
             if (crew.containsKey(f.getKey()) || f.getKey().equals(me)) continue;
-            boolean isOn = FriendsHandler.isOnline(f.getKey());
-            (isOn ? on : off).add(person(f.getValue(), isOn, false, true));
+            boolean isOn = on(f.getKey(), f.getValue());
+            (isOn ? on : off).add(person(f.getValue(), isOn, false, true, instanceOf(f.getValue())));
         }
-        if (!Configs.inventoryScreenConfig.timersOffline.get()) off.clear();
+        if (!offline) off.clear();
         return new Crew(range, on.size(), crew.size() + (int) friends.keySet().stream().filter(k -> !crew.containsKey(k) && !k.equals(me)).count(), on, off);
     }
 
     /// Draws the box with its right edge at {@code right}, from {@code top}, no lower than
     /// {@code maxBottom}; places the + button next to "Online".
     static void render(GuiGraphics g, Font font, int right, int top, int maxBottom, AbstractWidget plus) {
+        render(g, font, right, top, maxBottom, plus, null);
+    }
+
+    /// The same, with the show/hide-offline button beside the +.
+    static void render(GuiGraphics g, Font font, int right, int top, int maxBottom, AbstractWidget plus, AbstractWidget offline) {
+        if (offline != null) offline.visible = false;
         var cfg = Configs.inventoryScreenConfig;
         List<Component> timers = timers();
         Crew crew = cfg.timersCrew.get() ? crew() : null;
@@ -159,7 +208,7 @@ public final class TimersCrewBox {
         for (Component c : timers) w = Math.max(w, font.width(c));
         if (crew != null) {
             if (crew.range() != null) w = Math.max(w, font.width(crew.range()));
-            w = Math.max(w, font.width(header) + 14);
+            w = Math.max(w, font.width(header) + (offline != null ? 26 : 14));
             w = Math.max(w, font.width(legend));
             if (crew.total() == 0) w = Math.max(w, font.width(empty));
             for (Component c : crew.onlineNames()) w = Math.max(w, font.width(c) + 4);
@@ -204,6 +253,17 @@ public final class TimersCrewBox {
             plus.visible = true;
             plus.setX(right - PAD - plus.getWidth() + 1);
             plus.setY(y + PAD - 2);
+        }
+        if (offline != null && crew.total() > 0) {
+            boolean showing = cfg.timersOffline.get();
+            offline.visible = true;
+            offline.setX(right - PAD - (plus != null ? plus.getWidth() + 2 : 0) - offline.getWidth() + 1);
+            offline.setY(y + PAD - 2);
+            int hidden = crew.total() - crew.online();
+            offline.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(showing
+                    ? "Hide offline names (they show again when they come online)"
+                    : "Show offline names (" + hidden + " hidden)")));
+            offline.setAlpha(showing ? 1f : 0.55f);
         }
         g.drawString(font, legend, left + PAD, y + PAD + LINE, 0xFFFFFFFF, true);
 

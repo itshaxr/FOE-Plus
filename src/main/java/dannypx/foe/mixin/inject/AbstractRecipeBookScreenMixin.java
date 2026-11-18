@@ -15,11 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractRecipeBookScreenMixin {
     @Inject(method = "initButton", at = @At("HEAD"), cancellable = true)
     private void injectAddRecipeBook(CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.abstractRecipeBookScreenMixinAddRecipeBook.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.abstractRecipeBookScreenMixinAddRecipeBook.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("AbstractRecipeBookScreenMixin.injectAddRecipeBook", foe$t);
         }
     }
 }

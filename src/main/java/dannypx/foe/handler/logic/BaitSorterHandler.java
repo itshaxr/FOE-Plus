@@ -24,8 +24,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Bait sorter, ported from FOECollab (io.github.foecollab.handler.BaitSorterHandler, AGPL-3.0)
- * and rewritten for Mojang mappings and Fzzy Config.
+ * Bait sorter by landofif (dofi), Minecraft: merryfish. Written for FOECollab
+ * (io.github.foecollab.handler.BaitSorterHandler, Kimberlyow/FOECollab pull requests #10 and #11, AGPL-3.0),
+ * ported here and rewritten for Mojang mappings and Fzzy Config.
  * <p>
  * Press the sort key (default B) while an inventory, chest or vault is open: identical baits and
  * lures (same name, and for lures also same color and size) are merged, then sorted by rarity or
@@ -89,18 +90,27 @@ public class BaitSorterHandler {
         // The order you last picked here or with the vault's Amount / Rarity buttons.
         BaitSortOrder order = Configs.keyBindConfig.baitSortOrder.get();
 
+        boolean savedLayout = order == BaitSortOrder.SAVED_LAYOUT;
+
         // Inventory baits first, so there is one bait per name to carry into the chest.
         stages.add(() -> SortPlanner.plan(scan(true), true, false, order));
         if (container) {
-            // Merge inventory baits into their stashed twins and shift them back in.
+            // Twins that are only in the chest: one of each comes into the inventory first, so
+            // the cross merge below can combine them all.
+            stages.add(() -> SortPlanner.planPullTwins(scan(false), scan(true), emptyInventorySlots()));
+            // Merge inventory baits with all their stashed twins and shift them back in.
             stages.add(() -> SortPlanner.planCrossMerge(scan(false), scan(true)));
         }
-        stages.add(() -> SortPlanner.plan(scan(true), true, true, order));
-        if (vault) {
+        // With a saved vault layout the inventory is only merged, not rearranged.
+        stages.add(() -> SortPlanner.plan(scan(true), true, !savedLayout, order));
+        if (vault && savedLayout) {
+            // Every item back where you saved it (nothing moves on a page with no saved layout).
+            stages.add(VaultLayoutHandler.planner());
+        } else if (vault) {
             // The whole vault page, exactly as its Amount / Rarity buttons sort it, so B keeps the
             // order you chose instead of re-sorting the baits by rarity among your other items.
             stages.add(VaultSortHandler.planner(order));
-        } else if (container) {
+        } else if (container && !savedLayout) {
             // Baits cannot stack in a chest, so only rearrange there.
             stages.add(() -> SortPlanner.plan(scan(false), false, true, order));
         }
@@ -123,6 +133,15 @@ public class BaitSorterHandler {
 
     public boolean isSorting() {
         return busy();
+    }
+
+    /** Empty slots in the main inventory and hotbar (0-35). */
+    private static int emptyInventorySlots() {
+        if (!(Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> screen)) return 0;
+        int n = 0;
+        for (Slot slot : screen.getMenu().slots)
+            if (slot.container instanceof Inventory && slot.getContainerSlot() < 36 && slot.getItem().isEmpty()) n++;
+        return n;
     }
 
     /** Baits and lures in the open screen: player inventory + hotbar when {@code playerSide}, otherwise the chest/vault slots. */

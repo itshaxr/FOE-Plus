@@ -50,7 +50,9 @@ public class TagObject {
 
     protected TagObject(@NotNull CompoundTag compoundTag, ItemStack itemStack) {
         this.compoundTag = compoundTag;
-        this.itemStack = itemStack.copy();
+        // the stack itself, not a copy: items are checked for every slot drawn, every frame, and copying each one made
+        // a great deal of garbage (nothing here changes a stack)
+        this.itemStack = itemStack;
     }
 
     protected TagObject(@NotNull CompoundTag compoundTag) {
@@ -185,19 +187,24 @@ public class TagObject {
         return "";
     }
 
+
     public Component getRarityComponent() {
         if(this.itemStack.get(DataComponents.LORE) != null
                 && !this.getLore().isEmpty()
         ) {
             try {
-                List<Component> componentList = this.getLore();
-                Component rating = componentList.get(RARITY_LINE).getSiblings().get(RARITY_SIBLING);
-                return TextHelper.trim(rating);
-            } catch (ArrayIndexOutOfBoundsException e) {
+                return rarityIn(this.getLore());
+            } catch (IndexOutOfBoundsException e) {
                 return Component.empty();
             }
         }
         return Component.empty();
+    }
+
+    /// The rarity badge (its glyph, in its style) on the line under the name.
+    public static Component rarityIn(List<Component> lore) {
+        if (lore.size() <= RARITY_LINE) return Component.empty();
+        return LoreReader.glyphs(lore.get(RARITY_LINE));
     }
 
     public Component getBorderComponent() {
@@ -205,10 +212,8 @@ public class TagObject {
                 && !this.getLore().isEmpty()
         ) {
             List<Component> componentList = this.getLore();
-            if(!componentList.isEmpty()) {
-                Component borderLine = componentList.get(BORDER_LINE);
-                if (!borderLine.getSiblings().isEmpty()) return borderLine.getSiblings().getFirst();
-            }
+            // the frame at the start of a middle line (" 퀑    "), for lines FOE+ adds to the tooltip
+            if (componentList.size() > BORDER_LINE) return LoreReader.frame(componentList.get(BORDER_LINE));
         }
         return Component.empty();
     }
@@ -216,10 +221,8 @@ public class TagObject {
     public static Component getBorderComponent(ItemStack itemStack) {
         if(itemStack.get(DataComponents.LORE) != null) {
             List<Component> componentList = itemStack.get(DataComponents.LORE).lines();
-            if(!componentList.isEmpty()) {
-                Component borderLine = componentList.get(BORDER_LINE);
-                if (!borderLine.getSiblings().isEmpty()) return borderLine.getSiblings().getFirst();
-            }
+            // the frame at the start of a middle line (" 퀑    "), for lines FOE+ adds to the tooltip
+            if (componentList.size() > BORDER_LINE) return LoreReader.frame(componentList.get(BORDER_LINE));
         }
         return Component.empty();
     }
@@ -260,6 +263,23 @@ public class TagObject {
             return (ListTag) this.get(RENDER_INFO);
         }
         return new ListTag();
+    }
+
+    /// What a fish sells for: its "value" (88.57), or the "ᴠᴀʟᴜᴇ: $88.57" in its tooltip; 0 if neither.
+    public double getSellValue() {
+        if (this.contains("value")) return this.getFloat("value");
+        java.util.List<Component> lore = this.getLore();
+        Component line = LoreReader.findLine(lore, "value:");
+        if (line == null) return 0;
+        String t = line.getString();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\$([0-9][0-9.,]*)([KMBT]?)").matcher(t);
+        if (!m.find()) return 0;
+        try {
+            double v = Double.parseDouble(m.group(1).replace(",", ""));
+            return switch (m.group(2)) { case "K" -> v * 1e3; case "M" -> v * 1e6; case "B" -> v * 1e9; case "T" -> v * 1e12; default -> v; };
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public float getMoney() {

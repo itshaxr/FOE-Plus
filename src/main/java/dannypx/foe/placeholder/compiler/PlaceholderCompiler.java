@@ -16,6 +16,8 @@ public class PlaceholderCompiler {
     private static final Map<String, Group> CACHE = new ConcurrentHashMap<>();
 
     public static Group compile(String source) {
+        // texts that change (typing in an editor, values put into a text) would each stay here for good: kept small
+        if (CACHE.size() > 1024) CACHE.clear();
         return CACHE.computeIfAbsent(source, PlaceholderCompiler::compileOrError);
     }
 

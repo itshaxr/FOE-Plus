@@ -30,6 +30,7 @@ public class NotifierHandler extends Handler {
     private final List<Notification> notifications = new ArrayList<>();
     private final List<UUID> removeQueue = new ArrayList<>();
     private final Map<String, UUID> persistentNotifications = new HashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("popups", () -> notifications.size(), () -> {}); }
 
     public static final String IMPORT_STATS_KEY = "importStatsKey";
     public static final String IMPORT_CREW_KEY = "importCrewKey";
@@ -91,7 +92,7 @@ public class NotifierHandler extends Handler {
 
         // FOE-style floating catch text (ported from FOECollab)
         if(Configs.hudConfig.fishCatchStyle.get() == dannypx.foe.type.CatchPopupStyle.FOE) {
-            dannypx.foe.screens.element.hud.CatchPopupElement.show(fish);
+            if (Configs.hudConfig.showCatchPopup.get()) dannypx.foe.screens.element.hud.CatchPopupElement.show(fish);
             return;
         }
 
@@ -164,6 +165,24 @@ public class NotifierHandler extends Handler {
         );
     }
 
+    /// A pet from a contest or an event: its own chat line ("CONTEST PET!" / "EVENT PET!"), no dry streak, as it
+    /// isn't counted in your stats (only pets you fish up are).
+    public void notifyRewardPet(PetTagObject pet, PetSourceHandler.Source source) {
+        if (Configs.hudConfig.showPetCatchChat.get() && minecraft.player != null) {
+            MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine(source == PetSourceHandler.Source.CONTEST ? "CONTEST PET!" : "EVENT PET!",
+                            source == PetSourceHandler.Source.CONTEST ? 0xFFAA00 : 0xFF55FF)
+                    .append(rarityBadge(pet))
+                    .append(Component.literal(" "))
+                    .append(pet.getName())
+                    .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
+            Component rating = pet.getRatingComponent();
+            if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
+            line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+            dannypx.foe.helper.FoeChat.send(line);
+        }
+    }
+
     private static final java.util.Map<String, Integer> VARIANT_COLORS = java.util.Map.of(
             "albino", 0xF2F2F2, "melanistic", 0x5A5A6E, "trophy", 0xFFC93C, "fabled", 0xFC3E35);
 
@@ -207,7 +226,7 @@ public class NotifierHandler extends Handler {
     /// [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) · Dry streak 164
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
         if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
-        MutableComponent line = dannypx.foe.helper.FoeChat.line("PET PULLED!", dannypx.foe.helper.FoeChat.PURPLE)
+        MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine("PET PULLED!", dannypx.foe.helper.FoeChat.PURPLE)
                 .append(rarityBadge(pet))
                 .append(Component.literal(" "))
                 .append(pet.getName())

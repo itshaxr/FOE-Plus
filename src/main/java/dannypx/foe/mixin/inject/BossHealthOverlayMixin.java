@@ -13,11 +13,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BossHealthOverlayMixin {
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void injectRender(GuiGraphics guiGraphics, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.bossHealthOverlayMixinRender.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.bossHealthOverlayMixinRender.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("BossHealthOverlayMixin.injectRender", foe$t);
         }
     }
 }

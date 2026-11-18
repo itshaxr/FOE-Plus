@@ -34,7 +34,8 @@ public class InventoryHandler extends Handler {
     }
 
     //region Fields
-    private final List<UUID> trackedFish = new ArrayList<>();
+    /// The fish you have, by their ids: a set, so checking a catch against them stays quick however many there are.
+    private final java.util.Set<UUID> trackedFish = new java.util.LinkedHashSet<>();
     private NonNullList<ItemStack> snapshotInventory = NonNullList.createWithCapacity(0);
     private List<Triplet<Long, ItemStack, Integer>> snapshottedItems = new ArrayList<>();
     private List<Triplet<Long, ItemStack, Integer>> snapshottedRemovedItems = new ArrayList<>();
@@ -45,7 +46,7 @@ public class InventoryHandler extends Handler {
 
     private int currentEmptySlots = 27;
 
-    public List<UUID> getTrackedFish() {
+    public java.util.Set<UUID> getTrackedFish() {
         return trackedFish;
     }
 
@@ -242,9 +243,7 @@ public class InventoryHandler extends Handler {
     }
 
     public void addToTrackedFish(UUID uuid) {
-        if (!trackedFish.contains(uuid)) {
-            trackedFish.add(uuid);
-        }
+        trackedFish.add(uuid);
     }
 
     public boolean trackAllFish() {
@@ -278,7 +277,7 @@ public class InventoryHandler extends Handler {
     /// Field, Pair<Value, Tooltip>
     protected Map<String, Pair<MutableComponent, MutableComponent>> _getFields() {
         return Map.of(
-                "trackedFish", Pair.of(Component.literal("[trackedFish]"), TextHelper.literal(getTrackedFish())),
+                "trackedFish", Pair.of(Component.literal("[trackedFish]"), TextHelper.literal(new ArrayList<>(getTrackedFish()))),
                 "snapshotInventory", Pair.of(Component.literal("[snapshotInventory]"), TextHelper.literal(
                         ItemStackHelper.itemStackListToJson(getSnapshotInventory())
                 )),

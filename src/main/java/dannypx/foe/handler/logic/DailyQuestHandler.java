@@ -111,7 +111,7 @@ public class DailyQuestHandler {
         // Load the panel on joining, without having to open /menu first.
         if (!requestedOnJoin && autoRefreshOn() && dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance()) {
             requestedOnJoin = true;
-            SilentMenuHandler.instance().request(5_000L);
+            SilentMenuHandler.instance().request(1_500L);
         }
     }
 
@@ -242,22 +242,22 @@ public class DailyQuestHandler {
     /// Location names as players write them, matched as whole words.
     private static final Map<FoeLocations.Location, List<String>> LOCATION_WORDS = Map.ofEntries(
             Map.entry(FoeLocations.Location.CYPRESS_LAKE, List.of("cypress lake", "cypress")),
-            Map.entry(FoeLocations.Location.KENAI_RIVER, List.of("kenai")),
-            Map.entry(FoeLocations.Location.LAKE_BIWA, List.of("biwa")),
-            Map.entry(FoeLocations.Location.MURRAY_RIVER, List.of("murray")),
+            Map.entry(FoeLocations.Location.KENAI_RIVER, List.of("kenai river", "kenai")),
+            Map.entry(FoeLocations.Location.LAKE_BIWA, List.of("lake biwa", "biwa")),
+            Map.entry(FoeLocations.Location.MURRAY_RIVER, List.of("murray river", "murray")),
             Map.entry(FoeLocations.Location.EVERGLADES, List.of("everglades")),
             Map.entry(FoeLocations.Location.KEY_WEST, List.of("key west")),
             Map.entry(FoeLocations.Location.TOLEDO_BEND, List.of("toledo bend", "toledo")),
             Map.entry(FoeLocations.Location.GREAT_LAKES, List.of("great lakes")),
-            Map.entry(FoeLocations.Location.DANUBE_RIVER, List.of("danube")),
+            Map.entry(FoeLocations.Location.DANUBE_RIVER, List.of("danube river", "danube")),
             Map.entry(FoeLocations.Location.OIL_RIG, List.of("oil rig")),
-            Map.entry(FoeLocations.Location.AMAZON_RIVER, List.of("amazon")),
-            Map.entry(FoeLocations.Location.MEDITERRANEAN_SEA, List.of("mediterranean sea")),
+            Map.entry(FoeLocations.Location.AMAZON_RIVER, List.of("amazon river", "amazon")),
+            Map.entry(FoeLocations.Location.MEDITERRANEAN_SEA, List.of("mediterranean sea", "mediterranean", "med sea")),
             Map.entry(FoeLocations.Location.CAPE_COD, List.of("cape cod")),
             Map.entry(FoeLocations.Location.HAWAII, List.of("hawaii")),
             Map.entry(FoeLocations.Location.CAIRNS, List.of("cairns")),
-            Map.entry(FoeLocations.Location.LOFOTEN_ISLANDS, List.of("lofoten")),
-            Map.entry(FoeLocations.Location.NILE_RIVER, List.of("nile")));
+            Map.entry(FoeLocations.Location.LOFOTEN_ISLANDS, List.of("lofoten islands", "lofoten")),
+            Map.entry(FoeLocations.Location.NILE_RIVER, List.of("nile river", "nile")));
 
     static FoeLocations.Location locationNamedIn(String lower) {
         for (Map.Entry<FoeLocations.Location, List<String>> entry : LOCATION_WORDS.entrySet()) {
@@ -268,7 +268,8 @@ public class DailyQuestHandler {
         return null;
     }
 
-    /// After removing numbers, glyphs and filler words, is anything left (like a fish name we
+    /// After removing numbers, glyphs, filler words and the place's whole name ("Lofoten Islands", so a goal that's
+    /// only the place counts every catch there), is anything left (like a fish name we
     /// didn't match)? Then the goal is about something else.
     private static boolean mentionsOtherWords(String lower) {
         String rest = lower.replaceAll("[\\uE000-\\uF8FF]", " ")

@@ -32,51 +32,57 @@ public abstract class ItemInHandRendererMixin {
 
     @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
     private void injectRenderArmWithItem(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float equipProgress, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int packedLight, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.rendererConfig.useBothHandsHoldingFishFirstPerson.get()
-                && Configs.mixinConfig.avatarRenderMixinExtractRenderState.get()
-        ) {
-            if (interactionHand != InteractionHand.MAIN_HAND || itemStack.isEmpty()) return;
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.rendererConfig.useBothHandsHoldingFishFirstPerson.get()
+                    && Configs.mixinConfig.avatarRenderMixinExtractRenderState.get()
+            ) {
+                if (interactionHand != InteractionHand.MAIN_HAND || itemStack.isEmpty()) return;
 
-            Pair<Boolean, FishTagObject> validatedFish = ValidateItem.isFish(itemStack);
-            if (!validatedFish.value1()) return;
+                Pair<Boolean, FishTagObject> validatedFish = ValidateItem.isFish(itemStack);
+                if (!validatedFish.value1()) return;
 
-            float totalScale = HoldingFishRenderHandler.getTotalScale(validatedFish);
+                float totalScale = HoldingFishRenderHandler.getTotalScale(validatedFish);
 
-            if (!abstractClientPlayer.isInvisible()) {
-                for (HumanoidArm arm : HumanoidArm.values()) {
-                    float side = arm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-                    poseStack.pushPose();
-                    poseStack.translate(
-                            -side * HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_INWARD,
-                            HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_UP,
-                            -HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_FORWARD
-                    );
-                    this.renderPlayerArm(poseStack, submitNodeCollector, packedLight, equipProgress, 0.0F, arm);
-                    poseStack.popPose();
+                if (!abstractClientPlayer.isInvisible()) {
+                    for (HumanoidArm arm : HumanoidArm.values()) {
+                        float side = arm == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+                        poseStack.pushPose();
+                        poseStack.translate(
+                                -side * HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_INWARD,
+                                HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_UP,
+                                -HoldingFishRenderHandler.FISH_ARM_FIRST_PERSON_FORWARD
+                        );
+                        this.renderPlayerArm(poseStack, submitNodeCollector, packedLight, equipProgress, 0.0F, arm);
+                        poseStack.popPose();
+                    }
                 }
+
+                poseStack.pushPose();
+                poseStack.translate(
+                        HoldingFishRenderHandler.FISH_FIRST_PERSON_X,
+                        HoldingFishRenderHandler.FISH_FIRST_PERSON_Y - equipProgress * HoldingFishRenderHandler.FIRST_PERSON_FISH_EQUIP_DROP,
+                        HoldingFishRenderHandler.FISH_FIRST_PERSON_Z
+                );
+                poseStack.mulPose(Axis.ZP.rotationDegrees(HoldingFishRenderHandler.FISH_ROLL));
+                poseStack.scale(totalScale, totalScale, totalScale);
+                this.renderItem(
+                        abstractClientPlayer,
+                        itemStack,
+                        ItemDisplayContext.GUI,
+                        poseStack,
+                        submitNodeCollector,
+                        packedLight
+                );
+                poseStack.popPose();
+
+                ci.cancel();
             }
-
-            poseStack.pushPose();
-            poseStack.translate(
-                    HoldingFishRenderHandler.FISH_FIRST_PERSON_X,
-                    HoldingFishRenderHandler.FISH_FIRST_PERSON_Y - equipProgress * HoldingFishRenderHandler.FIRST_PERSON_FISH_EQUIP_DROP,
-                    HoldingFishRenderHandler.FISH_FIRST_PERSON_Z
-            );
-            poseStack.mulPose(Axis.ZP.rotationDegrees(HoldingFishRenderHandler.FISH_ROLL));
-            poseStack.scale(totalScale, totalScale, totalScale);
-            this.renderItem(
-                    abstractClientPlayer,
-                    itemStack,
-                    ItemDisplayContext.GUI,
-                    poseStack,
-                    submitNodeCollector,
-                    packedLight
-            );
-            poseStack.popPose();
-
-            ci.cancel();
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("ItemInHandRendererMixin.injectRenderArmWithItem", foe$t);
         }
     }
 }

@@ -19,18 +19,24 @@ public abstract class EntityMixin<T extends Entity, S extends EntityRenderState>
 
     @Inject(method = "isCustomNameVisible", at = @At("RETURN"), cancellable = true)
     private void injectIsCustomNameVisible(CallbackInfoReturnable<Boolean> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.entityMixinIsCustomNameVisible.get()
-        ) {
-            if(!Configs.rendererConfig.showPetName.get()
-                    && this.getName().getString().contains("'s")
-                    && this.getName().getString().contains("Pet")
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.entityMixinIsCustomNameVisible.get()
             ) {
-                cir.setReturnValue(false);
-            } else if (Minecraft.getInstance().options.hideGui) {
-                cir.setReturnValue(false);
+                if(!Configs.rendererConfig.showPetName.get()
+                        && this.getName().getString().contains("'s")
+                        && this.getName().getString().contains("Pet")
+                ) {
+                    cir.setReturnValue(false);
+                } else if (Minecraft.getInstance().options.hideGui) {
+                    cir.setReturnValue(false);
+                }
             }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("EntityMixin.injectIsCustomNameVisible", foe$t);
         }
     }
 }

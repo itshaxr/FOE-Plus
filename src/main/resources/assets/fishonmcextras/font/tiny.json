@@ -1,0 +1,30 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        " ": 3
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/tiny.png",
+      "height": 6,
+      "ascent": 5,
+      "chars": [
+        "ABCDEFGHIJKLMNOP",
+        "QRSTUVWXYZ012345",
+        "6789.,:;!?'\"()[]",
+        "/\\-+=%$#&*<>_|~@",
+        "^`{}·⏱abcdefghij",
+        "klmnopqrstuvwxyz",
+        "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘ",
+        "ꞯʀѕᴛᴜᴠᴡʏᴢғǫ\u0000\u0000\u0000\u0000\u0000"
+      ]
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

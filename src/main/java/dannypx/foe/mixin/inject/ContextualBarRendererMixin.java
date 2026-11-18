@@ -14,11 +14,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public interface ContextualBarRendererMixin {
     @Inject(method = "renderExperienceLevel", at = @At("HEAD"), cancellable = true)
     private static void injectDrawExperienceLevel(GuiGraphics guiGraphics, Font font, int level, CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.contextualBarRendererMixinRenderExperienceLevel.get()
-        ) {
-            ci.cancel();
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.contextualBarRendererMixinRenderExperienceLevel.get()
+            ) {
+                ci.cancel();
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("ContextualBarRendererMixin.injectDrawExperienceLevel", foe$t);
         }
     }
 }

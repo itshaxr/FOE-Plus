@@ -27,6 +27,8 @@ public class ContestTrackerHandler {
     public boolean isContest = false;
     public boolean isReset = true;
     public String type = "";
+    /// The type in the chat's own colours ("Heaviest" grey, "Rays" in the fish's colour), or null.
+    public Component typeStyled = null;
     public String location = "";
     public int levelLow = 0;
     public int levelHigh = 0;
@@ -265,6 +267,13 @@ public class ContestTrackerHandler {
             return false;
         }
 
+        // The server's answer to our quiet /contest when none is on: that's the whole reply, hide it.
+        if (!hidingOutput && isNoContestReply(text)) {
+            hideUntil = 0L;
+            announcePersonalBest = false;
+            flushHeldSeparator(true); // a bar held back before it wasn't ours: give it back
+            return true;
+        }
         if (text.contains("FISHING CONTEST RANKINGS")) {
             hidingOutput = true;
             heldSeparator = null; // it was the bar opening our output
@@ -311,6 +320,12 @@ public class ContestTrackerHandler {
         heldSeparator = null;
         chatSink.accept(bar);
         lastShownWasSeparator = true;
+    }
+
+    /// "No contests active!" (and its wordings): what /contest says when no contest is on.
+    static boolean isNoContestReply(String text) {
+        String t = text.strip().toLowerCase(java.util.Locale.ROOT);
+        return t.matches("^no (fishing )?contests? (is |are )?(currently )?(active|running|on)( right now)?[.!]*$");
     }
 
     /// A blank or bar-only chat line: the server draws its separators as struck-through spaces
@@ -370,6 +385,12 @@ public class ContestTrackerHandler {
 
         if (text.startsWith("Type: ")) {
             this.type = text.substring(text.indexOf(": ") + 2).trim();
+            try {
+                int from = text.indexOf(this.type, text.indexOf(": ") + 2);
+                this.typeStyled = from < 0 ? null : dannypx.foe.helper.TextHelper.substring(message, from, from + this.type.length());
+            } catch (RuntimeException e) {
+                this.typeStyled = null;
+            }
         } else if (text.startsWith("Location: ")) {
             this.location = text.substring(text.indexOf(": ") + 2).trim();
         } else if (text.startsWith("Level: ")) {
@@ -409,6 +430,7 @@ public class ContestTrackerHandler {
 
     private void reset() {
         this.type = "";
+        this.typeStyled = null;
         this.location = "";
         this.levelLow = 0;
         this.levelHigh = 0;

@@ -94,6 +94,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("bait_panel", new BaitPanelElement()));
             elements.add(Pair.of("luck_scale_panel", new LuckScalePanelElement()));
             elements.add(Pair.of("timers_panel", new dannypx.foe.screens.element.hud.TimersPanelElement()));
+            elements.add(Pair.of("crew_panel", new dannypx.foe.screens.element.hud.CrewPanelElement()));
             elements.add(Pair.of("events_panel", new dannypx.foe.screens.element.hud.EventsPanelElement()));
             elements.add(Pair.of("mini_event_panel", new dannypx.foe.screens.element.hud.MiniEventPanelElement()));
             elements.add(Pair.of("session_stats_panel", new dannypx.foe.screens.element.hud.SessionStatsPanelElement()));
@@ -104,21 +105,36 @@ public class HudRenderHandler extends Handler {
 
         LoggerHandler.info("Register Elements");
         HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR, Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "foer_hud_foreground"), (guiGraphics, deltaTracker) -> {
+            dannypx.foe.handler.logic.FoeProfiler.frame();
             elements.forEach(element -> {
-                if (Configs.mainConfig.enableMod.get()) element.value2().render(guiGraphics);
+                if (!Configs.mainConfig.enableMod.get()) return;
+                long p = dannypx.foe.handler.logic.FoeProfiler.mark();
+                dannypx.foe.helper.Safe.draw("hud " + element.value1(), guiGraphics, () -> element.value2().render(guiGraphics));
+                dannypx.foe.handler.logic.FoeProfiler.end("hud " + element.value1(), p);
             });
 
+            long p = dannypx.foe.handler.logic.FoeProfiler.mark();
             if (Configs.mainConfig.enableMod.get()) this.render(guiGraphics);
+            dannypx.foe.handler.logic.FoeProfiler.end("hud custom HUDs", p);
+            p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            if (Configs.mainConfig.enableMod.get() && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer())
+                dannypx.foe.helper.Safe.draw("hud catch ring", guiGraphics, () -> CatchRing.render(guiGraphics));
+            // FOE+'s travel map, should the server close its menu for a moment while it zooms back out.
+            if (Configs.mainConfig.enableMod.get()) dannypx.foe.helper.Safe.draw("hud travel map", guiGraphics, () -> TravelMapHandler.instance().renderHud(guiGraphics));
+            dannypx.foe.helper.Safe.draw("hud map scan", guiGraphics, () -> dannypx.foe.handler.logic.MapScanHandler.instance().renderHud(guiGraphics));
+            dannypx.foe.handler.logic.FoeProfiler.end("hud catch ring, maps", p);
         });
 
         LoggerHandler.info("Register Priority Elements");
         HudElementRegistry.attachElementAfter(VanillaHudElements.EXPERIENCE_LEVEL, Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "foer_hud_priority"), (guiGraphics, deltaTracker) -> {
-            if (Configs.mainConfig.enableMod.get()) this.renderAfterSubtitles(guiGraphics);
+            long p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            if (Configs.mainConfig.enableMod.get()) dannypx.foe.helper.Safe.draw("hud tooltip, loading", guiGraphics, () -> this.renderAfterSubtitles(guiGraphics));
+            dannypx.foe.handler.logic.FoeProfiler.end("hud tooltip, loading", p);
         });
     }
 
     private void render(GuiGraphics guiGraphics) {
-        customHudElements.forEach(element -> element.value2().render(guiGraphics));
+        customHudElements.forEach(element -> dannypx.foe.helper.Safe.draw("custom hud " + element.value1(), guiGraphics, () -> element.value2().render(guiGraphics)));
     }
 
     private void renderAfterSubtitles(GuiGraphics guiGraphics) {

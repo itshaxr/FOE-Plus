@@ -51,15 +51,15 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
                 && Configs.mainConfig.enableMod.get()
         ) {
             List<AbstractWidget> widgets = new ArrayList<>();
-
-            searchBarWidget = SearchHandler.getSearchBar(
-                    minecraft.getWindow().getGuiScaledWidth() / 2 - 80,
-                    minecraft.getWindow().getGuiScaledHeight() / 2 - 133,
-                    160,
-                    20
-            );
-
-            widgets.add(searchBarWidget);
+            if (Configs.inventoryScreenConfig.showSearchBar.get()) {
+                searchBarWidget = SearchHandler.getSearchBar(
+                        minecraft.getWindow().getGuiScaledWidth() / 2 - 80,
+                        minecraft.getWindow().getGuiScaledHeight() / 2 - 133,
+                        160,
+                        20
+                );
+                widgets.add(searchBarWidget);
+            }
 
             // Page buttons 1-7 under the vault, ported from FOECollab's PersonalVaultScreenHandler.
             int currentPage = getCurrentPage(screen);
@@ -142,8 +142,9 @@ public class PersonalVaultScreenRenderHandler extends ScreenHandler {
     }
 
     public boolean checkMouseClick(Screen screen, MouseButtonEvent context, boolean consumed) {
-        searchBarWidget.setFocused(searchBarWidget.isMouseOver(context.x(), context.y()));
-        SearchHandler.instance().setFocused(searchBarWidget.isMouseOver(context.x(), context.y()));
+        boolean over = searchBarWidget != null && searchBarWidget.isMouseOver(context.x(), context.y());
+        if (searchBarWidget != null) searchBarWidget.setFocused(over);
+        SearchHandler.instance().setFocused(over);
 
         return consumed;
     }

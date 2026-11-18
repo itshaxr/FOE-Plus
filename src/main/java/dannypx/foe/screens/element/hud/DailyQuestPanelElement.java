@@ -75,10 +75,10 @@ public class DailyQuestPanelElement extends PanelElement {
         String lastSection = "";
         for (DailyQuestHandler.Quest quest : DailyQuestHandler.instance().quests) {
             if (!quest.section.isEmpty() && !quest.section.equals(lastSection)) {
-                lines.add(Component.literal(quest.section).withStyle(ChatFormatting.GRAY));
+                lines.add(sectionTitle(quest.section));
                 lastSection = quest.section;
             }
-            Component prefix = label("#" + quest.slot + ": ");
+            Component prefix = Configs.hudConfig.dailyQuestNumbers.get() ? label("#" + quest.slot + ": ") : Component.empty();
             if (quest.isDone()) {
                 lines.add(join(prefix, Component.literal("ꞯᴜᴇѕᴛ ᴅᴏɴᴇ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
             } else {
@@ -97,7 +97,23 @@ public class DailyQuestPanelElement extends PanelElement {
     @Override
     protected List<Component> previewLines() {
         return List.of(
-                label("Base Missions"),
-                join(label("#1: "), Component.literal("Open the main menu").withStyle(ChatFormatting.GREEN)));
+                sectionTitle("Base Missions"),
+                join(Configs.hudConfig.dailyQuestNumbers.get() ? label("#1: ") : Component.empty(), Component.literal("Open the main menu").withStyle(ChatFormatting.GREEN)));
+    }
+
+    /// Package-private for tests: a section's heading without "Missions" ("Lofoten Islands Missions" → "Lofoten
+    /// Islands"), a place in its colours from the travel map; anything else in grey.
+    static String sectionName(String section) {
+        String t = section == null ? "" : section.trim();
+        String cut = t.replaceFirst("(?i)\\s*missions?\\s*$", "").trim();
+        // the missions that count anywhere ("Base Missions") read as what they are
+        if (cut.equalsIgnoreCase("base")) return "Anywhere";
+        return cut.isEmpty() ? t : cut;
+    }
+
+    private static Component sectionTitle(String section) {
+        String name = sectionName(section);
+        if (dannypx.foe.helper.FoeLocations.fromName(name) != null) return dannypx.foe.helper.FoeLocations.styledName(name);
+        return Component.literal(name).withStyle(ChatFormatting.GRAY);
     }
 }

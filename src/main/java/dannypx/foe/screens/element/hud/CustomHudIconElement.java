@@ -55,11 +55,11 @@ public class CustomHudIconElement extends Element implements ScreenConstants {
     public void render(GuiGraphics guiGraphics) {
         if(!customHudIcon.isShowElement()) { return; }
 
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / customHudIcon.getScale()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / customHudIcon.getScale()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(customHudIcon.getScale())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(customHudIcon.getScale())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(customHudIcon.getScale(), customHudIcon.getScale());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(customHudIcon.getScale()), dannypx.foe.utils.HudScale.crisp(customHudIcon.getScale()));
         if(LoadingHandler.instance().isLoadingDone()
                 && TabOverlayHandler.instance().isInInstance()
         ) {

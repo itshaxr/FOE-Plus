@@ -139,6 +139,8 @@ public final class PresetsPanelHandler {
         holdUntil = 0L;
         holdSignature = -1;
         view = -1;
+        styleMenuOpen = false;
+        wentToHere = false;
     }
 
     private void remember(ChestMenu menu, Page page) {
@@ -181,8 +183,20 @@ public final class PresetsPanelHandler {
 
     //region Getting the server to the right page
     /// Something to reach: a page of a kind, and (col >= 0) a click to make there with a mouse button.
-    record Target(int mode, int preset, int col, int button) {
+    record Target(int mode, int preset, int col, int button, int pickup) {
+        Target(int mode, int preset, int col, int button) { this(mode, preset, col, button, -1); }
         int page() { return preset / 5; }
+        /// The same click, with the piece you were holding already picked up again.
+        Target lifted() { return new Target(mode, preset, col, button, -1); }
+    }
+
+    /// Package-private for tests: a menu slot in your own inventory (54-89) that's empty, to set a held piece
+    /// down in while the server turns the page; -1 when there's none.
+    static int freeInventorySlot(boolean[] emptyAt) {
+        // the main inventory first (the hotbar is where your rod is)
+        for (int i = 54; i < 81 && i < emptyAt.length; i++) if (emptyAt[i]) return i;
+        for (int i = 81; i < 90 && i < emptyAt.length; i++) if (emptyAt[i]) return i;
+        return -1;
     }
 
     /// Package-private for tests: the slot to click next to get from the open page to the target:
@@ -213,17 +227,74 @@ public final class PresetsPanelHandler {
     private int autoClicks;
     /// Which kind the panel shows (-1: whatever the server has open).
     private int view = -1;
-    /// You asked for the server's plain menu instead (until you switch back).
-    private boolean classic = false;
+
+    /// Opened this time: whether the panel has gone to the page with the preset for where you are.
+    private boolean wentToHere;
+
+    /// The preset (0-9) of a kind made for where you are: the one whose pieces speak most of your location or its
+    /// climate ("While at Cairns", "While in any Monsoon Climate"); -1 when none does.
+    int presetForHere(int mode) {
+        String here = dannypx.foe.handler.fetch.BossEventHandler.instance().getLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        dannypx.foe.helper.FoeLocations.Location loc = dannypx.foe.helper.FoeLocations.fromName(here);
+        String climate = loc == null ? "" : loc.climate.name;
+        String[] lore = new String[10];
+        for (int i = 0; i < 10; i++) {
+            Preset p = presets[mode][i];
+            StringBuilder sb = new StringBuilder();
+            if (p.known) for (ItemStack piece : p.pieces) {
+                var lines = piece.get(DataComponents.LORE);
+                if (lines != null) lines.lines().forEach(l -> sb.append(l.getString()).append('\n'));
+            }
+            lore[i] = sb.toString();
+        }
+        return bestFor(here, climate, lore);
+    }
+
+    /// Package-private for tests: which of these presets' piece texts mention the place (or else its climate) the
+    /// most; -1 when none does.
+    static int bestFor(String place, String climate, String[] lore) {
+        int best = -1, bestScore = 0;
+        String pl = place == null ? "" : place.toLowerCase(java.util.Locale.ROOT).trim();
+        String cl = climate == null ? "" : climate.toLowerCase(java.util.Locale.ROOT).trim();
+        for (int i = 0; i < lore.length; i++) {
+            String t = lore[i] == null ? "" : lore[i].toLowerCase(java.util.Locale.ROOT);
+            int score = 0;
+            if (!pl.isEmpty()) score += 3 * count(t, pl);
+            if (!cl.isEmpty()) score += count(t, cl + " climate");
+            if (score > bestScore) { bestScore = score; best = i; }
+        }
+        return best;
+    }
+
+    private static int count(String text, String what) {
+        int n = 0;
+        for (int at = text.indexOf(what); at >= 0; at = text.indexOf(what, at + what.length())) n++;
+        return n;
+    }
 
     private void want(Target t, long now) {
         pending = t;
         pendingSince = now;
     }
 
+    /// True while your bobber is in the water: the server turns down every change to presets then (and
+    /// says so in chat, once for each click), so the panel makes no clicks at all and says why instead.
+    static boolean fishingNow() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc != null && mc.player != null && mc.player.fishing != null;
+    }
+
     /// One step, each frame: note the open page, then make the next click towards what is wanted.
     private void step(ContainerScreen screen, Page page, long now) {
         Minecraft mc = Minecraft.getInstance();
+        if (fishingNow()) {
+            // Nothing is clicked while the bobber is out; the pages not seen yet are looked at once it's reeled in.
+            pending = null;
+            check = null;
+            visited[page.mode()][page.page()] = true;
+            if (view < 0) view = page.mode();
+            return;
+        }
         int signature = page.mode() * 2 + page.page();
         if (signature != holdSignature && holdSignature >= 0) {
             // The server answered with the new page: a short settle, then the next click (one sent in the very
@@ -255,6 +326,12 @@ public final class PresetsPanelHandler {
                 }
             }
         }
+        // Then the server is left on the page with the preset for where you are, so wearing it is one click.
+        if (pending == null && !wentToHere && visited[view][0] && visited[view][1]) {
+            wentToHere = true;
+            int here = presetForHere(view);
+            if (here >= 0 && (here / 5 != page.page() || page.mode() != view)) want(new Target(view, here, -1, 0), now);
+        }
         if (pending == null) return;
         if (now - pendingSince > 5000L) { pending = null; return; }
         if (now < holdUntil) return;
@@ -262,6 +339,14 @@ public final class PresetsPanelHandler {
         if (slot < 0) { pending = null; return; }
         if (mc.gameMode == null || mc.player == null) return;
         boolean last = slot != SLOT_SWITCH && slot != SLOT_NEXT && slot != SLOT_BACK;
+        if (last && pending.pickup() >= 0) {
+            // On the right page now: pick the piece you were holding back up, then (after a moment) put it in
+            if (screen.getMenu().getCarried().isEmpty() && pending.pickup() < screen.getMenu().slots.size())
+                mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, pending.pickup(), 0, ClickType.PICKUP, mc.player);
+            pending = pending.lifted();
+            holdUntil = now + SETTLE_MS;
+            return;
+        }
         if (!last && screen.getMenu().getSlot(slot).getItem().isEmpty()) { pending = null; return; }   // no such button here
         mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot, last ? pending.button() : 0, ClickType.PICKUP, mc.player);
         if (last) {
@@ -282,9 +367,15 @@ public final class PresetsPanelHandler {
     //endregion
 
     //region Where things are (in GUI pixels)
-    static final int PANEL_W = 204, PANEL_H = 158;
-    private static final int CELL_W = 94, CELL_H = 19, CELL_GAP_X = 4, CELL_GAP_Y = 1;
-    private static final int TAB_W = 60, TAB_H = 14, CLASSIC_H = 9, CELLS_Y = 42, VIEW_W = 106, VIEW_H = 16;
+    static final int PANEL_W = 236, PANEL_H = 158;
+    /// The presets: two columns of five cards. Each card: its number, the tick/star in a slot, a divider,
+    /// then the three pieces in slots (18 x 18, 2 apart), all on whole pixels.
+    static final int CELL_W = 106, CELL_H = 20, CELL_GAP_X = 8, CELL_GAP_Y = 2, CELLS_X = 8, CELLS_Y = 45;
+    static final int STATUS_X = 16, PIECES_X = 44, SLOT = 18, SLOT_GAP = 2;
+    /// Where a card's parts change: the number and tick/star up to here, then a piece every 20.
+    static final int PARTS_SPLIT = 41;
+    private static final int TAB_W = 64, TAB_H = 19, TAB_Y = 21, TAB_GAP = 2;
+    private static final int HEADER_H = 40;
 
     /// Package-private for tests: the panel's corner {x, y}. It covers the chest half of the menu and
     /// stops above your inventory, which stays in use.
@@ -293,8 +384,8 @@ public final class PresetsPanelHandler {
         return new int[]{(screenW - PANEL_W) / 2, Math.max(2, menuTop + 134 - PANEL_H)};
     }
 
-    private static int cellX(int px, int preset) { return px + 6 + (preset / 5) * (CELL_W + CELL_GAP_X); }
-    private static int cellY(int py, int preset) { return py + CELLS_Y + (preset % 5) * (CELL_H + CELL_GAP_Y); }
+    static int cellX(int px, int preset) { return px + CELLS_X + (preset / 5) * (CELL_W + CELL_GAP_X); }
+    static int cellY(int py, int preset) { return py + CELLS_Y + (preset % 5) * (CELL_H + CELL_GAP_Y); }
 
     /// Package-private for tests: what is under a point of the panel (relative to its corner):
     /// {preset 0-9, col 0-3} for a cell part (col 0: the tick/star and number), or null.
@@ -306,8 +397,9 @@ public final class PresetsPanelHandler {
             int below = i % 5 < 4 ? CELL_GAP_Y : 0;
             if (x < cx || x >= cx + CELL_W || y < cy || y >= cy + CELL_H + below) continue;
             int rel = x - cx;
-            if (rel < 33) return new int[]{i, 0};
-            return new int[]{i, 1 + Math.min(2, (rel - 33) / 19)};
+            if (rel < PARTS_SPLIT) return new int[]{i, 0};
+            // Each piece's part is its slot and half the gaps either side of it.
+            return new int[]{i, 1 + Math.max(0, Math.min(2, Math.floorDiv(rel - PIECES_X + SLOT_GAP / 2 + 1, SLOT + SLOT_GAP)))};
         }
         return null;
     }
@@ -327,7 +419,11 @@ public final class PresetsPanelHandler {
 
     /// True when the point is on the panel (the menu slots under it are then out of reach).
     public boolean covers(Screen screen, double mouseX, double mouseY) {
-        if (classic || !isPresets(screen)) return false;
+        if (!isPresets(screen)) return false;
+        if (look() == CLASSIC) {
+            int[] lk = classicLookAt(lookW(Minecraft.getInstance().font), screen.width, screen.height);
+            return in(mouseX, mouseY, lk[0], lk[1], lk[2], STYLE_H) || (styleMenuOpen && styleOption(lk, mouseX, mouseY) >= 0);
+        }
         ChestMenu menu = ((ContainerScreen) screen).getMenu();
         if (read(menu) == null && !loading(menu, System.currentTimeMillis())) return false;
         int[] p = panelAt(screen.width, screen.height);
@@ -356,21 +452,23 @@ public final class PresetsPanelHandler {
         lastSeen = now;
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
+        if (look() == CLASSIC) {
+            // The server's own menu, as it is: only the Style button over it, to come back to a FOE+ look.
+            int[] lk = classicLookAt(lookW(font), screen.width, screen.height);
+            g.nextStratum();
+            styleButton(g, font, lk, CLASSIC, mouseX, mouseY);
+            if (styleMenuOpen) { g.nextStratum(); styleMenu(g, font, lk, CLASSIC, mouseX, mouseY); }
+            return;
+        }
         Page page = read(chest.getMenu());
         if (page == null) {
             // Not filled yet: the panel with what was last seen, so the plain menu never flashes up first.
-            if (!classic && loading(chest.getMenu(), now)) drawPanel(g, font, screen.width, screen.height, lastMode, mouseX, mouseY, false);
+            if (loading(chest.getMenu(), now)) drawPanel(g, font, screen.width, screen.height, lastMode, mouseX, mouseY, false);
             return;                                           // otherwise not the menu FOE+ knows: leave it alone
         }
         lastGoodAt = now;
         lastMode = view < 0 ? page.mode() : view;
         remember(chest.getMenu(), page);
-        if (classic) {
-            int[] b = TravelMapHandler.backButton(screen.width, screen.height, 6);
-            g.nextStratum();
-            button(g, font, b[0] - (VIEW_W - 84) / 2, b[1], VIEW_W, VIEW_H, "FOE+ presets view", in(mouseX, mouseY, b[0] - (VIEW_W - 84) / 2, b[1], VIEW_W, VIEW_H), false);
-            return;
-        }
         step(chest, page, now);
         ItemStack carried = chest.getMenu().getCarried();
         drawPanel(g, font, screen.width, screen.height, view < 0 ? page.mode() : view, mouseX, mouseY, !carried.isEmpty());
@@ -382,60 +480,285 @@ public final class PresetsPanelHandler {
         }
     }
 
+    // The panel's colours: warm dark wood, with gold for what is chosen.
+    private static final int EDGE = 0xFF0D0805, RIM = 0xFF5C4129, BODY = 0xFF261A10, HEAD = 0xFF2F2014, RULE = 0xFF4A3524,
+            CARD = 0xFF1F150D, CARD_EDGE = 0xFF3A2918, CARD_HOT = 0xFF2A1C11, CARD_HOT_EDGE = 0xFF6B4D30,
+            CARD_ON = 0xFF33230F, GOLD = 0xFFE0A630, GOLD_TEXT = 0xFFFFD873, TEXT = 0xFFE8D8B8, DIM = 0xFF8C7A5E,
+            HERE = 0xFF7CF07C,
+            SLOT_EDGE = 0xFF0B0704, SLOT_BODY = 0xFF17100A, SLOT_SHADE = 0xFF100B06, SLOT_LIGHT = 0xFF35261A, SLOT_HOT = 0xFF4A3524;
+
+    private static final net.minecraft.resources.Identifier WOOD =
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "textures/gui/presets_wood.png");
+
+    /// The two tabs' corners: {Armor x, Rods x, y}. They line up with the cards' left edge.
+    private static int[] tabsAt(int px, int py) {
+        return new int[]{px + CELLS_X, px + CELLS_X + TAB_W + TAB_GAP, py + TAB_Y};
+    }
+
     /// The panel itself, for the kind shown.
     void drawPanel(GuiGraphics g, Font font, int screenW, int screenH, int shown, int mouseX, int mouseY, boolean holding) {
         int[] p = panelAt(screenW, screenH);
         int px = p[0], py = p[1];
+        final int realX = mouseX, realY = mouseY;
 
         g.nextStratum();
-        g.fill(px - 2, py - 2, px + PANEL_W + 2, py + PANEL_H + 2, 0xFF120C08);
-        g.fill(px - 1, py - 1, px + PANEL_W + 1, py + PANEL_H + 1, 0xFF5C4129);
-        g.fill(px, py, px + PANEL_W, py + PANEL_H, 0xFF2B1D12);
+        // The frame: a dark edge, a wooden rim, the body, and the header band, closed by a rule the chosen
+        // tab opens into.
+        g.fill(px - 2, py - 2, px + PANEL_W + 2, py + PANEL_H + 2, EDGE);
+        g.fill(px - 1, py - 1, px + PANEL_W + 1, py + PANEL_H + 1, RIM);
+        g.fill(px, py, px + PANEL_W, py + PANEL_H, BODY);
+        // wooden boards behind everything, the header band a shade lighter
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, WOOD, px, py, 0f, 0f, PANEL_W, PANEL_H, PANEL_W, PANEL_H);
+        g.fill(px, py, px + PANEL_W, py + HEADER_H, 0x30FFD9A8);
         g.fill(px, py, px + PANEL_W, py + 1, 0xFF7A583A);
-        g.drawCenteredString(font, Component.literal("FISHING PRESETS").withStyle(ChatFormatting.BOLD), px + PANEL_W / 2, py + 7, 0xFFF2E3C2);
-        int tabY = py + 22, tabA = px + PANEL_W / 2 - TAB_W - 2, tabR = px + PANEL_W / 2 + 2;
-        button(g, font, tabA, tabY, TAB_W, TAB_H, "Armor", in(mouseX, mouseY, tabA, tabY, TAB_W, TAB_H), shown == ARMOR);
-        button(g, font, tabR, tabY, TAB_W, TAB_H, "Rods", in(mouseX, mouseY, tabR, tabY, TAB_W, TAB_H), shown == PARTS);
+        g.fill(px, py + HEADER_H, px + PANEL_W, py + HEADER_H + 1, RIM);
+
+        // The title, centred, between two fine gold lines ending in small diamonds.
+        Component title = Component.literal("FISHING PRESETS").withStyle(ChatFormatting.BOLD);
+        int tw = font.width(title), tx = px + (PANEL_W - tw) / 2, ty = py + 6, ly = ty + 3;
+        g.drawString(font, title, tx, ty, 0xFFF2E3C2, true);
+        ornament(g, px + 12, tx - 9, ly, true);
+        ornament(g, tx + tw + 8, px + PANEL_W - 12, ly, false);
+
+        // The tabs, like folder tabs: the chosen one opens into the presets below it.
+        int[] t = tabsAt(px, py);
+        folderTab(g, font, t[0], t[2], "Armor", in(mouseX, mouseY, t[0], t[2], TAB_W, TAB_H), shown == ARMOR);
+        folderTab(g, font, t[1], t[2], "Rods", in(mouseX, mouseY, t[1], t[2], TAB_W, TAB_H), shown == PARTS);
+        // The Style menu's button: the look in use, and a small arrow.
+        int look = look();
+        int[] lk = lookAt(font, px, py);
+        styleButton(g, font, lk, look, mouseX, mouseY);
+        if (styleMenuOpen) { mouseX = -999; mouseY = -999; }      // the open menu has the mouse: nothing under it lights up
 
         ItemStack tip = ItemStack.EMPTY;
         int[] hover = in(mouseX, mouseY, px, py, PANEL_W, PANEL_H) ? cellAt(mouseX - px, mouseY - py) : null;
+        int forHere = presetForHere(shown);
         for (int i = 0; i < 10; i++) {
             Preset preset = presets[shown][i];
             int cx = cellX(px, i), cy = cellY(py, i);
-            boolean hot = hover != null && hover[0] == i;
-            // The preset in use: a gold frame.
-            if (preset.active) g.fill(cx - 1, cy - 1, cx + CELL_W + 1, cy + CELL_H + 1, 0xFFF2B33D);
-            g.fill(cx, cy, cx + CELL_W, cy + CELL_H, preset.active ? 0xFF3A2812 : hot ? 0xFF3A281A : 0xFF21160D);
-            small(g, font, String.valueOf(i + 1), cx + 3, cy + 7, preset.active ? 0xFFFFD873 : 0xFFB8A888);
+            boolean hot = hover != null && hover[0] == i && !fishingNow();
+            String n = String.valueOf(i + 1);
+            int sy = cy + 1;
+            boolean overStatus = hot && hover[1] == 0;
+            boolean drawStatusItem = true;
+            if (look == 1) {
+                // Tray cards: a number tab on the card's left, the three pieces on one shared tray.
+                g.fill(cx, cy, cx + CELL_W, cy + CELL_H, preset.active ? GOLD : hot ? CARD_HOT_EDGE : 0xFF17100A);
+                g.fill(cx + 1, cy + 1, cx + CELL_W - 1, cy + CELL_H - 1, hot ? CARD_HOT : CARD);
+                g.fill(cx + 1, cy + 1, cx + 14, cy + CELL_H - 1, preset.active ? GOLD : 0xFF33241A);
+                g.drawString(font, n, cx + 1 + (13 - font.width(n) + 1) / 2, cy + (CELL_H - 7) / 2, preset.active ? 0xFF2B1D12 : i == forHere ? HERE : 0xFFB8A888, false);
+                if (overStatus) g.fill(cx + STATUS_X + 1, sy + 1, cx + STATUS_X + SLOT - 1, sy + SLOT - 1, SLOT_HOT);
+                int tx0 = cx + PIECES_X - 1, tx1 = cx + PIECES_X + 3 * SLOT + 2 * SLOT_GAP + 1;
+                g.fill(tx0, sy, tx1, sy + SLOT, SLOT_EDGE);
+                g.fill(tx0 + 1, sy + 1, tx1 - 1, sy + SLOT - 1, SLOT_BODY);
+                g.fill(tx0 + 1, sy + SLOT - 2, tx1 - 1, sy + SLOT - 1, SLOT_LIGHT);
+                for (int c = 0; c < 3; c++) {
+                    int ix = cx + PIECES_X + c * (SLOT + SLOT_GAP);
+                    if (hot && hover[1] == c + 1) g.fill(ix, sy + 1, ix + SLOT, sy + SLOT - 1, SLOT_HOT);
+                    if (c > 0) g.fill(ix - 1, sy + 4, ix, sy + SLOT - 4, 0xFF2A1D12);
+                }
+            } else if (look == 2) {
+                // Light slots: a line under each row, warm lighter slots the pieces stand out on, and a
+                // round marker for the preset in use (gold when worn) in place of the tick.
+                if (preset.active) g.fill(cx, cy, cx + CELL_W, cy + CELL_H, 0x66E0A630);
+                else if (hot) g.fill(cx, cy, cx + CELL_W, cy + CELL_H, 0x28FFD9A8);
+                if (i % 5 < 4) g.fill(cx, cy + CELL_H, cx + CELL_W, cy + CELL_H + 1, 0x40FFD9A8);
+                g.drawString(font, n, cx + 2 + (13 - font.width(n) + 1) / 2, cy + (CELL_H - 7) / 2, preset.active ? GOLD_TEXT : i == forHere ? HERE : 0xFFB8A888, false);
+                int rcx = cx + STATUS_X + 9, rcy = cy + CELL_H / 2;
+                disc(g, rcx, rcy, 6, preset.active ? GOLD : overStatus ? 0xFFB8A888 : 0xFF6B5A44);
+                disc(g, rcx, rcy, 5, preset.active ? 0xFF33230F : hot ? 0xFF2D2015 : 0xFF21160D);
+                if (preset.active) disc(g, rcx, rcy, 3, GOLD_TEXT);
+                else if (overStatus) disc(g, rcx, rcy, 3, 0xFF8C7A5E);
+                drawStatusItem = false;
+                for (int c = 0; c < 3; c++) {
+                    int ix = cx + PIECES_X + c * (SLOT + SLOT_GAP);
+                    boolean over = hot && hover[1] == c + 1;
+                    g.fill(ix + 1, sy, ix + SLOT - 1, sy + SLOT, over ? 0xFF7A5E40 : 0xFF4A3828);
+                    g.fill(ix, sy + 1, ix + SLOT, sy + SLOT - 1, over ? 0xFF7A5E40 : 0xFF4A3828);
+                    g.fill(ix + 1, sy + 1, ix + SLOT - 1, sy + 2, over ? 0xFF8C6E4C : 0xFF574332);
+                }
+            } else {
+                // Clean rows: no boxes. Soft bands, a gold bar and glow for the preset in use, and the pieces
+                // standing free; only what the mouse is on lights up.
+                if (preset.active) {
+                    g.fill(cx, cy, cx + CELL_W, cy + CELL_H, 0x55E0A630);
+                    g.fill(cx, cy, cx + 2, cy + CELL_H, GOLD);
+                } else if (hot) g.fill(cx, cy, cx + CELL_W, cy + CELL_H, 0x28FFD9A8);
+                else if ((i % 5) % 2 == 0) g.fill(cx, cy, cx + CELL_W, cy + CELL_H, 0x30000000);
+                g.drawString(font, n, cx + 3 + (13 - font.width(n) + 1) / 2, cy + (CELL_H - 7) / 2, preset.active ? GOLD_TEXT : i == forHere ? HERE : 0xFFA89878, false);
+                if (overStatus) g.fill(cx + STATUS_X, sy, cx + STATUS_X + SLOT, sy + SLOT, SLOT_HOT);
+                for (int c = 0; c < 3; c++) {
+                    int ix = cx + PIECES_X + c * (SLOT + SLOT_GAP);
+                    if (hot && hover[1] == c + 1) g.fill(ix, sy, ix + SLOT, sy + SLOT, SLOT_HOT);
+                }
+            }
             if (!preset.known) {
-                small(g, font, "loading...", cx + 36, cy + 7, 0xFF8A7A62);
+                smallText(g, font, "loading...", cx + PIECES_X + 2, cy + (CELL_H - 5) / 2, DIM);
                 continue;
             }
-            if (hot && hover[1] == 0) g.fill(cx + 12, cy + 1, cx + 31, cy + CELL_H - 1, 0xFF5C4129);
-            g.renderItem(preset.status, cx + 14, cy + 1);
+            if (drawStatusItem) g.renderItem(preset.status, cx + STATUS_X + 1, sy + 1);
             if (hot && hover[1] == 0) tip = preset.status;
             for (int c = 0; c < 3; c++) {
-                int ix = cx + 34 + c * 19;
-                boolean over = hot && hover[1] == c + 1;
-                g.fill(ix, cy + 1, ix + 18, cy + CELL_H - 1, over ? 0xFF5C4129 : 0xFF150E08);
-                g.renderItem(preset.pieces[c], ix + 1, cy + 1);
-                g.renderItemDecorations(font, preset.pieces[c], ix + 1, cy + 1);
-                if (over) tip = preset.pieces[c];
+                int ix = cx + PIECES_X + c * (SLOT + SLOT_GAP) + 1;
+                g.renderItem(preset.pieces[c], ix, sy + 1);
+                g.renderItemDecorations(font, preset.pieces[c], ix, sy + 1);
+                if (hot && hover[1] == c + 1) tip = preset.pieces[c];
             }
         }
 
-        int footY = py + PANEL_H - CLASSIC_H - 4;
-        int classicW = smallButtonWidth(font, "Classic menu");
-        int classicX = px + PANEL_W - classicW - 5;
-        smallButton(g, font, classicX, footY, classicW, CLASSIC_H, "Classic menu", in(mouseX, mouseY, classicX, footY, classicW, CLASSIC_H));
+        if (look != 1) {
+            // A fine line between the two columns.
+            int mid = px + PANEL_W / 2;
+            g.fill(mid, cellY(py, 0) + 1, mid + 1, cellY(py, 4) + CELL_H - 1, 0xFF3A2918);
+        }
 
-        if (!tip.isEmpty() && !holding) ItemTooltip.draw(g, font, tip, mouseX, mouseY);
+        if (fishingNow()) {
+            // The server won't change presets while you're fishing: say so here, not in chat.
+            int top = py + CELLS_Y - 2, bottom = cellY(py, 4) + CELL_H + 2;
+            int bw = 176, bh = 46, bx = px + (PANEL_W - bw) / 2, by = top + (bottom - top - bh) / 2;
+            g.nextStratum();
+            g.fill(px + 1, top, px + PANEL_W - 1, bottom, 0xC00D0805);
+            g.fill(bx - 1, by - 1, bx + bw + 1, by + bh + 1, GOLD);
+            g.fill(bx, by, bx + bw, by + bh, HEAD);
+            g.drawCenteredString(font, Component.literal("Reel in your rod").withStyle(ChatFormatting.BOLD), px + PANEL_W / 2, by + 9, GOLD_TEXT);
+            g.drawCenteredString(font, Component.literal("Presets can't be used"), px + PANEL_W / 2, by + 23, TEXT);
+            g.drawCenteredString(font, Component.literal("while your bobber is out."), px + PANEL_W / 2, by + 33, TEXT);
+            tip = ItemStack.EMPTY;
+        }
+
+        if (styleMenuOpen) {
+            // The Style menu, over the rows: every look, the one in use marked in gold.
+            g.nextStratum();
+            styleMenu(g, font, lk, look, realX, realY);
+        } else if (!tip.isEmpty() && !holding) ItemTooltip.draw(g, font, tip, mouseX, mouseY);
     }
 
-    private static void small(GuiGraphics g, Font font, String text, int x, int y, int color) {
+    /// The Style menu's button: the look in use, and a small arrow.
+    private void styleButton(GuiGraphics g, Font font, int[] lk, int look, int mouseX, int mouseY) {
+        boolean overLook = in(mouseX, mouseY, lk[0], lk[1], lk[2], STYLE_H);
+        g.fill(lk[0], lk[1], lk[0] + lk[2], lk[1] + STYLE_H, overLook || styleMenuOpen ? 0xFF9A7236 : RULE);
+        g.fill(lk[0] + 1, lk[1] + 1, lk[0] + lk[2] - 1, lk[1] + STYLE_H - 1, overLook || styleMenuOpen ? 0xFF3A281A : HEAD);
+        g.drawString(font, lookLabel(look), lk[0] + 5, lk[1] + 3, overLook || styleMenuOpen ? 0xFFFFF4D6 : 0xFFB8A888, false);
+        int ax = lk[0] + lk[2] - 9, ay = lk[1] + 5, ac = overLook || styleMenuOpen ? 0xFFFFF4D6 : 0xFFB8A888;
+        g.fill(ax, ay, ax + 5, ay + 1, ac); g.fill(ax + 1, ay + 1, ax + 4, ay + 2, ac); g.fill(ax + 2, ay + 2, ax + 3, ay + 3, ac);
+    }
+
+    /// Package-private for tests: in Classic, where the Style button sits over the server's menu {x, y, w}: just
+    /// above the chest's top right corner (inside its top edge when the screen is too short for that).
+    static int[] classicLookAt(int lookW, int screenW, int screenH) {
+        int chestTop = (screenH - 222) / 2, chestRight = (screenW + 176) / 2;
+        int y = chestTop - STYLE_H - 2;
+        if (y < 2) y = chestTop + 3;
+        return new int[]{chestRight - lookW, y, lookW};
+    }
+
+    /// The Style menu, open under its button: every look, the one in use marked in gold.
+    private void styleMenu(GuiGraphics g, Font font, int[] lk, int look, int realX, int realY) {
+        {
+            int hotOpt = styleOption(lk, realX, realY);
+            g.fill(lk[0] - 1, lk[1] + STYLE_H, lk[0] + lk[2] + 1, lk[1] + STYLE_H + LOOKS * STYLE_H + 1, EDGE);
+            for (int o = 0; o < LOOKS; o++) {
+                int oy = lk[1] + STYLE_H + o * STYLE_H;
+                boolean chosen = o == look;
+                g.fill(lk[0], oy, lk[0] + lk[2], oy + STYLE_H, o == hotOpt ? 0xFF5C4129 : chosen ? 0xFF3F2B14 : 0xFF2B1D12);
+                if (chosen) g.fill(lk[0], oy, lk[0] + 2, oy + STYLE_H, GOLD);
+                g.drawString(font, lookLabel(o), lk[0] + 5, oy + 3, chosen ? GOLD_TEXT : o == hotOpt ? 0xFFFFF4D6 : TEXT, false);
+            }
+        }
+    }
+
+    /// Which look the preset rows have: 0 clean rows, 1 tray cards, 2 light slots (the player's choice, kept).
+    static int look() {
+        return Configs.mainConfig.presetsStyle.get().ordinal();
+    }
+
+    private static void setLook(int look) {
+        Configs.mainConfig.presetsStyle.accept(dannypx.foe.type.PresetsStyle.values()[look]);
+        Configs.mainConfig.save();
+    }
+
+    private static String lookLabel(int look) { return look == CLASSIC ? "Classic" : "Style " + "ABC".charAt(look); }
+
+    /// How many looks the menu offers, and which one is the server's own menu.
+    static final int LOOKS = 4, CLASSIC = 3;
+
+    static final int STYLE_H = 13;
+    /// The Style menu is open under its button.
+    private boolean styleMenuOpen;
+
+    /// Where the Style button sits, {x, y, w}.
+    static int[] lookAt(Font font, int px, int py) {
+        int w = lookW(font);
+        return new int[]{px + PANEL_W - CELLS_X - w, py + TAB_Y + 4, w};
+    }
+
+    static int lookW(Font font) { return Math.max(font.width("Style A"), font.width("Classic")) + 18; }
+
+    /// Package-private for tests: which of the open menu's three options is at (x, y), or -1. They sit under the button.
+    static int styleOption(int[] lk, double x, double y) {
+        if (x < lk[0] || x >= lk[0] + lk[2]) return -1;
+        int o = (int) Math.floor((y - (lk[1] + STYLE_H)) / STYLE_H);
+        return o >= 0 && o < LOOKS ? o : -1;
+    }
+
+    /// A filled circle, on whole pixels.
+    private static void disc(GuiGraphics g, int cx, int cy, int r, int color) {
+        for (int dy = -r; dy <= r; dy++) {
+            int w = (int) Math.round(Math.sqrt(r * r - dy * dy + 0.5));
+            g.fill(cx - w, cy + dy, cx + w + 1, cy + dy + 1, color);
+        }
+    }
+
+    /// A slot like the game's own, in the panel's wood: dark edge, shaded top and left, lit bottom and right.
+    private static void slot(GuiGraphics g, int x, int y, boolean hot) {
+        g.fill(x, y, x + SLOT, y + SLOT, SLOT_EDGE);
+        g.fill(x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, hot ? SLOT_HOT : SLOT_BODY);
+        if (hot) return;
+        g.fill(x + 1, y + 1, x + SLOT - 1, y + 2, SLOT_SHADE);
+        g.fill(x + 1, y + 1, x + 2, y + SLOT - 1, SLOT_SHADE);
+        g.fill(x + 1, y + SLOT - 2, x + SLOT - 1, y + SLOT - 1, SLOT_LIGHT);
+        g.fill(x + SLOT - 2, y + 1, x + SLOT - 1, y + SLOT - 1, SLOT_LIGHT);
+    }
+
+    /// A fine gold line from x0 to x1 at y, brighter towards the title, with a small diamond at the title's end.
+    private static void ornament(GuiGraphics g, int x0, int x1, int y, boolean titleOnRight) {
+        if (x1 - x0 < 8) return;
+        int len = x1 - x0;
+        int[] shades = {0xFF4A3524, 0xFF6B4D30, 0xFF9A7236, 0xFFC08A34};
+        for (int k = 0; k < 4; k++) {
+            // Four lengths of line, each a shade brighter towards the title.
+            int a = x0 + len * k / 4, b = x0 + len * (k + 1) / 4;
+            int shade = shades[titleOnRight ? k : 3 - k];
+            g.fill(a, y, b, y + 1, shade);
+        }
+        int dx = titleOnRight ? x1 + 3 : x0 - 4;
+        g.fill(dx, y - 1, dx + 1, y + 2, GOLD);
+        g.fill(dx - 1, y, dx + 2, y + 1, GOLD);
+    }
+
+    /// A folder tab. The chosen one: rimmed, a gold line along its top, its body running on into the panel's.
+    /// The others: set back a little, darker.
+    private static void folderTab(GuiGraphics g, Font font, int x, int y, String text, boolean hover, boolean on) {
+        int tx = x + (TAB_W - font.width(text) + 1) / 2;
+        if (on) {
+            g.fill(x, y, x + TAB_W, y + TAB_H + 1, RIM);
+            g.fill(x + 1, y + 1, x + TAB_W - 1, y + TAB_H + 1, BODY);
+            g.fill(x + 1, y, x + TAB_W - 1, y + 1, GOLD);
+            g.drawString(font, text, tx, y + 6, GOLD_TEXT, true);
+        } else {
+            g.fill(x, y + 2, x + TAB_W, y + TAB_H, EDGE);
+            g.fill(x + 1, y + 3, x + TAB_W - 1, y + TAB_H, hover ? 0xFF33241A : 0xFF1C130B);
+            g.drawString(font, text, tx, y + 7, hover ? 0xFFFFF4D6 : 0xFF9C8A6C, false);
+        }
+    }
+
+    /// Small, sharp lettering (whole screen pixels), like the small buttons'.
+    private static void smallText(GuiGraphics g, Font font, String text, int x, int y, int color) {
+        int gui = Math.max(1, (int) Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
+        float sc = smallTextPixels(gui) / (float) gui;
         g.pose().pushMatrix();
-        g.pose().translate(x, y);
-        g.pose().scale(0.5f, 0.5f);
+        g.pose().translate(Math.round(x * gui) / (float) gui, Math.round(y * gui) / (float) gui);
+        g.pose().scale(sc, sc);
         g.drawString(font, text, 0, 0, color, false);
         g.pose().popMatrix();
     }
@@ -446,42 +769,11 @@ public final class PresetsPanelHandler {
         return Math.max(1, Math.round(guiScale * 0.67f));
     }
 
-    /// How wide a small button is for its words: the lettering plus 3 pixels either side, so the box fits the text.
-    private static int smallButtonWidth(Font font, String text) {
-        int gui = Math.max(1, Minecraft.getInstance().getWindow().getGuiScale());
-        return fitWidth(font.width(text), smallTextPixels(gui), gui);
-    }
-
     /// Package-private for tests: a small button's width in GUI pixels for words `fontWidth` font pixels wide.
     static int fitWidth(int fontWidth, int k, int gui) {
         return (int) Math.ceil((fontWidth - 1) * k / (double) gui) + 6;
     }
 
-    /// A small, quiet button: small sharp lettering, placed on whole screen pixels.
-    private static void smallButton(GuiGraphics g, Font font, int x, int y, int w, int h, String text, boolean hover) {
-        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, hover ? 0xFFFFF4D6 : 0xFF120C08);
-        g.fill(x, y, x + w, y + h, hover ? 0xFF4A3524 : 0xFF3A281A);
-        int gui = Math.max(1, (int) Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
-        int k = smallTextPixels(gui);
-        float s = k / (float) gui;
-        float tx = Math.round((x + (w - (font.width(text) - 1) * s) / 2f) * gui) / (float) gui;
-        float ty = Math.round((y + (h - 7 * s) / 2f) * gui) / (float) gui;
-        g.pose().pushMatrix();
-        g.pose().translate(tx, ty);
-        g.pose().scale(s, s);
-        g.drawString(font, text, 0, 0, hover ? 0xFFFFF4D6 : 0xFFE8D8B8, false);
-        g.pose().popMatrix();
-    }
-
-    private static void button(GuiGraphics g, Font font, int x, int y, int w, int h, String text, boolean hover, boolean on) {
-        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, on ? 0xFFF2B33D : hover ? 0xFFFFF4D6 : 0xFF120C08);
-        g.fill(x, y, x + w, y + h, on ? 0xFF5C4129 : hover ? 0xFF4A3524 : 0xFF3A281A);
-        g.pose().pushMatrix();
-        // Full-size letters on whole pixels: scaled-down text comes out uneven.
-        g.pose().translate(x + (w - font.width(text) + 1) / 2, y + (h - 7) / 2);
-        g.drawString(font, text, 0, 0, on ? 0xFFFFD873 : hover ? 0xFFFFF4D6 : 0xFFE8D8B8, false);
-        g.pose().popMatrix();
-    }
     //endregion
 
     //region Clicks
@@ -489,18 +781,23 @@ public final class PresetsPanelHandler {
     public boolean allowClick(Screen screen, MouseButtonEvent event) {
         if (!isPresets(screen)) return true;
         ContainerScreen chest = (ContainerScreen) screen;
+        if (look() == CLASSIC) {
+            Minecraft mcc = Minecraft.getInstance();
+            int[] lk = classicLookAt(lookW(mcc.font), screen.width, screen.height);
+            boolean onButton = in(event.x(), event.y(), lk[0], lk[1], lk[2], STYLE_H);
+            if (styleMenuOpen) {
+                int o = styleOption(lk, event.x(), event.y());
+                styleMenuOpen = false;
+                if (o >= 0) { if (o != look()) setLook(o); click(mcc); return false; }
+                if (onButton) { click(mcc); return false; }
+                return true;                                  // a click elsewhere closes the menu and goes to the menu below
+            }
+            if (onButton) { styleMenuOpen = true; click(mcc); return false; }
+            return true;                                      // everything else: the server's own menu, as usual
+        }
         Page page = read(chest.getMenu());
         if (page == null) return !covers(screen, event.x(), event.y());   // still filling: nothing to click yet
         Minecraft mc = Minecraft.getInstance();
-        if (classic) {
-            int[] b = TravelMapHandler.backButton(screen.width, screen.height, 6);
-            if (in(event.x(), event.y(), b[0] - (VIEW_W - 84) / 2, b[1], VIEW_W, VIEW_H)) {
-                classic = false;
-                click(mc);
-                return false;
-            }
-            return true;
-        }
         int[] p = panelAt(screen.width, screen.height);
         int px = p[0], py = p[1];
         if (!in(event.x(), event.y(), px, py, PANEL_W, PANEL_H)) return true;     // your inventory, or outside: as usual
@@ -508,12 +805,20 @@ public final class PresetsPanelHandler {
         autoClicks = 0;
         check = null;
         int shown = view < 0 ? page.mode() : view;
-        int tabY = py + 22, tabA = px + PANEL_W / 2 - TAB_W - 2, tabR = px + PANEL_W / 2 + 2;
-        int footY = py + PANEL_H - CLASSIC_H - 4, classicW = smallButtonWidth(mc.font, "Classic menu"), classicX = px + PANEL_W - classicW - 5;
-        if (in(event.x(), event.y(), classicX, footY, classicW, CLASSIC_H)) {
-            classic = true;
-            pending = null;
+        int[] t = tabsAt(px, py);
+        int tabY = t[2], tabA = t[0], tabR = t[1];
+        int[] lk = lookAt(mc.font, px, py);
+        if (styleMenuOpen) {
+            // An option picks that look; a click anywhere else just closes the menu.
+            int o = styleOption(lk, event.x(), event.y());
+            styleMenuOpen = false;
+            if (o >= 0) { if (o != look()) setLook(o); click(mc); }
+            else if (in(event.x(), event.y(), lk[0], lk[1], lk[2], STYLE_H)) click(mc);
+        } else if (in(event.x(), event.y(), lk[0], lk[1], lk[2], STYLE_H)) {
+            styleMenuOpen = true;
             click(mc);
+        } else if (fishingNow()) {
+            // Every click would be turned down by the server while the bobber is out: the panel says why instead.
         } else if (in(event.x(), event.y(), tabA, tabY, TAB_W, TAB_H) || in(event.x(), event.y(), tabR, tabY, TAB_W, TAB_H)) {
             int to = in(event.x(), event.y(), tabA, tabY, TAB_W, TAB_H) ? ARMOR : PARTS;
             if (to != shown) {
@@ -525,7 +830,22 @@ public final class PresetsPanelHandler {
             int[] cell = cellAt((int) event.x() - px, (int) event.y() - py);
             int button = event.button();
             if (cell != null && (button == 0 || button == 1) && presets[shown][cell[0]].known) {
-                want(new Target(shown, cell[0], cell[1], button), now);
+                Target t2 = new Target(shown, cell[0], cell[1], button);
+                ItemStack held = chest.getMenu().getCarried();
+                boolean otherPage = page.mode() != shown || page.page() != t2.page();
+                if (!held.isEmpty() && otherPage && cell[1] > 0 && mc.gameMode != null && mc.player != null) {
+                    // Holding a piece for a preset on the server's other page: turning the page with it on the
+                    // mouse loses it (the server sends it back to your inventory). So it's set down in an empty
+                    // slot of yours first, the page is turned, and it's picked up and put in place.
+                    boolean[] emptyAt = new boolean[chest.getMenu().slots.size()];
+                    for (int i = 54; i < emptyAt.length; i++) emptyAt[i] = chest.getMenu().getSlot(i).getItem().isEmpty();
+                    int free = freeInventorySlot(emptyAt);
+                    if (free >= 0) {
+                        mc.gameMode.handleInventoryMouseClick(chest.getMenu().containerId, free, 0, ClickType.PICKUP, mc.player);
+                        t2 = new Target(shown, cell[0], cell[1], button, free);
+                    }
+                }
+                want(t2, now);
                 click(mc);
             }
         }

@@ -32,22 +32,28 @@ public abstract class FishingHookEntityMixin implements IFishingHookEntity {
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void injectTick(CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && this.getPlayerOwner() != null
-                && currentFishingRod.getItemStack() == ItemStack.EMPTY
-        ) {
-            Pair<Boolean, @Nullable FishingRodTagObject> validatedFishingRod = ValidateItem.isFishingRod(this.getPlayerOwner().getMainHandItem());
-
-            if(validatedFishingRod.value1()
-                    && !ItemStack.isSameItemSameComponents(currentFishingRod.getItemStack(), validatedFishingRod.value2().getItemStack())
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && this.getPlayerOwner() != null
+                    && currentFishingRod.getItemStack() == ItemStack.EMPTY
             ) {
-                currentFishingRod = validatedFishingRod.value2();
-                if(!currentFishingRod.getActiveBait().isEmpty()) {
-                    baitStack = currentFishingRod.getActiveBait().getFirst().getItemStack();
-                    disabledBait = currentFishingRod.getDisableBait();
+                Pair<Boolean, @Nullable FishingRodTagObject> validatedFishingRod = ValidateItem.isFishingRod(this.getPlayerOwner().getMainHandItem());
+
+                if(validatedFishingRod.value1()
+                        && !ItemStack.isSameItemSameComponents(currentFishingRod.getItemStack(), validatedFishingRod.value2().getItemStack())
+                ) {
+                    currentFishingRod = validatedFishingRod.value2();
+                    if(!currentFishingRod.getActiveBait().isEmpty()) {
+                        baitStack = currentFishingRod.getActiveBait().getFirst().getItemStack();
+                        disabledBait = currentFishingRod.getDisableBait();
+                    }
                 }
             }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("FishingHookEntityMixin.injectTick", foe$t);
         }
     }
 

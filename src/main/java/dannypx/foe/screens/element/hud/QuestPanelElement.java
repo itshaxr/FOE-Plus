@@ -42,7 +42,8 @@ public class QuestPanelElement extends PanelElement {
 
     /// Long location names shortened to their first word ("Toledo Bend Reservoir" -> "Toledo").
     static String shortLocation(String name) {
-        String trimmed = name == null ? "" : name.trim();
+        // the same short names as the other panels ("Danube River" → "Danube", "Lofoten Islands" → "Lofoten")
+        String trimmed = MiniEventPanelElement.shortPlaces(name == null ? "" : name.trim());
         if (trimmed.length() <= 12 || !trimmed.contains(" ")) return trimmed;
         return trimmed.substring(0, trimmed.indexOf(' '));
     }
@@ -60,10 +61,10 @@ public class QuestPanelElement extends PanelElement {
                 .getOrDefault(location.getString(), List.of());
         if (quests.isEmpty()) return lines;
 
-        lines.add(join(label("ʟᴏᴄ: "), dannypx.foe.helper.FoeLocations.styledName(shortLocation(location.getString()))));
-        int index = 1;
+        if (Configs.hudConfig.questPanelShowLocation.get())
+            lines.add(dannypx.foe.helper.FoeLocations.styledName(shortLocation(location.getString())));
         for (QuestDataHandler.Quest quest : quests) {
-            Component prefix = label("#" + index++ + ": ");
+            Component prefix = Component.empty();   // no quest numbers: the order says it
             if (quest.isDone()) {
                 lines.add(join(prefix, Component.literal("ꞯᴜᴇѕᴛ ᴅᴏɴᴇ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)));
             } else {
@@ -80,7 +81,7 @@ public class QuestPanelElement extends PanelElement {
     @Override
     protected List<Component> previewLines() {
         return List.of(
-                join(label("ʟᴏᴄ: "), Component.literal("Open /quests").withStyle(ChatFormatting.WHITE)),
-                join(label("#1: "), Component.literal("0").withStyle(ChatFormatting.YELLOW), label("/"), Component.literal("20")));
+                Component.literal("Open /quests").withStyle(ChatFormatting.WHITE),
+                join(Component.literal("Largemouth Bass ").withStyle(ChatFormatting.WHITE), Component.literal("0").withStyle(ChatFormatting.YELLOW), label("/"), Component.literal("20")));
     }
 }

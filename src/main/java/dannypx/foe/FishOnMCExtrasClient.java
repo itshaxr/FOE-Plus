@@ -52,24 +52,52 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         this.onInit();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(this::onClientStarted);
-        ClientPlayConnectionEvents.JOIN.register(this::onJoin);
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, mc) -> dannypx.foe.helper.Safe.run("join", () -> this.onJoin(handler, sender, mc)));
         ClientPlayConnectionEvents.DISCONNECT.register(this::onLeave);
-        ClientTickEvents.END_CLIENT_TICK.register(this::onEndClientTick);
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(this::onEndClientTick));
+        // Test builds: the map scan (/foe map scan), wherever you are.
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.FoeProfiler.tick()));
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.SpotHandler.instance().tick(mc)));
+        // FOE+'s data files: changes written together every half minute, and when you leave or close the game
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.io.DataFileHandler.instance().flushIfDue()));
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> dannypx.foe.handler.io.DataFileHandler.instance().flush(true));
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> dannypx.foe.helper.Safe.run("tick MapScan", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.MapScanHandler.instance().tick(mc); dannypx.foe.handler.logic.FoeProfiler.end("tick MapScan", _p); }));
+        // "[item]" in chat: Tab completes it.
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(dannypx.foe.handler.logic.ChatCompletionsHandler::tick));
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.MinigameDumpHandler.instance().tick(mc)));
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> { if (mc.player != null) dannypx.foe.handler.logic.CommunityRateHandler.instance().tick(); }));
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> dannypx.foe.helper.Safe.run("tick Baitbox", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.BaitboxHandler.instance().tick(mc); dannypx.foe.handler.logic.FoeProfiler.end("tick Baitbox", _p); }));
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(dannypx.foe.handler.logic.MemoryGuard::tick));
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.InstanceJoinHandler.instance().tick(mc)));
+        // where a new pet came from (fished, a contest, an event): every message, before anything hides one
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
-                overlay || (!dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
+                overlay || dannypx.foe.helper.Safe.get("chat pet source", () -> dannypx.foe.handler.logic.PetSourceHandler.instance().onGameMessage(message.getString()), true));
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            // a reader that fails shows the line rather than crashing (or hiding it)
+            boolean keep = overlay || dannypx.foe.helper.Safe.get("chat FOE+ readers", () -> (!dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
                         && !dannypx.foe.handler.logic.CommunityEventHandler.instance().onGameMessage(message.getString())
                         && !dannypx.foe.handler.logic.EventTimesHandler.instance().onGameMessage(message)
+                        && !dannypx.foe.handler.logic.FindHandler.instance().onGameMessage(message)
+                        && !dannypx.foe.handler.logic.FriendInfoHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.ActiveBoostersHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.MiniEventHandler.instance().onGameMessage(message)
-                        && ContestTrackerHandler.instance().filterGameMessage(message)));
-        ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
-                ContestTrackerHandler.instance().onChatMessageShown());
-        ClientReceiveMessageEvents.GAME.register(this::receiveGameMessage);
-        ClientSendMessageEvents.MODIFY_CHAT.register(this::modifyChatMessage);
+                        && ContestTrackerHandler.instance().filterGameMessage(message)), true);
+            dannypx.foe.handler.logic.FoeProfiler.end("chat FOE+ readers", _p);
+            return keep;
+        });
+        ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> dannypx.foe.helper.Safe.run("player chat", () -> {
+            ContestTrackerHandler.instance().onChatMessageShown();
+            // your own chat message: how your level is coloured (for the top bar)
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            if (player != null) dannypx.foe.handler.logic.LevelStyleHandler.instance().onChat(message, player.getGameProfile().name());
+        }));
+        ClientReceiveMessageEvents.GAME.register((message, overlay) -> dannypx.foe.helper.Safe.run("game message", () -> this.receiveGameMessage(message, overlay)));
+        ClientSendMessageEvents.MODIFY_CHAT.register(message -> dannypx.foe.helper.Safe.get("chat send", () -> this.modifyChatMessage(message), message));
         ClientSendMessageEvents.COMMAND.register(command -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
         ClientSendMessageEvents.CHAT.register(message -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
-        ClientEntityEvents.ENTITY_UNLOAD.register(this::onEntityUnload);
-        ScreenEvents.AFTER_INIT.register(this::onAfterInitScreen);
+        ClientEntityEvents.ENTITY_UNLOAD.register((entity, level) -> dannypx.foe.helper.Safe.run("entity unload", () -> this.onEntityUnload(entity, level)));
+        ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> dannypx.foe.helper.Safe.run("screen " + screen.getClass().getSimpleName(), () -> this.onAfterInitScreen(mc, screen, w, h)));
         ScreenEvents.BEFORE_INIT.register((minecraft, screen, w, h) -> {
             // FOE title screen (ported from FOECollab)
             if (screen instanceof net.minecraft.client.gui.screens.TitleScreen
@@ -78,7 +106,12 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 minecraft.setScreen(new dannypx.foe.screens.FoeTitleScreen());
             }
         });
-        ItemTooltipCallback.EVENT.register(this::onItemTooltip);
+        ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
+            long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            dannypx.foe.helper.Safe.run("item tooltip", () -> this.onItemTooltip(stack, context, type, lines));
+            dannypx.foe.helper.Safe.run("item dump", () -> dannypx.foe.handler.logic.ItemDumpHandler.instance().onTooltip(stack));
+            dannypx.foe.handler.logic.FoeProfiler.end("items: tooltips", _p);
+        });
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register(this::onLivingEntityFeatureRenderingRegistrationCallback);
 
         this.initHudRenderer();
@@ -103,9 +136,11 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
     }
 
     private void receiveGameMessage(Component message, boolean overlay) {
+        long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
         ChatHandler.instance().onReceiveMessage(message);
         if (!overlay) dannypx.foe.handler.logic.RareCatchHandler.onGameMessage(message.getString());
         if (!overlay) dannypx.foe.handler.logic.StoreTimerHandler.instance().onGameMessage(message.getString());
+        dannypx.foe.handler.logic.FoeProfiler.end("chat triggers", _p);
     }
 
     private String modifyChatMessage(String text) {
@@ -139,6 +174,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
     }
 
     private void onLeave(ClientPacketListener clientPacketListener, Minecraft minecraft) {
+        dannypx.foe.handler.io.DataFileHandler.instance().flush(true);   // nothing left unwritten
         ConnectionHandler.instance().onLeave();
         LoadingHandler.instance().onLeave();
         dannypx.foe.handler.logic.SessionStatsHandler.instance().reset(); // a session ends at logout
@@ -182,6 +218,11 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         }
     }
 
+    /// A tick listener that can't crash the game: a failure is logged once and skipped (Safe).
+    private static ClientTickEvents.EndTick safeTick(ClientTickEvents.EndTick tick) {
+        return mc -> dannypx.foe.helper.Safe.run("tick " + tick.getClass().getSimpleName(), () -> tick.onEndTick(mc));
+    }
+
     private void onEndClientTick(Minecraft minecraft) {
         if(!LoadingHandler.instance().isError()
                 && minecraft.getCurrentServer() != null
@@ -191,57 +232,61 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ) {
             // Check if done loading
             if(LoadingHandler.instance().isLoadingDone()) {
-                dannypx.foe.handler.logic.FriendsHandler.instance().tick();
-                dannypx.foe.handler.io.UpdateCheckHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick FriendsHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.FriendsHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FriendsHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick UpdateCheckHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.io.UpdateCheckHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick UpdateCheckHandler", _p); });
                 // Fetch
-                if(Configs.handlerConfig.tabOverlayHandler.get()) TabOverlayHandler.instance().tick();
-                if(Configs.handlerConfig.scoreboardHandler.get()) ScoreboardHandler.instance().tick();
-                if(Configs.handlerConfig.localPlayerHandler.get()) LocalPlayerHandler.instance().tick();
-                if(Configs.handlerConfig.bossEventHandler.get()) BossEventHandler.instance().tick();
-                if(Configs.handlerConfig.inventoryHandler.get()) InventoryHandler.instance().tick();
-                if(Configs.handlerConfig.networkHandler.get()) NetworkHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick TabOverlayHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.tabOverlayHandler.get()) TabOverlayHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick TabOverlayHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick ScoreboardHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.scoreboardHandler.get()) ScoreboardHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ScoreboardHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick LocalPlayerHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.localPlayerHandler.get()) LocalPlayerHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick LocalPlayerHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick BossEventHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.bossEventHandler.get()) BossEventHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick BossEventHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick InventoryHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.inventoryHandler.get()) InventoryHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick InventoryHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick NetworkHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.networkHandler.get()) NetworkHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick NetworkHandler", _p); });
 
                 // IO
-                if(Configs.handlerConfig.dataFileHandler.get()) DataFileHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick DataFileHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.dataFileHandler.get()) DataFileHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick DataFileHandler", _p); });
 
                 // Logic
-                if(Configs.handlerConfig.keyBindHandler.get()) KeyBindHandler.instance().tick();
-                BaitSorterHandler.instance().tick(minecraft);
-                ContestTrackerHandler.instance().tick();
-                ContestBaitSheetHandler.instance().tick();
-                AutotipHandler.instance().tick();
-                FullInventoryHandler.instance().tick();
-                PetPriceSheetHandler.instance().tick();
-                DailyQuestHandler.instance().tick();
-                dannypx.foe.handler.logic.ProfileStatsHandler.instance().tick();
-                dannypx.foe.handler.logic.SilentMenuHandler.instance().tick();
-                dannypx.foe.handler.logic.AlertHandler.instance().tick();
-                dannypx.foe.handler.logic.CommunityEventHandler.instance().tick();
-                dannypx.foe.handler.logic.EventTimesHandler.instance().tick();
-                dannypx.foe.handler.logic.ActiveBoostersHandler.instance().tick();
-                dannypx.foe.handler.logic.MiniEventHandler.instance().tick();
-                dannypx.foe.handler.logic.BobberTimerHandler.instance().tick();
-                dannypx.foe.handler.logic.SessionStatsHandler.instance().tick();
-                FishSessionHandler.instance().tick();
-                dannypx.foe.handler.io.FoerStatsImporter.tick();
-                dannypx.foe.handler.io.FoeStatsImporter.tick();
-                dannypx.foe.handler.logic.PetLocationHandler.instance().tick();
-                if(Configs.handlerConfig.catchingHandler.get()) CatchingHandler.instance().tick();
-                if(Configs.handlerConfig.rayCastHandler.get()) HitResultHandler.instance().tick();
-                if(Configs.handlerConfig.notifierHandler.get()) NotifierHandler.instance().tick();
-                if(Configs.handlerConfig.crewHandler.get()) CrewHandler.instance().tick();
-                if(Configs.handlerConfig.lightHandler.get()) LightHandler.instance().tick();
-                if(Configs.handlerConfig.timerHandler.get()) TimerHandler.instance().tick();
-                if(Configs.handlerConfig.questHandler.get()) QuestHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick KeyBindHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.keyBindHandler.get()) KeyBindHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick KeyBindHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick BaitSorterHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); BaitSorterHandler.instance().tick(minecraft); dannypx.foe.handler.logic.FoeProfiler.end("tick BaitSorterHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick ContestTrackerHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); ContestTrackerHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ContestTrackerHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick ContestBaitSheetHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); ContestBaitSheetHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ContestBaitSheetHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick BaitPictures", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.store.BaitPictures.tick(minecraft); dannypx.foe.handler.logic.FoeProfiler.end("tick BaitPictures", _p); });
+                dannypx.foe.helper.Safe.run("tick AutotipHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); AutotipHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick AutotipHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick FullInventoryHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); FullInventoryHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FullInventoryHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick PetPriceSheetHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if (dannypx.foe.screens.PetPriceScreen.ENABLED) PetPriceSheetHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick PetPriceSheetHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick DailyQuestHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); DailyQuestHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick DailyQuestHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick ProfileStatsHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.ProfileStatsHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ProfileStatsHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick SilentMenuHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.SilentMenuHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick SilentMenuHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick AlertHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.AlertHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick AlertHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick CommunityEventHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.CommunityEventHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick CommunityEventHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick EventTimesHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.EventTimesHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick EventTimesHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick WeatherEventHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.WeatherEventHandler.instance().tick(dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons(), dannypx.foe.handler.logic.WeatherEventHandler.here(), System.currentTimeMillis()); dannypx.foe.handler.logic.FoeProfiler.end("tick WeatherEventHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick FindHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.FindHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FindHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick FriendInfoHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.FriendInfoHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FriendInfoHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick ActiveBoostersHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.ActiveBoostersHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ActiveBoostersHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick MiniEventHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.MiniEventHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick MiniEventHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick BobberTimerHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.BobberTimerHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick BobberTimerHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick SessionStatsHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.SessionStatsHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick SessionStatsHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick FishSessionHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); FishSessionHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FishSessionHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick FoerStatsImporter", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.io.FoerStatsImporter.tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FoerStatsImporter", _p); });
+                dannypx.foe.helper.Safe.run("tick FoeStatsImporter", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.io.FoeStatsImporter.tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FoeStatsImporter", _p); });
+                dannypx.foe.helper.Safe.run("tick PetLocationHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.PetLocationHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick PetLocationHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick CatchingHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.catchingHandler.get()) CatchingHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick CatchingHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick HitResultHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.rayCastHandler.get()) HitResultHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick HitResultHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick NotifierHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.notifierHandler.get()) NotifierHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick NotifierHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick CrewHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.crewHandler.get()) CrewHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick CrewHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick LightHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.lightHandler.get()) LightHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick LightHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick TimerHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.timerHandler.get()) TimerHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick TimerHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick QuestHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.questHandler.get()) QuestHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick QuestHandler", _p); });
 
                 // Renderer
-                if(Configs.handlerConfig.hudRenderHandler.get()) HudRenderHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick HudRenderHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.hudRenderHandler.get()) HudRenderHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick HudRenderHandler", _p); });
 
                 // Placeholder Engine
-                PlaceholderHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick PlaceholderHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); PlaceholderHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick PlaceholderHandler", _p); });
 
             } else {
-                if(Configs.handlerConfig.loadingHandler.get()) LoadingHandler.instance().tick();
+                dannypx.foe.helper.Safe.run("tick LoadingHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if(Configs.handlerConfig.loadingHandler.get()) LoadingHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick LoadingHandler", _p); });
             }
         }
     }

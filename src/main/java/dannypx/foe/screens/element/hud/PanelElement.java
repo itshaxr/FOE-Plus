@@ -39,6 +39,55 @@ public abstract class PanelElement extends Element {
         if (font != null) this.updateSize(this.buildLines(), font);
     }
 
+    /// This panel's look from the HUD Editor (spacing, colours, picture, hidden lines).
+    public String lookId() {
+        return this.getClass().getSimpleName();
+    }
+
+    protected dannypx.foe.handler.store.HudLooks.Look look() {
+        return dannypx.foe.handler.store.HudLooks.get(lookId());
+    }
+
+    /// How tall the panel is with its fuller sample text (or its live text, if longer), at its size: for laying out.
+    public int measuredHeight() {
+        Font font = Minecraft.getInstance().font;
+        List<Component> sample = new ArrayList<>(this.previewLines());
+        int lines = Math.max(sample.size(), this.lines().size());
+        int room = Math.max(picRoom(sample), picRoom(this.lines()));
+        return Math.round(((Math.max(lines, 1) - 1) * lineHeight(font) + PADDING * 5 + pad() * 2 + room) * dannypx.foe.utils.HudScale.crisp(scale()));
+    }
+
+    /// The panel's own see-through setting (0-100), for the HUD Editor.
+    public int defaultOpacity() {
+        return opacityPercent();
+    }
+
+    /// The panel's title in its own words (for the HUD Editor's list).
+    public Component titleText() {
+        return this.title();
+    }
+
+    /// Package-private for tests: the lines without the ones hidden in the HUD Editor.
+    static List<Component> withoutHidden(List<Component> lines, List<String> hidden) {
+        if (hidden == null || hidden.isEmpty()) return lines;
+        List<Component> out = new ArrayList<>();
+        for (Component l : lines) if (l.getString().isBlank() || !hidden.contains(dannypx.foe.handler.store.HudLooks.key(l.getString()))) out.add(l);
+        // No two blank lines in a row where something was hidden between them.
+        List<Component> tidy = new ArrayList<>();
+        for (Component l : out) {
+            if (l.getString().isBlank() && !tidy.isEmpty() && tidy.getLast().getString().isBlank()) continue;
+            tidy.add(l);
+        }
+        return tidy;
+    }
+
+    /// The lines as they'd show (before hiding), for the HUD Editor's list of lines.
+    public List<Component> allLinesForEditor() {
+        List<Component> lines = new ArrayList<>(this.lines());
+        if (lines.isEmpty()) lines.addAll(this.previewLines());
+        return lines;
+    }
+
     //region Subclass hooks
     protected abstract Component title();
 
@@ -70,6 +119,21 @@ public abstract class PanelElement extends Element {
         return false;
     }
 
+    /// The lines' alignment the player picked (AUTO: the panel's own way).
+    protected dannypx.foe.type.TextAlign textAlign() {
+        return dannypx.foe.type.TextAlign.AUTO;
+    }
+
+    /// Package-private for tests: where a line `w` wide starts between `left` and `right`.
+    static int lineX(dannypx.foe.type.TextAlign align, boolean center, boolean anchorRight, int left, int right, int w) {
+        return switch (align) {
+            case LEFT -> left;
+            case RIGHT -> right - w;
+            case CENTER -> left + (right - left - w) / 2;
+            case AUTO -> center ? left + (right - left - w) / 2 : anchorRight ? right - w : left;
+        };
+    }
+
     /// An item box drawn beside the text. An empty stack draws an empty box (the "nothing here" state).
     public record PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor) {}
 
@@ -78,9 +142,62 @@ public abstract class PanelElement extends Element {
         return List.of();
     }
 
+    /// Pictures put into lines with {@link #inlineItem}, by their key.
+    private static final java.util.Map<String, net.minecraft.world.item.ItemStack> INLINE = new java.util.HashMap<>();
+    static { dannypx.foe.handler.logic.MemoryGuard.register("panelPictures", INLINE::size, INLINE::clear); }
+    private static final String INLINE_KEY = "foe:item:";
+
+    /// A small item picture in a line of text (the bait by its name): room in the line, with the picture drawn
+    /// in it, the size of the letters. Nothing for an empty stack.
+    public static Component inlineItem(net.minecraft.world.item.ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return Component.empty();
+        if (INLINE.size() > 256) INLINE.clear();
+        String key = INLINE_KEY + System.identityHashCode(stack);
+        INLINE.put(key, stack);
+        return Component.literal(INLINE_ROOM).withStyle(s -> s.withInsertion(key));
+    }
+
+    /// The room a picture takes in a line: four spaces (16 pixels), the picture centred in it.
+    static final String INLINE_ROOM = "    ";
+
+    /// Package-private for tests: the picture's size and where it goes in its room {x offset, y offset, size}, for
+    /// a room `roomW` pixels wide on a line of letters `letterH` pixels tall.
+    static int[] inlinePlace(int roomW, int letterH) {
+        // full size (16 pixels) by normal text, its line given a little more room; smaller by tiny text
+        int size = letterH >= 8 ? Math.min(16, roomW) : Math.max(4, Math.min(letterH + letterH / 2, roomW - 2));
+        return new int[]{(roomW - size) / 2, (letterH - size) / 2, size};
+    }
+
+    /// Draws the pictures in a piece of a line drawn at (x, y).
+    private void drawInline(GuiGraphics g, Font font, Component part, int x, int y) {
+        int[] at = {x};
+        int letterH = tiny ? 5 : 8;
+        part.visit((style, str) -> {
+            int w = font.width(Component.literal(str).withStyle(style));
+            String ins = style.getInsertion();
+            if (ins != null && ins.startsWith(INLINE_KEY)) {
+                net.minecraft.world.item.ItemStack stack = INLINE.get(ins);
+                if (stack != null && !stack.isEmpty()) {
+                    int[] p = inlinePlace(w, letterH);
+                    // drawn as it is: no tile behind it
+                    g.pose().pushMatrix();
+                    g.pose().translate(at[0] + p[0], y + p[1]);
+                    g.pose().scale(p[2] / 16f, p[2] / 16f);
+                    g.renderItem(stack, 0, 0);
+                    g.pose().popMatrix();
+                }
+            }
+            at[0] += w;
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+    }
+
     /// Called just before a line is drawn, so a panel can draw something behind it.
     protected void beforeLine(GuiGraphics guiGraphics, Font font, Component line, int x, int y) {
     }
+
+    /// The scale the panel is being drawn at (for where its hover lines are on screen).
+    private float drawScale = 1f;
 
     private static final long LINES_REFRESH_NS = 50_000_000L;
     private List<Component> cachedLines = null;
@@ -100,30 +217,164 @@ public abstract class PanelElement extends Element {
         List<Component> lines = new ArrayList<>();
         if (isCopy || LoadingHandler.instance().isLoadingDone()) lines.addAll(this.lines());
         if (lines.isEmpty() && isCopy) lines.addAll(this.previewLines());
+        lines = new ArrayList<>(withoutHidden(lines, look().hidden));
+        if (tiny) lines.replaceAll(l -> isRule(l) ? l : tinyText(l));
         // Trim blank lines at the ends.
         while (!lines.isEmpty() && lines.getFirst().getString().isBlank()) lines.removeFirst();
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
-        if (!lines.isEmpty() && Configs.hudConfig.panelTheme.get() == PanelTheme.OFF) {
-            lines.addFirst(this.title().copy().withStyle(ChatFormatting.GRAY));
+        if (!lines.isEmpty() && foeR()) {
+            lines.addFirst(foeRTitle(shownTitle()));
+        } else if (!lines.isEmpty() && Configs.hudConfig.panelTheme.get() == PanelTheme.OFF) {
+            lines.addFirst(look().titleColor < 0 ? shownTitle().copy().withStyle(ChatFormatting.GRAY) : shownTitle());
         }
         return lines;
     }
 
-    private static int lineHeight(Font font) {
-        return font.lineHeight + LINE_SPACING;
+    private int lineHeight(Font font) {
+        return (tiny ? 6 : font.lineHeight) + Math.max(0, Math.min(12, look().lineSpacing));
+    }
+
+    /// Set smaller than one screen pixel per text pixel: drawn at the smallest crisp size with FOE+'s tiny pixel
+    /// font, so it shrinks further without letters losing pixels.
+    private boolean tiny = false;
+    static final net.minecraft.network.chat.FontDescription TINY = new net.minecraft.network.chat.FontDescription.Resource(
+            Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "tiny"));
+
+    /// Package-private for tests: the text in the tiny font, where it was in the game's own font (icons and the
+    /// server's badges keep theirs).
+    static Component tinyText(Component line) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        line.visit((style, str) -> {
+            net.minecraft.network.chat.Style st = style.getFont() == null || style.getFont().equals(net.minecraft.network.chat.FontDescription.DEFAULT)
+                    ? style.withFont(TINY).withBold(false) : style;
+            out.append(Component.literal(str).withStyle(st));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
+    }
+
+    private int pad() {
+        return Math.max(0, Math.min(16, look().padding));
+    }
+
+    /// The title, in the colour picked in the HUD Editor.
+    private Component shownTitle() {
+        dannypx.foe.handler.store.HudLooks.Look l = look();
+        Component t = this.title();
+        if (l.title != null && !l.title.isBlank()) {
+            net.minecraft.network.chat.Style st = t.getStyle();
+            if (st.isEmpty() && !t.getSiblings().isEmpty()) st = t.getSiblings().getFirst().getStyle();
+            // in small capitals like FOE+'s own titles, so a name sits in the middle of its plate, clear of its edges
+            t = Component.literal(dannypx.foe.helper.TextHelper.smallLetter(l.title)).withStyle(st);
+        }
+        t = l.titleColor < 0 ? t : t.copy().withColor(l.titleColor);
+        return tiny ? tinyText(t) : t;
+    }
+
+    /// Put between two parts of a line, it puts the second part at the panel's right edge
+    /// ("Lofoten Islands ⇥ 17:57").
+    public static final Component TAB = Component.literal("\t");
+
+    /// Package-private for tests: a two-part line as one ("Lofoten Islands  17:57"), or just the first part when the
+    /// second is empty.
+    static Component joinTab(Component[] parts) {
+        if (parts[1].getString().isBlank()) return parts[0];
+        if (parts[0].getString().isBlank()) return parts[1];
+        return Component.empty().append(parts[0]).append(Component.literal("  ")).append(parts[1]);
+    }
+
+    /// The parts of a line on either side of its TAB, or null when it has none.
+    static Component[] tabParts(Component line) {
+        String t = line.getString();
+        int i = t.indexOf('\t');
+        return i < 0 ? null : new Component[]{slice(line, 0, i), slice(line, i + 1, t.length())};
+    }
+
+    private static int lineWidth(Component line, Font font) {
+        Component[] parts = tabParts(line);
+        return parts == null ? font.width(line) : font.width(parts[0]) + 12 + font.width(parts[1]);
+    }
+
+    /// A line cut into its name, its number(s), and what's in brackets after ("Total Shards ◆ ", "24128", "(43)"),
+    /// for the column layout; null for a line with no number (a heading), which keeps the whole width.
+    record Cols(Component label, Component value, Component extra) {}
+
+    /// Package-private for tests.
+    static Cols split(Component line) {
+        String t = line.getString();
+        int start = -1;
+        for (int i = 0; i < t.length(); i++) {
+            char c = t.charAt(i);
+            if (Character.isDigit(c) || ((c == '$' || c == '+' || c == '-') && i + 1 < t.length() && Character.isDigit(t.charAt(i + 1)))) { start = i; break; }
+        }
+        if (start < 0) return null;
+        int bracket = t.indexOf(" (", start);
+        int end = bracket < 0 ? t.length() : bracket;
+        return new Cols(slice(line, 0, start), slice(line, start, end), bracket < 0 ? Component.empty() : slice(line, bracket + 1, t.length()));
+    }
+
+    /// The characters from..to of a line, keeping their colours.
+    static Component slice(Component line, int from, int to) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        int[] at = {0};
+        line.visit((style, str) -> {
+            int a = at[0], b = a + str.length();
+            int s0 = Math.max(a, from), s1 = Math.min(b, to);
+            if (s0 < s1) out.append(Component.literal(str.substring(s0 - a, s1 - a)).withStyle(style));
+            at[0] = b;
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
+    }
+
+    /// The widest name, number and bracket among the lines, for the column layout.
+    private static int[] colWidths(List<Component> lines, Font font) {
+        int la = 0, va = 0, ea = 0;
+        for (Component l : lines) {
+            Cols c = split(l);
+            if (c == null) continue;
+            la = Math.max(la, font.width(c.label()));
+            va = Math.max(va, font.width(c.value()));
+            ea = Math.max(ea, font.width(c.extra()));
+        }
+        return new int[]{la, va, ea};
+    }
+
+    private static int colsWidth(int[] w) {
+        return w[0] + 10 + w[1] + (w[2] > 0 ? 6 + w[2] : 0);
+    }
+
+    /// The picture picked for the title, or empty.
+    private net.minecraft.world.item.ItemStack picture() {
+        String id = look().picture;
+        if (id == null || id.isEmpty()) return net.minecraft.world.item.ItemStack.EMPTY;
+        Identifier key = Identifier.tryParse(id);
+        if (key == null) return net.minecraft.world.item.ItemStack.EMPTY;
+        return net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(key)
+                .map(net.minecraft.world.item.ItemStack::new).orElse(net.minecraft.world.item.ItemStack.EMPTY);
     }
 
     /// Outer size of the panel including the border, before scaling.
     private int outerWidth(List<Component> lines, Font font) {
-        int max = lines.stream().mapToInt(font::width).max().orElse(0);
-        max = Math.max(max + iconSpace(), font.width(this.title()) + 8);
-        return max + PADDING * 4;
+        int max = look().columns
+                ? Math.max(colsWidth(colWidths(lines, font)), lines.stream().filter(l -> split(l) == null).mapToInt(l -> lineWidth(l, font)).max().orElse(0))
+                : lines.stream().mapToInt(l -> lineWidth(l, font)).max().orElse(0);
+        int pic = picture().isEmpty() ? 0 : 11;
+        max = Math.max(max + iconSpace(), font.width(shownTitle()) + 8 + pic);
+        return max + PADDING * 4 + pad() * 2;
     }
 
     /// A panel's width only grows straight away; it shrinks once it has been narrower for a few
     /// seconds. Countdowns ("2:10 left" → "59 left") change the width every second, which made
     /// centred or right-anchored panels jump sideways.
     private static final long SHRINK_AFTER_MS = 4_000L;
+    /// Narrower by this little, the box keeps its width (clocks and counters change width as their digits change).
+    static final int SMALL_SHRINK = 12;
+
+    /// Package-private for tests: a box `shown` wide wanting to be `wanted` stays as it is.
+    static boolean ignorable(int shown, int wanted) {
+        return wanted < shown && shown - wanted <= SMALL_SHRINK;
+    }
     private int shownWidth = -1;
     private long narrowerSince = -1L;
 
@@ -131,6 +382,9 @@ public abstract class PanelElement extends Element {
     int steadyWidth(int wanted, long nowMs) {
         if (shownWidth < 0 || wanted >= shownWidth) {
             shownWidth = wanted;
+            narrowerSince = -1L;
+        } else if (ignorable(shownWidth, wanted)) {
+            // a digit narrower ("1:10" after "0:59", "1m" after "59s"): never worth moving the box for
             narrowerSince = -1L;
         } else if (narrowerSince < 0) {
             narrowerSince = nowMs;
@@ -142,12 +396,27 @@ public abstract class PanelElement extends Element {
     }
 
     private int outerHeight(List<Component> lines, Font font) {
-        return (Math.max(lines.size(), 1) - 1) * lineHeight(font) + PADDING * 5;
+        return (Math.max(lines.size(), 1) - 1) * lineHeight(font) + PADDING * 5 + pad() * 2 + picRoom(lines);
+    }
+
+    /// A line with a picture gets this many more pixels (half above, half below), so its full-size picture
+    /// doesn't run into the lines next to it.
+    static final int PIC_ROOM = 4;
+
+    private int picRoom(Component line) {
+        return !tiny && hasInline(line) ? PIC_ROOM : 0;
+    }
+
+    /// The extra room the lines need: their pictures, and titled rules' badges.
+    private int picRoom(List<Component> lines) {
+        int n = 0;
+        for (Component l : lines) n += isRule(l) ? (ruleTitle(l).isEmpty() ? 0 : RULE_TITLE_ROOM) : picRoom(l);
+        return n;
     }
 
     private void updateSize(List<Component> lines, Font font) {
-        this.width = Math.round(outerWidth(lines, font) * scale());
-        this.height = Math.round(outerHeight(lines, font) * scale());
+        this.width = Math.round(outerWidth(lines, font) * dannypx.foe.utils.HudScale.crisp(scale()));
+        this.height = Math.round(outerHeight(lines, font) * dannypx.foe.utils.HudScale.crisp(scale()));
     }
 
     @Override
@@ -165,16 +434,26 @@ public abstract class PanelElement extends Element {
 
         // The text is rebuilt 20 times a second (as often as the game updates), not every frame:
         // at high frame rates building and measuring every panel's lines each frame cost a lot.
+        float scale = dannypx.foe.utils.HudScale.crisp(scale());
+        boolean nowTiny = scale() < scale - 0.001f;
+        if (nowTiny != tiny) { tiny = nowTiny; cachedLines = null; }
         long nowNs = System.nanoTime();
         if (cachedLines == null || nowNs - cachedAtNs >= LINES_REFRESH_NS) {
-            cachedLines = this.buildLines();
+            long p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            List<Component> built = this.buildLines();
+            dannypx.foe.handler.logic.FoeProfiler.end("panel text: " + lookId(), p);
+            p = dannypx.foe.handler.logic.FoeProfiler.mark();
+            cachedLines = built;
+            prepared.clear();
+            preparedCols = null;
+            preparedPicRoom = -1;
             cachedOuterWidth = outerWidth(cachedLines, font);
             cachedOuterHeight = outerHeight(cachedLines, font);
             cachedAtNs = nowNs;
+            dannypx.foe.handler.logic.FoeProfiler.end("panel measure: " + lookId(), p);
         }
         List<Component> lines = cachedLines;
         int steadyWidth = steadyWidth(cachedOuterWidth, System.currentTimeMillis());
-        float scale = scale();
         this.width = Math.round(steadyWidth * scale);
         this.height = Math.round(cachedOuterHeight * scale);
         if (lines.isEmpty()) return;
@@ -204,45 +483,138 @@ public abstract class PanelElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
+        drawScale = scale;
+        long dp = dannypx.foe.handler.logic.FoeProfiler.mark();
         this.drawPanel(guiGraphics, font, lines, outerX, outerY, outerWidth, right);
+        dannypx.foe.handler.logic.FoeProfiler.end("panel draw: " + lookId(), dp);
         guiGraphics.pose().popMatrix();
+    }
+
+    /// A line laid out once (its parts, widths and the glyph sequences the font draws), reused every frame until the
+    /// panel's text is rebuilt (20 times a second at most): drawing it afresh each frame made a lot of garbage.
+    private static final class Prep {
+        Component[] tab;
+        Component joined;
+        boolean inline, hover;
+        Cols cols;
+        int width, tab0W, tab1W, labelW, valueW, extraW;
+        net.minecraft.util.FormattedCharSequence seq, tab0, tab1, label, value, extra;
+    }
+
+    private final java.util.IdentityHashMap<Component, Prep> prepared = new java.util.IdentityHashMap<>();
+    private int[] preparedCols = null;
+    private int preparedPicRoom = -1;
+
+    private Prep prep(Component line, Font font, boolean columns, boolean autoAlign) {
+        Prep p = prepared.get(line);
+        if (p != null) return p;
+        p = new Prep();
+        p.tab = tabParts(line);
+        Component shown = line;
+        if (p.tab != null && !autoAlign) {
+            p.joined = joinTab(p.tab);
+            shown = p.joined;
+            p.tab = null;
+        }
+        p.inline = hasInline(shown);
+        p.hover = HudHover.hasHover(shown);
+        if (p.tab != null) {
+            p.tab0 = p.tab[0].getVisualOrderText();
+            p.tab1 = p.tab[1].getVisualOrderText();
+            p.tab0W = font.width(p.tab0);
+            p.tab1W = font.width(p.tab1);
+        } else {
+            p.cols = columns && !p.inline ? split(shown) : null;
+            if (p.cols != null) {
+                p.label = p.cols.label().getVisualOrderText();
+                p.value = p.cols.value().getVisualOrderText();
+                p.extra = p.cols.extra().getVisualOrderText();
+                p.labelW = font.width(p.label);
+                p.valueW = font.width(p.value);
+                p.extraW = font.width(p.extra);
+            }
+            p.seq = shown.getVisualOrderText();
+            p.width = font.width(p.seq);
+        }
+        if (prepared.size() > 256) prepared.clear();
+        prepared.put(line, p);
+        return p;
     }
 
     private void drawPanel(GuiGraphics guiGraphics, Font font, List<Component> lines, int outerX, int outerY, int outerWidth, boolean right) {
         int lineHeight = lineHeight(font);
-        int contentWidth = outerWidth - PADDING * 4;
+        dannypx.foe.handler.store.HudLooks.Look look = look();
+        int pad = pad();
+        int contentWidth = outerWidth - PADDING * 4 - pad * 2;
 
         // Same geometry as FOE: the border pieces sit PADDING outside the filled box.
         int top = outerY + PADDING;
         int contentLeft = outerX + PADDING * 2;
         int contentRight = contentLeft + contentWidth;
         int boxLeft = contentLeft - PADDING;
-        int boxRight = contentRight + PADDING;
-        int innerHeight = (lines.size() - 1) * lineHeight;
+        int boxRight = contentRight + PADDING + pad * 2;
+        contentLeft += pad;
+        contentRight += pad;
+        if (preparedPicRoom < 0) preparedPicRoom = picRoom(lines);
+        int innerHeight = (lines.size() - 1) * lineHeight + pad * 2 + preparedPicRoom;
 
-        int bgAlpha = Math.round(opacityPercent() / 100f * 255f) << 24;
-        guiGraphics.fill(boxLeft, top, boxRight, top + innerHeight + PADDING * 3, bgAlpha);
+        int opacity = look.opacity >= 0 ? look.opacity : opacityPercent();
+        int bgAlpha = (Math.round(opacity / 100f * 255f) << 24) | (look.boxColor & 0xFFFFFF);
+        boolean foeR = foeR();
+        if (foeR) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha);
+        else guiGraphics.fill(boxLeft, top, boxRight, top + innerHeight + PADDING * 3, bgAlpha);
+        if (!look.imageInFront) drawImage(guiGraphics, look, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3);
 
         PanelTheme theme = Configs.hudConfig.panelTheme.get();
-        if (theme != PanelTheme.OFF) {
-            int white = 0xFFFFFFFF;
+        if (!foeR && theme != PanelTheme.OFF) {
+            int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
             int bottomY = top + PADDING * 2 + innerHeight;
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top_left"), boxLeft - PADDING, top - PADDING, 16, 16, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top_right"), boxRight - PADDING, top - PADDING, 16, 16, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom_left"), boxLeft - PADDING, bottomY, 16, 16, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom_right"), boxRight - PADDING, bottomY, 16, 16, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "left"), boxLeft - PADDING, top + PADDING, 16, innerHeight + PADDING, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "right"), boxRight - PADDING, top + PADDING, 16, innerHeight + PADDING, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top"), contentLeft, top - PADDING, contentWidth, 16, white);
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom"), contentLeft, bottomY, contentWidth, 16, white);
+            Component title = shownTitle();
+            net.minecraft.world.item.ItemStack pic = picture();
+            int picW = pic.isEmpty() ? 0 : 11;
+            int titleWidth = font.width(title) + picW;
+            int titleX = boxLeft + (boxRight - boxLeft - titleWidth) / 2;
 
-            Component title = this.title();
-            int titleWidth = font.width(title);
-            int titleX = contentLeft + (contentWidth - titleWidth) / 2;
+            // The frame is drawn on the screen's own pixels: at a size like 0.8 its one-pixel lines
+            // fell between screen pixels, so some edges came out twice as thick as others and the
+            // pieces didn't meet. Each frame pixel is now a whole number of screen pixels (the
+            // nearest to the panel's size), and every piece's position is rounded to that grid.
+            double gui = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale();
+            int px = Math.max(1, Math.round((float) (drawScale * gui)));      // screen pixels per frame pixel
+            float unit = (float) (px / gui);                                  // GUI units per frame pixel
+            float f = drawScale / unit;                                       // panel units -> frame pixels
+            // each piece placed so its middle (where FOE's frame lines run, PADDING in) lands on the
+            // box's edge, as it did unrounded
+            int l = Math.round(boxLeft * f) - PADDING, r = Math.round(boxRight * f) - PADDING;
+            int t = Math.round(top * f) - PADDING, b = Math.round((bottomY + PADDING) * f) - PADDING;
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().scale(1f / f, 1f / f);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top_left"), l, t, 16, 16, white);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top_right"), r, t, 16, 16, white);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom_left"), l, b, 16, 16, white);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom_right"), r, b, 16, 16, white);
+            if (b - t - 16 > 0) {
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "left"), l, t + 16, 16, b - t - 16, white);
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "right"), r, t + 16, 16, b - t - 16, white);
+            }
+            if (r - l - 16 > 0) {
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "top"), l + 16, t, r - l - 16, 16, white);
+                guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "bottom"), l + 16, b, r - l - 16, 16, white);
+            }
+            guiGraphics.pose().popMatrix();
+            // the title's plate stays with its text, at the panel's own size (snapped, the two
+            // could end up a pixel apart and the text ran off the plate)
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_left"), titleX - 16, top - PADDING, 16, 16, white);
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_middle"), titleX, top - PADDING, titleWidth, 16, white);
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_right"), titleX + titleWidth, top - PADDING, 16, 16, white);
-            guiGraphics.drawString(font, title, titleX, top - font.lineHeight / 2 - 1, white, false);
+            if (picW > 0) {
+                guiGraphics.pose().pushMatrix();
+                guiGraphics.pose().translate(titleX, top - font.lineHeight / 2f - 1.5f);
+                guiGraphics.pose().scale(0.625f, 0.625f);
+                guiGraphics.renderItem(pic, 0, 0);
+                guiGraphics.pose().popMatrix();
+            }
+            guiGraphics.drawString(font, title, titleX + picW, top - font.lineHeight / 2 - 1, 0xFFFFFFFF, false);
         }
 
         // Icon boxes on the anchored side, text beside them.
@@ -278,14 +650,157 @@ public abstract class PanelElement extends Element {
         }
 
         boolean textRight = right && alignTextToAnchor();
-        int y = top + PADDING;
+        int y = top + PADDING + pad;
+        boolean first = true;
+        dannypx.foe.type.TextAlign align = look.textAlign() != dannypx.foe.type.TextAlign.AUTO ? look.textAlign() : textAlign();
         for (Component line : lines) {
-            int x = centerText() ? textLeft + (textRightEdge - textLeft - font.width(line)) / 2
-                    : textRight ? textRightEdge - font.width(line) : textLeft;
+            if (isRule(line)) {
+                // a line across the box between two parts of a panel, with the second part's title in the middle,
+                // in a badge like the panel's own title (the timers, then the community catches)
+                String ruleTitle = ruleTitle(line);
+                // a titled line sits a little lower, with room above its badge
+                int ry = y + lineHeight / 2 - 1 + (ruleTitle.isEmpty() ? 0 : RULE_TITLE_ABOVE);
+                if (ruleTitle.isEmpty()) {
+                    guiGraphics.fill(textLeft, ry, textRightEdge, ry + 1, 0x66FFFFFF);
+                } else {
+                    Component t = Component.literal(ruleTitle).withStyle(ChatFormatting.BOLD);
+                    int tw = font.width(t);
+                    int tx = boxLeft + (boxRight - boxLeft - tw) / 2;
+                    if (!foeR && theme != PanelTheme.OFF) {
+                        int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
+                        guiGraphics.fill(textLeft, ry, tx - 10, ry + 1, 0x66FFFFFF);
+                        guiGraphics.fill(tx + tw + 10, ry, textRightEdge, ry + 1, 0x66FFFFFF);
+                        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_left"), tx - 16, ry - 7, 16, 16, white);
+                        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_middle"), tx, ry - 7, tw, 16, white);
+                        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_right"), tx + tw, ry - 7, 16, 16, white);
+                        guiGraphics.drawString(font, t, tx, ry + 1 - font.lineHeight / 2, 0xFFFFFFFF, false);
+                    } else {
+                        guiGraphics.fill(textLeft, ry, tx - 4, ry + 1, 0x66FFFFFF);
+                        guiGraphics.fill(tx + tw + 4, ry, textRightEdge, ry + 1, 0x66FFFFFF);
+                        guiGraphics.drawString(font, t, tx, ry + 1 - font.lineHeight / 2, 0xFFAAAAAA, true);
+                    }
+                }
+                first = false;
+                y += ruleTitle.isEmpty() ? lineHeight : lineHeight + RULE_TITLE_ROOM;
+                continue;
+            }
+            if (foeR && first) {
+                // FOE-R's heading: "- Title -", bold small caps, centred over the panel
+                int w = dannypx.foe.helper.TextHelper.getWidth(font, line, true);
+                dannypx.foe.helper.GuiGraphicsHelper.drawString(guiGraphics, font, line, boxLeft + (boxRight - boxLeft - w) / 2, y,
+                        dannypx.foe.type.StringStyle.SHADOW, dannypx.foe.type.StringStyle.SMALL_CAPS);
+                first = false;
+                y += lineHeight;
+                continue;
+            }
+            first = false;
+            Prep pr = prep(line, font, look.columns, look.textAlign() == dannypx.foe.type.TextAlign.AUTO);
+            if (pr.joined != null) line = pr.joined;
+            int room = !tiny && pr.inline ? PIC_ROOM : 0;
+            y += room / 2;
+            if (pr.tab != null) {
+                if (pr.inline) {
+                    drawInline(guiGraphics, font, pr.tab[0], textLeft, y);
+                    drawInline(guiGraphics, font, pr.tab[1], textRightEdge - pr.tab1W, y);
+                }
+                guiGraphics.drawString(font, pr.tab0, textLeft, y, 0xFFFFFFFF, true);
+                guiGraphics.drawString(font, pr.tab1, textRightEdge - pr.tab1W, y, 0xFFFFFFFF, true);
+                y += lineHeight + room - room / 2;
+                continue;
+            }
+            if (pr.cols != null) {
+                // Columns: the name on the left, the numbers lined up on the right, brackets after them.
+                if (preparedCols == null) preparedCols = colWidths(lines, font);
+                int[] cw = preparedCols;
+                int extraRight = textRightEdge;
+                int valueRight = cw[2] > 0 ? extraRight - cw[2] - 6 : extraRight;
+                guiGraphics.drawString(font, pr.label, textLeft, y, 0xFFFFFFFF, true);
+                guiGraphics.drawString(font, pr.value, valueRight - pr.valueW, y, 0xFFFFFFFF, true);
+                if (cw[2] > 0) guiGraphics.drawString(font, pr.extra, extraRight - pr.extraW, y, 0xFFFFFFFF, true);
+                y += lineHeight;
+                continue;
+            }
+            int x = lineX(align, centerText(), textRight, textLeft, textRightEdge, pr.width);
             this.beforeLine(guiGraphics, font, line, x, y);
-            guiGraphics.drawString(font, line, x, y, 0xFFFFFFFF, true);
-            y += lineHeight;
+            if (pr.inline) drawInline(guiGraphics, font, line, x, y);
+            guiGraphics.drawString(font, pr.seq, x, y, 0xFFFFFFFF, true);
+            if (pr.hover) HudHover.note(x, y, pr.width, lineHeight, drawScale, line);
+            y += lineHeight + room - room / 2;
         }
+        if (look.imageInFront) {
+            guiGraphics.nextStratum();
+            drawImage(guiGraphics, look, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3);
+        }
+    }
+
+    private static final String RULE_KEY = "foe:rule";
+    /// A thin line across the panel between two parts of it; takes a line's room, no width.
+    protected static final Component RULE = Component.literal("").withStyle(st -> st.withInsertion(RULE_KEY));
+
+    static boolean isRule(Component line) {
+        String ins = line.getStyle().getInsertion();
+        return ins != null && ins.startsWith(RULE_KEY) && line.getString().isEmpty();
+    }
+
+    /// A line across the panel with a title in the middle of it ("ᴄᴏᴍᴍᴜɴɪᴛʏ ᴄᴀᴛᴄʜᴇѕ"), in a badge like the panel's.
+    protected static Component titledRule(String title) {
+        return Component.literal("").withStyle(st -> st.withInsertion(RULE_KEY + ":" + title));
+    }
+
+    /// Package-private for tests: the title on a rule line, "" for a plain one.
+    static String ruleTitle(Component line) {
+        String ins = line.getStyle().getInsertion();
+        return ins != null && ins.startsWith(RULE_KEY + ":") ? ins.substring(RULE_KEY.length() + 1) : "";
+    }
+
+    /// The titled line is given this much more room, so its badge clears the lines above and below.
+    static final int RULE_TITLE_ROOM = 7, RULE_TITLE_ABOVE = 3;
+
+    /// The FOE-R look is on (Customize → HUD Style).
+    static boolean foeR() {
+        return Configs.hudConfig.hudStyle.get() == dannypx.foe.type.HudStyle.FOE_R;
+    }
+
+    /// Package-private for tests: the line holds a picture (kept out of the columns layout, which would split it).
+    static boolean hasInline(Component line) {
+        return line.visit((style, str) -> style.getInsertion() != null && style.getInsertion().startsWith(INLINE_KEY)
+                ? java.util.Optional.of(Boolean.TRUE) : java.util.Optional.empty(), net.minecraft.network.chat.Style.EMPTY).isPresent();
+    }
+
+    /// Your own picture in the box (HUD Editor → Image), kept inside the box.
+    private static void drawImage(GuiGraphics g, dannypx.foe.handler.store.HudLooks.Look look, int x, int y, int w, int h) {
+        if (look.image == null || look.image.isEmpty()) return;
+        dannypx.foe.handler.store.HudImages.Loaded img = dannypx.foe.handler.store.HudImages.get(look.image);
+        if (img == null) return;
+        int[] at = dannypx.foe.handler.store.HudImages.place(x, y, w, h, img.width(), img.height(), look.imageSize, look.imageX, look.imageY, look.imageFill);
+        int alpha = Math.round(255 * Math.max(0, Math.min(100, look.imageOpacity)) / 100f);
+        // no clipping: the picture is placed inside the box already, and clipping a box drawn at a size between whole
+        // pixels rounded its edge inwards, leaving the last column on the right empty
+        g.blit(RenderPipelines.GUI_TEXTURED, img.frameAt(System.currentTimeMillis()), at[0], at[1], 0f, 0f, at[2], at[3],
+                img.width(), img.height(), img.width(), img.height(), alpha << 24 | 0xFFFFFF);
+    }
+
+    /// FOE-R's heading line: "- Title -" (grey dashes, white title, both bold).
+    static Component foeRTitle(Component title) {
+        return Component.empty()
+                .append(Component.literal("- ").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD))
+                .append(Component.literal(title.getString()).withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
+                .append(Component.literal(" -").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
+    }
+
+    private static final Identifier FOE_R_BARS = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "textures/gui/sprites/elements/sidebar_atlas.png");
+
+    /// FOE-R's box, as its custom HUDs draw it: the see-through middle, and a dark bar (with its little nibs)
+    /// along the top and bottom.
+    private static void drawFoeRBox(GuiGraphics g, int x, int y, int w, int h, int bgAlpha) {
+        final int TW = 17, TH = 11, CORNER = 8, BAR_W = 1, BAR_H = 5, NIB = 3, PAD = 5;
+        g.fill(x + PAD, y + 1, x + w - PAD, y + h - 3, bgAlpha);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x, y, 0, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + CORNER, y, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + w - CORNER, y, CORNER + BAR_W, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x, y + h - CORNER, 0, 0, CORNER, CORNER, CORNER, CORNER, TW, TH);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + CORNER, y + h - CORNER + NIB, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH);
+        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + w - CORNER, y + h - CORNER, CORNER + BAR_W, 0, CORNER, CORNER, CORNER, CORNER, TW, TH);
     }
 
     private static Identifier sprite(PanelTheme theme, String piece) {

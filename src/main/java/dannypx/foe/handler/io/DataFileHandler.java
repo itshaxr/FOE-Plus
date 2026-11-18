@@ -78,7 +78,7 @@ public class DataFileHandler extends Handler {
             if(!checkIfFileExist(filePath)) {
                 Files.createFile(filePath);
                 this.isDataLoaded = true;
-                return this.saveToFile(dataModelType);
+                return this.writeNow(dataModelType);
             }
             String jsonFromFile = Files.readString(filePath);
             setData(dataModelType, jsonFromFile);
@@ -91,7 +91,85 @@ public class DataFileHandler extends Handler {
         return false;
     }
 
+    /// A copy of what's held now, as "<file>.<tag>.json" next to the file; never overwrites an earlier copy.
+    public void saveCopy(DataModels.DataModelType dataModelType, String tag) {
+        DataModels.DataModel data = this.getData(dataModelType);
+        try {
+            Path configDir = getUserConfigDir(data.uuid);
+            Files.createDirectories(configDir);
+            Path filePath = configDir.resolve(dataModelType.FILENAME + "." + tag + ".json");
+            if (checkIfFileExist(filePath)) return;
+            Files.writeString(filePath, dataModelToJson(data));
+        } catch (IOException e) {
+            LoggerHandler.error(e);
+        }
+    }
+
+    /// Files with changes not yet written. A change no longer writes its whole file straight away (the stats file was
+    /// turned into text and written after every catch, on the game's own thread): changes are gathered and written
+    /// together every half minute, in the background, and always when you leave a server or close the game.
+    private final java.util.EnumSet<DataModels.DataModelType> pending = java.util.EnumSet.noneOf(DataModels.DataModelType.class);
+    private long lastFlushAt = System.currentTimeMillis();
+    static final long FLUSH_EVERY_MS = 30_000L;
+    private final java.util.concurrent.ExecutorService writer = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "FOE+ data writer");
+        t.setDaemon(true);
+        return t;
+    });
+
     public boolean saveToFile(DataModels.DataModelType dataModelType) {
+        synchronized (pending) { pending.add(dataModelType); }
+        return true;
+    }
+
+    /// Writes waiting changes when it's been a while (called every tick).
+    public void flushIfDue() {
+        if (System.currentTimeMillis() - lastFlushAt < FLUSH_EVERY_MS) return;
+        flush(false);
+    }
+
+    /// Writes every waiting change: in the background, or (leaving, closing the game) right now.
+    public void flush(boolean now) {
+        lastFlushAt = System.currentTimeMillis();
+        java.util.List<DataModels.DataModelType> types;
+        synchronized (pending) {
+            if (pending.isEmpty()) return;
+            types = new java.util.ArrayList<>(pending);
+            pending.clear();
+        }
+        for (DataModels.DataModelType type : types) {
+            // turned into text here, on the game's thread, so it's a consistent picture; written elsewhere
+            DataModels.DataModel data = this.getData(type);
+            String json;
+            Path filePath;
+            try {
+                Path configDir = getUserConfigDir(data.uuid);
+                filePath = configDir.resolve(type.FILENAME + ".json");
+                json = dataModelToJson(data);
+            } catch (RuntimeException e) {
+                LoggerHandler.error(e);
+                continue;
+            }
+            Runnable write = () -> {
+                try {
+                    Files.createDirectories(filePath.getParent());
+                    // a whole new file swapped in, so a crash mid-write never leaves half a file
+                    Path tmp = filePath.resolveSibling(filePath.getFileName() + ".tmp");
+                    Files.writeString(tmp, json);
+                    Files.move(tmp, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException e) {
+                    try {
+                        Files.writeString(filePath, json);
+                    } catch (IOException e2) {
+                        LoggerHandler.error(e2);
+                    }
+                }
+            };
+            if (now) write.run(); else writer.execute(write);
+        }
+    }
+
+    private boolean writeNow(DataModels.DataModelType dataModelType) {
         DataModels.DataModel data = this.getData(dataModelType);
         try {
             Path configDir = getUserConfigDir(data.uuid);
@@ -175,8 +253,10 @@ public class DataFileHandler extends Handler {
         return Files.exists(filePath);
     }
 
+    private Gson writeGson = null;
+
     private String dataModelToJson(DataModels.DataModel dataModel) {
-        Gson gson = new GsonBuilder()
+        if (writeGson == null) writeGson = new GsonBuilder()
                 .setPrettyPrinting()
                 .serializeNulls()
                 .registerTypeAdapter(ItemStack.class, new ItemStackAdapter())
@@ -185,7 +265,7 @@ public class DataFileHandler extends Handler {
                 .registerTypeAdapter(CustomTimerDataHandler.CustomTimer.class, new CustomTimerAdapter())
                 .registerTypeAdapter(TrackerValue.class, new TrackerValueAdapter())
                 .create();
-        return gson.toJson(dataModel);
+        return writeGson.toJson(dataModel);
     }
 
     private DataModels.DataModel getData(DataModels.DataModelType dataModelType) {

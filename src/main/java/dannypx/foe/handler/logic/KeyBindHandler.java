@@ -56,6 +56,9 @@ public class KeyBindHandler extends Handler {
     }
     //endregion
 
+    private boolean wasPresetsKeyDown = false;
+    private boolean wasQuestsKeyDown = false;
+
     //region Methods
     public void tick() {
         if(minecraft.screen == null
@@ -70,11 +73,28 @@ public class KeyBindHandler extends Handler {
             minecraft.setScreen(new dannypx.foe.screens.AutotipScreen(minecraft.screen));
         }
 
-        if(minecraft.screen == null
+        if(dannypx.foe.screens.PetPriceScreen.ENABLED
+                && minecraft.screen == null
                 && KeyBindHelper.isPressed(Configs.keyBindConfig.openPetPricesKeybind)
         ) {
             minecraft.setScreen(new dannypx.foe.screens.PetPriceScreen(minecraft.screen));
         }
+
+        // The presets menu: once per press (the menu takes a moment to arrive), only when nothing is open.
+        boolean presetsDown = minecraft.screen == null && KeyBindHelper.isPressed(Configs.keyBindConfig.openPresetsKeybind);
+        if (presetsDown && !wasPresetsKeyDown && minecraft.getConnection() != null
+                && dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance()) {
+            minecraft.getConnection().sendCommand("presets");
+        }
+        wasPresetsKeyDown = presetsDown;
+
+        // The quests menu, the same way.
+        boolean questsDown = minecraft.screen == null && KeyBindHelper.isPressed(Configs.keyBindConfig.openQuestsKeybind);
+        if (questsDown && !wasQuestsKeyDown && minecraft.getConnection() != null
+                && dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance()) {
+            minecraft.getConnection().sendCommand("quests");
+        }
+        wasQuestsKeyDown = questsDown;
 
         // Hide/show the warning box until you move to another location.
         boolean dismissDown = minecraft.screen == null && KeyBindHelper.isPressed(Configs.keyBindConfig.dismissWarningKeybind);

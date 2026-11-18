@@ -12,11 +12,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class RecipeBookWidgetMixin {
     @Inject(method = "isVisible", at = @At("HEAD"), cancellable = true)
     private void injectIsOpen(CallbackInfoReturnable<Boolean> cir) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.recipeBookWidgetIsOpen.get()
-        ) {
-            cir.setReturnValue(false);
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.recipeBookWidgetIsOpen.get()
+            ) {
+                cir.setReturnValue(false);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("RecipeBookWidgetMixin.injectIsOpen", foe$t);
         }
     }
 }

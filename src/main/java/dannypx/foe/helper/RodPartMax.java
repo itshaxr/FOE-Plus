@@ -58,11 +58,22 @@ public final class RodPartMax {
 
     /// What a slot shows: its mark, and for a rod part the stat it rolls ("pro", "elite", ...;
     /// the maxed one first when it has several), or "" when it isn't a rod part.
-    public record Info(Mark mark, String roll) {
-        static final Info NONE = new Info(Mark.NONE, "");
+    public record Info(Mark mark, String roll, java.util.List<Roll> rolls) {
+        static final Info NONE = new Info(Mark.NONE, "", java.util.List.of());
+    }
+
+    /// One stat a slot shows an icon for ("ultra"), and whether it's rolled at its max (on a
+    /// rod: on any of its parts).
+    public record Roll(String kind, boolean maxed, boolean half) {
+        public Roll(String kind, boolean maxed) { this(kind, maxed, false); }
+
+        /// The sprite's suffix: "_max" (all purple), "_half" (left half purple: the same stat on
+        /// two parts, only one of them maxed) or "".
+        public String suffix() { return maxed ? "_max" : half ? "_half" : ""; }
     }
 
     private static final java.util.Map<CompoundTag, Info> CACHE = new java.util.IdentityHashMap<>();
+    static { dannypx.foe.handler.logic.MemoryGuard.register("rodParts", () -> { synchronized (CACHE) { return CACHE.size(); } }, () -> { synchronized (CACHE) { CACHE.clear(); } }); }
 
     /// For an item's custom data (cached per tag, so it's cheap every frame): a rod part with a
     /// max roll → PART; a rod whose parts have at least two different max stats → ROD.
@@ -76,7 +87,7 @@ public final class RodPartMax {
             Info cached = CACHE.get(tag);
             if (cached != null) return cached;
         }
-        Info info = new Info(compute(tag), rollOf(tag));
+        Info info = new Info(compute(tag), rollOf(tag), rollsOf(tag));
         synchronized (CACHE) {
             if (CACHE.size() > 1024) CACHE.clear();
             CACHE.put(tag, info);
@@ -96,6 +107,43 @@ public final class RodPartMax {
             if (!kind.isEmpty()) return kind;
         }
         return "";
+    }
+
+    /// Package-private for tests: the stats a rod part is calibrated for, or on a whole rod those
+    /// of its parts (line, pole, reel), each stat once: all purple when every part with it has it
+    /// maxed, half purple when only some do. Maxed ones first, then half, then the rest.
+    static java.util.List<Roll> rollsOf(CompoundTag tag) {
+        String type = tag.getStringOr("type", "").toLowerCase(Locale.ROOT);
+        java.util.List<CompoundTag> parts = new java.util.ArrayList<>();
+        if (type.equals("line") || type.equals("pole") || type.equals("reel")) parts.add(tag);
+        else for (String key : new String[]{"line", "pole", "reel"})
+            for (Tag t : tag.getListOrEmpty(key))
+                if (t instanceof CompoundTag item)
+                    parts.add(item.getCompoundOrEmpty("components").getCompoundOrEmpty("minecraft:custom_data"));
+        // per stat: how many parts have it, and how many of those have it maxed
+        java.util.Map<String, int[]> kinds = new java.util.LinkedHashMap<>();
+        for (CompoundTag part : parts) {
+            Set<String> maxed = maxedStats(part);
+            Set<String> seen = new java.util.HashSet<>();
+            for (Tag t : part.getListOrEmpty("calibration")) {
+                if (!(t instanceof CompoundTag c)) continue;
+                String kind = c.getStringOr("calibration", "").toLowerCase(Locale.ROOT);
+                if (kind.isEmpty() || iconFor(kind).isEmpty() || !seen.add(kind)) continue;
+                int[] n = kinds.computeIfAbsent(kind, k -> new int[2]);
+                n[0]++;
+                if (maxed.contains(kind)) n[1]++;
+            }
+        }
+        java.util.List<Roll> full = new java.util.ArrayList<>(), half = new java.util.ArrayList<>(), none = new java.util.ArrayList<>();
+        kinds.forEach((k, n) -> {
+            if (n[1] == n[0]) full.add(new Roll(k, true, false));
+            else if (n[1] > 0) half.add(new Roll(k, false, true));
+            else none.add(new Roll(k, false, false));
+        });
+        java.util.List<Roll> out = new java.util.ArrayList<>(full);
+        out.addAll(half);
+        out.addAll(none);
+        return out;
     }
 
     /// The icon for a roll: xp, money, luck, scale, prospect, albino, melanistic, trophy or speed

@@ -25,6 +25,7 @@ public class PlaceholderHandler extends Handler {
     //region Fields
     private final PlaceholderEvaluator evaluator = new PlaceholderEvaluator();
     private final Map<String, PlaceholderCompiler.ThrottledPlaceholder> throttled = new ConcurrentHashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("placeholders", throttled::size, throttled::clear); }
     //endregion
 
     //region Methods
@@ -43,6 +44,7 @@ public class PlaceholderHandler extends Handler {
     }
 
     public PlaceholderResult resolve(String placeholderString, boolean isThrottled) {
+        if (throttled.size() > 1024) throttled.clear();     // never more than the texts in use
         PlaceholderCompiler.ThrottledPlaceholder t = throttled.computeIfAbsent(placeholderString, PlaceholderCompiler.ThrottledPlaceholder::new);
         return t.get(evaluator, isThrottled);
     }

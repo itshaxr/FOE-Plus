@@ -58,14 +58,18 @@ public class PetTagObject extends TagObject {
                 && !this.getLore().isEmpty()
         ) {
             try {
-                List<Component> componentList = this.getLore();
-                Component rating = componentList.get(RATING_LINE).getSiblings().get(RATING_SIBLING);
-                return TextHelper.trim(rating);
-            } catch (ArrayIndexOutOfBoundsException e) {
+                return TextHelper.trim(ratingIn(this.getLore()));
+            } catch (IndexOutOfBoundsException e) {
                 return Component.empty();
             }
         }
         return Component.empty();
+    }
+
+    /// The rating ("ɢʀᴇᴀᴛ", in its colour) from a pet's tooltip, found by its "RATING:" label
+    /// wherever the line is. Empty if none.
+    public static Component ratingIn(List<Component> lore) {
+        return LoreReader.valueAfter(LoreReader.findLine(lore, "rating:"), "rating:");
     }
 
     public ListTag getLocationBase() {

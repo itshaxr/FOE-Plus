@@ -19,13 +19,19 @@ public abstract class ChatScreenMixin {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void injectInit(CallbackInfo ci) {
-        if(ConnectionHandler.instance().isOnServer()
-                && Configs.mainConfig.enableMod.get()
-                && Configs.mixinConfig.chatScreenMixinInit.get()
-                && Configs.rendererConfig.showCrewChatMarker.get()
-                && ProfileDataHandler.instance().getProfileData().isInCrewChat
-        ) {
-            ((ICrewInputHolder) this.input).foer$setChatInput(true);
+        try {
+            if(ConnectionHandler.instance().isOnServer()
+                    && Configs.mainConfig.enableMod.get()
+                    && Configs.mixinConfig.chatScreenMixinInit.get()
+                    && Configs.rendererConfig.showCrewChatMarker.get()
+                    && ProfileDataHandler.instance().getProfileData().isInCrewChat
+            ) {
+                ((ICrewInputHolder) this.input).foer$setChatInput(true);
+            }
+    
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("ChatScreenMixin.injectInit", foe$t);
         }
     }
 }

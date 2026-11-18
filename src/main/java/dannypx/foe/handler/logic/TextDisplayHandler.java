@@ -38,6 +38,7 @@ public class TextDisplayHandler extends Handler {
     private final Map<UUID, String> FOE_PLUS_USERS = new ConcurrentHashMap<>();
     private volatile Pattern foePlusPattern = buildPattern(Set.of());
     private final Map<Display.TextDisplay, Entry> CACHE = new WeakHashMap<>();
+    { dannypx.foe.handler.logic.MemoryGuard.register("nameTags", CACHE::size, CACHE::clear); }
     private volatile Pattern pattern = build();
 
     public record Entry(Component source, int lineWidth, Component prefixed, Display.TextDisplay.CachedInfo info,
@@ -179,6 +180,29 @@ public class TextDisplayHandler extends Handler {
         return 0;
     }
 
+    /// The + a player shows in the tab list after their name, in the colour they picked (the developer's rainbow and
+    /// the beta testers' green unless they picked a colour), or null when they aren't seen running FOE+.
+    public Component tabMarker(UUID uuid) {
+        if (uuid == null || !dannypx.foe.config.Configs.rendererConfig.showFoePlusTabMarker.get()) return null;
+        Minecraft mc = Minecraft.getInstance();
+        int ownColor = dannypx.foe.config.Configs.rendererConfig.foePlusColor.get();
+        boolean own = mc != null && mc.player != null && uuid.equals(mc.player.getUUID());
+        int picked = chosenColor(uuid, ownColor);
+        if (uuid.equals(DEV_UUID)) {
+            return dannypx.foe.helper.NameTagMarker.isListColor(picked) ? dannypx.foe.helper.NameTagMarker.colorMarker(picked)
+                    : dannypx.foe.helper.NameTagMarker.devMarker(System.currentTimeMillis());
+        }
+        if (BETA_TESTERS.contains(uuid)) {
+            return dannypx.foe.helper.NameTagMarker.isListColor(picked) ? dannypx.foe.helper.NameTagMarker.colorMarker(picked)
+                    : dannypx.foe.helper.NameTagMarker.BETA_MARKER;
+        }
+        if (own || this.FOE_PLUS_USERS.containsKey(uuid)) return dannypx.foe.helper.NameTagMarker.colorMarker(Math.max(0, picked));
+        return null;
+    }
+
+    /// Package-private for tests: the FOE+ icon before FOE+ users' names above their heads is on.
+    static java.util.function.BooleanSupplier SHOW_ICON = () -> dannypx.foe.config.Configs.rendererConfig.showFoePlusIcon.get();
+
     public boolean isFoePlusUser(UUID uuid) {
         return this.FOE_PLUS_USERS.containsKey(uuid);
     }
@@ -255,6 +279,7 @@ public class TextDisplayHandler extends Handler {
         // FOE+ users (you, the developer, beta testers, anyone seen running FOE+) get the FOE+
         // logo; FOE-R users keep FOE-R's.
         boolean foePlus = dev || beta != null || this.foePlusPattern.matcher(s).find();
+        if (foePlus && !SHOW_ICON.getAsBoolean()) return named;     // the FOE+ icon turned off
         Component icon = foePlus ? FOE_PLUS_ICON : Component.literal(ICON_CHAR);
         return Component.empty().append(icon).append(" ").append(named);
     }
@@ -268,7 +293,9 @@ public class TextDisplayHandler extends Handler {
         // The developer or a beta tester joining or leaving changes their tag: build the tags again.
         String devName = devName();
         java.util.List<String> betaNames = betaNames();
-        String special = devName + "|" + betaNames;
+        // the settings are part of it too, so turning the + or the icon off shows at once
+        String special = devName + "|" + betaNames + "|" + dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get()
+                + "|" + SHOW_ICON.getAsBoolean();
         if (!special.equals(lastSpecialNames)) {
             lastSpecialNames = special;
             this.CACHE.clear();

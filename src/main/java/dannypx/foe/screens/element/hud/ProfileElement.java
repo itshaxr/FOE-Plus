@@ -52,11 +52,11 @@ public class ProfileElement extends Element {
     //region Methods
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / Configs.hudConfig.profileElementScale.get()));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / Configs.hudConfig.profileElementScale.get()));
+        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get())));
+        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get())));
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(Configs.hudConfig.profileElementScale.get(), Configs.hudConfig.profileElementScale.get());
+        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get()));
         if(LoadingHandler.instance().isLoadingDone()
                 && Configs.hudConfig.showProfileElement.get() && !Configs.hudConfig.showTopBar.get()
                 && TabOverlayHandler.instance().isInInstance()
@@ -146,7 +146,7 @@ public class ProfileElement extends Element {
         int progress = (int) (bars * LocalPlayerHandler.instance().getExperienceProgress());
         int progressLeft = bars - progress;
         Component progressComponent = Component.literal(" ".repeat(progress))
-                .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GOLD);
+                .withStyle(s -> s.withStrikethrough(true).withColor(GameXpBar.gameStyle() ? net.minecraft.network.chat.TextColor.fromRgb(GameXpBar.FILL) : net.minecraft.network.chat.TextColor.fromLegacyFormat(ChatFormatting.GOLD)));
         Component progressLeftComponent = Component.literal(" ".repeat(progressLeft))
                 .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.DARK_GRAY);
 

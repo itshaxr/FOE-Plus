@@ -6,6 +6,8 @@ import dannypx.foe.item.PetHeldItem;
 import dannypx.foe.item.PetTagObject;
 import dannypx.foe.type.Alignment;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -105,46 +107,153 @@ public class PetPanelElement extends PanelElement {
         }
 
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        int level = pet.getLevel();
-        lines.add(Component.empty()
-                .append(pet.getRarityComponent())
-                .append(Component.literal(" "))
-                .append(pet.getName())
-                .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(String.valueOf(level)).withStyle(progressColor(level)))
-                .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY)));
-
         float current = pet.contains(PetTagObject.XP_CURRENT) ? pet.getFloat(PetTagObject.XP_CURRENT) : 0f;
         float needed = pet.contains(PetTagObject.XP_NEED) ? pet.getFloat(PetTagObject.XP_NEED) : 0f;
-        boolean max = level >= 100 || needed <= 0;
-        float percent = max ? 100f : Math.min(100f, current / needed * 100f);
-        lines.add(Component.empty()
-                .append(Component.literal("xᴘ ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("(").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(compact(current)).withStyle(ChatFormatting.AQUA))
-                .append(Component.literal("/").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(max ? "MAX" : compact(needed)).withStyle(ChatFormatting.BLUE))
-                .append(Component.literal(") ").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(String.format("%.1f%%", percent)).withStyle(progressColor(percent))));
-
-        ItemStack held = PetHeldItem.of(pet);
-        lines.add(Component.empty()
-                .append(Component.literal("ʜᴇʟᴅ ɪᴛᴇᴍ ").withStyle(ChatFormatting.GRAY))
-                .append(held.isEmpty()
-                        ? Component.literal("ɴᴏɴᴇ").withStyle(ChatFormatting.DARK_GRAY)
-                        : held.getHoverName().copy()));
-
         Component rating = pet.getRatingComponent();
-        if (!rating.getString().isBlank()) {
-            lines.add(Component.empty()
-                    .append(Component.literal("ʀᴀᴛɪɴɢ ").withStyle(ChatFormatting.GRAY))
-                    .append(rating)
-                    .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal(String.format("%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY)));
+        ItemStack held = PetHeldItem.of(pet);
+        return petLines(pet.getRarityComponent(), pet.getName(), pet.getLevel(), current, needed,
+                rating.getString().isBlank() ? null : rating, pet.getTotalPercent(),
+                held.isEmpty() ? null : held.getHoverName(), maxTag(pet));
+    }
+
+    /// "♣ Max Luck" / "⚓ Max Scale" / "♣ Max" when the pet's rolls here are as good as they get.
+    private static Component maxTag(PetTagObject pet) {
+        try {
+            // max only when both its luck stats are (the climate one and the location one), and the same for scale
+            boolean luck = maxed(pet.getClimatePercentMaxLuck(), pet.getLocationPercentMaxLuck());
+            boolean scale = maxed(pet.getClimatePercentMaxScale(), pet.getLocationPercentMaxScale());
+            return maxTag(luck, scale);
+        } catch (RuntimeException ignored) {}
+        return null;
+    }
+
+    /// Public for the screenshot harness: the tag for these max stats (null for none).
+    public static Component maxTag(boolean luck, boolean scale) {
+        // "♣ Max Luck" all in one colour: the green clover's green (default), or the Luck colour
+        int scaleColor = LuckScalePanelElement.SCALE_COLOR;
+        int luckColor = greenClover() ? LuckScalePanelElement.GREEN_LUCK_COLOR : LuckScalePanelElement.LUCK_COLOR;
+        // the green clover icon (default), or a ♣ in the Luck colour
+        Component clover = greenClover() ? join(dannypx.foe.helper.NameTagMarker.clover(), Component.literal(" "))
+                : join(dannypx.foe.helper.NameTagMarker.clover(luckColor), Component.literal(" "));
+        if (luck && scale) return join(clover, Component.literal("Max").withColor(luckColor));
+        if (luck) return join(clover, Component.literal("Max Luck").withColor(luckColor));
+        if (scale) return join(Component.literal("⚓ ").withColor(scaleColor), Component.literal("Max Scale").withColor(scaleColor));
+        return null;
+    }
+
+    static boolean greenClover() {
+        try {
+            return Configs.hudConfig.petPanelGreenCloverIcon.get();
+        } catch (Throwable e) {
+            return true;
         }
+    }
+
+    /// Package-private for tests: both of a pet's rolls of one stat (climate, location) at their most.
+    static boolean maxed(float climate, float location) {
+        return climate >= 0.999f && location >= 0.999f;
+    }
+
+    /// The bar's line: nothing to read, the bar is drawn behind it (see beforeLine).
+    static final String BAR = " ".repeat(34);
+
+    /// The pet panel:
+    /// <pre>
+    /// [EPIC] Lynx Pet              ♣ Max Luck
+    /// LVL 17                     1.2M / 4.5M
+    /// ███████████░░░░░░░░░░░░░░░░░░  (fills up)
+    /// RATING EXCELLENT (82%)
+    /// ITEM Cryptid Amulet
+    /// </pre>
+    static List<Component> petLines(Component rarity, Component name, int level, float current, float needed,
+                                    Component rating, float ratingPercent, Component held, Component maxTag) {
+        List<Component> lines = new ArrayList<>();
+        Component head = Component.empty().append(rarity).append(Component.literal(" ")).append(name);
+        lines.add(maxTag == null ? head : join(head, TAB, maxTag));
+        boolean max = level >= 100 || needed <= 0;
+        float fraction = max ? 1f : needed <= 0 ? 0f : Math.max(0f, Math.min(1f, current / needed));
+        if (GameXpBar.gameStyle()) {
+            // as the pet's own tooltip shows it: "ᴘᴇᴛ ʟᴇᴠᴇʟ: [100]", then the bar and "(99.98M/MAX)"
+            lines.add(join(Component.literal("ᴘᴇᴛ ʟᴇᴠᴇʟ: ").withStyle(ChatFormatting.DARK_GRAY),
+                    Component.literal("[").withStyle(ChatFormatting.DARK_GRAY),
+                    Component.literal(String.valueOf(level)).withStyle(ChatFormatting.GREEN),
+                    Component.literal("]").withStyle(ChatFormatting.DARK_GRAY)));
+            lines.add(GameXpBar.line(fraction, GameXpBar.CHARS, GameXpBar.num(current), max ? "MAX" : GameXpBar.num(needed)));
+        } else {
+        lines.add(join(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY),
+                Component.literal(String.valueOf(level)).withStyle(progressColor(level)), TAB,
+                max ? Component.literal("MAX").withStyle(ChatFormatting.GOLD)
+                        : join(Component.literal(compact(current)).withStyle(ChatFormatting.AQUA),
+                        Component.literal(" / ").withStyle(ChatFormatting.DARK_GRAY),
+                        Component.literal(compact(needed)).withStyle(ChatFormatting.BLUE))));
+        lines.add(Component.literal(BAR));
+        }
+        if (rating != null) {
+            lines.add(join(Component.literal("ʀᴀᴛɪɴɢ ").withStyle(ChatFormatting.GRAY), rating,
+                    Component.literal(String.format(" (%.0f%%)", ratingPercent * 100f)).withStyle(ChatFormatting.WHITE)));
+        }
+        lines.add(join(Component.literal("ɪᴛᴇᴍ ").withStyle(ChatFormatting.GRAY),
+                held == null ? Component.literal("None").withStyle(ChatFormatting.DARK_GRAY) : held.copy()));
+        lastFraction = fraction;
         return lines;
+    }
+
+    /// Where the bar is heading, and where it's drawn now (it slides there, and starts again after a level up).
+    private static float lastFraction = 0f, shownFraction = 0f;
+    private static long lastDrawNs = 0L;
+
+    /// Package-private for tests: one step of the bar's slide from `shown` towards `target` over `dtSeconds`.
+    static float slide(float shown, float target, float dtSeconds) {
+        if (target < shown - 0.02f) return 0f;          // levelled up: fill again from empty
+        float k = 1f - (float) Math.exp(-dtSeconds * 4f);
+        float next = shown + (target - shown) * k;
+        return Math.abs(target - next) < 0.001f ? target : next;
+    }
+
+    /// A progress bar `w` wide, 5 tall, filled to `fraction` with a gradient and a soft shine running along it.
+    static void drawBar(GuiGraphics g, int x, int top, int w, float fraction, int light, int dark) {
+        drawBar(g, x, top, w, fraction, light, dark, true);
+    }
+
+    /// The same, with or without the shine running along it.
+    static void drawBar(GuiGraphics g, int x, int top, int w, float fraction, int light, int dark, boolean shine) {
+        drawBar(g, x, top, w, fraction, light, dark, shine, 5);
+    }
+
+    /// The same, `h` pixels tall.
+    static void drawBar(GuiGraphics g, int x, int top, int w, float fraction, int light, int dark, boolean shine, int h) {
+        g.fill(x - 1, top - 1, x + w + 1, top + h + 1, 0xFF0B0B0B);
+        g.fill(x, top, x + w, top + h, 0xFF2A2A2A);
+        int fill = Math.round(w * Math.max(0f, Math.min(1f, fraction)));
+        if (fill <= 0) return;
+        g.fillGradient(x, top, x + fill, top + h, light, dark);
+        if (!shine) {
+            g.fill(x, top, x + fill, top + 1, 0x50FFFFFF);
+            return;
+        }
+        // a soft glint now and then: one slow pass every 7 seconds, then still
+        long cycle = System.currentTimeMillis() % 7000L;
+        if (cycle < 1600L) {
+            float t = cycle / 1600f;
+            t = t * t * (3 - 2 * t);                  // eases in and out
+            int sx = x + Math.round(t * (fill + 10)) - 5;
+            for (int i = 0; i < 4; i++) {
+                int px = sx + i;
+                if (px >= x && px < x + fill) g.fill(px, top, px + 1, top + h, (0x10 + (i == 1 || i == 2 ? 0x18 : 0)) << 24 | 0xFFFFFF);
+            }
+        }
+        g.fill(x, top, x + fill, top + 1, 0x50FFFFFF);
+    }
+
+    @Override
+    protected void beforeLine(GuiGraphics g, Font font, Component line, int x, int y) {
+        if (!line.getString().equals(BAR)) return;
+        long now = System.nanoTime();
+        float dt = lastDrawNs == 0 ? 0.016f : Math.min(0.1f, (now - lastDrawNs) / 1e9f);
+        lastDrawNs = now;
+        shownFraction = slide(shownFraction, lastFraction, dt);
+        // a slim bar, 2 pixels, in the middle of its line
+        drawBar(g, x, y + 3, font.width(line), shownFraction, 0xFF7CF07C, 0xFF2EA043, true, 2);
     }
 
     /// 950 → "950", 23500 → "23.5k", 201000 → "201k", 1500000 → "1.5m".
@@ -162,6 +271,9 @@ public class PetPanelElement extends PanelElement {
 
     @Override
     protected List<Component> previewLines() {
-        return List.of(Component.literal("No pet equipped").withStyle(ChatFormatting.RED));
+        return petLines(Component.literal("ᴇᴘɪᴄ").withColor(dannypx.foe.helper.FoeLocations.rarityColor("epic")).withStyle(ChatFormatting.BOLD), Component.literal("Lynx Pet").withStyle(ChatFormatting.WHITE),
+                17, 1_240_000f, 2_000_000f, Component.literal("EXCELLENT").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD), 0.82f,
+                Component.literal("Cryptid Amulet").withColor(0xD6A2EC), join(Component.literal("♣ ").withColor(greenClover() ? 0x55FF55 : LuckScalePanelElement.LUCK_COLOR),
+                        Component.literal("Max ").withStyle(ChatFormatting.WHITE), Component.literal("Luck").withColor(LuckScalePanelElement.LUCK_COLOR)));
     }
 }

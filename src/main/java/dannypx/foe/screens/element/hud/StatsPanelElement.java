@@ -53,6 +53,7 @@ public class StatsPanelElement extends PanelElement {
     @Override protected Alignment configAlignment() { return Configs.hudConfig.statsPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.statsPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.statsPanelOpacity.get(); }
+    @Override protected dannypx.foe.type.TextAlign textAlign() { return Configs.hudConfig.statsPanelTextAlign.get(); }
 
     @Override
     protected Component title() {
@@ -72,8 +73,12 @@ public class StatsPanelElement extends PanelElement {
 
         // Total Caught, with the share of your catches that were fish (pets, capsules and bottles
         // are the other things you pull).
+        // the catch rate the server shows (the same as the top bar's); FOE+'s own share of fish
+        // among everything you pulled only when the server's isn't there
+        String serverRate = dannypx.foe.handler.fetch.ScoreboardHandler.instance().getCatchRate().getString().trim();
+        String rate = serverRate.matches("[0-9.]+%") ? serverRate : fishShare(fishTotal, stats.petTotal + capsules + bottles);
         lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
-                Component.literal(fishShare(fishTotal, stats.petTotal + capsules + bottles)).withStyle(ChatFormatting.GREEN)));
+                Component.literal(rate).withStyle(ChatFormatting.GREEN)));
         lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", session.getFishPerHour()))));
         lines.add(join(plain("Fish Time "), white(formatTime(session.getFishTimeMs()))));
         lines.add(join(plain("Total Quests "), white(String.valueOf(stats.questsCompleted))));

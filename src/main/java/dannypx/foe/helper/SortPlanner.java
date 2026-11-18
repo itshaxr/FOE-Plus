@@ -17,8 +17,14 @@ public final class SortPlanner {
     public static final String BAIT = "bait";
     public static final String LURE = "lure";
 
-    /// Rarities from best to worst. Mythic is left out of sorting on purpose (too rare to matter).
-    private static final List<String> RARITY_ORDER = List.of("legendary", "epic", "rare", "common");
+    /// Rarities from best to worst. Mythical baits and lures merge and sort too (they used to be
+    /// left out, so a mythical lure never combined with its twin).
+    private static final List<String> RARITY_ORDER = List.of("special", "mythical", "legendary", "epic", "rare", "common");
+
+    private static String rarity(Entry e) {
+        String r = e.rarity() == null ? "" : e.rarity().toLowerCase(java.util.Locale.ROOT);
+        return r.equals("mythic") ? "mythical" : r;
+    }
 
     /// One bait or lure in a slot. {@code slot} is the container slot id used in click packets.
     /// {@code color} and {@code size} only matter for lures: two lures merge only when name, color and size all match.
@@ -56,7 +62,7 @@ public final class SortPlanner {
     private SortPlanner() {}
 
     public static boolean isSortable(Entry e) {
-        return (BAIT.equals(e.type()) || LURE.equals(e.type())) && RARITY_ORDER.contains(e.rarity());
+        return (BAIT.equals(e.type()) || LURE.equals(e.type())) && RARITY_ORDER.contains(rarity(e));
     }
 
     private static List<Entry> sortable(List<Entry> found) {
@@ -113,7 +119,7 @@ public final class SortPlanner {
         slots.sort(Comparator.naturalOrder());
 
         // RARITY_ORDER lists the rarest first, so a lower index is rarer.
-        Comparator<Entry> rarestFirst = Comparator.comparingInt((Entry e) -> RARITY_ORDER.indexOf(e.rarity()));
+        Comparator<Entry> rarestFirst = Comparator.comparingInt((Entry e) -> RARITY_ORDER.indexOf(rarity(e)));
         Comparator<Entry> mostFirst = Comparator.comparingInt((Entry e) -> -total.getOrDefault(e, 0));
         Comparator<Entry> primary = switch (order) {
             case LEGENDARY_TO_COMMON -> rarestFirst;
@@ -122,6 +128,7 @@ public final class SortPlanner {
             case FEWEST_TO_MOST -> mostFirst.reversed().thenComparing(rarestFirst);
             case NAME_A_TO_Z -> Comparator.comparing((Entry e) -> BaitSortOrder.nameKey(e.name())).thenComparing(rarestFirst);
             case NAME_Z_TO_A -> Comparator.comparing((Entry e) -> BaitSortOrder.nameKey(e.name())).reversed().thenComparing(rarestFirst);
+            case SAVED_LAYOUT -> rarestFirst;
         };
         List<Entry> desired = new ArrayList<>(kept);
         desired.sort(primary
@@ -167,21 +174,43 @@ public final class SortPlanner {
         return groups;
     }
 
-    /// For every bait in the inventory that has a same-name bait (or same name, color and size lure) in the chest or vault: pick the
-    /// chest bait up, click it onto the inventory bait (stock adds up there), then shift click the
-    /// merged bait back into the chest. The merge and the shift click are separate groups so the
-    /// server can answer in between. Chest baits never merge with each other.
+    /// For every bait in the inventory that has same-name baits (or same name, color and size
+    /// lures) in the chest or vault: pick each chest twin up and click it onto the inventory bait
+    /// (the stock adds up there), then shift click the merged bait back into the chest. The merges
+    /// and the shift click are separate groups so the server can answer in between. Chest baits
+    /// can't merge with each other directly, but every twin of one merges through the inventory.
     public static List<List<Click>> planCrossMerge(List<Entry> chest, List<Entry> inventory) {
-        Map<String, Entry> inChest = new HashMap<>();
+        Map<String, List<Entry>> inChest = new HashMap<>();
         for (Entry e : sortable(chest)) {
-            if (e.mergeKey() != null) inChest.putIfAbsent(e.mergeKey(), e);
+            if (e.mergeKey() != null) inChest.computeIfAbsent(e.mergeKey(), k -> new ArrayList<>()).add(e);
         }
         List<List<Click>> groups = new ArrayList<>();
+        java.util.Set<String> done = new java.util.HashSet<>();
         for (Entry inv : sortable(inventory)) {
-            Entry match = inv.mergeKey() != null ? inChest.get(inv.mergeKey()) : null;
-            if (match == null) continue;
-            groups.add(List.of(Click.pick(match.slot()), Click.pick(inv.slot())));
+            String key = inv.mergeKey();
+            List<Entry> twins = key != null ? inChest.get(key) : null;
+            if (twins == null || !done.add(key)) continue;
+            for (Entry twin : twins) groups.add(List.of(Click.pick(twin.slot()), Click.pick(inv.slot())));
             groups.add(List.of(Click.shift(inv.slot())));
+        }
+        return groups;
+    }
+
+    /// Chest or vault baits with a twin there but none in the inventory: one of each is shift
+    /// clicked into the inventory (at most {@code room}, the empty inventory slots), so the next
+    /// cross merge can combine all of them.
+    public static List<List<Click>> planPullTwins(List<Entry> chest, List<Entry> inventory, int room) {
+        java.util.Set<String> mine = new java.util.HashSet<>();
+        for (Entry e : sortable(inventory)) if (e.mergeKey() != null) mine.add(e.mergeKey());
+        Map<String, List<Entry>> inChest = new java.util.LinkedHashMap<>();
+        for (Entry e : sortable(chest)) {
+            if (e.mergeKey() != null) inChest.computeIfAbsent(e.mergeKey(), k -> new ArrayList<>()).add(e);
+        }
+        List<List<Click>> groups = new ArrayList<>();
+        for (var en : inChest.entrySet()) {
+            if (groups.size() >= room) break;
+            if (en.getValue().size() < 2 || mine.contains(en.getKey())) continue;
+            groups.add(List.of(Click.shift(en.getValue().getFirst().slot())));
         }
         return groups;
     }

@@ -32,7 +32,7 @@ public class EventTimesHandler {
 
     static final long FRENZY_MS = 60L * 60L * 1000L;
     private static final long REFRESH_MS = 15L * 60L * 1000L;
-    private static final long FIRST_CHECK_MS = 12_000L;
+    private static final long FIRST_CHECK_MS = 2_500L;
     private static final long HIDE_WINDOW_MS = 3_000L;
 
     static final Pattern HEADER = Pattern.compile("^\\s*EVENT TIMES\\s*\\(\\d+/\\d+\\)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -111,7 +111,7 @@ public class EventTimesHandler {
     /// The /events answer being read (ours or one you typed): when its header came (0 = none),
     /// whether it was the whole list ("(1/1)") and whether it listed a Fabled event.
     private long answerAt = 0L;
-    private boolean answerWhole = false, answerListsFabled = false;
+    private boolean answerWhole = false, answerListsFabled = false, answerListsOasis = false, answerListsGoldRush = false;
 
     /// From chat: true when the line is part of our own quiet /events answer (hidden).
     public boolean onGameMessage(net.minecraft.network.chat.Component message) {
@@ -273,8 +273,12 @@ public class EventTimesHandler {
             answerAt = now;
             answerWhole = text.replaceAll("\\s", "").contains("(1/1)");
             answerListsFabled = false;
-        } else if (answerAt > 0L && now - answerAt <= ANSWER_MS && FABLED_LINE.matcher(text).find()) {
-            answerListsFabled = true;
+            answerListsOasis = false;
+            answerListsGoldRush = false;
+        } else if (answerAt > 0L && now - answerAt <= ANSWER_MS) {
+            if (FABLED_LINE.matcher(text).find()) answerListsFabled = true;
+            if (OASIS.matcher(text).matches()) answerListsOasis = true;
+            if (GOLD_RUSH.matcher(text).matches()) answerListsGoldRush = true;
         }
     }
 
@@ -284,6 +288,10 @@ public class EventTimesHandler {
     boolean answerHadNoFabled(long now) {
         if (answerAt == 0L || now - answerAt <= ANSWER_MS) return false;
         boolean none = answerWhole && !answerListsFabled;
+        // a Blooming Oasis or Gold Rush the whole list no longer has is over too (one seen when you joined, with
+        // no time given, was only a guess and could run on past its end)
+        if (answerWhole && !answerListsOasis && !oasis.onBossBar) oasis.ended();
+        if (answerWhole && !answerListsGoldRush && !goldRush.onBossBar) goldRush.ended();
         answerAt = 0L;
         return none;
     }
@@ -308,12 +316,21 @@ public class EventTimesHandler {
             // no boss bar yet
         }
         if (!Configs.hudConfig.eventsAutoRefresh.get()) return;
-        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= REFRESH_MS;
+        // while an oasis or gold rush is only guessed at (no time from the server), checked more often, so it goes
+        // when it ends
+        long every = guessing(now) ? GUESS_CHECK_MS : REFRESH_MS;
+        boolean due = lastCheckAt == 0L ? now - joinedAt >= FIRST_CHECK_MS : now - lastCheckAt >= every;
         if (!due || !SilentMenuHandler.instance().isQuietForBackgroundCommand()) return;
         lastCheckAt = now;
         hideUntil = now + HIDE_WINDOW_MS;
         SilentMenuHandler.instance().noteBackgroundCommand("events");
         mc.getConnection().sendCommand("events");
+    }
+
+    static final long GUESS_CHECK_MS = 3L * 60_000L;
+
+    private boolean guessing(long now) {
+        return (oasis.active(now) && !oasis.exact && !oasis.onBossBar) || (goldRush.active(now) && !goldRush.exact && !goldRush.onBossBar);
     }
 
     /// The server said to wait: check again after that.
