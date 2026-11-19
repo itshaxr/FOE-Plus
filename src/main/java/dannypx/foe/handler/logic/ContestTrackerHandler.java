@@ -295,6 +295,7 @@ public class ContestTrackerHandler {
             hidingOutput = false;
             hideUntil = 0L;
             hideTailUntil = now + 1500L;
+            if (announcePersonalBest) dannypx.foe.handler.store.NotifySounds.play("contest_best");
             if (announcePersonalBest && Minecraft.getInstance().player != null) {
                 // [FOE+] CONTEST New personal best · Rank #4 · 8.0 lb
                 dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CONTEST", dannypx.foe.helper.FoeChat.GOLD)

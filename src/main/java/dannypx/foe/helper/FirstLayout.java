@@ -58,7 +58,7 @@ public final class FirstLayout {
         var hud = Configs.hudConfig;
         SCALE = crispScale(net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale());
         for (String off : List.of("statsPanel", "sessionStatsPanel", "miniEventPanel", "alertPanel", "baitPanel", "luckScalePanel")) show(off, false);
-        int top = hud.showTopBar.get() ? Math.round(25 * hud.topBarScale.get()) + GAP : GAP;
+        int top = dannypx.foe.screens.element.hud.TopBarElement.shown() ? Math.round(25 * hud.topBarScale.get()) + GAP : GAP;
         column(List.of(new Spot("contestPanel", () -> new ContestPanelElement(true)), new Spot("questPanel", () -> new QuestPanelElement(true)),
                 new Spot("dailyQuestPanel", () -> new DailyQuestPanelElement(true))), Alignment.TOP_LEFT, top, screenW, screenH);
         column(List.of(new Spot("petPanel", () -> new PetPanelElement(true)), new Spot("eventsPanel", () -> new EventsPanelElement(true)),

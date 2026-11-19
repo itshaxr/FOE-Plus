@@ -98,10 +98,10 @@ public class TextDisplayHandler extends Handler {
         this.rebuild();
     }
 
+    /// A player left. FOE+ users stay remembered (their + stays in the tab list and over their heads, next
+    /// session too); they're only forgotten when you're near them and their FOE+ doesn't answer.
     public void removeModUser(UUID uuid) {
         boolean changed = this.USERS.remove(uuid) != null;
-        changed |= this.FOE_PLUS_USERS.remove(uuid) != null;
-        this.FOE_PLUS_COLORS.remove(uuid);
         if (changed) this.rebuild();
     }
 
@@ -110,7 +110,66 @@ public class TextDisplayHandler extends Handler {
         this.SEEN_PLUS.put(uuid, true);
         if (name.equals(this.FOE_PLUS_USERS.put(uuid, name))) return;
         this.rebuild();
+        saveKnown();
     }
+
+    /// Someone remembered as a FOE+ user was near you and their FOE+ didn't answer: they don't use it now.
+    public void forgetFoePlusUser(UUID uuid) {
+        if (this.FOE_PLUS_USERS.remove(uuid) == null) return;
+        this.FOE_PLUS_COLORS.remove(uuid);
+        this.rebuild();
+        saveKnown();
+    }
+
+    //region Remembered FOE+ users
+    /// Saved: every FOE+ user you've been near (and the colour of their +), so the + is there from the
+    /// moment you join, without walking by them first. Package-private for tests.
+    static java.util.function.Supplier<java.nio.file.Path> KNOWN_FILE = () -> net.fabricmc.loader.api.FabricLoader.getInstance()
+            .getConfigDir().resolve(dannypx.foe.FishOnMCExtras.MOD_ID).resolve("foe_plus_users.json");
+
+    static final class Known {
+        Map<String, String> names = new java.util.LinkedHashMap<>();
+        Map<String, Integer> colors = new java.util.LinkedHashMap<>();
+    }
+
+    private void loadKnown() {
+        try {
+            java.nio.file.Path f = KNOWN_FILE.get();
+            if (f == null || !java.nio.file.Files.exists(f)) return;
+            Known k = new com.google.gson.Gson().fromJson(java.nio.file.Files.readString(f), Known.class);
+            if (k == null || k.names == null) return;
+            k.names.forEach((id, name) -> {
+                try {
+                    this.FOE_PLUS_USERS.put(UUID.fromString(id), name);
+                } catch (IllegalArgumentException ignored) {
+                    // a broken line
+                }
+            });
+            if (k.colors != null) k.colors.forEach((id, c) -> {
+                try {
+                    this.FOE_PLUS_COLORS.put(UUID.fromString(id), c);
+                } catch (IllegalArgumentException ignored) {
+                    // a broken line
+                }
+            });
+        } catch (Throwable ignored) {
+            // nothing remembered yet
+        }
+    }
+
+    private void saveKnown() {
+        try {
+            Known k = new Known();
+            this.FOE_PLUS_USERS.forEach((id, name) -> k.names.put(id.toString(), name));
+            this.FOE_PLUS_COLORS.forEach((id, c) -> { if (this.FOE_PLUS_USERS.containsKey(id)) k.colors.put(id.toString(), c); });
+            java.nio.file.Path f = KNOWN_FILE.get();
+            java.nio.file.Files.createDirectories(f.getParent());
+            java.nio.file.Files.writeString(f, new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(k));
+        } catch (Throwable ignored) {
+            // remembered for this session
+        }
+    }
+    //endregion
 
     /// /foe users: who this session has seen running FOE-R or FOE+ (for checking name tag logos).
     /// Everyone this session's mod has detected (they're only detected while near you), kept
@@ -148,7 +207,10 @@ public class TextDisplayHandler extends Handler {
 
     public void setFoePlusColor(UUID uuid, int index) {
         Integer old = this.FOE_PLUS_COLORS.put(uuid, index);
-        if (old == null || old != index) this.rebuild();
+        if (old == null || old != index) {
+            this.rebuild();
+            saveKnown();
+        }
     }
 
     /// You picked a new colour for your own +: build the tags again.
@@ -227,12 +289,14 @@ public class TextDisplayHandler extends Handler {
         this.CACHE.clear();
     }
 
+    /// A new session: who's been seen is forgotten, but the remembered FOE+ users are back straight away.
     public void clear() {
         SEEN.clear();
         SEEN_PLUS.clear();
         USERS.clear();
         FOE_PLUS_USERS.clear();
         FOE_PLUS_COLORS.clear();
+        loadKnown();
         rebuild();
     }
 
@@ -323,6 +387,7 @@ public class TextDisplayHandler extends Handler {
 
     private Pattern build() {
         Set<String> names = new LinkedHashSet<>(this.USERS.values());
+        names.addAll(this.FOE_PLUS_USERS.values()); // remembered ones too
         return buildPattern(names);
     }
 

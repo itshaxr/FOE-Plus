@@ -84,11 +84,49 @@ public class PetPanelElement extends PanelElement {
     protected List<PanelIcon> icons() {
         if (!hasPet()) return List.of();
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        // The pet's frame takes its rarity colour: from its rarity, else its rarity badge, else grey.
-        int rarityColor = dannypx.foe.helper.FoeLocations.rarityColor(petRarity(pet));
-        int border = rarityColor < 0 ? UNKNOWN_BORDER : 0xFF000000 | rarityColor;
-        return List.of(new PanelIcon(pet.getItemStack(), border),
+        return List.of(new PanelIcon(pet.getItemStack(), frameColor(pet)),
                 new PanelIcon(PetHeldItem.of(pet), HELD_ITEM_BORDER));
+    }
+
+    /// The pet's frame: its rating's colour (default) or its rarity's; whichever it can't read, the other; else grey.
+    static int frameColor(PetTagObject pet) {
+        int rarity = dannypx.foe.helper.FoeLocations.rarityColor(petRarity(pet));
+        int rating = -1;
+        try {
+            rating = ratingColor(pet.getRatingComponent());
+        } catch (RuntimeException ignored) {
+            // no rating to read
+        }
+        boolean byRating = frameByRating();
+        int color = byRating ? (rating >= 0 ? rating : rarity) : (rarity >= 0 ? rarity : rating);
+        return color < 0 ? UNKNOWN_BORDER : 0xFF000000 | color;
+    }
+
+    /// The colour of a rating's letters ("ᴇxᴄᴇʟʟᴇɴᴛ" in aqua), or -1. Package-private for tests.
+    static int ratingColor(Component rating) {
+        if (rating == null) return -1;
+        return rating.visit((style, text) -> text.isBlank() || style.getColor() == null
+                ? java.util.Optional.<Integer>empty() : java.util.Optional.of(style.getColor().getValue() & 0xFFFFFF),
+                net.minecraft.network.chat.Style.EMPTY).orElse(-1);
+    }
+
+    private static boolean frameByRating() {
+        try {
+            return Configs.hudConfig.petPanelFrameColor.get() == dannypx.foe.type.PetFrameColor.RATING;
+        } catch (Throwable e) {
+            return true;
+        }
+    }
+
+    // A little bigger than the other panels' boxes, close together.
+    @Override protected int iconSize() { return 22; }
+    @Override protected int iconGap() { return 2; }
+
+    /// "Max Luck" / "Max Scale" / "Perfect" just above the pet, when its rolls here are as good as they get.
+    @Override
+    protected Component iconCaption() {
+        if (!hasPet()) return null;
+        return maxTag(InventoryHandler.instance().getCurrentPet());
     }
 
     private static ChatFormatting progressColor(double value) {
@@ -113,10 +151,10 @@ public class PetPanelElement extends PanelElement {
         ItemStack held = PetHeldItem.of(pet);
         return petLines(pet.getRarityComponent(), pet.getName(), pet.getLevel(), current, needed,
                 rating.getString().isBlank() ? null : rating, pet.getTotalPercent(),
-                held.isEmpty() ? null : held.getHoverName(), maxTag(pet));
+                held.isEmpty() ? null : held.getHoverName(), xpStyle());
     }
 
-    /// "♣ Max Luck" / "⚓ Max Scale" / "♣ Max" when the pet's rolls here are as good as they get.
+    /// "♣ Max Luck" / "⚓ Max Scale" / "♣⚓ Perfect" when the pet's rolls here are as good as they get.
     private static Component maxTag(PetTagObject pet) {
         try {
             // max only when both its luck stats are (the climate one and the location one), and the same for scale
@@ -129,21 +167,49 @@ public class PetPanelElement extends PanelElement {
 
     /// Public for the screenshot harness: the tag for these max stats (null for none).
     public static Component maxTag(boolean luck, boolean scale) {
-        // "♣ Max Luck" all in one colour: the green clover's green (default), or the Luck colour
+        // "♣ Max Luck" all in one colour: a green ♣ and green text (default), or the clover and text in the Luck
+        // colour. The ♣ and the ⚓ are FOE+'s own, the same size as each other.
         int scaleColor = LuckScalePanelElement.SCALE_COLOR;
-        int luckColor = greenClover() ? LuckScalePanelElement.GREEN_LUCK_COLOR : LuckScalePanelElement.LUCK_COLOR;
-        // the green clover icon (default), or a ♣ in the Luck colour
-        Component clover = greenClover() ? join(dannypx.foe.helper.NameTagMarker.clover(), Component.literal(" "))
-                : join(dannypx.foe.helper.NameTagMarker.clover(luckColor), Component.literal(" "));
-        if (luck && scale) return join(clover, Component.literal("Max").withColor(luckColor));
-        if (luck) return join(clover, Component.literal("Max Luck").withColor(luckColor));
-        if (scale) return join(Component.literal("⚓ ").withColor(scaleColor), Component.literal("Max Scale").withColor(scaleColor));
+        int luckColor = luckColor();
+        Component club = greenClover() ? dannypx.foe.helper.NameTagMarker.club(GREEN_LUCK)
+                : dannypx.foe.helper.NameTagMarker.clover(luckColor);
+        Component anchor = dannypx.foe.helper.NameTagMarker.anchor(scaleColor);
+        if (luck && scale) return join(club, anchor, Component.literal(" Perfect").withColor(PERFECT_COLOR));
+        if (luck) return join(club, Component.literal(" Max Luck").withColor(luckColor));
+        if (scale) return join(anchor, Component.literal(" Max Scale").withColor(scaleColor));
         return null;
+    }
+
+    /// Just the ♣ / ⚓ (both when perfect) for a pet whose rolls here are as good as they get, or null: for the FOE-R
+    /// style's pet box, which has no room for the words.
+    static Component maxIcons(PetTagObject pet) {
+        try {
+            boolean luck = maxed(pet.getClimatePercentMaxLuck(), pet.getLocationPercentMaxLuck());
+            boolean scale = maxed(pet.getClimatePercentMaxScale(), pet.getLocationPercentMaxScale());
+            if (!luck && !scale) return null;
+            Component club = greenClover() ? dannypx.foe.helper.NameTagMarker.club(GREEN_LUCK)
+                    : dannypx.foe.helper.NameTagMarker.clover(luckColor());
+            Component anchor = dannypx.foe.helper.NameTagMarker.anchor(LuckScalePanelElement.SCALE_COLOR);
+            return luck && scale ? join(club, anchor) : luck ? club : anchor;
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    /// Purple, as for maxed rolls on the rod part icons and the pet catch popup.
+    static final int PERFECT_COLOR = 0xB04CFF;
+
+    /// The green of the default luck ♣ (the game's own green).
+    static final int GREEN_LUCK = 0x55FF55;
+
+    /// Luck's colour on the pet: green by default, else the Luck colour.
+    static int luckColor() {
+        return greenClover() ? GREEN_LUCK : LuckScalePanelElement.LUCK_COLOR;
     }
 
     static boolean greenClover() {
         try {
-            return Configs.hudConfig.petPanelGreenCloverIcon.get();
+            return Configs.hudConfig.petPanelGreenLuck.get();
         } catch (Throwable e) {
             return true;
         }
@@ -154,43 +220,68 @@ public class PetPanelElement extends PanelElement {
         return climate >= 0.999f && location >= 0.999f;
     }
 
-    /// The bar's line: nothing to read, the bar is drawn behind it (see beforeLine).
-    static final String BAR = " ".repeat(34);
+    /// The bar's room in the level line: nothing to read, the bar is drawn there (see beforeLine), sliding
+    /// smoothly as XP comes in, and stretching to the panel's edge when nothing comes after it.
+    static final String BAR = " ".repeat(16);
 
-    /// The pet panel:
+    static dannypx.foe.type.PetXpStyle xpStyle() {
+        try {
+            return Configs.hudConfig.petPanelXp.get();
+        } catch (Throwable e) {
+            return dannypx.foe.type.PetXpStyle.BAR;
+        }
+    }
+
+    /// The pet panel (the pet and its item to the side, "Max Luck" above them):
     /// <pre>
-    /// [EPIC] Lynx Pet              ♣ Max Luck
-    /// LVL 17                     1.2M / 4.5M
-    /// ███████████░░░░░░░░░░░░░░░░░░  (fills up)
+    /// [EPIC] Lynx Pet
+    /// ʟᴠʟ [17] ━━━━━━━━━━━━── (1.24M/2.00M)     (the numbers and the bar can be hidden)
     /// RATING EXCELLENT (82%)
     /// ITEM Cryptid Amulet
     /// </pre>
     static List<Component> petLines(Component rarity, Component name, int level, float current, float needed,
-                                    Component rating, float ratingPercent, Component held, Component maxTag) {
+                                    Component rating, float ratingPercent, Component held, dannypx.foe.type.PetXpStyle xp) {
         List<Component> lines = new ArrayList<>();
-        Component head = Component.empty().append(rarity).append(Component.literal(" ")).append(name);
-        lines.add(maxTag == null ? head : join(head, TAB, maxTag));
         boolean max = level >= 100 || needed <= 0;
         float fraction = max ? 1f : needed <= 0 ? 0f : Math.max(0f, Math.min(1f, current / needed));
-        if (GameXpBar.gameStyle()) {
-            // as the pet's own tooltip shows it: "ᴘᴇᴛ ʟᴇᴠᴇʟ: [100]", then the bar and "(99.98M/MAX)"
-            lines.add(join(Component.literal("ᴘᴇᴛ ʟᴇᴠᴇʟ: ").withStyle(ChatFormatting.DARK_GRAY),
-                    Component.literal("[").withStyle(ChatFormatting.DARK_GRAY),
-                    Component.literal(String.valueOf(level)).withStyle(ChatFormatting.GREEN),
-                    Component.literal("]").withStyle(ChatFormatting.DARK_GRAY)));
-            lines.add(GameXpBar.line(fraction, GameXpBar.CHARS, GameXpBar.num(current), max ? "MAX" : GameXpBar.num(needed)));
-        } else {
-        lines.add(join(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY),
-                Component.literal(String.valueOf(level)).withStyle(progressColor(level)), TAB,
-                max ? Component.literal("MAX").withStyle(ChatFormatting.GOLD)
-                        : join(Component.literal(compact(current)).withStyle(ChatFormatting.AQUA),
-                        Component.literal(" / ").withStyle(ChatFormatting.DARK_GRAY),
-                        Component.literal(compact(needed)).withStyle(ChatFormatting.BLUE))));
-        lines.add(Component.literal(BAR));
+        boolean game = GameXpBar.gameStyle();
+        Component levelTag = game
+                ? join(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY),
+                        Component.literal(String.valueOf(level)).withStyle(ChatFormatting.GREEN),
+                        Component.literal("]").withStyle(ChatFormatting.DARK_GRAY))
+                : Component.literal(String.valueOf(level)).withStyle(progressColor(level));
+
+        Component head = Component.empty().append(rarity).append(Component.literal(" ")).append(name);
+        if (xp == dannypx.foe.type.PetXpStyle.HIDDEN) head = join(head, Component.literal(" "), levelTag);
+        lines.add(head);
+
+        if (xp != dannypx.foe.type.PetXpStyle.HIDDEN) {
+            // the room for the bar comes straight after the level (its own spaces are the gaps)
+            Component line = join(Component.literal("ʟᴠʟ ").withStyle(game ? ChatFormatting.DARK_GRAY : ChatFormatting.GRAY),
+                    levelTag, Component.literal(BAR));
+            if (xp == dannypx.foe.type.PetXpStyle.BAR_AND_NUMBERS) {
+                if (game) {
+                    line = join(line, Component.literal("(").withStyle(ChatFormatting.DARK_GRAY),
+                            Component.literal(GameXpBar.num(current)).withStyle(ChatFormatting.AQUA),
+                            Component.literal("/").withStyle(ChatFormatting.DARK_GRAY),
+                            Component.literal(max ? "MAX" : GameXpBar.num(needed)).withStyle(ChatFormatting.BLUE),
+                            Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
+                } else {
+                    line = join(line, max ? Component.literal("MAX").withStyle(ChatFormatting.GOLD)
+                            : join(Component.literal(compact(current)).withStyle(ChatFormatting.AQUA),
+                            Component.literal(" / ").withStyle(ChatFormatting.DARK_GRAY),
+                            Component.literal(compact(needed)).withStyle(ChatFormatting.BLUE)));
+                }
+            }
+            lines.add(line);
         }
         if (rating != null) {
+            int ratingColor = ratingColor(rating);
+            // the percentage in the rating's own colour, its brackets grey
             lines.add(join(Component.literal("ʀᴀᴛɪɴɢ ").withStyle(ChatFormatting.GRAY), rating,
-                    Component.literal(String.format(" (%.0f%%)", ratingPercent * 100f)).withStyle(ChatFormatting.WHITE)));
+                    Component.literal(" (").withStyle(ChatFormatting.GRAY),
+                    Component.literal(String.format("%.0f%%", ratingPercent * 100f)).withColor(ratingColor < 0 ? 0xFFFFFF : ratingColor),
+                    Component.literal(")").withStyle(ChatFormatting.GRAY)));
         }
         lines.add(join(Component.literal("ɪᴛᴇᴍ ").withStyle(ChatFormatting.GRAY),
                 held == null ? Component.literal("None").withStyle(ChatFormatting.DARK_GRAY) : held.copy()));
@@ -247,13 +338,42 @@ public class PetPanelElement extends PanelElement {
 
     @Override
     protected void beforeLine(GuiGraphics g, Font font, Component line, int x, int y) {
-        if (!line.getString().equals(BAR)) return;
+        // FOE+ bars: the bar goes in its room in the level line
+        String text = line.getString();
+        int at = text.indexOf(BAR);
+        if (at < 0) return;
         long now = System.nanoTime();
         float dt = lastDrawNs == 0 ? 0.016f : Math.min(0.1f, (now - lastDrawNs) / 1e9f);
         lastDrawNs = now;
         shownFraction = slide(shownFraction, lastFraction, dt);
         // a slim bar, 2 pixels, in the middle of its line
-        drawBar(g, x, y + 3, font.width(line), shownFraction, 0xFF7CF07C, 0xFF2EA043, true, 2);
+        // inset by a space's width each side, so it never touches the level or the numbers; with nothing after
+        // it, it reaches the panel's edge
+        int gap = font.width(" ");
+        int start = x + font.width(text.substring(0, at)) + gap;
+        int width = font.width(BAR) - gap * 2;
+        if (text.length() == at + BAR.length()) width = Math.max(width, lineRightEdge - start);
+        if (GameXpBar.gameStyle()) drawGameBar(g, start, y, width, shownFraction);
+        else drawBar(g, start, y + 3, width, shownFraction, 0xFF7CF07C, 0xFF2EA043, true, 2);
+    }
+
+    /// The game's own XP bar, as in the pet's tooltip (a struck-through line, teal over dark grey, with the
+    /// text's shadow), but filled to the exact pixel so it slides instead of jumping a space at a time.
+    static void drawGameBar(GuiGraphics g, int x, int y, int w, float fraction) {
+        int fill = Math.round(w * Math.max(0f, Math.min(1f, fraction)));
+        int teal = 0xFF000000 | GameXpBar.FILL, grey = 0xFF555555;
+        g.pose().pushMatrix();
+        g.pose().translate(0f, 0.5f);               // where the font draws a strikethrough
+        g.fill(x + 1, y + 4, x + w + 1, y + 5, shadow(grey));
+        if (fill > 0) g.fill(x + 1, y + 4, x + fill + 1, y + 5, shadow(teal));
+        g.fill(x, y + 3, x + w, y + 4, grey);
+        if (fill > 0) g.fill(x, y + 3, x + fill, y + 4, teal);
+        g.pose().popMatrix();
+    }
+
+    /// A colour's text shadow (a quarter as bright), as the font draws it.
+    private static int shadow(int argb) {
+        return (argb & 0xFF000000) | ((argb >> 2) & 0x3F3F3F);
     }
 
     /// 950 → "950", 23500 → "23.5k", 201000 → "201k", 1500000 → "1.5m".
@@ -273,7 +393,6 @@ public class PetPanelElement extends PanelElement {
     protected List<Component> previewLines() {
         return petLines(Component.literal("ᴇᴘɪᴄ").withColor(dannypx.foe.helper.FoeLocations.rarityColor("epic")).withStyle(ChatFormatting.BOLD), Component.literal("Lynx Pet").withStyle(ChatFormatting.WHITE),
                 17, 1_240_000f, 2_000_000f, Component.literal("EXCELLENT").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD), 0.82f,
-                Component.literal("Cryptid Amulet").withColor(0xD6A2EC), join(Component.literal("♣ ").withColor(greenClover() ? 0x55FF55 : LuckScalePanelElement.LUCK_COLOR),
-                        Component.literal("Max ").withStyle(ChatFormatting.WHITE), Component.literal("Luck").withColor(LuckScalePanelElement.LUCK_COLOR)));
+                Component.literal("Cryptid Amulet").withColor(0xD6A2EC), xpStyle());
     }
 }

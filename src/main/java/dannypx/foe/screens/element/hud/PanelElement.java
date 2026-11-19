@@ -193,6 +193,66 @@ public abstract class PanelElement extends Element {
     }
 
     /// Called just before a line is drawn, so a panel can draw something behind it.
+    /// The server's rarity and variant badges (COMMON ... MYTHICAL, SPECIAL, ALBINO ... FABLED): drawn a pixel
+    /// higher than the text around them, where they sit level with it. Package-private for tests.
+    static boolean isBadge(int cp) {
+        return (cp >= 0xF033 && cp <= 0xF037) || cp == 0xF092 || (cp >= 0xF041 && cp <= 0xF044);
+    }
+
+    /// A line of a panel, its badges a pixel higher (see {@link #isBadge}); every other piece where it was.
+    static void drawText(GuiGraphics g, Font font, net.minecraft.util.FormattedCharSequence seq, int x, int y) {
+        boolean[] any = {false};
+        seq.accept((i, style, cp) -> {
+            if (isBadge(cp)) { any[0] = true; return false; }
+            return true;
+        });
+        if (!any[0]) {
+            g.drawString(font, seq, x, y, 0xFFFFFFFF, true);
+            return;
+        }
+        // split into runs of badges and runs of the rest, drawn one after another
+        List<net.minecraft.network.chat.Style> styles = new ArrayList<>();
+        List<Integer> cps = new ArrayList<>();
+        seq.accept((i, style, cp) -> { styles.add(style); cps.add(cp); return true; });
+        int cx = x, start = 0;
+        for (int k = 1; k <= cps.size(); k++) {
+            if (k < cps.size() && isBadge(cps.get(k)) == isBadge(cps.get(start))) continue;
+            final int from = start, to = k;
+            net.minecraft.util.FormattedCharSequence part = sink -> {
+                for (int j = from; j < to; j++) if (!sink.accept(j - from, styles.get(j), cps.get(j))) return false;
+                return true;
+            };
+            g.drawString(font, part, cx, isBadge(cps.get(from)) ? y - 1 : y, 0xFFFFFFFF, true);
+            cx += font.width(part);
+            start = k;
+        }
+    }
+
+    /// Where the text may reach on the right (before the item boxes), for {@link #beforeLine}.
+    protected int lineRightEdge = 0;
+
+    /// A box's frame drawn on the screen's own pixels: the same thickness on all four sides at any panel or GUI
+    /// scale (a plain outline at an in-between scale comes out thicker on some sides than others), and thin: half
+    /// a panel pixel, never less than one screen pixel.
+    static void crispOutline(GuiGraphics g, int x, int y, int w, int h, int color) {
+        var pose = g.pose();
+        org.joml.Vector2f a = pose.transformPosition(x, y, new org.joml.Vector2f());
+        org.joml.Vector2f b = pose.transformPosition(x + w, y + h, new org.joml.Vector2f());
+        double gui = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale();
+        int ax = (int) Math.round(a.x * gui), ay = (int) Math.round(a.y * gui);
+        int bx = (int) Math.round(b.x * gui), by = (int) Math.round(b.y * gui);
+        double perPixel = (b.x - a.x) * gui / Math.max(1, w);
+        int t = Math.max(1, (int) Math.floor(perPixel * 0.5 + 0.0001));
+        pose.pushMatrix();
+        pose.identity();
+        pose.scale((float) (1.0 / gui), (float) (1.0 / gui));
+        g.fill(ax, ay, bx, ay + t, color);
+        g.fill(ax, by - t, bx, by, color);
+        g.fill(ax, ay + t, ax + t, by - t, color);
+        g.fill(bx - t, ay + t, bx, by - t, color);
+        pose.popMatrix();
+    }
+
     protected void beforeLine(GuiGraphics guiGraphics, Font font, Component line, int x, int y) {
     }
 
@@ -204,12 +264,28 @@ public abstract class PanelElement extends Element {
     private long cachedAtNs = 0L;
     private int cachedOuterWidth = 0, cachedOuterHeight = 0;
 
-    private static final int ICON_SIZE = 18;
-    private static final int ICON_GAP = 3;
+    /// The item boxes' size and the gap between them (the pet panel's are bigger).
+    protected int iconSize() { return 18; }
+    protected int iconGap() { return 3; }
+
+    /// A short line drawn just above the item boxes, centred on them (the pet's "Max Luck"), or null.
+    protected Component iconCaption() { return null; }
 
     private int iconSpace() {
         int n = this.icons().size();
-        return n == 0 ? 0 : n * ICON_SIZE + (n - 1) * ICON_GAP + PADDING;
+        if (n == 0) return 0;
+        int w = n * iconSize() + (n - 1) * iconGap();
+        Component caption = iconCaption();
+        if (caption != null) w = Math.max(w, net.minecraft.client.Minecraft.getInstance().font.width(caption));
+        return w + PADDING;
+    }
+
+    /// How tall the text part has to be for the item boxes and their caption to fit inside the box.
+    private int iconInnerHeight(Font font) {
+        // the usual 18-pixel boxes with no caption always fitted: those panels keep their height
+        if (this.icons().isEmpty() || (iconCaption() == null && iconSize() <= 18)) return 0;
+        int caption = iconCaption() == null ? 0 : font.lineHeight + 2;
+        return caption + iconSize() + 4 - PADDING;
     }
     //endregion
 
@@ -224,7 +300,7 @@ public abstract class PanelElement extends Element {
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
         if (!lines.isEmpty() && foeR()) {
             lines.addFirst(foeRTitle(shownTitle()));
-        } else if (!lines.isEmpty() && Configs.hudConfig.panelTheme.get() == PanelTheme.OFF) {
+        } else if (!lines.isEmpty() && (Configs.hudConfig.panelTheme.get() == PanelTheme.OFF || !look().border)) {
             lines.addFirst(look().titleColor < 0 ? shownTitle().copy().withStyle(ChatFormatting.GRAY) : shownTitle());
         }
         return lines;
@@ -396,7 +472,8 @@ public abstract class PanelElement extends Element {
     }
 
     private int outerHeight(List<Component> lines, Font font) {
-        return (Math.max(lines.size(), 1) - 1) * lineHeight(font) + PADDING * 5 + pad() * 2 + picRoom(lines);
+        int inner = (Math.max(lines.size(), 1) - 1) * lineHeight(font) + pad() * 2 + picRoom(lines);
+        return Math.max(inner, iconInnerHeight(font)) + PADDING * 5;
     }
 
     /// A line with a picture gets this many more pixels (half above, half below), so its full-size picture
@@ -556,17 +633,18 @@ public abstract class PanelElement extends Element {
         contentLeft += pad;
         contentRight += pad;
         if (preparedPicRoom < 0) preparedPicRoom = picRoom(lines);
-        int innerHeight = (lines.size() - 1) * lineHeight + pad * 2 + preparedPicRoom;
+        int innerHeight = Math.max((lines.size() - 1) * lineHeight + pad * 2 + preparedPicRoom, iconInnerHeight(font));
 
         int opacity = look.opacity >= 0 ? look.opacity : opacityPercent();
         int bgAlpha = (Math.round(opacity / 100f * 255f) << 24) | (look.boxColor & 0xFFFFFF);
         boolean foeR = foeR();
-        if (foeR) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha);
+        boolean border = look.border;
+        if (foeR && border) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha);
         else guiGraphics.fill(boxLeft, top, boxRight, top + innerHeight + PADDING * 3, bgAlpha);
         if (!look.imageInFront) drawImage(guiGraphics, look, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3);
 
         PanelTheme theme = Configs.hudConfig.panelTheme.get();
-        if (!foeR && theme != PanelTheme.OFF) {
+        if (!foeR && border && theme != PanelTheme.OFF) {
             int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
             int bottomY = top + PADDING * 2 + innerHeight;
             Component title = shownTitle();
@@ -582,7 +660,8 @@ public abstract class PanelElement extends Element {
             double gui = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale();
             int px = Math.max(1, Math.round((float) (drawScale * gui)));      // screen pixels per frame pixel
             float unit = (float) (px / gui);                                  // GUI units per frame pixel
-            float f = drawScale / unit;                                       // panel units -> frame pixels
+            // below one screen pixel per frame pixel (a HUD made very small) it shrinks with the panel, unsnapped
+            float f = drawScale * gui < 1.0 ? 1f : drawScale / unit;          // panel units -> frame pixels
             // each piece placed so its middle (where FOE's frame lines run, PADDING in) lands on the
             // box's edge, as it did unrounded
             int l = Math.round(boxLeft * f) - PADDING, r = Math.round(boxRight * f) - PADDING;
@@ -620,30 +699,50 @@ public abstract class PanelElement extends Element {
         // Icon boxes on the anchored side, text beside them.
         List<PanelIcon> icons = this.icons();
         int iconSpace = iconSpace();
+        final int ICON_SIZE = iconSize(), ICON_GAP = iconGap();
         int textLeft = contentLeft;
         int textRightEdge = contentRight;
         if (iconSpace > 0) {
             int iconsWidth = iconSpace - PADDING;
-            int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - ICON_SIZE) / 2 - 2;
+            // the caption (if any) and the boxes under it, together in the middle of the box's height
+            Component caption = iconCaption();
+            int captionH = caption == null ? 0 : font.lineHeight + 2;
+            int iconBoxY = top + PADDING - 1 + (innerHeight + lineHeight - ICON_SIZE - captionH) / 2 - 2 + captionH;
+            if (caption != null) iconBoxY = Math.max(iconBoxY, top + PADDING + 1 + captionH);
             int x = right ? contentRight - iconsWidth : contentLeft;
+            if (caption != null) {
+                guiGraphics.drawString(font, caption, x + (iconsWidth - font.width(caption)) / 2, iconBoxY - captionH, 0xFFFFFFFF, true);
+            }
+            // the boxes centred under a wider caption
+            x += (iconsWidth - (icons.size() * ICON_SIZE + (icons.size() - 1) * ICON_GAP)) / 2;
             // The frames are drawn again over the items afterwards: a big item model (some pets)
             // can otherwise cover the frame's edge.
             List<int[]> frames = new java.util.ArrayList<>();
             for (PanelIcon icon : icons) {
-                guiGraphics.renderOutline(x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor());
+                crispOutline(guiGraphics, x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor());
                 if (icon.stack() == null || icon.stack().isEmpty()) {
                     // Empty state: darker inside and a dash.
                     guiGraphics.fill(x + 1, iconBoxY + 1, x + ICON_SIZE - 1, iconBoxY + ICON_SIZE - 1, 0x55000000);
                     guiGraphics.drawString(font, "-", x + (ICON_SIZE - font.width("-")) / 2, iconBoxY + (ICON_SIZE - font.lineHeight) / 2 + 1, 0xFF777777, false);
                 } else {
-                    guiGraphics.renderItem(icon.stack(), x + 1, iconBoxY + 1);
+                    if (ICON_SIZE == 18) {
+                        guiGraphics.renderItem(icon.stack(), x + 1, iconBoxY + 1);
+                    } else {
+                        // a bigger box: the item scaled up, a pixel clear of the frame all round
+                        float itemScale = (ICON_SIZE - 4) / 16f;
+                        guiGraphics.pose().pushMatrix();
+                        guiGraphics.pose().translate(x + 2, iconBoxY + 2);
+                        guiGraphics.pose().scale(itemScale, itemScale);
+                        guiGraphics.renderItem(icon.stack(), 0, 0);
+                        guiGraphics.pose().popMatrix();
+                    }
                 }
                 frames.add(new int[]{x, iconBoxY, icon.borderColor()});
                 x += ICON_SIZE + ICON_GAP;
             }
             if (!frames.isEmpty()) {
                 guiGraphics.nextStratum();
-                for (int[] f : frames) guiGraphics.renderOutline(f[0], f[1], ICON_SIZE, ICON_SIZE, f[2]);
+                for (int[] f : frames) crispOutline(guiGraphics, f[0], f[1], ICON_SIZE, ICON_SIZE, f[2]);
             }
             if (right) textRightEdge -= iconSpace;
             else textLeft += iconSpace;
@@ -666,7 +765,7 @@ public abstract class PanelElement extends Element {
                     Component t = Component.literal(ruleTitle).withStyle(ChatFormatting.BOLD);
                     int tw = font.width(t);
                     int tx = boxLeft + (boxRight - boxLeft - tw) / 2;
-                    if (!foeR && theme != PanelTheme.OFF) {
+                    if (!foeR && border && theme != PanelTheme.OFF) {
                         int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
                         guiGraphics.fill(textLeft, ry, tx - 10, ry + 1, 0x66FFFFFF);
                         guiGraphics.fill(tx + tw + 10, ry, textRightEdge, ry + 1, 0x66FFFFFF);
@@ -703,8 +802,8 @@ public abstract class PanelElement extends Element {
                     drawInline(guiGraphics, font, pr.tab[0], textLeft, y);
                     drawInline(guiGraphics, font, pr.tab[1], textRightEdge - pr.tab1W, y);
                 }
-                guiGraphics.drawString(font, pr.tab0, textLeft, y, 0xFFFFFFFF, true);
-                guiGraphics.drawString(font, pr.tab1, textRightEdge - pr.tab1W, y, 0xFFFFFFFF, true);
+                drawText(guiGraphics, font, pr.tab0, textLeft, y);
+                drawText(guiGraphics, font, pr.tab1, textRightEdge - pr.tab1W, y);
                 y += lineHeight + room - room / 2;
                 continue;
             }
@@ -714,16 +813,17 @@ public abstract class PanelElement extends Element {
                 int[] cw = preparedCols;
                 int extraRight = textRightEdge;
                 int valueRight = cw[2] > 0 ? extraRight - cw[2] - 6 : extraRight;
-                guiGraphics.drawString(font, pr.label, textLeft, y, 0xFFFFFFFF, true);
-                guiGraphics.drawString(font, pr.value, valueRight - pr.valueW, y, 0xFFFFFFFF, true);
-                if (cw[2] > 0) guiGraphics.drawString(font, pr.extra, extraRight - pr.extraW, y, 0xFFFFFFFF, true);
+                drawText(guiGraphics, font, pr.label, textLeft, y);
+                drawText(guiGraphics, font, pr.value, valueRight - pr.valueW, y);
+                if (cw[2] > 0) drawText(guiGraphics, font, pr.extra, extraRight - pr.extraW, y);
                 y += lineHeight;
                 continue;
             }
             int x = lineX(align, centerText(), textRight, textLeft, textRightEdge, pr.width);
+            this.lineRightEdge = textRightEdge;
             this.beforeLine(guiGraphics, font, line, x, y);
             if (pr.inline) drawInline(guiGraphics, font, line, x, y);
-            guiGraphics.drawString(font, pr.seq, x, y, 0xFFFFFFFF, true);
+            drawText(guiGraphics, font, pr.seq, x, y);
             if (pr.hover) HudHover.note(x, y, pr.width, lineHeight, drawScale, line);
             y += lineHeight + room - room / 2;
         }
@@ -756,9 +856,17 @@ public abstract class PanelElement extends Element {
     /// The titled line is given this much more room, so its badge clears the lines above and below.
     static final int RULE_TITLE_ROOM = 7, RULE_TITLE_ABOVE = 3;
 
-    /// The FOE-R look is on (Customize → HUD Style).
-    static boolean foeR() {
-        return Configs.hudConfig.hudStyle.get() == dannypx.foe.type.HudStyle.FOE_R;
+    /// This HUD has the FOE-R look: its own style from the HUD Editor, or else the one for every HUD (Customize →
+    /// HUD Style).
+    boolean foeR() {
+        return style(look().style) == dannypx.foe.type.HudStyle.FOE_R;
+    }
+
+    /// Package-private for tests: the style a HUD set to `own` ("DEFAULT", "FOE_PLUS", "FOE_R") is drawn in.
+    static dannypx.foe.type.HudStyle style(String own) {
+        if ("FOE_R".equals(own)) return dannypx.foe.type.HudStyle.FOE_R;
+        if ("FOE_PLUS".equals(own)) return dannypx.foe.type.HudStyle.FOE_PLUS;
+        return Configs.hudConfig.hudStyle.get();
     }
 
     /// Package-private for tests: the line holds a picture (kept out of the columns layout, which would split it).

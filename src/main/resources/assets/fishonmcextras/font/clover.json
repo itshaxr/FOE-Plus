@@ -5,14 +5,27 @@
       "file": "fishonmcextras:font/icons/clover.png",
       "height": 8,
       "ascent": 7,
-      "chars": [""]
+      "chars": [
+        ""
+      ]
     },
     {
       "type": "bitmap",
       "file": "fishonmcextras:font/icons/clover_tint.png",
       "height": 8,
       "ascent": 7,
-      "chars": [""]
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "fishonmcextras:font/icons/stat_scale.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [
+        ""
+      ]
     }
   ]
 }

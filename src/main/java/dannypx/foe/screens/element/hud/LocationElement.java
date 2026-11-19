@@ -15,6 +15,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 
 public class LocationElement extends Element {
@@ -22,8 +23,6 @@ public class LocationElement extends Element {
     private static final int TEXTURE_WIDTH = 160;
     private static final int TEXTURE_HEIGHT = 36;
 
-    private static final Identifier LOCATION_TEXTURE = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/location");
-    private static final Identifier LOCATION_TEXTURE_FLIP = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/location_flip");
     //endregion
 
     public LocationElement() {
@@ -47,125 +46,73 @@ public class LocationElement extends Element {
     }
 
     //region Methods
+    static final int HEIGHT = 30, SKY = 0x4FC3F7;
+
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get())));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get())));
+        var cfg = Configs.hudConfig;
+        if (!FoeRBoxes.shows(cfg.showLocationElement.get(), isCopy)) return;
+        float scale = FoeRBoxes.scale(cfg.locationElementScale.get());
+        int[] screen = FoeRBoxes.screen(scale);
+        if (!isCopy) {
+            xPos = cfg.locationElementXPosition.get() / 100f;
+            yPos = cfg.locationElementYPosition.get() / 100f;
+            alignment = cfg.locationElementAlignment.get();
+        }
+        boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;
+        int x = right ? screen[0] - Math.round(screen[0] * xPos) : Math.round(screen[0] * xPos);
+        int y = Math.round(screen[1] * yPos);
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.locationElementScale.get()));
-        if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showLocationElement.get() && !Configs.hudConfig.showTopBar.get()
-                && TabOverlayHandler.instance().isInInstance()
-        ) {
-            // Position
-            if(!isCopy) {
-                xPos = Configs.hudConfig.locationElementXPosition.get() / 100f;
-                yPos = Configs.hudConfig.locationElementYPosition.get() / 100f;
-            }
-
-            int x = switch (Configs.hudConfig.locationElementAlignment.get()) {
-                case TOP_LEFT -> Math.round(scaledWidth * xPos);
-                case TOP_RIGHT -> scaledWidth
-                        - Math.round(scaledWidth * xPos);
-                default -> 0;
-            };
-            int y = Math.round(scaledHeight * yPos);
-
-            this.renderTexture(guiGraphics, x, y);
-            this.renderComponent(guiGraphics, Minecraft.getInstance().font, x, y);
-        }
+        guiGraphics.pose().scale(scale, scale);
+        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
         guiGraphics.pose().popMatrix();
+        this.width = Math.round(w * scale);
+        this.height = Math.round(HEIGHT * scale);
     }
 
-    private void renderComponent(GuiGraphics guiGraphics, Font font, int x, int y) {
-        int component1x = 24;
-        int component1y = 7;
+    /// Draws the box at `x` (its left edge, or its right edge when `right`), `y`; returns how wide it came out.
+    /// The box holds the weather and the temperature; the rails the place (and your spot in it), then the time and
+    /// the place's climate.
+    private int draw(GuiGraphics g, Font font, int x, int y, boolean right) {
+        BossEventHandler boss = BossEventHandler.instance();
+        Component weather = boss.getWeather();
+        Component temperature = boss.getTemperature();
+        int ring = weather.getStyle().getColor() != null ? weather.getStyle().getColor().getValue() & 0xFFFFFF : SKY;
 
-        Component temperature = BossEventHandler.instance().getTemperature();
-        Component weather = TextHelper.concat(
-                BossEventHandler.instance().getWeather(),
-                Component.literal(" "),
-                temperature
-        );
-        int weatherWidth = font.width(TextHelper.smallCaps(weather.getString()));
+        String place = boss.getLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        MutableComponent top = Component.empty();
+        top.append(place.isEmpty() ? Component.literal(isCopy ? "Location" : "").withStyle(ChatFormatting.GRAY)
+                : dannypx.foe.helper.FoeLocations.styledName(place));
+        Component spot = TopBarElement.spot();
+        if (spot != null) top.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY)).append(spot);
+        Component topLine = TextHelper.smallCaps(top);
 
-        int component2x = 52;
-        int component2y = 7;
-
-        Component location = BossEventHandler.instance().getLocation();
-        Component subLocation = BossEventHandler.instance().getSubLocation();
-
-        Component locationTotal = switch (Configs.hudConfig.locationElementAlignment.get()) {
-            case TOP_LEFT -> subLocation.getString().isBlank() ? TextHelper.concat(location) : TextHelper.concat(
-                    location,
-                    Component.literal(" | ").withStyle(ChatFormatting.DARK_GRAY),
-                    subLocation
-            );
-            case TOP_RIGHT -> subLocation.getString().isBlank() ? TextHelper.concat(location) : TextHelper.concat(
-                    subLocation,
-                    Component.literal(" | ").withStyle(ChatFormatting.DARK_GRAY),
-                    location
-            );
-            default -> Component.empty();
-        };
-        int locationWidth = font.width(TextHelper.smallCaps(locationTotal.getString()));
-
-        int component3x = 16;
-        int component3y = 26;
-
-        Component time = BossEventHandler.instance().getTime();
-        int timeWidth = font.width(TextHelper.smallCaps(time.getString()));
-
-        switch (Configs.hudConfig.locationElementAlignment.get()) {
-            case TOP_LEFT -> {
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        weather,
-                        x + component1x - (weatherWidth / 2), y + component1y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        locationTotal,
-                        x + component2x, y + component2y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        time,
-                        x + component3x, y + component3y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-            }
-            case TOP_RIGHT -> {
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        weather,
-                        x - component1x - (weatherWidth / 2), y + component1y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        locationTotal,
-                        x - component2x - locationWidth, y + component2y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        time,
-                        x - component3x - timeWidth, y + component3y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-            }
+        MutableComponent bottom = Component.empty();
+        String time = boss.getTime().getString().trim();
+        if (!time.isEmpty()) bottom.append(dannypx.foe.helper.SmoothClock.topBar(boss.getTime()));
+        Component climate = place.isEmpty() ? null : TopBarElement.climate(place);
+        if (climate != null) {
+            if (!bottom.getSiblings().isEmpty()) bottom.append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY));
+            bottom.append(TextHelper.smallCaps(climate));
         }
-    }
 
-    private void renderTexture(GuiGraphics guiGraphics, int x, int y) {
-        switch (Configs.hudConfig.locationElementAlignment.get()) {
-            case TOP_LEFT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    LOCATION_TEXTURE,
-                    x, y,
-                    width, height
-            );
-            case TOP_RIGHT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    LOCATION_TEXTURE_FLIP,
-                    x - width, y,
-                    width, height
-            );
-        }
+        String symbols = weather.getString();
+        int weatherW = FoeRBoxes.weatherWidth(font, symbols);
+        int boxW = Math.max(FoeRBoxes.BOX, Math.max(weatherW, font.width(temperature)) + 8);
+        int railX = right ? x - boxW : x + boxW;
+        int rail1 = FoeRBoxes.railFor(font.width(topLine)), rail2 = FoeRBoxes.railFor(font.width(bottom));
+
+        FoeRBoxes.box(g, x, y, right, ring, boxW);
+        int mid = right ? x - boxW / 2 : x + boxW / 2;
+        // the weather in FOE+'s own pictures, the temperature under it
+        FoeRBoxes.drawWeather(g, font, symbols, mid - weatherW / 2, y + 4, ring);
+        PanelElement.drawText(g, font, temperature.getVisualOrderText(), mid - font.width(temperature) / 2 + 1, y + 18);
+        FoeRBoxes.rail(g, railX, y + 2, rail1, FoeRBoxes.RAIL_H, right, ring);
+        FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, ring);
+        FoeRBoxes.text(g, font, topLine, railX, y + 4, right);
+        FoeRBoxes.text(g, font, bottom, railX, y + 18, right);
+        return boxW + Math.max(rail1, rail2);
     }
     //endregion
 }

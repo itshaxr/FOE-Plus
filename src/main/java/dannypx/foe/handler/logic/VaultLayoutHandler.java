@@ -60,7 +60,7 @@ public final class VaultLayoutHandler {
         if (tag != null && !tag.isEmpty()) {
             String type = tag.getStringOr("type", "").toLowerCase(Locale.ROOT);
             if (type.equals(SortPlanner.BAIT) || type.equals(SortPlanner.LURE)) {
-                return type + "|" + tag.getStringOr("name", "") + "|" + tag.getStringOr("color", "") + "|" + tag.getStringOr("size", "");
+                return type + "|" + tag.getStringOr("name", "") + "|" + SortPlanner.plainColor(tag.getStringOr("color", "")) + "|" + tag.getStringOr("size", "");
             }
             int[] id = tag.getIntArray("id").orElse(null);
             if (id != null && id.length > 0) return "id|" + Arrays.toString(id);

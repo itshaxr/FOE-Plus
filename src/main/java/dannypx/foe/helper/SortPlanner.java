@@ -42,10 +42,21 @@ public final class SortPlanner {
         String mergeKey() {
             if (BAIT.equals(type)) return name;
             if (LURE.equals(type) && !color.isEmpty() && !size.isEmpty()) {
-                return name + "|" + color + "|" + size;
+                return name + "|" + plainColor(color) + "|" + size.trim().toLowerCase(java.util.Locale.ROOT);
             }
             return null;
         }
+    }
+
+    /// A lure's colour as you read it ("Redhead"), whichever way the server wrote it: older lures carry it
+    /// as "§x§f§b§4§7§2§fR§x...", newer ones as "<#FB472F>R<#F46B59>e...", so two of the same lure only
+    /// matched (and merged) when both were the same age. Package-private for tests.
+    public static String plainColor(String color) {
+        if (color == null) return "";
+        return color.replaceAll("<#[0-9A-Fa-f]{6}>|</?[a-zA-Z_:#0-9]+>", "")
+                .replaceAll("§x(§[0-9A-Fa-f]){6}", "")
+                .replaceAll("§.", "")
+                .trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     /// A click on a slot: a plain pickup click, or a shift click (quick move).

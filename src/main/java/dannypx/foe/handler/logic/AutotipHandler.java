@@ -133,6 +133,7 @@ public class AutotipHandler {
         log.add(tip);
         if (log.size() > 20) log.removeFirst();
         mc.getConnection().sendCommand("pay " + tip.player() + " " + tip.amount());
+        dannypx.foe.handler.store.NotifySounds.play("auto_tip");
 
         if (Configs.autotipConfig.announceTips.get()) {
             // [FOE+] AUTO TIP Tipped Steve $500 · reaction

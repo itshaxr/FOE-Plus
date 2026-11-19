@@ -88,6 +88,7 @@ public final class RareCatchHandler {
         Pull pull = parse(text);
         if (pull == null) return;
         int streak = StatsDataHandler.instance().onRareCatch(pull.key(), pull.count());
+        dannypx.foe.handler.store.NotifySounds.play("rare_catch");
         boolean chat = LIGHTNING_BOTTLE.equals(pull.key())
                 ? Configs.hudConfig.showLightningBottleChat.get() : Configs.hudConfig.showInfusionCapsuleChat.get();
         if (chat) FoeChat.send(line(pull, streak));

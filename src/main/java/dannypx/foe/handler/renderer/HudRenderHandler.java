@@ -78,6 +78,10 @@ public class HudRenderHandler extends Handler {
         if(elements.isEmpty()) {
             // FOE top bar first so everything else draws over it
             elements.add(Pair.of("top_bar", new TopBarElement()));
+            // the FOE-R HUD Style's profile, pet and location boxes (in place of the top bar; drawn only with that style)
+            elements.add(Pair.of("profile_box", new dannypx.foe.screens.element.hud.ProfileElement()));
+            elements.add(Pair.of("pet_box", new dannypx.foe.screens.element.hud.PetElement()));
+            elements.add(Pair.of("location_box", new dannypx.foe.screens.element.hud.LocationElement()));
             elements.add(Pair.of("notifier_hud", new NotifierElement()));
             // The wrong-gear warning claims its spot first: it always stays exactly where you put
             // it, whatever its size, and the other panels make room while it is showing.
@@ -98,6 +102,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("events_panel", new dannypx.foe.screens.element.hud.EventsPanelElement()));
             elements.add(Pair.of("mini_event_panel", new dannypx.foe.screens.element.hud.MiniEventPanelElement()));
             elements.add(Pair.of("session_stats_panel", new dannypx.foe.screens.element.hud.SessionStatsPanelElement()));
+            elements.add(Pair.of("chummer_panel", new dannypx.foe.screens.element.hud.ChummerPanelElement()));
             elements.add(Pair.of("equipment_bar", new EquipmentBarElement()));
             elements.add(Pair.of("debug_field_hud", new _DebugField()));
         }
@@ -119,10 +124,24 @@ public class HudRenderHandler extends Handler {
             p = dannypx.foe.handler.logic.FoeProfiler.mark();
             if (Configs.mainConfig.enableMod.get() && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer())
                 dannypx.foe.helper.Safe.draw("hud catch ring", guiGraphics, () -> CatchRing.render(guiGraphics));
+            if (Configs.mainConfig.enableMod.get() && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer())
+                dannypx.foe.helper.Safe.draw("hud quest warning", guiGraphics, () -> QuestWarning.render(guiGraphics));
             // FOE+'s travel map, should the server close its menu for a moment while it zooms back out.
             if (Configs.mainConfig.enableMod.get()) dannypx.foe.helper.Safe.draw("hud travel map", guiGraphics, () -> TravelMapHandler.instance().renderHud(guiGraphics));
             dannypx.foe.helper.Safe.draw("hud map scan", guiGraphics, () -> dannypx.foe.handler.logic.MapScanHandler.instance().renderHud(guiGraphics));
             dannypx.foe.handler.logic.FoeProfiler.end("hud catch ring, maps", p);
+        });
+
+        // the FOE-R HUD Style's bottom bar, in place of the game's hotbar
+        HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, vanilla -> (guiGraphics, deltaTracker) -> {
+            boolean ours = false;
+            try {
+                ours = dannypx.foe.screens.element.hud.FoeRHotbar.active();
+            } catch (RuntimeException e) {
+                // the game's own then
+            }
+            if (ours) dannypx.foe.helper.Safe.draw("hud foe-r bottom bar", guiGraphics, () -> dannypx.foe.screens.element.hud.FoeRHotbar.render(guiGraphics));
+            else vanilla.render(guiGraphics, deltaTracker);
         });
 
         LoggerHandler.info("Register Priority Elements");

@@ -143,6 +143,12 @@ public class NotifierHandler extends Handler {
             return;
         }
 
+        // FOE-style floating text, like a fish
+        if(Configs.hudConfig.petCatchStyle.get() == dannypx.foe.type.CatchPopupStyle.FOE) {
+            if (Configs.hudConfig.showCatchPopup.get()) dannypx.foe.screens.element.hud.CatchPopupElement.showPet(pet);
+            return;
+        }
+
         Component petComponent = TextHelper.concat(pet.getRarityComponent(), Component.literal(" ") , pet.getName());
 
         List<Component> notificationComponentList =  new ArrayList<>(Arrays.asList(
@@ -165,12 +171,22 @@ public class NotifierHandler extends Handler {
         );
     }
 
-    /// A pet from a contest or an event: its own chat line ("CONTEST PET!" / "EVENT PET!"), no dry streak, as it
+    /// A pet from a contest, an event or your daily missions: its own chat line ("CONTEST PET!" / "EVENT PET!" / "QUEST PET!"), no dry streak, as it
     /// isn't counted in your stats (only pets you fish up are).
     public void notifyRewardPet(PetTagObject pet, PetSourceHandler.Source source) {
+        dannypx.foe.handler.store.NotifySounds.play("reward_pet");
         if (Configs.hudConfig.showPetCatchChat.get() && minecraft.player != null) {
-            MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine(source == PetSourceHandler.Source.CONTEST ? "CONTEST PET!" : "EVENT PET!",
-                            source == PetSourceHandler.Source.CONTEST ? 0xFFAA00 : 0xFF55FF)
+            String badge = switch (source) {
+                case CONTEST -> "CONTEST PET!";
+                case QUEST -> "QUEST PET!";
+                default -> "EVENT PET!";
+            };
+            int badgeColor = switch (source) {
+                case CONTEST -> 0xFFAA00;
+                case QUEST -> 0x55FF55;
+                default -> 0xFF55FF;
+            };
+            MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine(badge, badgeColor)
                     .append(rarityBadge(pet))
                     .append(Component.literal(" "))
                     .append(pet.getName())
@@ -190,6 +206,7 @@ public class NotifierHandler extends Handler {
     /// variant and the dry streak (fish since your last of that variant, this catch included).
     public void chatVariant(FishTagObject fish, int dryStreak) {
         String variant = fish.getVariant().toLowerCase(java.util.Locale.ROOT);
+        if (VARIANT_COLORS.containsKey(variant)) dannypx.foe.handler.store.NotifySounds.play(variant);
         if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
         // [FOE+] You caught <variant badge> <fish picture> Largemouth Bass · Dry streak 1,234
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
@@ -214,6 +231,7 @@ public class NotifierHandler extends Handler {
 
     /// [FOE+] You caught <GIGANTIC badge> <fish picture> Largemouth Bass · Dry streak 1,234
     public void chatGigantic(FishTagObject fish, int dryStreak) {
+        dannypx.foe.handler.store.NotifySounds.play("gigantic");
         if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(dannypx.foe.helper.FoeChat.text("You caught "))
@@ -225,6 +243,7 @@ public class NotifierHandler extends Handler {
 
     /// [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) · Dry streak 164
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
+        dannypx.foe.handler.store.NotifySounds.play("pet_pulled");
         if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
         MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine("PET PULLED!", dannypx.foe.helper.FoeChat.PURPLE)
                 .append(rarityBadge(pet))
@@ -240,7 +259,7 @@ public class NotifierHandler extends Handler {
     }
 
     /// The server's rarity badge for the pet (the same glyphs as on items and in chat).
-    private static Component rarityBadge(PetTagObject pet) {
+    public static Component rarityBadge(PetTagObject pet) {
         String glyph = switch (pet.getRarity().toLowerCase(java.util.Locale.ROOT)) {
             case "common" -> "\uF033";
             case "rare" -> "\uF034";

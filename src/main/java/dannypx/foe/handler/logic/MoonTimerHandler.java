@@ -10,31 +10,36 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Moon timer, counted from a known moonrise (31 Oct 2026, 12:23 AM Eastern) every 160 minutes.
+ * Moon timer, counted from a known moonrise (18 Nov 2026, 5:45:39 PM Eastern) every 160 minutes.
  * Every moonrise you see in chat ("BLOOD MOON » A Blood Moon has risen!") re-syncs it to that
  * exact moment, and it's saved, so it stays right across restarts.
  * <p>
- * Moons come every {@link #getCycleMs()} (160 minutes to start with, as FOE assumed). Each further
- * moonrise you see corrects the anchor, and the time between two of them corrects the cycle
- * length if the server's is different. Which moon it is still comes from chat.
+ * Moons come every 160 minutes, always (the server's schedule; the wiki says the same), but a
+ * server restart moves the whole schedule (on 18 Nov it moved by 17 minutes), so every moonrise
+ * seen in chat re-syncs the timer to that exact second, however far off it was. Which moon it is
+ * still comes from chat.
  */
 public class MoonTimerHandler {
     private static MoonTimerHandler INSTANCE = new MoonTimerHandler();
 
     public static final long DEFAULT_CYCLE_MS = 160L * 60L * 1000L;
-    private static final long MIN_CYCLE_MS = 15L * 60L * 1000L;
-    private static final long MAX_CYCLE_MS = 6L * 60L * 60L * 1000L;
 
     /** The moon that is currently up, or null. */
     private Moon currentMoon = null;
 
-    /// A moonrise seen on the server: 31 Oct 2026, 12:23 AM Eastern (04:23 UTC). With the 160 minute
-    /// cycle this puts every moon on the right time from the start; each moonrise you see in chat
-    /// re-syncs it to the second.
-    static final long KNOWN_MOONRISE_MS = java.time.Instant.parse("2026-10-31T04:23:00Z").toEpochMilli();
+    /// A moonrise seen on the server: 18 Nov 2026, 5:45:39 PM Eastern (22:45:39 UTC), after the
+    /// server restart that moved the schedule. With the 160 minute cycle this puts every moon on the
+    /// right time from the start; each moonrise you see in chat re-syncs it to the second.
+    static final long KNOWN_MOONRISE_MS = java.time.Instant.parse("2026-11-18T22:45:39Z").toEpochMilli();
 
-    /// Saved: when a moon was last seen rising, and how long a cycle is.
+    /// Bumped to throw away timers saved by older builds, which could learn a wrong cycle or take a
+    /// stray line as a moonrise and drift off the real moons, or still hold the schedule from before
+    /// the 18 Nov restart.
+    static final int SAVE_VERSION = 3;
+
+    /// Saved: when a moon was last seen rising (the cycle is always 160 minutes).
     static final class Saved {
+        int version;   // 0 in files from older builds (and before the first save)
         long lastRiseAt = KNOWN_MOONRISE_MS;
         long cycleMs = DEFAULT_CYCLE_MS;
     }
@@ -60,7 +65,13 @@ public class MoonTimerHandler {
             } catch (Exception | LinkageError e) {
                 LoggerHandler.error(e instanceof Exception ex ? ex : new RuntimeException(e));
             }
-            if (saved.cycleMs < MIN_CYCLE_MS || saved.cycleMs > MAX_CYCLE_MS) saved.cycleMs = DEFAULT_CYCLE_MS;
+            if (saved.version != SAVE_VERSION) {
+                // an older build's timer (or none yet): back to the known moonrise
+                saved = new Saved();
+                saved.version = SAVE_VERSION;
+                save();
+            }
+            saved.cycleMs = DEFAULT_CYCLE_MS;
             if (saved.lastRiseAt <= 0L) saved.lastRiseAt = KNOWN_MOONRISE_MS;
         }
         return saved;
@@ -110,25 +121,7 @@ public class MoonTimerHandler {
         return Math.floorMod(System.currentTimeMillis() - saved().lastRiseAt, saved().cycleMs);
     }
 
-    /// When this game session last saw a moon rise in chat (0: not yet). Unlike the saved timer,
-    /// which is worked out from the cycle, this is the real start of the moon that's up.
-    private long riseSeenAt = 0L;
-
-    /// Milliseconds since a moonrise seen in chat this session, or -1 (not seen, or from an older moon).
-    public long getTimeSinceSeenRise() {
-        if (riseSeenAt <= 0L) return -1L;
-        long since = System.currentTimeMillis() - riseSeenAt;
-        return since >= 0L && since < saved().cycleMs ? since : -1L;
-    }
-
-    /// The moon that's up now, or null. A moon whose "has set" line was missed (you were away, or
-    /// in a menu) doesn't stay up for ever: once its rise is longer ago than any moon lasts, it's over.
     public Moon getCurrentMoon() {
-        if (currentMoon != null) {
-            long seen = getTimeSinceSeenRise();
-            long since = seen >= 0 ? seen : getTimeSinceMoonrise();
-            if (since > AlertHandler.MAX_MOON_MS) currentMoon = null;
-        }
         return currentMoon;
     }
 
@@ -145,26 +138,11 @@ public class MoonTimerHandler {
         }
     }
 
-    /// A moon just rose: anchor the timer here and, from the gap since the last one, correct the
-    /// cycle length. Package-private for tests.
+    /// A moon just rose: the timer is set to this exact moment, however far off the old schedule it
+    /// was (a server restart moves the schedule). The cycle is never changed. Package-private for tests.
     void onMoonrise(long now) {
         Saved s = saved();
-        if (s.lastRiseAt > 0L) {
-            long gap = now - s.lastRiseAt;
-            if (gap >= MIN_CYCLE_MS) {
-                long k = Math.max(1L, Math.round((double) gap / s.cycleMs));
-                long perCycle = gap / k;
-                if (Math.abs(perCycle - s.cycleMs) <= s.cycleMs * 15 / 100) {
-                    // Matches the known cycle (maybe with moons missed in between): fine-tune it.
-                    if (perCycle >= MIN_CYCLE_MS && perCycle <= MAX_CYCLE_MS) s.cycleMs = perCycle;
-                } else if (gap <= MAX_CYCLE_MS) {
-                    // The cycle is something else: take the gap as the new cycle.
-                    s.cycleMs = gap;
-                }
-            }
-        }
         s.lastRiseAt = now;
-        riseSeenAt = now;
         save();
     }
 

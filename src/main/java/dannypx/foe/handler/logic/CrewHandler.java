@@ -176,6 +176,7 @@ public class CrewHandler extends Handler {
 
     /// [FOE+] CREW Ewiksen is online / went offline (FOE-R's notification box is hidden in FOE+).
     private static void crewChat(String name, boolean online) {
+        dannypx.foe.handler.store.NotifySounds.play("crew_online");
         if (!dannypx.foe.config.Configs.hudConfig.crewStatusChat.get()) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("CREW", dannypx.foe.helper.FoeChat.GOLD)
                 .append(dannypx.foe.helper.FoeChat.white(name))

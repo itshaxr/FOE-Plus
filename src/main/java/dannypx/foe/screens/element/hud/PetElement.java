@@ -6,6 +6,7 @@ import dannypx.foe.handler.logic.InventoryHandler;
 import dannypx.foe.handler.logic.LoadingHandler;
 import dannypx.foe.helper.GuiGraphicsHelper;
 import dannypx.foe.helper.TextHelper;
+import dannypx.foe.item.PetTagObject;
 import dannypx.foe.config.Configs;
 import dannypx.foe.screens.element.Element;
 import dannypx.foe.type.StringStyle;
@@ -23,8 +24,6 @@ public class PetElement extends Element {
     private static final int TEXTURE_WIDTH = 160;
     private static final int TEXTURE_HEIGHT = 37;
 
-    private static final Identifier PET_TEXTURE = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/pet");
-    private static final Identifier PET_TEXTURE_FLIP = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/pet_flip");
     //endregion
 
     public PetElement() {
@@ -48,148 +47,84 @@ public class PetElement extends Element {
     }
 
     //region Methods
+    static final int BAR_W = 40, HEIGHT = 30;
+
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get())));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get())));
+        var cfg = Configs.hudConfig;
+        if (!FoeRBoxes.shows(cfg.showPetElement.get(), isCopy)) return;
+        float scale = FoeRBoxes.scale(cfg.petElementScale.get());
+        int[] screen = FoeRBoxes.screen(scale);
+        if (!isCopy) {
+            xPos = cfg.petElementXPosition.get() / 100f;
+            yPos = cfg.petElementYPosition.get() / 100f;
+            alignment = cfg.petElementAlignment.get();
+        }
+        boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;
+        int x = right ? screen[0] - Math.round(screen[0] * xPos) : Math.round(screen[0] * xPos);
+        int y = Math.round(screen[1] * yPos);
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.petElementScale.get()));
-        if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showPetElement.get() && !Configs.hudConfig.showPetPanel.get()
-                && TabOverlayHandler.instance().isInInstance()
-        ) {
-            // Position
-            if(!isCopy) {
-                xPos = Configs.hudConfig.petElementXPosition.get() / 100f;
-                yPos = Configs.hudConfig.petElementYPosition.get() / 100f;
-            }
-
-            int x = switch (Configs.hudConfig.petElementAlignment.get()) {
-                case TOP_LEFT -> Math.round(scaledWidth * xPos);
-                case TOP_RIGHT -> scaledWidth
-                        - Math.round(scaledWidth * xPos);
-                default -> 0;
-            };
-            int y = Math.round(scaledHeight * yPos);
-
-            this.renderTexture(guiGraphics, x, y);
-            this.renderComponent(guiGraphics, Minecraft.getInstance().font, x, y);
-            this.renderPetIcon(guiGraphics, x, y);
-        }
+        guiGraphics.pose().scale(scale, scale);
+        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
         guiGraphics.pose().popMatrix();
+        this.width = Math.round(w * scale);
+        this.height = Math.round(HEIGHT * scale);
     }
 
-    private void renderPetIcon(GuiGraphics guiGraphics, int x, int y) {
-        if(Minecraft.getInstance().player != null && InventoryHandler.instance().hasPet()) {
-            ItemStack pet = InventoryHandler.instance().getCurrentPet().getItemStack();
-
-            guiGraphics.pose().pushMatrix();
-            switch (Configs.hudConfig.petElementAlignment.get()) {
-                case TOP_LEFT -> {
-                    guiGraphics.pose().translate(x + 7, y + 7);
-                    guiGraphics.pose().scale(1.5f, 1.5f);
-                }
-                case TOP_RIGHT -> {
-                    guiGraphics.pose().translate(x - 7 - 24, y + 7);
-                    guiGraphics.pose().scale(1.5f, 1.5f);
-                }
-            }
-            guiGraphics.renderItem(pet, 0, 0);
-            guiGraphics.pose().popMatrix();
+    /// Draws the box at `x` (its left edge, or its right edge when `right`), `y`; returns how wide it came out.
+    private int draw(GuiGraphics g, Font font, int x, int y, boolean right) {
+        int railX = right ? x - FoeRBoxes.BOX : x + FoeRBoxes.BOX;
+        if (!InventoryHandler.instance().hasPet()) {
+            Component none = Component.literal("No pet equipped").withStyle(ChatFormatting.GRAY);
+            int rail = FoeRBoxes.railFor(font.width(none));
+            FoeRBoxes.box(g, x, y, right, 0x555555);
+            FoeRBoxes.rail(g, railX, y + 9, rail, FoeRBoxes.RAIL_H, right, 0x555555);
+            FoeRBoxes.text(g, font, none, railX, y + 11, right);
+            return FoeRBoxes.BOX + rail;
         }
-    }
+        PetTagObject pet = InventoryHandler.instance().getCurrentPet();
+        int ring = PetPanelElement.frameColor(pet) & 0xFFFFFF;
 
-    private void renderComponent(GuiGraphics guiGraphics, Font font, int x, int y) {
-        int component1x = 40;
-        int component1y = 9;
-
-        if(InventoryHandler.instance().hasPet()) {
-            Component pet = TextHelper.concat(
-                    InventoryHandler.instance().getCurrentPet().getRarityComponent(),
-                    Component.literal(" "),
-                    InventoryHandler.instance().getCurrentPet().getName());
-            int petWidth = font.width(TextHelper.smallCaps(pet.getString()));
-
-            int component2x = 40;
-            int component2y = 21;
-
-            Component level = Component.literal(
-                    String.valueOf(InventoryHandler.instance().getCurrentPet().getLevel())
-            ).withStyle(ChatFormatting.GREEN);
-            int bars = 20;
-            int progress = (int) (bars * InventoryHandler.instance().getCurrentPet().getProgress());
-            int progressLeft = bars - progress;
-            Component progressComponent = Component.literal(" ".repeat(Math.max(0, progress)))
-                    .withStyle(s -> s.withStrikethrough(true).withColor(GameXpBar.gameStyle() ? net.minecraft.network.chat.TextColor.fromRgb(GameXpBar.FILL) : net.minecraft.network.chat.TextColor.fromLegacyFormat(ChatFormatting.GOLD)));
-            Component progressLeftComponent = Component.literal(" ".repeat(Math.min(bars, progressLeft)))
-                    .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.DARK_GRAY);
-
-            Component levelComponent = TextHelper.concat(
-                    Component.literal("LV. ").withStyle(ChatFormatting.GRAY),
-                    level,
-                    Component.literal(" [").withStyle(ChatFormatting.DARK_GRAY),
-                    progressComponent,
-                    progressLeftComponent,
-                    Component.literal("]").withStyle(ChatFormatting.DARK_GRAY)
-            );
-            int levelWidth = font.width(TextHelper.smallCaps(levelComponent.getString()));
-
-            switch (Configs.hudConfig.petElementAlignment.get()) {
-                case TOP_LEFT -> {
-
-                    GuiGraphicsHelper.drawString(guiGraphics, font,
-                            pet,
-                            x + component1x, y + component1y,
-                            StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.HAS_CUSTOM_FONT, StringStyle.SMALL_CAPS);
-
-                    GuiGraphicsHelper.drawString(guiGraphics, font,
-                            levelComponent,
-                            x + component2x, y + component2y,
-                            StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-                }
-                case TOP_RIGHT -> {
-                    GuiGraphicsHelper.drawString(guiGraphics, font,
-                            pet,
-                            x - component1x - petWidth, y + component1y,
-                            StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.HAS_CUSTOM_FONT, StringStyle.SMALL_CAPS);
-
-                    GuiGraphicsHelper.drawString(guiGraphics, font,
-                            levelComponent,
-                            x - component2x - levelWidth, y + component2y,
-                            StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-                }
-            }
-        } else {
-            Component pet = Component.literal("No pet equipped").withStyle(ChatFormatting.GRAY);
-            int petWidth = font.width(TextHelper.smallCaps(pet.getString()));
-
-            switch (Configs.hudConfig.petElementAlignment.get()) {
-                case TOP_LEFT -> GuiGraphicsHelper.drawString(guiGraphics, font,
-                        pet,
-                        x + component1x, y + component1y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-                case TOP_RIGHT -> GuiGraphicsHelper.drawString(guiGraphics, font,
-                        pet,
-                        x - component1x - petWidth, y + component1y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-            }
+        Component head = TextHelper.concat(pet.getRarityComponent(), Component.literal(" "), pet.getName());
+        Component level = TextHelper.concat(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY),
+                Component.literal(String.valueOf(pet.getLevel())).withStyle(ChatFormatting.GREEN));
+        boolean max = pet.getLevel() >= 100;
+        float progress = max ? 1f : Math.max(0f, Math.min(1f, pet.getProgress()));
+        // ♣ / ⚓ when its rolls here are maxed, then its rating's % in the rating's colour, the brackets grey
+        net.minecraft.network.chat.MutableComponent after = Component.empty();
+        Component maxed = PetPanelElement.maxIcons(pet);
+        if (maxed != null) after.append(maxed).append(Component.literal(" "));
+        int ratingColor = -1;
+        try {
+            ratingColor = PetPanelElement.ratingColor(pet.getRatingComponent());
+        } catch (RuntimeException ignored) {
+            // no rating to read
         }
-    }
+        after.append(Component.literal("(").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(String.format(java.util.Locale.ROOT, "%.0f%%", pet.getTotalPercent() * 100f))
+                        .withColor(ratingColor < 0 ? 0xFFFFFF : ratingColor))
+                .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
 
-    private void renderTexture(GuiGraphics guiGraphics, int x, int y) {
-        switch (Configs.hudConfig.petElementAlignment.get()) {
-            case TOP_LEFT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    PET_TEXTURE,
-                    x, y,
-                    width, height
-            );
-            case TOP_RIGHT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    PET_TEXTURE_FLIP,
-                    x - width, y,
-                    width, height
-            );
-        }
+        int levelW = font.width(level) + 4 + BAR_W + 4 + font.width(after);
+        int rail1 = FoeRBoxes.railFor(font.width(head)), rail2 = FoeRBoxes.railFor(levelW);
+
+        FoeRBoxes.box(g, x, y, right, ring);
+        g.pose().pushMatrix();
+        g.pose().translate(FoeRBoxes.inside(x, right), y + 3);
+        g.pose().scale(1.5f, 1.5f);
+        g.renderItem(pet.getItemStack(), 0, 0);
+        g.pose().popMatrix();
+        FoeRBoxes.rail(g, railX, y + 2, rail1, FoeRBoxes.RAIL_H, right, ring);
+        FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, ring);
+
+        FoeRBoxes.text(g, font, head, railX, y + 4, right);
+        int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
+        PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
+        int bx = lx + font.width(level) + 4;
+        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043);
+        PanelElement.drawText(g, font, after.getVisualOrderText(), bx + BAR_W + 4, y + 18);
+        return FoeRBoxes.BOX + Math.max(rail1, rail2);
     }
     //endregion
 }

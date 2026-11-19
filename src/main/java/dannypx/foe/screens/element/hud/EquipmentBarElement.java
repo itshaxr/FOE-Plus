@@ -38,6 +38,7 @@ public class EquipmentBarElement extends Element {
     public static dannypx.foe.helper.HudLayout.Rect bounds() {
         Minecraft mc = Minecraft.getInstance();
         if (!Configs.hudConfig.showEquipmentBar.get() || mc.player == null || !LoadingHandler.instance().isLoadingDone() || mc.options.hideGui) return null;
+        if (FoeRHotbar.active()) return null;
         float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.equipmentBarScale.get());
         int centerX = Math.round(mc.getWindow().getGuiScaledWidth() / 2f / scale);
         int top = Math.round(mc.getWindow().getGuiScaledHeight() / scale) - Configs.hudConfig.equipmentBarOffsetFromBottom.get() - BOX;
@@ -52,6 +53,8 @@ public class EquipmentBarElement extends Element {
         Minecraft mc = Minecraft.getInstance();
         if (!Configs.hudConfig.showEquipmentBar.get() || mc.player == null || !LoadingHandler.instance().isLoadingDone()) return;
         if (mc.options.hideGui) return;
+        // the FOE-R style's bottom bar shows the rod parts and armour itself
+        if (FoeRHotbar.active()) return;
 
         Font font = mc.font;
         float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.equipmentBarScale.get());

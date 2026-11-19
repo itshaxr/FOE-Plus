@@ -138,6 +138,7 @@ public class FriendsHandler {
             friends().put(uuid, info.getProfile().name());
             save();
         }
+        if (!announcedAsCrew(uuid, friends().get(uuid))) dannypx.foe.handler.store.NotifySounds.play("friend_online");
         if (Configs.hudConfig.friendStatusChat.get() && !announcedAsCrew(uuid, friends().get(uuid))) {
             FoeChat.send(FoeChat.line("FRIEND", FoeChat.AQUA).append(FoeChat.white(friends().get(uuid))).append(FoeChat.text(" is online")));
         }
@@ -156,6 +157,7 @@ public class FriendsHandler {
             if (now - e.getValue() < LEAVE_DELAY_MS) continue;
             it.remove();
             if (isOnline(e.getKey())) continue;
+            if (!announcedAsCrew(e.getKey(), friends().get(e.getKey()))) dannypx.foe.handler.store.NotifySounds.play("friend_offline");
             if (Configs.hudConfig.friendStatusChat.get() && !announcedAsCrew(e.getKey(), friends().get(e.getKey()))) {
                 FoeChat.send(FoeChat.line("FRIEND", FoeChat.AQUA).append(FoeChat.white(friends().get(e.getKey()))).append(FoeChat.text(" went offline")));
             }

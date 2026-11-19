@@ -14,7 +14,7 @@ final class RewardPets {
     private static long lastAt = 0L;
 
     static void notify(ItemStack stack, PetTagObject pet, PetSourceHandler.Source source) {
-        if (source == PetSourceHandler.Source.FISHED) return;
+        if (source == PetSourceHandler.Source.FISHED || source == PetSourceHandler.Source.UNKNOWN) return;
         long now = System.currentTimeMillis();
         if (now - lastAt < 15_000L && ItemStack.isSameItemSameComponents(last, stack)) return;
         last = stack.copy();

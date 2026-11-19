@@ -30,6 +30,18 @@ public class ModUserType {
     private static final Set<UUID> announcedTo = new HashSet<>();
     private static final Map<UUID, Integer> ticksInRange = new HashMap<>();
 
+    /// Remembered FOE+ users whose FOE+ has answered this session, and how long each one that hasn't has
+    /// been near you since you told it you're here. Near you this long with no answer: they don't use FOE+
+    /// now, and their + goes.
+    private static final Set<UUID> confirmed = new HashSet<>();
+    private static final Map<UUID, Integer> unansweredTicks = new HashMap<>();
+    /// Counted only while you stand still (FOE+ messages only go out while you do) and they're near you:
+    /// a minute of that with no answer.
+    static final int FORGET_AFTER_TICKS = 60 * 20;
+    private static net.minecraft.core.BlockPos lastPos = null;
+    /// When we last answered each FOE+ user's hello (we answer once a minute at most).
+    private static final Map<UUID, Long> answeredAt = new java.util.concurrent.ConcurrentHashMap<>();
+
     public static void init() {
         NearbyDispatcher.register(PACKET_TYPE, ModUserType::onReceive);
         NearbyDispatcher.register(FOE_PLUS_TYPE, ModUserType::onReceiveFoePlus);
@@ -44,7 +56,24 @@ public class ModUserType {
             announcedTo.clear();
             ticksInRange.clear();
             bobberStyles.clear();
+            confirmed.clear();
+            unansweredTicks.clear();
+            answeredAt.clear();
             return;
+        }
+
+        // a remembered FOE+ user near you who you've said hello to, and who hasn't answered in a minute
+        boolean still = self.blockPosition().equals(lastPos);
+        lastPos = self.blockPosition();
+        for (Player other : still ? minecraft.level.players() : List.<Player>of()) {
+            UUID id = other.getUUID();
+            if (other == self || confirmed.contains(id) || !announcedTo.contains(id)
+                    || !TextDisplayHandler.instance().isFoePlusUser(id)
+                    || other.distanceToSqr(self) >= NEARBY_RANGE * NEARBY_RANGE) continue;
+            if (unansweredTicks.merge(id, 1, Integer::sum) >= FORGET_AFTER_TICKS) {
+                unansweredTicks.remove(id);
+                TextDisplayHandler.instance().forgetFoePlusUser(id);
+            }
         }
 
         Set<UUID> loaded = new HashSet<>();
@@ -120,8 +149,21 @@ public class ModUserType {
         Player player = minecraft.level.getPlayerByUUID(sender);
         if (player == null) return;
         String name = player.getName().getString();
+        confirmed.add(sender);
+        unansweredTicks.remove(sender);
         TextDisplayHandler.instance().addModUser(sender, name);
         TextDisplayHandler.instance().addFoePlusUser(sender, name);
+        // Answer, so a FOE+ that already said hello to us earlier in its session (before we relogged) hears
+        // from us and answers in turn. Once a minute at most, so two FOE+ users never keep answering each other.
+        long now = System.currentTimeMillis();
+        Long last = answeredAt.get(sender);
+        if (last == null || now - last > 60_000L) {
+            answeredAt.put(sender, now);
+            NearbyDispatcher.queue(PACKET_TYPE, new byte[]{1});
+            NearbyDispatcher.queue(FOE_PLUS_TYPE, FOE_PLUS_PAYLOAD);
+            NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+            NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
+        }
     }
 
     private static void onReceive(UUID sender, byte[] payload) {

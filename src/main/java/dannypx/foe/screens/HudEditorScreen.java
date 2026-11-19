@@ -39,7 +39,7 @@ public class HudEditorScreen extends Screen {
                 new StatsPanelElement(true), new SessionStatsPanelElement(true), new TimersPanelElement(true), new dannypx.foe.screens.element.hud.CrewPanelElement(true),
                 new EventsPanelElement(true), new LuckScalePanelElement(true), new AlertPanelElement(true),
                 new MiniEventPanelElement(true), new PetPanelElement(true), new BaitPanelElement(true),
-                new GearWarningPanelElement(true));
+                new GearWarningPanelElement(true), new dannypx.foe.screens.element.hud.ChummerPanelElement(true));
     }
 
     static final int[] BOX_COLORS = {0x000000, 0x0B1A33, 0x0E2A1A, 0x2E0E0E, 0x25103A, 0x0A2C2E, 0x2A2A2A, 0x2E2010};
@@ -148,9 +148,22 @@ public class HudEditorScreen extends Screen {
         this.addRenderableWidget(name);
         titleRowY = y;
         y += ROW;
+        me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean shown = showSetting(panel().lookId());
+        if (shown != null) {
+            this.addRenderableWidget(Button.builder(Component.literal("Shown: ").append(Component.literal(shown.get() ? "On" : "Off").withStyle(shown.get() ? ChatFormatting.GREEN : ChatFormatting.RED)),
+                    b -> { shown.accept(!shown.get()); dannypx.foe.config.Configs.hudConfig.save(); rebuildWidgets(); }).bounds(left + COL_W / 2 + 1, y, COL_W / 2 - 1, H)
+                    .tooltip(Tooltip.create(Component.literal("Turn this HUD on or off"))).build());
+        }
         this.addRenderableWidget(Button.builder(Component.literal("Layout: ").append(Component.literal(l.columns ? "Columns" : "Lines").withStyle(ChatFormatting.AQUA)),
-                b -> { l.columns = !l.columns; changed(); rebuildWidgets(); }).bounds(left, y, COL_W, H)
+                b -> { l.columns = !l.columns; changed(); rebuildWidgets(); }).bounds(left, y, shown != null ? COL_W / 2 - 1 : COL_W, H)
                 .tooltip(Tooltip.create(Component.literal("Columns: names on the left, numbers lined up on the right"))).build());
+        y += ROW;
+        this.addRenderableWidget(Button.builder(Component.literal("Style: ").append(Component.literal(styleName(l.style)).withStyle(ChatFormatting.AQUA)),
+                b -> { l.style = nextStyle(l.style); changed(); rebuildWidgets(); }).bounds(left, y, COL_W / 2 - 1, H)
+                .tooltip(Tooltip.create(Component.literal("This HUD's own style. Default: the one picked for every HUD in Customize → HUD Style (now " + dannypx.foe.config.Configs.hudConfig.hudStyle.get().displayName() + ")"))).build());
+        this.addRenderableWidget(Button.builder(Component.literal("Border: ").append(Component.literal(l.border ? "On" : "Off").withStyle(l.border ? ChatFormatting.GREEN : ChatFormatting.GRAY)),
+                b -> { l.border = !l.border; changed(); rebuildWidgets(); }).bounds(left + COL_W / 2 + 1, y, COL_W / 2 - 1, H)
+                .tooltip(Tooltip.create(Component.literal("Off: just the box, with its title as the first line"))).build());
         y += ROW;
         slider(left, y, "Line spacing", 0, 8, () -> l.lineSpacing, v -> l.lineSpacing = v, "");
         y += ROW;
@@ -268,6 +281,33 @@ public class HudEditorScreen extends Screen {
         }, "FOE+ picture chooser");
         t.setDaemon(true);
         t.start();
+    }
+
+    /// The on/off setting of the HUD with this look ("ContestPanelElement" → showContestPanel), or null.
+    /// Package-private for tests.
+    static me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean showSetting(String lookId) {
+        String name = "GearWarningPanelElement".equals(lookId) ? "showGearWarning"
+                : "show" + lookId.replaceFirst("Element$", "");
+        try {
+            Object f = dannypx.foe.config.Configs.hudConfig.getClass().getField(name).get(dannypx.foe.config.Configs.hudConfig);
+            return f instanceof me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean v ? v : null;
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    /// "Default (FOE+)", "FOE+" or "FOE-R".
+    static String styleName(String style) {
+        if ("FOE_R".equals(style)) return "FOE-R";
+        if ("FOE_PLUS".equals(style)) return "FOE+";
+        return "Default";
+    }
+
+    /// Default → FOE+ → FOE-R → Default.
+    static String nextStyle(String style) {
+        if ("FOE_PLUS".equals(style)) return "FOE_R";
+        if ("FOE_R".equals(style)) return "DEFAULT";
+        return "FOE_PLUS";
     }
 
     private void done(int y) {

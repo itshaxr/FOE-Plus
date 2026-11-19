@@ -33,7 +33,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean foeXpBars = new ValidatedBoolean(false);
 
     @Name("Profile Element")
-    @Desc("§7This is your profile shown on the hud. (Name, Level, Picture)")
+    @Desc("§7Your name, level, balance and face, in a box (only with the FOE-R HUD Style, in place of the top bar)")
     public ConfigGroup profileElementGroup = new ConfigGroup("profile_element_group");
 
     @Name("Show Profile Element")
@@ -54,10 +54,10 @@ public class HUDConfig extends Config {
     public ValidatedFloat profileElementScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Location Element")
-    @Desc("§7This the location element. (Time, Temperature, Weather, Location)")
+    @Desc("§7Where you are, the weather, the time and the climate, in a box (only with the FOE-R HUD Style, in place of the top bar)")
     public ConfigGroup locationElementGroup = new ConfigGroup("location_element_group");
 
-    @Name("Show Profile Element")
+    @Name("Show Location Element")
     public ValidatedBoolean showLocationElement = new ValidatedBoolean(true);
 
     @Name("X Position in %")
@@ -113,7 +113,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean showBaitLock = new ValidatedBoolean(true);
 
     @Name("Pet Element")
-    @Desc("§7This is your pet shown on the hud. (Name, Level, Picture)")
+    @Desc("§7Your pet, its level and rating, in a box (only with the FOE-R HUD Style)")
     public ConfigGroup petElementGroup = new ConfigGroup("pet_element_group");
 
     @Name("Show Pet Element")
@@ -177,6 +177,18 @@ public class HUDConfig extends Config {
 
     @Name("Show notification when catching pets")
     public ValidatedBoolean showPetCatchNotification = new ValidatedBoolean(true);
+
+    @Name("Warn before an Anywhere daily quest is done")
+    @Desc("§7\"You are about to complete daily quest\" in big red letters at the top of the screen for 5 seconds, when the last Anywhere mission left is one away")
+    public ValidatedBoolean questWarningAnywhere = new ValidatedBoolean(true);
+
+    @Name("Warn before a location's daily quest is done")
+    @Desc("§7\"You are about to complete Everglades daily quest\" in big red letters at the top of the screen for 5 seconds, when the last mission left for a place is one away")
+    public ValidatedBoolean questWarningLocation = new ValidatedBoolean(true);
+
+    @Name("Pet catch style")
+    @Desc("§7FOE: the pet in the middle of the screen, like a fish (its rating, its four stats and its item; move it with the catch popup)\nBOX: the notification box")
+    public ValidatedEnum<CatchPopupStyle> petCatchStyle = new ValidatedEnum<>(CatchPopupStyle.FOE, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("Chat message when you catch a variant")
     @Desc("§7Albino, Melanistic, Trophy and Fabled catches with the fish and its dry streak, in chat")
@@ -263,7 +275,7 @@ public class HUDConfig extends Config {
     public ValidatedInt showNotificationAtEmptySlots = new ValidatedInt(3, 36, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @Name("HUD style")
-    @Desc("§7FOE+: FOE+'s panels. FOE-R: the look FOE-R's HUDs have (a see-through box between dark bars)")
+    @Desc("§7FOE+: FOE+'s panels and the top bar. FOE-R: the look FOE-R's HUDs have (a see-through box between dark bars), with profile, pet and location boxes in place of the top bar. Each HUD can have its own style in the HUD Editor")
     public ValidatedEnum<dannypx.foe.type.HudStyle> hudStyle = new ValidatedEnum<>(dannypx.foe.type.HudStyle.FOE_PLUS, ValidatedEnum.WidgetType.CYCLING);
 
     // FOE-style info panels (ported from FOECollab)
@@ -442,7 +454,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat questPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Pet Panel")
-    @Desc("§7FOE's pet panel: icon, name, level, XP and rating (replaces the older pet element while on)")
+    @Desc("§7FOE's pet panel: the pet and its item, name, level, XP and rating, and Max Luck / Max Scale / Perfect above the pet (replaces the older pet element while on)")
     public ConfigGroup petPanelGroup = new ConfigGroup("pet_panel_group");
 
     @Name("Show Pet Panel")
@@ -460,9 +472,18 @@ public class HUDConfig extends Config {
     @Name("Background opacity in %")
     public ValidatedInt petPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
-    @Name("Green clover on Max Luck")
-    @Desc("§7\"Max Luck\" with the green clover, in green. Off: the clover and text in the Luck colour")
-    public ValidatedBoolean petPanelGreenCloverIcon = new ValidatedBoolean(true);
+    @Name("Pet XP")
+    @Desc("§7BAR_AND_NUMBERS: the bar and (251.50K/470.00K)\nBAR: just the bar\nHIDDEN: no XP, the level goes after the name")
+    public ValidatedEnum<dannypx.foe.type.PetXpStyle> petPanelXp = new ValidatedEnum<>(dannypx.foe.type.PetXpStyle.BAR, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Pet picture's frame colour")
+    @Desc("§7RATING: the colour of the pet's rating (Excellent is aqua)\nRARITY: the colour of its rarity")
+    public ValidatedEnum<dannypx.foe.type.PetFrameColor> petPanelFrameColor = new ValidatedEnum<>(dannypx.foe.type.PetFrameColor.RATING, ValidatedEnum.WidgetType.CYCLING);
+
+    // a new name, so it's back on (green) for everyone
+    @Name("Green Max Luck")
+    @Desc("§7\"Max Luck\" above the pet in green, with a green ♣. Off: the clover and text in the Luck colour")
+    public ValidatedBoolean petPanelGreenLuck = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Scale")
@@ -525,9 +546,11 @@ public class HUDConfig extends Config {
     @Name("Chat message when an alert starts")
     public ValidatedBoolean alertChat = new ValidatedBoolean(true);
 
+    @Desc("§7Moved to O → Customize → Sounds, where each alert has its own sound (this only set what they started as)")
     @Name("Sound when an alert starts")
     public ValidatedBoolean alertSound = new ValidatedBoolean(true);
 
+    @Desc("§7Moved to O → Customize → Sounds, where each alert has its own sound (this only set what they started as)")
     @Name("Alert sound")
     public ValidatedEnum<WarningSound> alertSoundType = new ValidatedEnum<>(WarningSound.DIDGERIDOO, ValidatedEnum.WidgetType.CYCLING);
 
@@ -731,12 +754,14 @@ public class HUDConfig extends Config {
     @Name("Warn at this many free slots or fewer")
     public ValidatedInt inventoryWarningThreshold = new ValidatedInt(3, 35, 1, ValidatedNumber.WidgetType.SLIDER);
 
+    @Desc("§7Moved to O → Customize → Sounds (this only set what it started as)")
     @Name("Play a warning sound")
     public ValidatedBoolean inventoryWarningSound = new ValidatedBoolean(true);
 
     @Name("Seconds between sounds")
     public ValidatedInt inventoryWarningSoundSeconds = new ValidatedInt(10, 30, 1, ValidatedNumber.WidgetType.SLIDER);
 
+    @Desc("§7Moved to O → Customize → Sounds (this only set what it started as)")
     @Name("Warning sound")
     public ValidatedEnum<WarningSound> inventoryWarningSoundType = new ValidatedEnum<>(WarningSound.DIDGERIDOO, ValidatedEnum.WidgetType.CYCLING);
 
@@ -756,8 +781,45 @@ public class HUDConfig extends Config {
     @Name("Scale")
     public ValidatedFloat gearWarningScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
+    @Name("FOE-R Bottom Bar")
+    @Desc("§7Only with the FOE-R HUD Style: the hotbar in FOE-R's frame, with your rod parts and armour above it (in place of the game's hotbar and the equipment bar)")
+    public ConfigGroup foeRHotbarGroup = new ConfigGroup("foer_hotbar_group");
+
+    @Name("Show FOE-R Bottom Bar")
+    public ValidatedBoolean showFoeRHotbar = new ValidatedBoolean(true);
+
+    @Name("Show rod parts above it")
+    public ValidatedBoolean foeRHotbarParts = new ValidatedBoolean(true);
+
+    @ConfigGroup.Pop
+    @Name("Show armour above it")
+    public ValidatedBoolean foeRHotbarArmor = new ValidatedBoolean(true);
+
+    @Name("Chummer Panel")
+    @Desc("§7While you stand in a chummer's range: its picture, rarity and the time it has left. With the top bar on, it sits in the bar between your name and the location instead")
+    public ConfigGroup chummerPanelGroup = new ConfigGroup("chummer_panel_group");
+
+    @Name("Show Chummer Panel")
+    public ValidatedBoolean showChummerPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt chummerPanelXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt chummerPanelYPosition = new ValidatedInt(22, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> chummerPanelAlignment = new ValidatedChoice<>(Alignment.TOP, Alignment.getCornersAndCenters(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt chummerPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat chummerPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(0.75f, 2.0f, 0.1f), 0.05f);
+
     @Name("Top Bar")
-    @Desc("§7FOE's bar across the top: name, level, location, weather, time, balance, catches")
+    @Desc("§7FOE's bar across the top: name, level, location, weather, time, balance, catches. Off while the HUD Style is FOE-R")
     public ConfigGroup topBarGroup = new ConfigGroup("top_bar_group");
 
     @Name("Show Top Bar")
@@ -841,7 +903,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat catchRingScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 3.0f, 0.5f), 0.05f);
 
     @Name("FOE Catch Popup")
-    @Desc("§7The floating catch text used when Fish catch style is FOE")
+    @Desc("§7The floating catch text used when Fish or Pet catch style is FOE")
     public ConfigGroup catchPopupGroup = new ConfigGroup("catch_popup_group");
 
     @Name("Show the catch popup")

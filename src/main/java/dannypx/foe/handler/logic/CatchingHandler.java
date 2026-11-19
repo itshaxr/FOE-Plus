@@ -142,7 +142,7 @@ public class CatchingHandler extends Handler {
             // Store to Stats
             Pair<Boolean, PetTagObject> validatePet = ValidateItem.isPet(validatedItem.value2());
             if(validatePet.value1()) {
-                // Only a pet fished up counts; one from a contest or an event that lands now gets its own popup
+                // Only a pet fished up ("PET DROP!") counts; one from a contest, an event or a quest gets its own popup
                 PetSourceHandler.Source source = PetSourceHandler.instance().sourceOfNewPet();
                 PetSourceHandler.instance().used(source);
                 if (source == PetSourceHandler.Source.FISHED) {

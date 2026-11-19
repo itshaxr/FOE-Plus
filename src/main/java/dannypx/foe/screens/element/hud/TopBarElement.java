@@ -45,7 +45,7 @@ public class TopBarElement extends Element {
     }
 
     /// Climate per location (from FOECollab's LocationInfo), drawn as a two-colour gradient.
-    private static final Map<String, Climate> CLIMATES = Map.ofEntries(
+    static final Map<String, Climate> CLIMATES = Map.ofEntries(
             Map.entry("cypresslake", Climate.SUBTROPICAL),
             Map.entry("spawn", Climate.SUBTROPICAL),
             Map.entry("kenairiver", Climate.SUBARCTIC),
@@ -69,9 +69,14 @@ public class TopBarElement extends Element {
         super(0, 0, 0, 0, Alignment.TOP_LEFT, Component.literal("Top Bar"), false);
     }
 
+    /// The bar is on: switched on, and the HUD Style isn't FOE-R (whose profile, pet and location boxes take its place).
+    public static boolean shown() {
+        return Configs.hudConfig.showTopBar.get() && !FoeRBoxes.on();
+    }
+
     /// Height of the bar in GUI pixels, or 0 when it isn't shown. Top-anchored panels move below it.
     public static int barHeight() {
-        if (!Configs.hudConfig.showTopBar.get() || !LoadingHandler.instance().isLoadingDone()) return 0;
+        if (!shown() || !LoadingHandler.instance().isLoadingDone()) return 0;
         Font font = Minecraft.getInstance().font;
         if (font == null) return 0;
         return Math.round((PADDING * 2 + font.lineHeight) * dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.topBarScale.get()));
@@ -79,7 +84,7 @@ public class TopBarElement extends Element {
 
     @Override
     public void render(GuiGraphics guiGraphics) {
-        if (!Configs.hudConfig.showTopBar.get() || !LoadingHandler.instance().isLoadingDone()) return;
+        if (!shown() || !LoadingHandler.instance().isLoadingDone()) return;
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
@@ -120,8 +125,15 @@ public class TopBarElement extends Element {
         int middleX = screenWidth / 2 - middleW / 2;
         middleX = Math.max(middleX, leftEnd + SIDE_GAP);
         middleX = Math.min(middleX, rightStart - SIDE_GAP - middleW);
-        // The community event goes in the bigger gap: after the level bar or before the balance.
-        // If neither gap fits it, it's left out, so it never runs into the location in the middle.
+        // The chummer you're in the range of goes between your name and the location (when it fits there).
+        dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo chummer = Configs.hudConfig.showChummerPanel.get()
+                ? dannypx.foe.handler.fetch.ChummerHandler.instance().inRange() : null;
+        int chummerX = -1, chummerW = chummer == null ? 0 : chummerWidth(font, chummer);
+        if (chummer != null && middleX - leftEnd >= chummerW + PADDING * 2) chummerX = leftEnd + (middleX - leftEnd - chummerW) / 2;
+        chummerInBar = chummerX >= 0;
+        // The community event goes in the bigger gap: after the level bar or before the balance (only the right one
+        // when the chummer's in the left). If neither gap fits it, it's left out, so it never runs into the location
+        // in the middle.
         Component community = community0;
         int communityX = -1;
         if (community != null) {
@@ -129,7 +141,7 @@ public class TopBarElement extends Element {
             int w = font.width(community);
             int middleLeft = middleX;
             int middleRight = middleX + middleW;
-            int leftRoom = middleLeft - leftEnd;
+            int leftRoom = chummerInBar ? -1 : middleLeft - leftEnd;
             int rightRoom = rightStart - middleRight;
             if (leftRoom >= rightRoom && leftRoom >= w + gap * 2) communityX = leftEnd + (leftRoom - w) / 2;
             else if (rightRoom >= w + gap * 2) communityX = middleRight + (rightRoom - w) / 2;
@@ -140,6 +152,46 @@ public class TopBarElement extends Element {
         guiGraphics.drawString(font, middle, middleX, PADDING, 0xFFFFFFFF, true);
         guiGraphics.drawString(font, right, screenWidth - font.width(right) - PADDING, PADDING, 0xFFFFFFFF, true);
         if (communityX >= 0) guiGraphics.drawString(font, community, communityX, PADDING, 0xFFFFFFFF, true);
+        if (chummerX >= 0) drawChummer(guiGraphics, font, chummer, chummerX);
+    }
+
+    /// The chummer was drawn in the bar this frame (so its own panel stays hidden).
+    static boolean chummerInBar = false;
+
+    /// The chummer's picture's size in the bar, and the gap before its time.
+    private static final int CHUMMER_ICON = 12, CHUMMER_GAP = 2;
+
+    /// "EPIC" in tiny letters in the rarity's colour (the same as its badge), or "" without a rarity.
+    private static Component chummerRarity(dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
+        String rarity = PetPanelElement.rarityFromText(c.getRarity());
+        if (rarity.isEmpty()) return Component.empty();
+        int color = dannypx.foe.helper.FoeLocations.rarityColor(rarity);
+        return Component.literal(rarity.toUpperCase(Locale.ROOT))
+                .withStyle(s -> s.withFont(PanelElement.TINY).withColor(color < 0 ? 0xFFFFFF : color));
+    }
+
+    private static Component chummerTime(dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
+        long s = (c.remainingMs() + 999) / 1000;
+        ChatFormatting color = s > 120 ? ChatFormatting.GREEN : s > 60 ? ChatFormatting.YELLOW : ChatFormatting.RED;
+        return Component.literal(String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60)).withStyle(color);
+    }
+
+    private static int chummerWidth(Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
+        return Math.max(CHUMMER_ICON, font.width(chummerRarity(c))) + CHUMMER_GAP + font.width(chummerTime(c));
+    }
+
+    /// The chummer at `x`: its rarity in tiny letters above its picture, the time left beside the picture.
+    private static void drawChummer(GuiGraphics g, Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x) {
+        Component rarity = chummerRarity(c);
+        int column = Math.max(CHUMMER_ICON, font.width(rarity));
+        int iconY = PADDING - 1;
+        g.drawString(font, rarity, x + (column - font.width(rarity)) / 2, iconY - 6, 0xFFFFFFFF, true);
+        g.pose().pushMatrix();
+        g.pose().translate(x + (column - CHUMMER_ICON) / 2f, iconY);
+        g.pose().scale(CHUMMER_ICON / 16f, CHUMMER_ICON / 16f);
+        g.renderItem(dannypx.foe.handler.fetch.ChummerHandler.instance().icon(c), 0, 0);
+        g.pose().popMatrix();
+        g.drawString(font, chummerTime(c), x + column + CHUMMER_GAP, PADDING, 0xFFFFFFFF, true);
     }
 
     /// Name and level, and the level progress bar when `withBar`; each piece can be turned off.
@@ -237,6 +289,25 @@ public class TopBarElement extends Element {
         return text;
     }
 
+    /// The spot you're at within the location (Big Bear Dock...), as the middle shows it, or null: for the FOE-R
+    /// style's location box.
+    static Component spot() {
+        BossEventHandler boss = BossEventHandler.instance();
+        String spot = boss.getSubLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        String learnedSpot = spot.isEmpty() ? dannypx.foe.handler.logic.SpotHandler.instance().current() : null;
+        if (learnedSpot != null) return Component.literal(learnedSpot).withStyle(ChatFormatting.GRAY);
+        if (!spot.isEmpty()) return Component.literal(spot).withStyle(boss.getSubLocation().getStyle().getColor() == null
+                ? net.minecraft.network.chat.Style.EMPTY.withColor(ChatFormatting.GRAY) : boss.getSubLocation().getStyle());
+        if (dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) return Component.literal("Spawn").withStyle(ChatFormatting.GRAY);
+        return null;
+    }
+
+    /// The location's climate in its colours ("Subtropical"), or null.
+    static Component climate(String location) {
+        Climate climate = CLIMATES.get(location.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", ""));
+        return climate == null ? null : climate.tag();
+    }
+
     /// "ᴄᴏᴍ 88.9K/100K (352)": the community total, the goal and (in brackets) your contribution,
     /// or null before it's been read (or when turned off).
     private static Component communityText() {
@@ -300,7 +371,7 @@ public class TopBarElement extends Element {
         return out;
     }
 
-    private enum Climate {
+    enum Climate {
         SUBTROPICAL("Subtropical", 0x4FB07A, 0x47F7D6),
         SUBARCTIC("Subarctic", 0x53A1C1, 0x98B7CA),
         SEMI_ARID("Semi-Arid", 0xE6902E, 0xE4B76D),

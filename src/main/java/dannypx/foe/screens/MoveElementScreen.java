@@ -110,6 +110,17 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.sessionStatsPanelAlignment, hud.sessionStatsPanelScale, Alignment.getCorners());
         addPanel(new GearWarningPanelElement(true), hud.showGearWarning, hud.gearWarningXPosition, hud.gearWarningYPosition,
                 hud.gearWarningAlignment, hud.gearWarningScale, Alignment.getCornersAndCenters());
+        addPanel(new dannypx.foe.screens.element.hud.ChummerPanelElement(true), hud.showChummerPanel, hud.chummerPanelXPosition, hud.chummerPanelYPosition,
+                hud.chummerPanelAlignment, hud.chummerPanelScale, Alignment.getCornersAndCenters());
+        // the FOE-R HUD Style's boxes: only there (and so only here) with that style
+        if (dannypx.foe.screens.element.hud.FoeRBoxes.on()) {
+            addPanel(new dannypx.foe.screens.element.hud.ProfileElement(true), hud.showProfileElement, hud.profileElementXPosition, hud.profileElementYPosition,
+                    hud.profileElementAlignment, hud.profileElementScale, Alignment.getTopCorners());
+            addPanel(new dannypx.foe.screens.element.hud.PetElement(true), hud.showPetElement, hud.petElementXPosition, hud.petElementYPosition,
+                    hud.petElementAlignment, hud.petElementScale, Alignment.getTopCorners());
+            addPanel(new dannypx.foe.screens.element.hud.LocationElement(true), hud.showLocationElement, hud.locationElementXPosition, hud.locationElementYPosition,
+                    hud.locationElementAlignment, hud.locationElementScale, Alignment.getTopCorners());
+        }
         addPanel(new CatchPopupElement(true), hud.showCatchPopup, hud.catchPopupXPosition, hud.catchPopupYPosition,
                 null, hud.catchPopupScale, List.of(Alignment.TOP));
         if (hud.catchRingOn.get()) {
@@ -181,7 +192,7 @@ public class MoveElementScreen extends DefaultModScreen {
     }
 
     private int barStripHeight() {
-        return Configs.hudConfig.showTopBar.get()
+        return dannypx.foe.screens.element.hud.TopBarElement.shown()
                 ? Math.round((16 + this.font.lineHeight) * Configs.hudConfig.topBarScale.get())
                 : 0;
     }
@@ -230,6 +241,8 @@ public class MoveElementScreen extends DefaultModScreen {
 
     private void resize(ValidatedFloat scale, float step) {
         float next = Math.round((scale.get() + step) * 100f) / 100f;
+        // never past the smallest it's drawn at, so scrolling back up makes it bigger at once
+        if (step < 0) next = Math.max(next, Math.min(scale.get(), dannypx.foe.utils.HudScale.smallest(0.1f)));
         scale.accept(next);
         Configs.hudConfig.save();
         this.rebuildWidgets();

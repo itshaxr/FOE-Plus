@@ -213,15 +213,29 @@ public class AutotipScreen extends Screen {
         }
         long now = System.currentTimeMillis();
         int maxLines = Math.max(0, (panelBottom - PAD + 2 - ly) / 10);
-        for (int i = 0; i < Math.min(maxLines, tips.size()); i++) {
+        // three columns: the amounts and the times line up on the right, and a name too long for what's left
+        // is cut short with "…" instead of running under the amount
+        int shown = Math.min(maxLines, tips.size());
+        int whenW = 0, amountW = 0;
+        for (int i = 0; i < shown; i++) {
+            AutotipHandler.Tip tip = tips.get(i);
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(now - tip.time());
+            whenW = Math.max(whenW, font.width(minutes == 0 ? "now" : minutes + "m ago"));
+            amountW = Math.max(amountW, font.width("$" + String.format("%,d", tip.amount())));
+        }
+        int rightEdge = rightX + RIGHT_W;
+        int amountRight = rightEdge - whenW - 6;
+        int nameRoom = amountRight - amountW - 6 - rightX;
+        for (int i = 0; i < shown; i++) {
             AutotipHandler.Tip tip = tips.get(i);
             long minutes = TimeUnit.MILLISECONDS.toMinutes(now - tip.time());
             Component amount = Component.literal("$" + String.format("%,d", tip.amount())).withStyle(ChatFormatting.GREEN);
             Component when = Component.literal(minutes == 0 ? "now" : minutes + "m ago").withStyle(ChatFormatting.DARK_GRAY);
-            int rightEdge = rightX + RIGHT_W;
-            guiGraphics.drawString(font, Component.literal(tip.player()).withStyle(ChatFormatting.WHITE), rightX, ly, 0xFFFFFFFF, false);
+            String name = tip.player();
+            if (font.width(name) > nameRoom) name = font.plainSubstrByWidth(name, Math.max(0, nameRoom - font.width("…"))) + "…";
+            guiGraphics.drawString(font, Component.literal(name).withStyle(ChatFormatting.WHITE), rightX, ly, 0xFFFFFFFF, false);
             guiGraphics.drawString(font, when, rightEdge - font.width(when), ly, 0xFFFFFFFF, false);
-            guiGraphics.drawString(font, amount, rightEdge - font.width(when) - 6 - font.width(amount), ly, 0xFFFFFFFF, false);
+            guiGraphics.drawString(font, amount, amountRight - font.width(amount), ly, 0xFFFFFFFF, false);
             ly += 10;
         }
     }

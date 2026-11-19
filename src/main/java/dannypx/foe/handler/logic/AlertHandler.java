@@ -384,40 +384,27 @@ public class AlertHandler {
         return MoonTimerHandler.instance().getTimeSinceMoonrise();
     }
 
-    /// How long a moon lasts, from the wiki: "Moon Events occur every full moon (once every 8
-    /// Minecraft days or 160 minutes) and last for 600 seconds".
-    public static final long MOON_MS = 600_000L;
-    /// A moon is over this long after its rise, even if its "has set" line was missed.
-    static final long MAX_MOON_MS = MOON_MS + 60_000L, MIN_MOON_MS = 60_000L;
-
-    /// How long moons last: 10 minutes (what FOE+ saw a moon last, when that's close to it).
-    long moonDurationMs() {
-        long known = learned().moonDurationMs;
-        return known >= MOON_MS - 60_000L && known <= MAX_MOON_MS ? known : MOON_MS;
-    }
-
-    /// Time left on the moon that's up, or -1 when none is up, how long moons last isn't known yet,
-    /// or when the moon's rise wasn't seen and the timer's guess of it doesn't fit.
+    /// Time left on the moon that's up, or -1 when none is up or how long moons last isn't known yet.
     public long moonMsLeft() {
         if (!isMoonUp()) return -1L;
-        return moonMsLeft(moonDurationMs(), MoonTimerHandler.instance().getTimeSinceSeenRise(), moonElapsedMs());
-    }
-
-    /// Package-private for tests: {@code seen} is the time since a rise seen in chat (-1 if none),
-    /// {@code guessed} the time since the rise the moon timer works out from the cycle.
-    static long moonMsLeft(long known, long seen, long guessed) {
-        if (known <= 0) return -1L;
-        long since = seen >= 0 ? seen : guessed;
-        // a guessed rise from longer ago than a moon lasts is a stale guess, not a moon about to end
-        if (since < 0 || since > known + 60_000L) return -1L;
+        long known = moonDurationMs(), since = moonElapsedMs();
+        if (since < 0) return -1L;
         return Math.max(0L, known - since);
     }
 
-    /// Called when chat says the moon has set: remembers how long moons last, but only from a moon
-    /// whose rise FOE+ saw (the timer's worked-out rise can be far off, which taught it a 2.5 hour moon).
+    /// Moons last 10 minutes; a learned length far from that came from a timer that was off (a moon
+    /// set seen while the timer still had the schedule from before a server restart), so it's ignored.
+    static final long MOON_MS = 10L * 60_000L, MOON_MIN_MS = 5L * 60_000L, MOON_MAX_MS = 20L * 60_000L;
+
+    private long moonDurationMs() {
+        long known = learned().moonDurationMs;
+        return known >= MOON_MIN_MS && known <= MOON_MAX_MS ? known : MOON_MS;
+    }
+
+    /// Called when chat says the moon has set: remembers how long moons last.
     public void onMoonSet() {
-        long elapsed = MoonTimerHandler.instance().getTimeSinceSeenRise();
-        if (elapsed >= MIN_MOON_MS && elapsed <= MAX_MOON_MS) {
+        long elapsed = moonElapsedMs();
+        if (elapsed >= MOON_MIN_MS && elapsed <= MOON_MAX_MS) {
             learned().moonDurationMs = elapsed;
             saveLearned();
         }
@@ -486,6 +473,7 @@ public class AlertHandler {
     }
 
     private void announceFabledCaught(FabledRecord record) {
+        dannypx.foe.handler.store.NotifySounds.play("fabled_caught");
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null || !Configs.hudConfig.alertChat.get() || !Configs.hudConfig.alertFabled.get()) return;
         // [FOE+] FABLED CAUGHT Danube River · by Steve
@@ -585,8 +573,9 @@ public class AlertHandler {
                 }
                 case MOON -> {
                     if (!isMoonUp()) continue;
-                    long left = moonMsLeft();
-                    out.add(new Active(alert, left >= 0 ? smooth("end:" + alert.name(), left) : -1L));
+                    long known = moonDurationMs();
+                    long since = moonElapsedMs();
+                    out.add(new Active(alert, since >= 0 ? smooth("end:" + alert.name(), Math.max(0L, known - since)) : -1L));
                 }
                 case RAINBOW -> {
                     if (!isRainbowUp()) continue;
@@ -688,17 +677,26 @@ public class AlertHandler {
                         .append(dannypx.foe.helper.FoeChat.sep())
                         .append(dannypx.foe.helper.FoeChat.highlight(active.alert() == Alert.FABLED ? "until caught" : timeLeft(active.msLeft()))));
             }
-            if (Configs.hudConfig.alertSound.get()) {
-                var sound = Configs.hudConfig.alertSoundType.get().sound.value();
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, 1f, 1f));
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(sound, 1.2f, 1f));
-            }
+            // its own sound (O → Customize → Sounds)
+            dannypx.foe.handler.store.NotifySounds.play(soundId(active.alert()));
         }
         announced.retainAll(current);
         activeSince.keySet().retainAll(current);
     }
 
     private static final long ANNOUNCE_AFTER_MS = 2_000L;
+
+    /// The alert's sound in O → Customize → Sounds (both Bessies share one).
+    static String soundId(Alert alert) {
+        return switch (alert) {
+            case WITCHING_HOUR -> "witching_hour";
+            case TITANOBOA -> "titanoboa";
+            case BESSIE_NIGHT, BESSIE_MOON -> "bessie";
+            case ROUGAROU -> "rougarou";
+            case GARABONCIAS -> "garaboncias";
+            case FABLED -> "fabled_event";
+        };
+    }
     private final java.util.Map<Alert, Long> activeSince = new java.util.EnumMap<>(Alert.class);
 
     //region Text helpers

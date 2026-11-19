@@ -68,7 +68,7 @@ public class TooltipHandler extends Handler {
     }
 
     /// A bait's tooltip: what its stack is worth at your bait prices, on its "Stock: 18x" line
-    /// ("Stock: 18x · $4,500"), or on a line of its own when there's no such line.
+    /// ("Stock: 18x · $4,500"); a lure's on its "Remaining Uses: 86" line.
     static void addBaitValue(ItemStack itemStack, List<Component> components) {
         long value = dannypx.foe.handler.logic.BaitboxHandler.stackValue(itemStack);
         if (value < 0) return;
@@ -86,36 +86,16 @@ public class TooltipHandler extends Handler {
                 return;
             }
         }
-        int at = components.isEmpty() ? 0 : Math.min(components.size(), 2);
-        // the line starts with the same frame pieces as the line above it, so it sits inside the server's box
-        Component frame = at > 0 ? framePrefix(components.get(at - 1)) : Component.empty();
-        components.add(at, Component.empty().append(frame)
-                .append(Component.literal("Stack value: ").withStyle(net.minecraft.ChatFormatting.GRAY)).append(worth));
-    }
-
-    /// Package-private for tests: the server's frame pieces and spacing at the start of a tooltip line (its
-    /// private-use glyphs and the spaces among them, in their own styles), or nothing when it has none.
-    static Component framePrefix(Component line) {
-        net.minecraft.network.chat.MutableComponent out = Component.empty();
-        boolean[] done = {false}, any = {false};
-        StringBuilder pending = new StringBuilder();
-        line.visit((style, text) -> {
-            if (done[0]) return java.util.Optional.empty();
-            StringBuilder run = new StringBuilder();
-            for (int i = 0; i < text.length(); ) {
-                int cp = text.codePointAt(i);
-                boolean frame = (cp >= 0xE000 && cp <= 0xF8FF) || (cp >= 0xD000 && cp <= 0xD7FF);
-                if (frame) { run.append(pending).appendCodePoint(cp); pending.setLength(0); any[0] = true; }
-                else if (cp == ' ') pending.append(' ');
-                else { done[0] = true; break; }
-                i += Character.charCount(cp);
+        // A lure: on its "Remaining Uses: 86" line. A line of its own is never added: the server's tooltip
+        // frame is drawn line by line, and an extra line pushed the item's name out of sight.
+        for (int i = 0; i < components.size(); i++) {
+            if (components.get(i).getString().contains("Remaining Uses:")) {
+                components.set(i, components.get(i).copy()
+                        .append(Component.literal("  ·  ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+                        .append(worth));
+                return;
             }
-            if (run.length() > 0) out.append(Component.literal(run.toString()).setStyle(style));
-            return java.util.Optional.empty();
-        }, net.minecraft.network.chat.Style.EMPTY);
-        if (!any[0]) return Component.empty();
-        if (pending.length() > 0) out.append(Component.literal(pending.toString()));
-        return out;
+        }
     }
 
     private void setArmorRoll(ItemStack itemStack, List<Component> components) {

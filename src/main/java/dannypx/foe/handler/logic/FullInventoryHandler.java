@@ -44,14 +44,12 @@ public class FullInventoryHandler {
 
         // Sound, like FOE: not in the hub or on Crew Island.
         if (isAlmostFull()
-                && Configs.hudConfig.inventoryWarningSound.get()
                 && TabOverlayHandler.instance().isInInstance()) {
             long now = System.currentTimeMillis();
             if (now - lastSound > Configs.hudConfig.inventoryWarningSoundSeconds.get() * 1000L) {
                 lastSound = now;
-                // Played twice for extra loudness, as FOE does (FOE boosts to 150%).
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(Configs.hudConfig.inventoryWarningSoundType.get().sound.value(), 1f, 1f));
-                mc.getSoundManager().play(SimpleSoundInstance.forUI(Configs.hudConfig.inventoryWarningSoundType.get().sound.value(), 1f, 0.5f));
+                // its sound in O → Customize → Sounds (played twice for extra loudness, as FOE does, until you change it)
+                dannypx.foe.handler.store.NotifySounds.play("inventory_full");
             }
         }
     }

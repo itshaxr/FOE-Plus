@@ -85,16 +85,22 @@ public class BossEventHandler extends Handler {
                     String json = TextHelper.componentToJson(lerpingBossEvent.getName());
                     JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
 
-                    if(jsonObject.get("extra") != null) {
+                    // The place: read on its own, so a bar laid out differently (a contest, an event) can't
+                    // blank it. Before, a "(" at the start or a changed part made it vanish from the top bar.
+                    String parsedPlace = "";
+                    Integer placeColor = null;
+                    try {
                         JsonObject locationObject = jsonObject.get("extra").getAsJsonArray().get(0).getAsJsonObject()
                                 .get("extra").getAsJsonArray().get(0).getAsJsonObject();
-                        String locationString = locationObject.get("text").getAsString().substring(4).trim();
-                        if(locationString.contains("(")) {
-                            locationString = locationString.substring(0, locationString.indexOf("(") - 1);
-                        }
+                        String raw = locationObject.get("text").getAsString();
+                        parsedPlace = raw.length() > 4 ? raw.substring(4).trim() : "";
+                        placeColor = TextColor.parseColor(locationObject.get("color").getAsString()).getOrThrow().getValue();
+                    } catch (RuntimeException ignored) {
+                        // laid out another way: found by name below
+                    }
+                    location = resolvedLocation(name, parsedPlace, placeColor, location);
 
-                        location = Component.literal(locationString)
-                                .withColor(TextColor.parseColor(locationObject.get("color").getAsString()).getOrThrow().getValue());
+                    if(jsonObject.get("extra") != null) {
 
                         JsonObject weatherObject = jsonObject.get("extra").getAsJsonArray().get(2).getAsJsonObject()
                                 .get("extra").getAsJsonArray().get(0).getAsJsonObject();
@@ -167,6 +173,44 @@ public class BossEventHandler extends Handler {
         }
     }
     //endregion
+
+    /// Package-private for tests: the place to show from the location bar. The part the server
+    /// normally puts it in when that's a known place; else any known place named on the bar;
+    /// else what that part said; and if the bar names nothing, the place shown before (it
+    /// never goes blank on its own).
+    static MutableComponent resolvedLocation(String bar, String parsed, Integer color, MutableComponent previous) {
+        String place = parsed == null ? "" : parsed.replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        int paren = place.indexOf('(');
+        if (paren >= 0) place = place.substring(0, paren).trim();
+        if (!place.isEmpty() && dannypx.foe.helper.FoeLocations.fromName(place) != null) {
+            MutableComponent out = Component.literal(place);
+            return color == null ? out.withColor(dannypx.foe.helper.FoeLocations.nameColor(dannypx.foe.helper.FoeLocations.fromName(place)) & 0xFFFFFF) : out.withColor(color);
+        }
+        dannypx.foe.helper.FoeLocations.Location named = locationIn(bar);
+        if (named != null) {
+            String display = dannypx.foe.helper.FoeLocations.displayName(named);
+            if (display != null) return Component.literal(display).withColor(dannypx.foe.helper.FoeLocations.nameColor(named) & 0xFFFFFF);
+        }
+        if (!place.isEmpty() && place.chars().filter(Character::isLetter).count() >= 3) {
+            MutableComponent out = Component.literal(place);
+            return color == null ? out : out.withColor(color);
+        }
+        return previous == null ? Component.empty() : previous;
+    }
+
+    /// Package-private for tests: a known place named anywhere on the bar, or null.
+    static dannypx.foe.helper.FoeLocations.Location locationIn(String bar) {
+        if (bar == null) return null;
+        String letters = bar.replaceAll("[\\uE000-\\uF8FF]", "").toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]", "");
+        if (letters.isEmpty()) return null;
+        for (dannypx.foe.helper.FoeLocations.Location l : dannypx.foe.helper.FoeLocations.Location.values()) {
+            String display = dannypx.foe.helper.FoeLocations.displayName(l);
+            if (display == null) continue;
+            String key = display.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]", "");
+            if (!key.isEmpty() && letters.contains(key)) return l;
+        }
+        return null;
+    }
 
     /// Package-private for tests: a boss bar that's only a place's name ("Big Bear Dock"): the spot you're at,
     /// even if the server changes the spacing glyphs around it. Timers, goals and events have numbers or colons.

@@ -172,11 +172,14 @@ public class FoeMainScreen extends Screen {
                             Configs.rendererConfig.save();
                         }));
                 out.add(new TileSpec("HUD Style", FoeMainScreen::hudStyleLabel, Items.PAINTING,
-                        "FOE+'s panels, or the look FOE-R's HUDs have", true,
+                        "FOE+'s panels and top bar, or FOE-R's look with profile, pet and location boxes", true,
                         b -> {
                             Configs.hudConfig.hudStyle.accept(Configs.hudConfig.hudStyle.get().next());
                             Configs.hudConfig.save();
+                            // the FOE-R boxes take the top corners: the panels there move down to make room
+                            if (dannypx.foe.screens.element.hud.FoeRBoxes.on()) dannypx.foe.screens.element.hud.FoeRBoxes.makeRoom();
                         }));
+                out.add(tile("Sounds", Items.NOTE_BLOCK, "Every FOE+ sound, and your own", b -> mc.setScreen(new SoundsScreen(this))));
             }
             case STATS -> {
                 out.add(tile("Import Dry Streaks", Items.CLOCK, "From your newest FOE or FOE-R install", b -> dannypx.foe.handler.io.DryStreakImporter.importNow()));

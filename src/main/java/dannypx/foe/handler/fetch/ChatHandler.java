@@ -57,6 +57,8 @@ public class ChatHandler extends Handler {
     }
 
     public void onReceiveMessage(Component component) {
+        // your own sound triggers (O → Customize → Sounds), on every line
+        dannypx.foe.handler.store.NotifySounds.onChat(component.getString());
         // Auto Tip needs REACTIONS lines, which the blacklist below skips.
         dannypx.foe.handler.logic.AutotipHandler.instance().onReceiveMessage(component);
         if(this.inBlackList(component)) return;

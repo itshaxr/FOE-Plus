@@ -50,6 +50,22 @@ public final class NameTagMarker {
         return out;
     }
 
+    /// The game's own ♣ in one colour (5 by 6, the size {@link #anchor} is drawn to).
+    public static Component club(int color) {
+        return Component.literal("♣").withColor(color);
+    }
+
+    /// A ⚓ the same size and place as the game's ♣ (its own ⚓ is bigger), in one colour.
+    public static Component anchor(int color) {
+        return iconGlyph("\uE023", color);
+    }
+
+    private static Component iconGlyph(String glyph, int color) {
+        return Component.literal(glyph).withStyle(style -> style.withColor(color)
+                .withFont(new net.minecraft.network.chat.FontDescription.Resource(
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "clover"))));
+    }
+
     /// The width of the widest of these, in pixels (0 without a font).
     public static int widest(String... texts) {
         try {

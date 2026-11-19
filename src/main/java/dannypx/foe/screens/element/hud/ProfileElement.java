@@ -23,10 +23,7 @@ public class ProfileElement extends Element {
     //region Fields
 
     private static final int TEXTURE_WIDTH = 160;
-    private static final int TEXTURE_HEIGHT = 44;
-
-    private static final Identifier PROFILE_TEXTURE = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/profile");
-    private static final Identifier PROFILE_TEXTURE_FLIP = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "elements/profile_flip");
+    private static final int TEXTURE_HEIGHT = 42;
     //endregion
 
     public ProfileElement() {
@@ -50,198 +47,96 @@ public class ProfileElement extends Element {
     }
 
     //region Methods
+    static final int GOLD = 0xE8B54A, BAR_W = 56;
+
     @Override
     public void render(GuiGraphics guiGraphics) {
-        int scaledWidth = (int) (Minecraft.getInstance().getWindow().getGuiScaledWidth() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get())));
-        int scaledHeight = (int) (Minecraft.getInstance().getWindow().getGuiScaledHeight() * (1 / dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get())));
+        var cfg = Configs.hudConfig;
+        if (!FoeRBoxes.shows(cfg.showProfileElement.get(), isCopy)) return;
+        float scale = FoeRBoxes.scale(cfg.profileElementScale.get());
+        int[] screen = FoeRBoxes.screen(scale);
+        if (!isCopy) {
+            xPos = cfg.profileElementXPosition.get() / 100f;
+            yPos = cfg.profileElementYPosition.get() / 100f;
+            alignment = cfg.profileElementAlignment.get();
+        }
+        boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;
+        int x = right ? screen[0] - Math.round(screen[0] * xPos) : Math.round(screen[0] * xPos);
+        int y = Math.round(screen[1] * yPos);
 
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().scale(dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get()), dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.profileElementScale.get()));
-        if(LoadingHandler.instance().isLoadingDone()
-                && Configs.hudConfig.showProfileElement.get() && !Configs.hudConfig.showTopBar.get()
-                && TabOverlayHandler.instance().isInInstance()
-        ) {
-            // Position
-            if(!isCopy) {
-                xPos = Configs.hudConfig.profileElementXPosition.get() / 100f;
-                yPos = Configs.hudConfig.profileElementYPosition.get() / 100f;
-            }
-
-            int x = switch (Configs.hudConfig.profileElementAlignment.get()) {
-                case TOP_LEFT -> Math.round(scaledWidth * xPos);
-                case TOP_RIGHT -> scaledWidth
-                        - Math.round(scaledWidth * xPos);
-                default -> 0;
-            };
-            int y = Math.round(scaledHeight * yPos);
-
-            this.renderTexture(guiGraphics, x, y);
-            this.renderComponent(guiGraphics, Minecraft.getInstance().font, x, y);
-            this.renderHead(guiGraphics, x, y);
-        }
+        guiGraphics.pose().scale(scale, scale);
+        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
         guiGraphics.pose().popMatrix();
+        this.width = Math.round(w * scale);
+        this.height = Math.round(HEIGHT * scale);
     }
 
-    private void renderHead(GuiGraphics guiGraphics, int x, int y) {
-        if(Minecraft.getInstance().player != null) {
-            Identifier SKIN_TEXTURE = Minecraft.getInstance().player.getSkin().body().texturePath();
-            switch (Configs.hudConfig.profileElementAlignment.get()) {
-                case TOP_LEFT -> {
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
-                            SKIN_TEXTURE,
-                            x + 8, y + 8,
-                            8, 8,
-                            21, 21,
-                            8, 8,
-                            64, 64
-                    );
+    static final int HEIGHT = 42;
 
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
-                            SKIN_TEXTURE,
-                            x + 7, y + 7,
-                            40, 8,
-                            23, 23,
-                            8, 8,
-                            64, 64
-                    );
-                }
-                case TOP_RIGHT -> {
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
-                            SKIN_TEXTURE,
-                            x - 8 - 21, y + 8,
-                            8, 8,
-                            21, 21,
-                            8, 8,
-                            64, 64
-                    );
-
-                    guiGraphics.blit(RenderPipelines.GUI_TEXTURED,
-                            SKIN_TEXTURE,
-                            x - 7 - 23, y + 7,
-                            40, 8,
-                            23, 23,
-                            8, 8,
-                            64, 64
-                    );
-                }
-            }
-
+    /// Draws the box at `x` (its left edge, or its right edge when `right`), `y`; returns how wide it came out.
+    private int draw(GuiGraphics g, Font font, int x, int y, boolean right) {
+        Minecraft mc = Minecraft.getInstance();
+        Component name = TabOverlayHandler.instance().getPlayerName();
+        if (name.getString().isBlank()) name = Component.literal(mc.player != null ? mc.player.getGameProfile().name() : "Player");
+        // your + (in the colour you picked), unless the name already has it
+        if (mc.player != null && !name.getString().contains(dannypx.foe.helper.NameTagMarker.PLUS_GLYPH)) {
+            Component plus = dannypx.foe.handler.logic.TextDisplayHandler.instance().tabMarker(mc.player.getUUID());
+            if (plus != null) name = TextHelper.concat(name, Component.literal(" "), plus);
         }
+        String levelText = ScoreboardHandler.instance().getLevel().getString().trim();
+        Component level = TextHelper.concat(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY),
+                Component.literal(levelText.isEmpty() ? "0" : levelText).withColor(0xFFC94D));
+        float progress = Math.max(0f, Math.min(1f, LocalPlayerHandler.instance().getExperienceProgress()));
+        Component percent = Component.literal(Math.round(progress * 100) + "%").withStyle(ChatFormatting.GRAY);
+        Component money = money();
+
+        int levelW = font.width(level) + 4 + BAR_W + 4 + font.width(percent);
+        int rail1 = FoeRBoxes.railFor(font.width(name)), rail2 = FoeRBoxes.railFor(levelW);
+        int rail3 = FoeRBoxes.railFor(font.width(money));
+        int railX = right ? x - FoeRBoxes.BOX : x + FoeRBoxes.BOX;
+
+        FoeRBoxes.box(g, x, y, right, GOLD);
+        renderHead(g, FoeRBoxes.inside(x, right), y + 3);
+        FoeRBoxes.rail(g, railX, y + 2, rail1, FoeRBoxes.RAIL_H, right, GOLD);
+        FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, GOLD);
+        // money and credits hang under the box on their own short rail
+        int moneyX = right ? x - 6 : x + 6;
+        FoeRBoxes.rail(g, moneyX, y + 31, rail3, 11, right, GOLD);
+
+        FoeRBoxes.text(g, font, name, railX, y + 4, right);
+        int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
+        PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
+        int bx = lx + font.width(level) + 4;
+        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFFFFD866, 0xFFD9901A);
+        g.drawString(font, percent, bx + BAR_W + 4, y + 18, 0xFFFFFFFF, true);
+        FoeRBoxes.text(g, font, money, moneyX, y + 33, right);
+
+        return Math.max(FoeRBoxes.BOX + Math.max(rail1, rail2), 6 + rail3);
     }
 
-    private void renderComponent(GuiGraphics guiGraphics, Font font, int x, int y) {
-        int component1x = 40;
-        int component1y = 9;
-
-        Component player = TabOverlayHandler.instance().getPlayerName();
-        int playerWidth = font.width(player);
-
-        int component2x = 40;
-        int component2y = 21;
-
-        Component level = ScoreboardHandler.instance().getLevel().getString().isBlank()
-                ? Component.literal("0").withStyle(ChatFormatting.DARK_GRAY)
-                : ScoreboardHandler.instance().getLevel();
-        int bars = 20;
-        int progress = (int) (bars * LocalPlayerHandler.instance().getExperienceProgress());
-        int progressLeft = bars - progress;
-        Component progressComponent = Component.literal(" ".repeat(progress))
-                .withStyle(s -> s.withStrikethrough(true).withColor(GameXpBar.gameStyle() ? net.minecraft.network.chat.TextColor.fromRgb(GameXpBar.FILL) : net.minecraft.network.chat.TextColor.fromLegacyFormat(ChatFormatting.GOLD)));
-        Component progressLeftComponent = Component.literal(" ".repeat(progressLeft))
-                .withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.DARK_GRAY);
-
-        Component levelComponent = TextHelper.concat(
-                Component.literal("LV. ").withStyle(ChatFormatting.GRAY),
-                level,
-                Component.literal(" [").withStyle(ChatFormatting.DARK_GRAY),
-                progressComponent,
-                progressLeftComponent,
-                Component.literal("]").withStyle(ChatFormatting.DARK_GRAY)
-        );
-        int levelWidth = font.width(TextHelper.smallCaps(levelComponent.getString()));
-
-        int component3x = 48;
-        int component3y = 34;
-
-        Component wallet = ScoreboardHandler.instance().getWallet();
-        Component walletComponent = !wallet.getString().isEmpty()
-                ? TextHelper.concat(
-                        Component.literal("\uF012 "),
-                        wallet
-                )
-                : Component.empty().append("\uF012 ");
-        int walletWidth = font.width(TextHelper.smallCaps(walletComponent.getString()));
-
-        int component4x = 110;
-        int component4y = 34;
-
-        Component creditsComponent = TextHelper.concat(
-                Component.literal("\uF00C "),
-                ScoreboardHandler.instance().getCredits()
-        );
-        int creditsWidth = font.width(TextHelper.smallCaps(creditsComponent.getString()));
-
-        switch (Configs.hudConfig.profileElementAlignment.get()) {
-            case TOP_LEFT -> {
-                guiGraphics.drawString(font,
-                        player,
-                        x + component1x, y + component1y,
-                        CommonColors.WHITE,
-                        true);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        levelComponent,
-                        x + component2x, y + component2y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        walletComponent,
-                        x + component3x, y + component3y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        creditsComponent,
-                        x + component4x, y + component4y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-            }
-            case TOP_RIGHT -> {
-                guiGraphics.drawString(font,
-                        player,
-                        x - component1x - playerWidth, y + component1y,
-                        CommonColors.WHITE,
-                        true);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        levelComponent,
-                        x - component2x - levelWidth, y + component2y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        walletComponent,
-                        x - component3x - walletWidth, y + component3y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-
-                GuiGraphicsHelper.drawString(guiGraphics, font,
-                        creditsComponent,
-                        x - component4x - creditsWidth, y + component4y,
-                        StringStyle.SHADOW, StringStyle.MIDDLE, StringStyle.SMALL_CAPS);
-            }
-        }
+    /// "$19.69M  ◆70": your balance and credits, as the top bar shows them.
+    private static Component money() {
+        ScoreboardHandler scoreboard = ScoreboardHandler.instance();
+        String wallet = scoreboard.getWallet().getString().trim().replaceFirst("^\\$\\s*", "");
+        Component credits = ScoreboardHandler.glyphs(scoreboard.getCredits());
+        if (credits.getString().isEmpty()) credits = scoreboard.getCreditsIcon();
+        String creditValue = scoreboard.getCredits().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        return TextHelper.concat(
+                Component.literal("$").withStyle(ChatFormatting.DARK_GREEN),
+                dannypx.foe.helper.NameTagMarker.GAP_WIDE,
+                Component.literal(wallet.isEmpty() ? "0" : wallet).withStyle(ChatFormatting.GREEN),
+                Component.literal("   "),
+                credits,
+                Component.literal(creditValue.isEmpty() ? "0" : creditValue).withStyle(ChatFormatting.YELLOW));
     }
 
-    private void renderTexture(GuiGraphics guiGraphics, int x, int y) {
-        switch (Configs.hudConfig.profileElementAlignment.get()) {
-            case TOP_LEFT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    PROFILE_TEXTURE,
-                    x, y,
-                    width, height
-            );
-            case TOP_RIGHT -> guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-                    PROFILE_TEXTURE_FLIP,
-                    x - width, y,
-                    width, height
-            );
-        }
+    /// Your face (with its hat layer), 24 pixels, its top left at (x, y).
+    private void renderHead(GuiGraphics g, int x, int y) {
+        if (Minecraft.getInstance().player == null) return;
+        Identifier skin = Minecraft.getInstance().player.getSkin().body().texturePath();
+        g.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 8, 8, 24, 24, 8, 8, 64, 64);
+        g.blit(RenderPipelines.GUI_TEXTURED, skin, x, y, 40, 8, 24, 24, 8, 8, 64, 64);
     }
     //endregion
 }

@@ -4,6 +4,7 @@ import dannypx.foe.config.Configs;
 import dannypx.foe.handler.fetch.TitleHandler;
 import dannypx.foe.helper.TextHelper;
 import dannypx.foe.item.FishTagObject;
+import dannypx.foe.item.PetTagObject;
 import dannypx.foe.screens.element.Element;
 import dannypx.foe.type.Alignment;
 import net.minecraft.ChatFormatting;
@@ -11,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -30,9 +32,13 @@ public class CatchPopupElement extends Element {
     private static final float BIG = 2.0f;
     private static final float SMALL = 1.0f;
 
+    private static final float MID = 1.5f;
+
+    /// One line of the popup and the size it's drawn at.
+    record Line(Component text, float size) {}
+
     private static long shownAt = 0L;
-    private static List<Component> bigLines = new ArrayList<>();
-    private static List<Component> smallLines = new ArrayList<>();
+    private static List<Line> lines = new ArrayList<>();
 
     public CatchPopupElement() {
         this(false);
@@ -46,7 +52,7 @@ public class CatchPopupElement extends Element {
                 Component.literal("Catch Popup"),
                 isCopy);
         Font font = Minecraft.getInstance().font;
-        if (font != null) this.updateSize(font, previewBig(), previewSmall());
+        if (font != null) this.updateSize(font, sized(previewBig(), previewSmall()));
     }
 
     /// Called when a fish is caught.
@@ -76,9 +82,93 @@ public class CatchPopupElement extends Element {
             small.add(measurement(fish.getLength(), "ɪɴ", fish.getLength() * 2.54f, "ᴄᴍ"));
         }
 
-        bigLines = big;
-        smallLines = small;
+        lines = sized(big, small);
         shownAt = System.currentTimeMillis();
+    }
+
+    /// Called when a pet is fished up: its name, rarity and level, rating and overall percent,
+    /// then its four stats (climate luck and scale, location luck and scale) with what each is,
+    /// and the item it holds.
+    public static void showPet(PetTagObject pet) {
+        lines = petLines(pet);
+        shownAt = System.currentTimeMillis();
+    }
+
+    static List<Line> petLines(PetTagObject pet) {
+        // the badge from the pet's own tooltip, as the Pet panel shows it; else the server's badge for its rarity
+        Component rarity = pet.getRarityComponent();
+        if (rarity.getString().isBlank()) rarity = dannypx.foe.handler.logic.NotifierHandler.rarityBadge(pet);
+        return petLines(pet, rarity);
+    }
+
+    /// Package-private for tests and previews.
+    static List<Line> petLines(PetTagObject pet, Component rarity) {
+        List<Line> out = new ArrayList<>();
+        out.add(new Line(pet.getName().copy(), BIG));
+
+        MutableComponent level = Component.empty()
+                .append(rarity)
+                .append(Component.literal(" Lv. ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(String.valueOf(pet.getLevel())).withStyle(ChatFormatting.GREEN));
+        out.add(new Line(level, BIG));
+
+        Component rating = pet.getRatingComponent();
+        int ratingColor = firstColor(rating, 0xFFFFFF);
+        MutableComponent ratingLine = Component.empty();
+        if (!rating.getString().isBlank()) ratingLine.append(rating).append(Component.literal(" "));
+        ratingLine.append(Component.literal(percent(pet.getTotalPercent())).withColor(ratingColor));
+        out.add(new Line(ratingLine, BIG));
+
+        // the four stats, then under them which is which: climate luck, climate scale, location luck, location scale
+        int luck = PetPanelElement.luckColor();
+        int scale = LuckScalePanelElement.SCALE_COLOR;
+        float[] stats = {pet.getClimatePercentMaxLuck(), pet.getClimatePercentMaxScale(),
+                pet.getLocationPercentMaxLuck(), pet.getLocationPercentMaxScale()};
+        MutableComponent row = Component.empty();
+        for (int i = 0; i < stats.length; i++) {
+            if (i > 0) row.append(Component.literal(i == 2 ? "    " : "  "));
+            row.append(Component.literal(percent(stats[i])).withColor(stats[i] >= 0.9995f ? MAX_COLOR : (i % 2 == 0 ? luck : scale)));
+        }
+        out.add(new Line(row, BIG));
+
+        dannypx.foe.helper.FoeLocations.Climate climate = dannypx.foe.helper.FoeLocations.climateFromId(pet.getString("climate"));
+        dannypx.foe.helper.FoeLocations.Location location = dannypx.foe.handler.logic.PetLocationHandler.locationOf(pet);
+        if (climate == null && location != null) climate = location.climate;
+        MutableComponent key = Component.empty();
+        if (climate != null) key.append(climate.tag()).append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
+        key.append(Component.literal("Luck").withColor(luck)).append(Component.literal(" ")).append(Component.literal("Scale").withColor(scale));
+        key.append(Component.literal("    "));
+        String place = location == null ? null : dannypx.foe.helper.FoeLocations.displayName(location);
+        if (place != null) key.append(dannypx.foe.helper.FoeLocations.styledName(place)).append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
+        key.append(Component.literal("Luck").withColor(luck)).append(Component.literal(" ")).append(Component.literal("Scale").withColor(scale));
+        out.add(new Line(key, MID));
+
+        ItemStack held = dannypx.foe.item.PetHeldItem.decodeUncached(pet);
+        if (!held.isEmpty()) {
+            out.add(new Line(Component.literal("Item: ").withStyle(ChatFormatting.GRAY).append(held.getHoverName().copy()), MID));
+        }
+        if (emptySlots() == 0) out.add(new Line(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED), BIG));
+        return out;
+    }
+
+    /// Purple, as on the rod part icons: a stat rolled at its max.
+    static final int MAX_COLOR = 0xB04CFF;
+
+    static String percent(float fraction) {
+        float p = Math.round(fraction * 1000f) / 10f;
+        return (p == Math.floor(p) ? String.valueOf((int) p) : String.valueOf(p)) + "%";
+    }
+
+    private static int firstColor(Component c, int fallback) {
+        return c.visit((style, text) -> text.isBlank() || style.getColor() == null
+                ? java.util.Optional.<Integer>empty() : java.util.Optional.of(style.getColor().getValue()), net.minecraft.network.chat.Style.EMPTY).orElse(fallback);
+    }
+
+    private static List<Line> sized(List<Component> big, List<Component> small) {
+        List<Line> out = new ArrayList<>();
+        for (Component c : big) out.add(new Line(c, BIG));
+        for (Component c : small) out.add(new Line(c, SMALL));
+        return out;
     }
 
     private static Component measurement(float value, String unit, float metric, String metricUnit) {
@@ -120,12 +210,14 @@ public class CatchPopupElement extends Element {
         return Math.round((font.lineHeight + LINE_SPACING / size) * size);
     }
 
-    private void updateSize(Font font, List<Component> big, List<Component> small) {
+    private void updateSize(Font font, List<Line> lines) {
         float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
         int widest = 0;
-        for (Component line : big) widest = Math.max(widest, Math.round(font.width(line) * BIG));
-        for (Component line : small) widest = Math.max(widest, Math.round(font.width(line) * SMALL));
-        int total = big.size() * lineHeight(font, BIG) + small.size() * lineHeight(font, SMALL);
+        int total = 0;
+        for (Line line : lines) {
+            widest = Math.max(widest, Math.round(font.width(line.text()) * line.size()));
+            total += lineHeight(font, line.size());
+        }
         this.width = Math.max(20, Math.round(widest * scale));
         this.height = Math.max(20, Math.round(total * scale));
     }
@@ -137,9 +229,8 @@ public class CatchPopupElement extends Element {
         long elapsed = System.currentTimeMillis() - shownAt;
         boolean showing = shownAt > 0 && elapsed < Configs.hudConfig.catchPopupTime.get() * 1000L;
 
-        List<Component> big = showing ? bigLines : (isCopy ? previewBig() : List.of());
-        List<Component> small = showing ? smallLines : (isCopy ? previewSmall() : List.of());
-        if (big.isEmpty() && small.isEmpty()) return;
+        List<Line> shown = showing ? lines : (isCopy ? sized(previewBig(), previewSmall()) : List.of());
+        if (shown.isEmpty()) return;
 
         if (!isCopy) {
             xPos = Configs.hudConfig.catchPopupXPosition.get() / 100f;
@@ -147,7 +238,7 @@ public class CatchPopupElement extends Element {
             // Hide the server's own catch title while ours is up, like FOE.
             if (showing && elapsed < 3000L) mc.gui.clearTitles();
         }
-        this.updateSize(font, big, small);
+        this.updateSize(font, shown);
 
         float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
         float centerX = mc.getWindow().getGuiScaledWidth() * xPos / scale;
@@ -155,13 +246,9 @@ public class CatchPopupElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
-        for (Component line : big) {
-            drawCentered(guiGraphics, font, line, centerX, y, BIG);
-            y += lineHeight(font, BIG);
-        }
-        for (Component line : small) {
-            drawCentered(guiGraphics, font, line, centerX, y, SMALL);
-            y += lineHeight(font, SMALL);
+        for (Line line : shown) {
+            drawCentered(guiGraphics, font, line.text(), centerX, y, line.size());
+            y += lineHeight(font, line.size());
         }
         guiGraphics.pose().popMatrix();
     }

@@ -46,8 +46,42 @@ public class ChummerHandler extends Handler {
         if (info == null) {
             CHUMMERS.remove(entity.getId());
         } else {
+            // the most time it's been seen with: how long it ran for, for the panel's bar
+            ChummerInfo before = CHUMMERS.get(entity.getId());
+            info.fullMs = Math.max(info.remainingAtParseMs(), before != null ? before.fullMs : 0L);
+            if (before != null && before.pos.distanceToSqr(info.pos) < 1.0) info.icon = before.icon;
             CHUMMERS.put(entity.getId(), info);
         }
+    }
+
+    /// The chummer's own picture: the item shown where it sits (an item display, or an armor stand's head, within a few
+    /// blocks of its sign), looked for at most once a second until found; a bucket of fish until then.
+    public net.minecraft.world.item.ItemStack icon(ChummerInfo info) {
+        if (!info.icon.isEmpty()) return info.icon;
+        long now = System.currentTimeMillis();
+        if (now - info.iconLookedAt >= 1000L && minecraft.level != null) {
+            info.iconLookedAt = now;
+            net.minecraft.world.phys.AABB around = new net.minecraft.world.phys.AABB(info.getPos(), info.getPos()).inflate(3.0);
+            double best = Double.MAX_VALUE;
+            for (Entity e : minecraft.level.getEntitiesOfClass(Entity.class, around,
+                    e -> e instanceof Display.ItemDisplay || e instanceof net.minecraft.world.entity.decoration.ArmorStand)) {
+                net.minecraft.world.item.ItemStack stack = e instanceof Display.ItemDisplay d ? d.getItemStack()
+                        : ((net.minecraft.world.entity.decoration.ArmorStand) e).getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+                double dist = e.position().distanceToSqr(info.getPos());
+                if (stack != null && !stack.isEmpty() && dist < best) { best = dist; info.icon = stack.copy(); }
+            }
+        }
+        if (!info.icon.isEmpty()) return info.icon;
+        if (fallbackIcon == null) fallbackIcon = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COD_BUCKET);
+        return fallbackIcon;
+    }
+
+    private static net.minecraft.world.item.ItemStack fallbackIcon = null;
+
+    /// The chummer whose range you're standing in (the nearest), or null.
+    public ChummerInfo inRange() {
+        ChummerInfo c = getChummer();
+        return c != null && c.isInRange() ? c : null;
     }
 
     public ChummerInfo getChummer() {
@@ -82,6 +116,13 @@ public class ChummerHandler extends Handler {
         private final int seconds;
         private final String player;
         private boolean inRange;
+        /// When its text was read, its bonus line ("+130 Bite Speed", "" if it has none), and the most time it's
+        /// been seen with.
+        private final long parsedAt = System.currentTimeMillis();
+        private String bonus = "";
+        long fullMs = 0L;
+        net.minecraft.world.item.ItemStack icon = net.minecraft.world.item.ItemStack.EMPTY;
+        long iconLookedAt = 0L;
 
         private ChummerInfo(Vec3 pos, String rarity, int minutes, int seconds, String player) {
             this.pos = pos;
@@ -91,11 +132,31 @@ public class ChummerHandler extends Handler {
             this.player = player;
         }
 
+        long remainingAtParseMs() {
+            return (minutes * 60L + seconds) * 1000L;
+        }
+
+        /// The time left now: counted down from what its text last said, so it moves every second.
+        public long remainingMs() {
+            return Math.max(0L, remainingAtParseMs() - (System.currentTimeMillis() - parsedAt));
+        }
+
+        /// The time left as a share of the most it's been seen with (1 when only seen once).
+        public float remainingFraction() {
+            if (fullMs <= 0L) return 1f;
+            return Math.max(0f, Math.min(1f, remainingMs() / (float) fullMs));
+        }
+
+        public String getBonus() {
+            return bonus;
+        }
+
         public static ChummerInfo tryParse(Vec3 pos, Component raw) {
             String rarity = null;
             int minutes = 0;
             int seconds = 0;
             String player = null;
+            String bonus = null;
 
             if(!raw.getString().contains("Chummer™")) return null;
 
@@ -107,6 +168,8 @@ public class ChummerHandler extends Handler {
 
                 if (line.startsWith("Activated by ")) {
                     player = line.substring("Activated by ".length()).trim();
+                } else if (line.startsWith("+") && bonus == null) {
+                    bonus = line;
                 } else if (line.endsWith(" Remaining")) {
                     String[] parts = line.substring(0, line.length() - " Remaining".length()).split(" ");
                     try {
@@ -122,7 +185,9 @@ public class ChummerHandler extends Handler {
             }
 
             if (rarity == null  || player == null) return null;
-            return new ChummerInfo(pos, rarity, minutes, seconds, player);
+            ChummerInfo info = new ChummerInfo(pos, rarity, minutes, seconds, player);
+            info.bonus = bonus == null ? "" : bonus.replaceAll("[\\uE000-\\uF8FF]", "").trim();
+            return info;
         }
 
         public String getPlayer() {

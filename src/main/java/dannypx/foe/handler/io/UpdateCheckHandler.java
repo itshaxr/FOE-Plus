@@ -100,6 +100,7 @@ public final class UpdateCheckHandler {
                 .withColor(ChatFormatting.AQUA).withUnderlined(true)
                 .withClickEvent(new ClickEvent.OpenUrl(URI.create(url)))
                 .withHoverEvent(new HoverEvent.ShowText(Component.literal("Open the FOE+ " + newest + " release on GitHub"))));
+        dannypx.foe.handler.store.NotifySounds.play("update");
         FoeChat.send(FoeChat.line("UPDATE", FoeChat.GREEN)
                 .append(FoeChat.text("FOE+ "))
                 .append(FoeChat.highlight(newest))

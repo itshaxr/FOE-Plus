@@ -107,6 +107,7 @@ public class PetLocationHandler {
             checkAt = 0L;
             if (Configs.hudConfig.showGearWarning.get() && isWrongPet(here)) {
                 PetTagObject pet = InventoryHandler.instance().getCurrentPet();
+                dannypx.foe.handler.store.NotifySounds.play("wrong_pet");
                 // [FOE+] WRONG PET Eagle Pet · Danube River needs a Wolf Pet (in inventory)
                 dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("WRONG PET", dannypx.foe.helper.FoeChat.RED)
                         .append(pet.getName())
