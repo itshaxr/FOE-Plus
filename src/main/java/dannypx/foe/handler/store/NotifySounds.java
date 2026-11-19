@@ -53,6 +53,7 @@ public final class NotifySounds {
             new Kind("thunderstorm", "Thunderstorm", Group.SERVER, 0xC8C8FF, false),
             new Kind("booster", "Global booster", Group.SERVER, 0x55FF55, false),
 
+            new Kind("fish_bite", "Fish bite (BITE!)", Group.CATCHES, 0x55FFFF, false),
             new Kind("albino", "Albino", Group.CATCHES, 0xF2F2F2, false),
             new Kind("melanistic", "Melanistic", Group.CATCHES, 0x8A8AA0, false),
             new Kind("trophy", "Trophy", Group.CATCHES, 0xFFC93C, false),
@@ -70,7 +71,7 @@ public final class NotifySounds {
             new Kind("update", "FOE+ update", Group.SOCIAL, 0x55FF55, false),
 
             new Kind("inventory_full", "Inventory full", Group.WARNINGS, 0xFF5555, true),
-            new Kind("daily_quest", "Daily quest", Group.WARNINGS, 0xFF5555, false),
+            new Kind("daily_quest", "About to complete daily quest", Group.WARNINGS, 0xFF5555, false),
             new Kind("wrong_pet", "Wrong pet", Group.WARNINGS, 0xFF5555, false));
 
     /// What's saved for each sound.
@@ -96,8 +97,56 @@ public final class NotifySounds {
     /// pattern when {@code regex}.
     public static class Custom extends Setting {
         public String name = "My trigger";
+        /// The first versions' one trigger (moved into {@link #triggers} when read).
         public String match = "";
         public boolean regex = false;
+        /// Like ChatNotify: it sounds when any trigger matches and no exception does.
+        public List<Rule> triggers = new ArrayList<>();
+        public List<Rule> exceptions = new ArrayList<>();
+        /// Whose lines: ANYONE, PLAYERS (a player's chat) or SERVER (everything else).
+        public String from = "ANYONE";
+        public boolean caseSensitive = false;
+        /// Leave out your own chat lines.
+        public boolean skipOwn = true;
+        /// Seconds before it can sound again (0: every time).
+        public int cooldown = 0;
+        /// Also: colour the matched words in chat (bold / underlined as picked), show the line on screen, flash the
+        /// game's icon on your taskbar when it isn't the window in front.
+        public boolean colorWords = false, bold = false, underline = false, title = false, flash = false;
+        public int wordColor = 0xFFD866;
+        transient long lastAt = 0L;
+    }
+
+    /// One trigger or exception: its text and how it's looked for.
+    public static class Rule {
+        public String text = "";
+        /// CONTAINS, WORD (a whole word), STARTS (the line starts with it), REGEX (a pattern), KEY (the server's
+        /// message key, for game messages that have one).
+        public String mode = "CONTAINS";
+
+        public Rule() {}
+
+        public Rule(String text, String mode) {
+            this.text = text;
+            this.mode = mode;
+        }
+    }
+
+    public static final String[] MODES = {"CONTAINS", "WORD", "STARTS", "REGEX", "KEY"};
+
+    public static String modeName(String mode) {
+        return switch (mode == null ? "" : mode) {
+            case "WORD" -> "Whole word";
+            case "STARTS" -> "Starts with";
+            case "REGEX" -> "Pattern";
+            case "KEY" -> "Key";
+            default -> "Contains";
+        };
+    }
+
+    public static String nextMode(String mode) {
+        for (int i = 0; i < MODES.length; i++) if (MODES[i].equals(mode)) return MODES[(i + 1) % MODES.length];
+        return MODES[1];
     }
 
     static final class Saved {
@@ -131,6 +180,7 @@ public final class NotifySounds {
     public static Custom addCustom() {
         Custom c = new Custom();
         c.on = true;
+        c.triggers.add(new Rule());
         custom().add(c);
         save();
         return c;
@@ -198,6 +248,7 @@ public final class NotifySounds {
                 if (s != null) {
                     if (s.sounds == null) s.sounds = new LinkedHashMap<>();
                     if (s.custom == null) s.custom = new ArrayList<>();
+                    for (Custom c : s.custom) upgrade(c);
                     saved = s;
                 }
             }
@@ -255,33 +306,152 @@ public final class NotifySounds {
 
     //region Your own triggers
     /// Called for every chat line from the server: plays the sound of each of your triggers it matches.
-    public static void onChat(String line) {
-        if (line == null || line.isBlank()) return;
+    /// The first versions' one trigger becomes the first of its triggers; missing lists are made.
+    public static void upgrade(Custom c) {
+        if (c.triggers == null) c.triggers = new ArrayList<>();
+        if (c.exceptions == null) c.exceptions = new ArrayList<>();
+        if (c.from == null) c.from = "ANYONE";
+        if (c.triggers.isEmpty() && c.match != null && !c.match.isBlank()) {
+            c.triggers.add(new Rule(c.match, c.regex ? "REGEX" : "CONTAINS"));
+            c.match = "";
+        }
+    }
+
+    public static void onChat(net.minecraft.network.chat.Component line) {
+        if (line == null) return;
+        String plain = line.getString();
+        if (plain.isBlank()) return;
         try {
             if (!Configs.mainConfig.enableMod.get()) return;
+            long now = System.currentTimeMillis();
             for (Custom c : List.copyOf(custom())) {
-                if (c.on && matches(c, line)) {
-                    play(c, false);
-                    return; // one sound per line
-                }
+                if (!c.on || !matches(c, line, plain)) continue;
+                if (c.cooldown > 0 && now - c.lastAt < c.cooldown * 1000L) continue;
+                c.lastAt = now;
+                play(c, false);
+                if (c.title) dannypx.foe.handler.renderer.QuestWarning.flash(line.copy());
+                if (c.flash) flashWindow();
+                return; // one sound per line
             }
         } catch (Throwable ignored) {
             // a bad pattern: no sound
         }
     }
 
-    /// Package-private for tests.
-    static boolean matches(Custom c, String line) {
-        if (c.match == null || c.match.isBlank()) return false;
-        String plain = line.replaceAll("§.", "");
-        if (c.regex) {
-            try {
-                return Pattern.compile(c.match, Pattern.CASE_INSENSITIVE).matcher(plain).find();
-            } catch (RuntimeException e) {
-                return false;
-            }
+    private static void flashWindow() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.isWindowActive()) return;
+        org.lwjgl.glfw.GLFW.glfwRequestWindowAttention(mc.getWindow().handle());
+    }
+
+    /// A player's chat line ("! [227] Gorkinzola » awoooo"), not the server's.
+    static final Pattern PLAYER_LINE = Pattern.compile("^\\s*(?:\\S\\s+)?\\[\\d+\\]\\s+\\S+.*?»");
+
+    /// Package-private for tests: whether a line sets this trigger off (who it's from, any trigger, no exception).
+    static boolean matches(Custom c, net.minecraft.network.chat.Component line, String plain) {
+        upgrade(c);
+        if (c.triggers.isEmpty()) return false;
+        plain = plain.replaceAll("§.", "");
+        boolean player = PLAYER_LINE.matcher(plain).find();
+        if ("PLAYERS".equals(c.from) && !player) return false;
+        if ("SERVER".equals(c.from) && player) return false;
+        if (c.skipOwn && player) {
+            Minecraft mc = Minecraft.getInstance();
+            String me = mc == null || mc.player == null ? null : mc.player.getGameProfile().name();
+            if (me != null && Pattern.compile("\\b" + Pattern.quote(me) + "\\s*»").matcher(plain).find()) return false;
         }
-        return plain.toLowerCase(Locale.ROOT).contains(c.match.toLowerCase(Locale.ROOT));
+        boolean hit = false;
+        for (Rule r : c.triggers) if (ruleMatches(r, c.caseSensitive, line, plain)) { hit = true; break; }
+        if (!hit) return false;
+        for (Rule r : c.exceptions) if (ruleMatches(r, c.caseSensitive, line, plain)) return false;
+        return true;
+    }
+
+    static boolean ruleMatches(Rule r, boolean caseSensitive, net.minecraft.network.chat.Component line, String plain) {
+        if (r == null || r.text == null || r.text.isBlank()) return false;
+        if ("KEY".equals(r.mode)) return line != null && hasKey(line, r.text.trim());
+        return !spans(r, caseSensitive, plain).isEmpty();
+    }
+
+    /// Where a rule matches in the line, as {start, end} pairs (none for a Key rule). Package-private for tests.
+    static List<int[]> spans(Rule r, boolean caseSensitive, String plain) {
+        List<int[]> out = new ArrayList<>();
+        if (r.text == null || r.text.isBlank() || "KEY".equals(r.mode)) return out;
+        String regex = switch (r.mode == null ? "" : r.mode) {
+            case "REGEX" -> r.text;
+            case "WORD" -> "(?<![\\p{L}\\p{N}])" + Pattern.quote(r.text) + "(?![\\p{L}\\p{N}])";
+            case "STARTS" -> "^\\s*" + Pattern.quote(r.text);
+            default -> Pattern.quote(r.text);
+        };
+        try {
+            var m = Pattern.compile(regex, caseSensitive ? 0 : Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE).matcher(plain);
+            while (m.find()) {
+                if (m.end() > m.start()) out.add(new int[]{m.start(), m.end()});
+                else if (m.end() >= plain.length()) break;
+            }
+        } catch (RuntimeException ignored) {
+            // a bad pattern matches nothing
+        }
+        return out;
+    }
+
+    /// The message (or a part of it) is the game's translated message with this key.
+    private static boolean hasKey(net.minecraft.network.chat.Component c, String key) {
+        if (c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
+            if (t.getKey().equals(key)) return true;
+            for (Object arg : t.getArgs()) if (arg instanceof net.minecraft.network.chat.Component a && hasKey(a, key)) return true;
+        }
+        for (net.minecraft.network.chat.Component sibling : c.getSiblings()) if (hasKey(sibling, key)) return true;
+        return false;
+    }
+
+    /// Chat as it's shown: the words your triggers matched in their colour (bold / underlined as picked), for each
+    /// trigger with "Colour the words in chat" on that this line sets off.
+    public static net.minecraft.network.chat.Component restyle(net.minecraft.network.chat.Component line) {
+        try {
+            if (line == null || !Configs.mainConfig.enableMod.get()) return line;
+            String plain = line.getString();
+            net.minecraft.network.chat.Component out = line;
+            for (Custom c : List.copyOf(custom())) {
+                if (!c.on || !c.colorWords || !matches(c, line, plain)) continue;
+                List<int[]> spans = new ArrayList<>();
+                for (Rule r : c.triggers) spans.addAll(spans(r, c.caseSensitive, plain));
+                if (!spans.isEmpty()) out = paint(out, spans, c);
+            }
+            return out;
+        } catch (Throwable e) {
+            return line;
+        }
+    }
+
+    private static net.minecraft.network.chat.Component paint(net.minecraft.network.chat.Component line, List<int[]> spans, Custom c) {
+        net.minecraft.network.chat.MutableComponent out = net.minecraft.network.chat.Component.empty();
+        int[] at = {0};
+        line.visit((style, text) -> {
+            int start = at[0];
+            int i = 0;
+            while (i < text.length()) {
+                boolean in = inSpan(spans, start + i);
+                int j = i + 1;
+                while (j < text.length() && inSpan(spans, start + j) == in) j++;
+                net.minecraft.network.chat.Style st = style;
+                if (in) {
+                    st = st.withColor(c.wordColor & 0xFFFFFF);
+                    if (c.bold) st = st.withBold(true);
+                    if (c.underline) st = st.withUnderlined(true);
+                }
+                out.append(net.minecraft.network.chat.Component.literal(text.substring(i, j)).withStyle(st));
+                i = j;
+            }
+            at[0] = start + text.length();
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
+    }
+
+    private static boolean inSpan(List<int[]> spans, int pos) {
+        for (int[] s : spans) if (pos >= s[0] && pos < s[1]) return true;
+        return false;
     }
     //endregion
 

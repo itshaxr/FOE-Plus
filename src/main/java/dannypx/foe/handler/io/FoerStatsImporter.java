@@ -89,6 +89,12 @@ public final class FoerStatsImporter {
 
     /// From the O menu: imports the biggest set found if it has more fish than this install.
     public static void importNow() {
+        importNow(true);
+    }
+
+    /// The same; `pickIfNone` false (the O menu's one button for FOE and FOE-R): when no FOE-R install turns up it
+    /// says nothing and opens no folder window, as the FOE import tells you what it found.
+    public static void importNow(boolean pickIfNone) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         UUID uuid = mc.player.getUUID();
@@ -97,7 +103,9 @@ public final class FoerStatsImporter {
             mc.execute(() -> {
                 Optional<Candidate> best = best(found);
                 StatsDataHandler.StatsDataModel current = StatsDataHandler.instance().getStatsData();
-                if (best.isEmpty()) {
+                if (best.isEmpty() && !pickIfNone) {
+                    return;
+                } else if (best.isEmpty()) {
                     // nothing found on its own: let you point at it (a launcher FOE+ doesn't know)
                     StatsDataHandler.StatsDataModel here = current;
                     if (here.fishTotal > 0)

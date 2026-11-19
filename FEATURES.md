@@ -6,13 +6,13 @@ Everything FOE+ adds to **play.fishonmc.net**. Press **O** in game to open the F
   <img src="docs/images/foe-plus-menu.png" alt="The FOE+ menu" width="640">
 </p>
 
-**Contents:** [HUD panels](#hud-panels) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
+**Contents:** [HUD panels](#hud-panels) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Sounds](#sounds) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
 
 ---
 
 ## HUD panels
 
-Every panel can be moved, anchored to any corner or edge, and resized in **O → Move HUD Elements**.
+Every panel can be moved, anchored to any corner or edge, resized (down to half size) and turned off in **O → Move HUD Elements**.
 Panels stay exactly where you put them (only kept on screen), and can overlap if you place them that way. A panel whose text changes width, like a countdown, doesn't jump sideways.
 
 <p align="center"><img src="docs/images/foe-plus-panels.png" alt="FOE+ Events and Timers panels" width="640"></p>
@@ -23,11 +23,12 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Daily Quests** | Exact progress on each daily quest, updated after every catch. Quests you can do anywhere say "Anywhere"; number each mission (#1, #2...) if you like. |
 | **Quests** | Your active location quests. |
 | **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time (the server's "Time Fishing" from your /menu profile, read on each login and counted up from there) and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
-| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. A green clover for Luck is a setting. |
+| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. Luck has a green clover (a setting). |
 | **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (♣) and a Gold Rush (⚠, shards 1 in 25), each about 15 minutes while its symbol is on the boss bar, and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes.  Weather shows here too: rain showers, thunderstorms and supercells (one at a time, wherever you are), with how long they have left once FOE+ has seen one end, and the moon while it's up (10 minutes, every 160 minutes) with its time left. Global Money and XP boosters show here too, counting down; Luck and Scale boosters show next to their numbers on Luck & Scale. FOE+ checks /active quietly a few seconds after you join, every 15 minutes, after a booster's chat line and when a booster ends so boosters popped before you logged in show as well. |
 | **Mini Event** | The mini event from /minievent: when the daily missions reroll ("Rerolls 23h 55m 2s") and every mission with its progress, in the server's colours (GIGANTIC as a badge). Missions go up as you catch, like Daily Quests, only when the catch matches everything the mission names (place, GIGANTIC and the other sizes, ALBINO and the other variants, rarity, fish); a finished one shows its ✔ for a few seconds and then leaves until the daily reroll (repeatable ones stay). FOE+ checks /minievent quietly every 10 minutes, about a minute after catches and right after the reroll, hiding its answer. Hidden when no mini event is on; can be set to show only while you're at the event's location. |
 | **Session Stats** | Everything All-Time Stats shows, for this session only: fish caught, fish/hour and fish time, quests, pets, shards, capsules, bottles, each rarity, gigantic and each variant, with shares and fish since the last one this session. Counted from your catches and cleared when you log out. Can be turned off. |
-| **Pet** | Your equipped pet (framed in its rarity colour), its level and XP bar (the game's look, or FOE+'s filled bars), its rating, the item it's holding, and **Max Luck** / **Max Scale** / **Max** when its rolls here are as good as they get (green clover by default). |
+| **Pet** | Your equipped pet (framed in its rarity colour), its level and XP bar (the game's look, or FOE+'s filled bars), its rating, the item it's holding, and **Max Luck** / **Max Scale** / **Max** when its rolls here are as good as they get (green clover by default). The item box and the item line can each be hidden. |
+| **Chummer** | A chummer in range: the server's rarity badge, its picture and the time it has left. In the top bar on the FOE+ style; its own small HUD (size it as you like) on the FOE-R style. |
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, a saltwater rod at a freshwater place (or the other way round), or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
@@ -36,6 +37,8 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Social** | Whether a crew member is in range, then your crew and friends, online first, with the instance each is on ("InfernalShadow (i5)", from a quiet /find). In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. |
+| **FOE-R boxes** | With the FOE-R HUD style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures. Only shown (and only in the HUD Editor) while that style is on. |
+| **FOE-R bottom bar** | With the FOE-R HUD style: the hotbar in a dark brown frame, with your rod parts and armour above it. Each part can be turned off. |
 | **Catch ring** | While you reel a fish in, a ring round the crosshair fills clockwise in green, and flashes full when it's caught. Move and size it like a panel. |
 
 The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of them back on in **O → Custom HUDs**. The first time you join with FOE+ the panels start in a tidy layout instead of on top of each other.
@@ -46,7 +49,8 @@ The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of t
 
 Pick any of FOE+'s panels and change how it looks: line spacing, padding, the box's colour and how see-through it is, the border's and title's colours, text alignment (follow the corner, or always left, centred or right), lines to hide, and your own picture (PNG or GIF, it plays) from `config/fishonmcextras/hud_images/`.
 
-- **HUD style:** FOE+'s panels, or the look FOE-R's HUDs have (a see-through box between dark bars).
+- **HUD style:** FOE+'s panels, or the FOE-R look (boxes with rails in place of the top bar, and the FOE-R bottom bar).
+- **Per HUD:** each HUD can have its own **Style** (FOE+ or FOE-R), its **Border** turned off, and be **Shown** or hidden, right in the editor.
 - **Item icon style:** FOE+'s rarity dot and rating letter, or FOE's rarity corner, for players coming from FOE.
 - Panel frames stay crisp at any size, and small panels never shrink below readable.
 
@@ -118,8 +122,8 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
 - **Held item:** the item your pet is holding shows in the Pet panel, and pets holding an amulet get a star on their slot in the amulet's rarity colour.
 - **Pet tooltips:** rating letter and max Luck / max Scale markers. A pet wearing a skin gets its tooltip framed in the skin's own colours.
-- **Pet drops:** pets from contests and events are told once and never counted in your pet stats.
-- **Pet Prices (`U`):** the full price table from the community price sheet, updated once a day.
+- **Pet drops:** only pets you fish up count in your all-time and session stats; quest, daily quest, contest and event pets are told once and never counted.
+- **Pet Prices (`U`, or O → Tools → Pet Prices):** what a pet sells for by rating and rarity: two bands below 60%, then every percent from 60% to 100%, with ×2 Rare, ×4 Epic, ×8 Legendary and ×16 Mythical. Max Luck and Max Scale each add 50K. Click any number to change it (saved for you; Reset to defaults puts the starting prices back). Your equipped pet's row is highlighted with its price. These are estimates only: real prices change with events and what people will pay.
 
 ---
 
@@ -135,7 +139,9 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 ## Dry streaks & stats
 
-- **Live dry streaks** for every rarity, variant, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles, shown on the All-Time Stats panel. Like FOE, the capsule streak only counts Blood Moon catches and the bottle streak only thunderstorm catches, since that's when they drop.
+- **Stats tab:** an **S** tab on the right of your inventory opens every all-time stat and dry streak, in the FOE+ or FOE-R look. It stays open until you click the tab again.
+- **Live dry streaks** for every rarity, variant, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles, shown on the All-Time Stats panel. Like FOE, the capsule streak only counts Blood Moon catches and the bottle streak only thunderstorm catches, since that's when they drop. The Fabled streak only counts while a Fabled event is on, and ends as soon as the Fabled is caught.
+- **Import previous FOE/FOE-R stats:** one button in **O → Stats** (FOE if it's found, otherwise FOE-R; Shift-click to pick the folder).
 - **Import from old installs:** FOE+ finds previous FOE and FOE-R installs (Prism, Modrinth, CurseForge, `.minecraft` and other profiles) and imports your stats on first launch.
 - **Import Dry Streaks:** pulls streaks (including pets, shards, Infusion Capsules and Lightning Bottles) from your newest old FOE or FOE-R install, plus your pet, shard, capsule and bottle totals where they're higher there. A streak you've reset since then is never overwritten by an older, higher one.
 - **Edit Dry Streaks:** set any streak by hand (rarities, variants, Gigantic, pets, shards, Infusion Capsules and Lightning Bottles). Manual edits count as newest, so an import won't undo them.
@@ -149,6 +155,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 - The top 3 always show, plus your own rank and best catch.
 - The fish the contest wants is shown in brackets next to the contest type.
+- Levels are coloured like the game's own level brackets.
 - The panel updates as soon as the server posts a new personal best (`CONTESTS » 26.85lb → 27.45lb`).
 - It also refreshes when you change area, and tells you when you're outside the contest area.
 
@@ -162,7 +169,7 @@ The server's Locations menu (`/tt`, or the travel NPC) opens as a detailed world
 
 - **Every location on the map:** each one sits on its own landmark, with its name in the server's colours. The place you are at has a gold frame.
 - **Same clicks as the menu:** hover for the server's own tooltip, left-click to teleport, right-click to view species.
-- **Two maps:** **Realistic** (built from the places themselves) or **Fantasy** (the painted map). **Change view** switches between them and the server's plain menu any time; "Back to travel map" above that menu returns. Turn the map off altogether with **O → Travel map**.
+- **Two maps:** **Realistic** (built from the places themselves, shown above) or **Fantasy** (the painted map). **Change view** switches between them and the server's plain menu any time; "Back to travel map" above that menu returns. Turn the map off altogether with **O → Travel map**.
 - **Favourites:** star one teleport spot in each place.
 - **What's on:** a Fabled fish waiting to be caught, a Fish Frenzy and its time left, or the place's own event, right on its place.
 
@@ -192,6 +199,8 @@ The server's Presets menu on one screen, without paging.
 
 ## Tools
 
+<p align="center"><img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="640"></p>
+
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
 - **Inventory search:** the Personal Vault's search bar above your inventory and in chests too; matching items get a red outline (the search help shows only on the vault's bar), and while you type, keys like Q and 1–9 don't drop or swap items.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
@@ -200,9 +209,24 @@ The server's Presets menu on one screen, without paging.
 - **Crew and friend alerts:** a chat line when a crew member or friend comes online or goes offline.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
 - **Bobber timer:** how long your bobber has been out ("12.4s") floating over your own bobber; it hides once a fish is on. On by default (from FOE's bobber tracker).
-- **Bobber presets:** 16 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow), picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
+- **Bobber presets:** 36 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow, Diamond, Ruby, stripes, polka dots, Galaxy Swirl, Gradient, Sunset, Toxic, Checkered, Pixel, Wave, Forest and Snowflake), with sharp textures and a real preview, picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
 - **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours). Optionally the FOE+ icon above their heads, and the + in the tab list.
+- **Hide offline friends:** one button in **O → Social** hides offline crew and friends on the Social panel and next to your inventory.
+- **Chat tags:** the server's tags are small boxes (Social Media is a yellow **M**).
 - **Safety net:** if the server changes how something looks, the FOE+ part that reads it is skipped instead of crashing your game.
+
+---
+
+## Sounds
+
+<p align="center"><img src="docs/images/foe-plus-sounds.png" alt="FOE+ Sounds screen" width="640"></p>
+
+**O → Tools → Sounds** lists every sound FOE+ plays: event alerts, server events, catches (including **Fish bite**, when BITE! pops up), the daily quest warning ("About to complete daily quest") and more. Turn each one on or off, pick any game or resource-pack sound, and set its volume and pitch.
+
+**Your own triggers** (like ChatNotify):
+- **Match:** up to four triggers and three exceptions, each Contains, Whole word, Starts with, Regex or a translation key; case sensitive or not, and skip your own messages.
+- **Sound:** any sound, volume, pitch, and a cooldown so it doesn't spam.
+- **Also:** colour the matched words, make them bold or underlined, show a title on screen, and flash the game in your taskbar.
 
 ---
 

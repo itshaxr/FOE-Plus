@@ -19,8 +19,8 @@ public class InventoryScreenConfig extends Config {
 
     /// Off in FOE+: All-Time Stats already shows the same numbers. (Renamed from
     /// showStatsElement, so it's off for everyone once, even if it was saved as on.)
-    @Name("Show the Fishing Statistics list")
-    @Desc("§7The stats list right of your inventory (the All-Time Stats panel shows the same)")
+    @Name("Stats tab open")
+    @Desc("§7The fishing stats beside your inventory: opened and closed with the S tab on its right edge")
     public ValidatedBoolean showFishingStatsList = new ValidatedBoolean(false);
 
     @Name("Show the search bar")

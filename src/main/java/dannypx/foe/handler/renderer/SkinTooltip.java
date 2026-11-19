@@ -287,12 +287,16 @@ public final class SkinTooltip {
             while (open >= 0 && cps[open] != '(' && cps[open] != ' ') open--;
             if (open >= 0 && cps[open] == '(' && open + 1 < close) {
                 String inside = new String(cps, open + 1, close - open - 1);
+                // the numbers in the skin's colour; the brackets and the "/" stay the game's grey
                 if (inside.matches("[0-9.,]+[KMBT]?/(MAX|[0-9.,]+[KMBT]?)"))
-                    for (int k = open; k <= close; k++) out[k] = row;
+                    for (int k = open; k <= close; k++) out[k] = cps[k] == '(' || cps[k] == ')' || cps[k] == '/' ? GREY : row;
             }
         }
         return out;
     }
+
+    /// The game's dark grey, for the brackets and "/" round the XP numbers.
+    static final int GREY = 0x555555;
 
     /// Dark enough to be a value's dim half ("/+171" in #31544B, or dark grey).
     private static boolean dark(int rgb) {

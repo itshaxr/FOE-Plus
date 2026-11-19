@@ -16,8 +16,8 @@ import java.util.List;
  * bobber swatch, and a bigger preview of the one you have on.
  */
 public class BobberScreen extends Screen {
-    private static final int COLUMNS = 4;
-    private static final int BUTTON_W = 108;
+    private static final int MAX_COLUMNS = 6;
+    private static final int BUTTON_W = 106;
     private static final int BUTTON_H = 20;
     private static final int GAP = 4;
     private static final int SWATCH = 10;
@@ -39,10 +39,14 @@ public class BobberScreen extends Screen {
     protected void init() {
         options.clear();
         BobberStyle[] all = BobberStyle.values();
+        // as many columns as fit (up to six), so all of them show without scrolling
+        int COLUMNS = Math.max(2, Math.min(MAX_COLUMNS, (width - 20 + GAP) / (BUTTON_W + GAP)));
         int rows = (all.length + COLUMNS - 1) / COLUMNS;
         int gridW = COLUMNS * BUTTON_W + (COLUMNS - 1) * GAP;
         int gridH = rows * BUTTON_H + (rows - 1) * GAP;
         int previewH = PREVIEW_PX * 6 + 18;
+        int gap = Math.max(1, Math.min(GAP, (height - 60 - previewH - 36 - rows * BUTTON_H) / Math.max(1, rows - 1)));
+        gridH = rows * BUTTON_H + (rows - 1) * gap;
         int left = (width - gridW) / 2;
         gridTop = Math.max(40, (height - gridH - previewH - 36) / 2 + 20);
         gridBottom = gridTop + gridH;
@@ -50,7 +54,7 @@ public class BobberScreen extends Screen {
         for (int i = 0; i < all.length; i++) {
             BobberStyle style = all[i];
             int x = left + (i % COLUMNS) * (BUTTON_W + GAP);
-            int y = gridTop + (i / COLUMNS) * (BUTTON_H + GAP);
+            int y = gridTop + (i / COLUMNS) * (BUTTON_H + gap);
             Button button = Button.builder(Component.literal(style.displayName()), b -> pick(style))
                     .bounds(x, y, BUTTON_W, BUTTON_H).build();
             this.addRenderableWidget(button);
@@ -113,11 +117,12 @@ public class BobberScreen extends Screen {
         guiGraphics.fill(bx - p, hy + p, bx, hy + 2 * p, hookColor);              // point
     }
 
-    /// The side of the bobber: outer colour, band across the middle, outer colour.
+    /// The side of the bobber as it really looks: its texture's front face (stored upside down, so turned back over).
     private static void drawBody(GuiGraphics g, BobberStyle style, int x, int y, int w, int h) {
-        int third = Math.max(1, Math.round(h / 3f));
-        g.fill(x, y, x + w, y + h, 0xFF000000 | style.outer());
-        g.fill(x, y + third, x + w, y + h - third, 0xFF000000 | style.band());
+        net.minecraft.resources.Identifier texture = net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                dannypx.foe.FishOnMCExtras.MOD_ID, style.texturePath());
+        // read from the face's bottom row up (a negative height), so it shows the right way up
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, texture, x, y, 12, 24, w, h, 12, -12, 64, 36);
     }
 
     @Override

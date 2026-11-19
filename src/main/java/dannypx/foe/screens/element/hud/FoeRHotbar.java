@@ -18,14 +18,14 @@ import java.util.List;
 /**
  * The FOE-R HUD Style's bottom bar, in place of the game's hotbar (and FOE's equipment bar): FOE-R's idea (the hotbar
  * in a frame, the rod parts and armour in small frames above its ends) in FOE+'s dress, the same family as the
- * profile, pet and location boxes. Every frame is the same gold-brown, with rounded corners; the picked slot has a
- * gold outline, a warm glow and a notch above it; the rod parts and armour are underlined in their rarity's colour.
+ * profile, pet and location boxes. Every frame is the same dark brown, with rounded corners; the picked slot has a
+ * light tan outline, a warm glow and a notch above it; the rod parts and armour are underlined in their rarity's colour.
  */
 public final class FoeRHotbar {
     private FoeRHotbar() {}
 
     static final int SLOT = 20, BAR_H = 24, GROUP_SLOT = 18, GROUP_H = 22;
-    static final int RING = 0xE8B54A, PICKED = 0xFFFFD866;
+    static final int RING = 0x6B4A2B, PICKED = 0xFFC9A26B;
 
     /// Drawn in place of the game's hotbar: the FOE-R style is on, the bar is switched on, and you're playing (not
     /// spectating).
@@ -36,7 +36,7 @@ public final class FoeRHotbar {
                 && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer();
     }
 
-    /// A frame `w` by `h`: a dark outline with rounded corners, the gold-brown ring, dark glass with a glint on top.
+    /// A frame `w` by `h`: a dark outline with rounded corners, the dark brown ring, dark glass with a glint on top.
     static void frame(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x + 2, y, x + w - 2, y + h, 0xFF0B0B0B);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF0B0B0B);
@@ -56,11 +56,11 @@ public final class FoeRHotbar {
         frame(g, x, y, w, BAR_H);
         for (int i = 1; i < 9; i++) g.fill(x + 2 + SLOT * i, y + 5, x + 3 + SLOT * i, y + BAR_H - 5, 0x22FFFFFF);
 
-        // the picked slot: a gold outline with a warm glow, and a notch above
+        // the picked slot: a light tan outline with a warm glow, and a notch above
         int picked = mc.player.getInventory().getSelectedSlot();
         if (picked >= 0 && picked < 9) {
             int sx = x + 2 + SLOT * picked;
-            g.fill(sx, y + 2, sx + SLOT, y + BAR_H - 2, 0x40FFC94D);
+            g.fill(sx, y + 2, sx + SLOT, y + BAR_H - 2, 0x33C9A26B);
             g.fill(sx, y + 1, sx + SLOT, y + 2, PICKED);
             g.fill(sx, y + BAR_H - 2, sx + SLOT, y + BAR_H - 1, PICKED);
             g.fill(sx - 1, y + 2, sx, y + BAR_H - 2, PICKED);

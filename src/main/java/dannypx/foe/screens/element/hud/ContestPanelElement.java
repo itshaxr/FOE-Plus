@@ -119,7 +119,10 @@ public class ContestPanelElement extends PanelElement {
         List<Component> head = new ArrayList<>();
         if (levelLow > 0 && levelHigh > 0) {
             head.add(label("ʟᴠ "));
-            head.add(Component.literal(levelLow + "-" + levelHigh).withStyle(ChatFormatting.LIGHT_PURPLE));
+            // each end in its level's own colour, as the server shows levels
+            head.add(Component.literal(String.valueOf(levelLow)).withColor(dannypx.foe.helper.LevelColors.of(levelLow)));
+            head.add(Component.literal("-").withStyle(ChatFormatting.GRAY));
+            head.add(Component.literal(String.valueOf(levelHigh)).withColor(dannypx.foe.helper.LevelColors.of(levelHigh)));
             // a little further from the levels (two spaces and two pixels)
             head.add(label("  "));
             head.add(dannypx.foe.helper.NameTagMarker.GAP_WIDE);

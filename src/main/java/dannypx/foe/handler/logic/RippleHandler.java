@@ -52,6 +52,7 @@ public class RippleHandler extends Handler {
 
     public void checkIfBite(Component title) {
         if(title.getString().equals("BITE!")) {
+            dannypx.foe.handler.store.NotifySounds.play("fish_bite");
             this.spawnAtBobber();
             RippleType.sendBite();
         }

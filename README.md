@@ -14,7 +14,7 @@ Press **O** in game to open the FOE+ menu.
 ## Features
 
 **Travel map and presets** (new screens over the server's own menus)
-- Travel map: `/tt` opens a detailed world map with every location on it. Hover for the server's tooltip, left-click to teleport, right-click to view species. Pick the **Realistic** map (built from the places themselves), the **Fantasy** painted map or the server's menu with **Change view**; star a favourite spot in each place; Fabled fish and Fish Frenzies show on their place.
+- Travel map: `/tt` opens a detailed world map with every location on it (the **Realistic** map is shown below). Hover for the server's tooltip, left-click to teleport, right-click to view species. Pick the **Realistic** map (built from the places themselves), the **Fantasy** painted map or the server's menu with **Change view**; star a favourite spot in each place; Fabled fish and Fish Frenzies show on their place.
 - Fishing presets: all ten armor presets (or all ten rod presets) on one screen, with no page arrows. Click a tick to wear a preset, click a piece to take it out; the one in use has a gold frame.
 - Presets come in three styles (clean rows, cards on a tray, lighter slots), picked from the **Style** menu on the panel.
 - Both have a **Classic menu** button to get the server's plain menu back, and a setting to turn them off.
@@ -31,7 +31,9 @@ Press **O** in game to open the FOE+ menu.
 - Quests, Pet (with held item, XP bar and a **Max Luck / Max Scale** tag), Bait, Luck & Scale (read from your /menu profile, boosters included).
 - Events: Fish Frenzy, Blooming Oasis, Gold Rush, Fabled, boosters, and the weather (rain showers, thunderstorms, supercells, moons) with how long they have left.
 - Timers (moon, Tackle Shop, Cosmetic Store, votes, community goal with catches per hour) and Social (crew and friends online, with the instance they're on).
-- **HUD Editor:** change any panel's line spacing, padding, colours, text alignment, or put your own PNG/GIF in it. Two HUD looks: FOE+ or FOE-R.
+- **HUD Editor:** change any panel's line spacing, padding, colours, text alignment, or put your own PNG/GIF in it. Each HUD can have its own style (FOE+ or FOE-R), its border turned off, and be turned on or off right there.
+- **FOE-R HUD style:** profile, pet and location boxes in place of the top bar, FOE+'s own weather pictures, and a brown FOE-R bottom bar with your rod parts and armour above the hotbar.
+- Chummer: rarity badge, picture and time left (in the top bar, or its own HUD on the FOE-R style).
 - Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers.
 - Warning box: wrong pet for the location (names the right one), wrong armor climate, inventory almost full. Hide it with `-` until you move.
 - Top bar (level in your chat colours, location in the travel menu's colours, spot, weather, time, balance, credits, catches, TPS & ping; every part can be turned off), equipment bar, catch popup, catch ring, moon timer (inventory screen).
@@ -39,6 +41,10 @@ Press **O** in game to open the FOE+ menu.
 <p align="center">
   <img src="docs/images/foe-plus-panels.png" alt="FOE+ Events and Timers panels" width="560"><br>
   <img src="docs/images/foe-plus-rod-icons.png" alt="FOE+ rod part icons" width="560">
+</p>
+<p align="center">
+  <img src="docs/images/foe-plus-sounds.png" alt="FOE+ Sounds screen" width="560"><br>
+  <img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="560">
 </p>
 
 **Chat**
@@ -51,13 +57,17 @@ Press **O** in game to open the FOE+ menu.
 - Bait Prices: your own price for each rarity and any single bait; baitbox totals and stack values use it.
 - Rod part icons: a small icon for what each rod part (or each part of a rod) is calibrated for, purple when it's rolled at its max.
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
-- Pet Prices (`U`): price table from a Google Sheet (updated once a day).
+- Pet Prices (`U`): a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale; every number can be edited in game. Estimates only.
+- Sounds (*O → Tools → Sounds*): change every FOE+ sound (fish bite included) and add your own chat triggers with match modes, exceptions, cooldowns, coloured words, a title on screen and a taskbar flash.
+- Bobbers: 36 colour sets for the 3D bobber with previews (*O → Bobber*); other FOE+ users see yours.
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.
 - `+` (or the FOE+ icon) after the names of nearby FOE+ users, and in the tab list.
 - Friends (`/foe friend` or O → Social): add friends, see their balance and crew, join their instance.
 
 **Stats**
-- Import stats from previous FOE / FOE-R installs (other profiles too), import dry streaks (newer streaks are never overwritten), edit dry streaks by hand.
+- **Stats tab:** an **S** tab on your inventory opens every all-time stat and dry streak (FOE+ or FOE-R look) and stays open until you click it again.
+- One button imports stats from previous FOE / FOE-R installs (other profiles too); import dry streaks (newer streaks are never overwritten), edit dry streaks by hand.
+- The Fabled dry streak only counts while a Fabled event is on.
 
 ## Building
 

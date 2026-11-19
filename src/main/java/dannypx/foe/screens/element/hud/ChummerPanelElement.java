@@ -54,18 +54,26 @@ public class ChummerPanelElement extends PanelElement {
         return List.of(line(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COD_BUCKET), "epic", 4 * 60_000L + 32_000L));
     }
 
-    /// "[picture] ᴇᴘɪᴄ 4:32": small, like the bait panel. The chummer's picture, its rarity in the rarity's own colour
-    /// (the same as its badge) and the time left (green, then yellow under two minutes, red under one).
+    /// "[picture] [EPIC] 4:32": small, like the bait panel. The chummer's picture, its rarity's badge and the time left
+    /// (green, then yellow under two minutes, red under one).
     static Component line(net.minecraft.world.item.ItemStack icon, String rarityText, long msLeft) {
         return join(inlineItem(icon), Component.literal(" "), text(rarityText, msLeft));
     }
 
+    /// The server's rarity badges, as on its items.
+    static final java.util.Map<String, String> BADGES = java.util.Map.of("common", "\uF033", "rare", "\uF034",
+            "epic", "\uF035", "legendary", "\uF036", "mythical", "\uF037");
+
+    /// The rarity's badge (the same box the server puts on its items), or null for a rarity it has none for.
+    static Component badge(String rarityText) {
+        String glyph = BADGES.get(PetPanelElement.rarityFromText(rarityText));
+        return glyph == null ? null : Component.literal(glyph).withStyle(ChatFormatting.WHITE);
+    }
+
     /// The words of {@link #line}, without the picture. Package-private for tests.
     static Component text(String rarityText, long msLeft) {
-        String rarity = PetPanelElement.rarityFromText(rarityText);
-        int color = dannypx.foe.helper.FoeLocations.rarityColor(rarity);
-        Component name = rarity.isEmpty() ? Component.literal("ᴄʜᴜᴍᴍᴇʀ").withStyle(ChatFormatting.GRAY)
-                : Component.literal(dannypx.foe.helper.TextHelper.smallCaps(rarity.toUpperCase(java.util.Locale.ROOT))).withColor(color < 0 ? 0xFFFFFF : color);
+        Component badge = badge(rarityText);
+        Component name = badge != null ? badge : Component.literal("ᴄʜᴜᴍᴍᴇʀ").withStyle(ChatFormatting.GRAY);
         long s = (msLeft + 999) / 1000;
         ChatFormatting timeColor = s > 120 ? ChatFormatting.GREEN : s > 60 ? ChatFormatting.YELLOW : ChatFormatting.RED;
         return join(name, Component.literal(" "),

@@ -75,12 +75,18 @@ public final class QuestWarning {
         return Component.literal(text).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
     }
 
+    /// Shows any line the same way, for 5 seconds (a sound trigger's "Show it on screen").
+    public static void flash(Component message) {
+        show(message, System.currentTimeMillis());
+    }
+
     static void show(Component message, long now) {
         text = message;
         shownAt = now;
     }
 
-    /// Drawn with the HUD: twice the text size, centred near the top, fading out over its last half second.
+    /// Drawn with the HUD: twice the text size (smaller when the screen is too narrow for that), centred near the
+    /// top, fading out over its last half second.
     public static void render(GuiGraphics g) {
         if (text == null) return;
         long age = System.currentTimeMillis() - shownAt;
@@ -89,8 +95,9 @@ public final class QuestWarning {
         Font font = mc.font;
         int alpha = age > SHOW_MS - 500 ? (int) (255 * (SHOW_MS - age) / 500) : 255;
         if (alpha < 8) return;
-        float scale = 2f;
         int w = font.width(text);
+        // twice the text size, but never wider than most of the screen (small windows, big GUI scales)
+        float scale = Math.max(0.5f, Math.min(2f, g.guiWidth() * 0.85f / Math.max(1, w)));
         float x = g.guiWidth() / 2f - w * scale / 2f;
         float y = Math.max(28, g.guiHeight() / 7f);
         g.pose().pushMatrix();

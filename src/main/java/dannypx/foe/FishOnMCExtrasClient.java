@@ -92,6 +92,9 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) dannypx.foe.handler.logic.LevelStyleHandler.instance().onChat(message, player.getGameProfile().name());
         }));
+        // your sound triggers' "Colour the words in chat"
+        ClientReceiveMessageEvents.MODIFY_GAME.register((message, overlay) -> overlay ? message
+                : dannypx.foe.helper.Safe.get("chat sound trigger colours", () -> dannypx.foe.handler.store.NotifySounds.restyle(message), message));
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> dannypx.foe.helper.Safe.run("game message", () -> this.receiveGameMessage(message, overlay)));
         ClientSendMessageEvents.MODIFY_CHAT.register(message -> dannypx.foe.helper.Safe.get("chat send", () -> this.modifyChatMessage(message), message));
         ClientSendMessageEvents.COMMAND.register(command -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
@@ -253,7 +256,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 dannypx.foe.helper.Safe.run("tick BaitPictures", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.store.BaitPictures.tick(minecraft); dannypx.foe.handler.logic.FoeProfiler.end("tick BaitPictures", _p); });
                 dannypx.foe.helper.Safe.run("tick AutotipHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); AutotipHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick AutotipHandler", _p); });
                 dannypx.foe.helper.Safe.run("tick FullInventoryHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); FullInventoryHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick FullInventoryHandler", _p); });
-                dannypx.foe.helper.Safe.run("tick PetPriceSheetHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); if (dannypx.foe.screens.PetPriceScreen.ENABLED) PetPriceSheetHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick PetPriceSheetHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick PetPriceSheetHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); /* the old online price sheet is no longer used: Pet Prices are your own */ dannypx.foe.handler.logic.FoeProfiler.end("tick PetPriceSheetHandler", _p); });
                 dannypx.foe.helper.Safe.run("tick DailyQuestHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); DailyQuestHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick DailyQuestHandler", _p); });
                 dannypx.foe.helper.Safe.run("tick QuestWarning", dannypx.foe.handler.renderer.QuestWarning::tick);
                 dannypx.foe.helper.Safe.run("tick NotifySounds", dannypx.foe.handler.store.NotifySounds::tick);

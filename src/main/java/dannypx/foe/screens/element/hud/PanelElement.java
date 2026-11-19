@@ -347,6 +347,11 @@ public abstract class PanelElement extends Element {
         return tiny ? tinyText(t) : t;
     }
 
+    /// A line drawn as a panel draws it (the rarity badges raised a pixel), for FOE+'s other boxes.
+    public static void drawLine(GuiGraphics g, Font font, Component line, int x, int y) {
+        drawText(g, font, line.getVisualOrderText(), x, y);
+    }
+
     /// Put between two parts of a line, it puts the second part at the panel's right edge
     /// ("Lofoten Islands ⇥ 17:57").
     public static final Component TAB = Component.literal("\t");

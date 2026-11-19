@@ -84,6 +84,7 @@ public class PetPanelElement extends PanelElement {
     protected List<PanelIcon> icons() {
         if (!hasPet()) return List.of();
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
+        if (!dannypx.foe.config.Configs.hudConfig.petPanelItemBox.get()) return List.of(new PanelIcon(pet.getItemStack(), frameColor(pet)));
         return List.of(new PanelIcon(pet.getItemStack(), frameColor(pet)),
                 new PanelIcon(PetHeldItem.of(pet), HELD_ITEM_BORDER));
     }
@@ -151,7 +152,7 @@ public class PetPanelElement extends PanelElement {
         ItemStack held = PetHeldItem.of(pet);
         return petLines(pet.getRarityComponent(), pet.getName(), pet.getLevel(), current, needed,
                 rating.getString().isBlank() ? null : rating, pet.getTotalPercent(),
-                held.isEmpty() ? null : held.getHoverName(), xpStyle());
+                held.isEmpty() || !dannypx.foe.config.Configs.hudConfig.petPanelItemLine.get() ? null : held.getHoverName(), xpStyle());
     }
 
     /// "♣ Max Luck" / "⚓ Max Scale" / "♣⚓ Perfect" when the pet's rolls here are as good as they get.
@@ -216,6 +217,22 @@ public class PetPanelElement extends PanelElement {
     }
 
     /// Package-private for tests: both of a pet's rolls of one stat (climate, location) at their most.
+    /// {Max Luck, Max Scale}: whether the pet's luck rolls (climate and location) are both at their best here, and
+    /// the same for scale ({false, false} when they can't be read). For the pet prices.
+    public static boolean[] maxedLuckScale(PetTagObject pet) {
+        try {
+            return new boolean[]{maxed(pet.getClimatePercentMaxLuck(), pet.getLocationPercentMaxLuck()),
+                    maxed(pet.getClimatePercentMaxScale(), pet.getLocationPercentMaxScale())};
+        } catch (RuntimeException e) {
+            return new boolean[]{false, false};
+        }
+    }
+
+    /// The pet's rarity ("legendary"), from its rarity or else its badge. For the pet prices.
+    public static String rarityOf(PetTagObject pet) {
+        return petRarity(pet);
+    }
+
     static boolean maxed(float climate, float location) {
         return climate >= 0.999f && location >= 0.999f;
     }

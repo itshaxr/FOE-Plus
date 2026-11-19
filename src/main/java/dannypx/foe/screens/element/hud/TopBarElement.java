@@ -161,13 +161,10 @@ public class TopBarElement extends Element {
     /// The chummer's picture's size in the bar, and the gap before its time.
     private static final int CHUMMER_ICON = 12, CHUMMER_GAP = 2;
 
-    /// "EPIC" in tiny letters in the rarity's colour (the same as its badge), or "" without a rarity.
+    /// The rarity's badge (the server's own box), or "" without a rarity.
     private static Component chummerRarity(dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
-        String rarity = PetPanelElement.rarityFromText(c.getRarity());
-        if (rarity.isEmpty()) return Component.empty();
-        int color = dannypx.foe.helper.FoeLocations.rarityColor(rarity);
-        return Component.literal(rarity.toUpperCase(Locale.ROOT))
-                .withStyle(s -> s.withFont(PanelElement.TINY).withColor(color < 0 ? 0xFFFFFF : color));
+        Component badge = ChummerPanelElement.badge(c.getRarity());
+        return badge == null ? Component.empty() : badge;
     }
 
     private static Component chummerTime(dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
@@ -180,12 +177,12 @@ public class TopBarElement extends Element {
         return Math.max(CHUMMER_ICON, font.width(chummerRarity(c))) + CHUMMER_GAP + font.width(chummerTime(c));
     }
 
-    /// The chummer at `x`: its rarity in tiny letters above its picture, the time left beside the picture.
+    /// The chummer at `x`: its rarity's badge above its picture, the time left beside the picture.
     private static void drawChummer(GuiGraphics g, Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x) {
         Component rarity = chummerRarity(c);
         int column = Math.max(CHUMMER_ICON, font.width(rarity));
-        int iconY = PADDING - 1;
-        g.drawString(font, rarity, x + (column - font.width(rarity)) / 2, iconY - 6, 0xFFFFFFFF, true);
+        int iconY = PADDING + 3;
+        PanelElement.drawText(g, font, rarity.getVisualOrderText(), x + (column - font.width(rarity)) / 2, 2);
         g.pose().pushMatrix();
         g.pose().translate(x + (column - CHUMMER_ICON) / 2f, iconY);
         g.pose().scale(CHUMMER_ICON / 16f, CHUMMER_ICON / 16f);

@@ -88,12 +88,9 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             this.renderButtonHelp(guiGraphics, true, false);
 
             elements.forEach(element -> element.value2().render(guiGraphics));
-            if(this.statList != null
-                    && Configs.inventoryScreenConfig.showFishingStatsList.get()
-            ) {
-                this.statList.render(guiGraphics, mouseX, mouseY, tickDelta);
-                this.renderStatBoxHeaderString(guiGraphics);
-            }
+            // the Stats tab on the inventory's right edge, and its stats when open
+            InventoryStatsTab.render(guiGraphics, font, invRight(), invTop(), INVENTORY_HEIGHT,
+                    minecraft.getWindow().getGuiScaledWidth(), mouseX, mouseY);
             this.renderButtonBoxString(guiGraphics);
             if(Configs.inventoryScreenConfig.showMoonTimer.get()) this.renderMoonTimer(guiGraphics);
             // No help box here (unlike the Personal Vault): it's too big to fit anywhere around
@@ -102,7 +99,16 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     }
 
     /// Clicking the search bar focuses it; clicking anywhere else lets go of it.
+    private int invRight() {
+        return minecraft.getWindow().getGuiScaledWidth() / 2 + 88;
+    }
+
+    private int invTop() {
+        return minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP;
+    }
+
     public boolean onMouseClicked(Screen screen, net.minecraft.client.input.MouseButtonEvent context, boolean consumed) {
+        if (ready() && Configs.mainConfig.enableMod.get() && InventoryStatsTab.click(context.x(), context.y(), invRight(), invTop())) return true;
         boolean over = searchBar != null && searchBar.isMouseOver(context.x(), context.y());
         if(searchBar != null) searchBar.setFocused(over);
         // while it has focus, keys are for typing (E, number keys and the like don't act on the inventory)
@@ -159,7 +165,6 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
             widgets.clear();
             buttons.clear();
 
-            if(Configs.inventoryScreenConfig.showFishingStatsList.get()) widgets.add(getStatList());
 
             // The Personal Vault's search bar, above the inventory (same search, same last input).
             searchBar = null;
@@ -322,12 +327,8 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
 
     public boolean onMouseScrolled(Screen screen, double mouseX, double mouseY, double horizontalAmount, double verticalAmount, boolean consumed) {
         if(Configs.inventoryScreenConfig.showMoonTimer.get()) TimersCrewBox.mouseScrolled(mouseX, mouseY, verticalAmount);
-        if(this.statList != null
-                && Configs.inventoryScreenConfig.showFishingStatsList.get()
-                && this.statList.isMouseOver(mouseX, mouseY)
-        ) {
-            this.statList.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
-        }
+        InventoryStatsTab.scroll(mouseX, mouseY, verticalAmount, invRight(), invTop(), INVENTORY_HEIGHT,
+                minecraft.getWindow().getGuiScaledWidth());
 
         return false;
     }
@@ -407,9 +408,7 @@ public class InventoryScreenRenderHandler extends ScreenHandler {
     private void initElements() {
         elements.clear();
 
-        if(this.statList != null
-                && Configs.inventoryScreenConfig.showFishingStatsList.get()
-        ) {
+        if(false) {
             elements.add(Pair.of("header_box", new BoxElement(minecraft.getWindow().getGuiScaledWidth() / 2 + INVENTORY_TRANSLATION + (STAT_WIDTH - ((STAT_WIDTH / 4) / 3)) / 2 - 65,
                     minecraft.getWindow().getGuiScaledHeight() / 2 - INVENTORY_TOP - 20 + 4,
                     130, 20, true, false)));

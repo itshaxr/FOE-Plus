@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.87+1.21.11",
+      "name": "FOE+ 1.0.87+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- New: Stats tab (S) on the inventory: every all-time stat and dry streak behind one button, in the FOE+ or FOE-R look; it stays open until you click it again by @phckd\n- New: Pet Prices menu (O → Tools → Pet Prices, or U): a price for every percent from 60% up, by rarity, and every number can be edited in game. Max Luck and Max Scale each add 50K. Prices are estimates only by @phckd\n- New: 20 more bobber styles (36 in all), sharper bobber textures, and real previews in O → Bobber by @phckd\n- New: Fish bite sound (when BITE! pops up), and custom sound triggers now work like ChatNotify: several triggers and exceptions, match modes (contains, word, starts with, regex), cooldowns, colour and style the matched words, a title on screen and a taskbar flash by @phckd\n- Sounds moved to O → Tools by @phckd\n- Chummer HUD: the server's rarity badge for every rarity, and its own HUD on the FOE-R style by @phckd\n- Daily quest warning now fits any screen size and GUI scale by @phckd\n- Pet HUD: options to hide the item box and the item line by @phckd\n- Luck & Scale: the green clover is back by @phckd\n- FOE-R bottom bar is a darker brown by @phckd\n- O menu: one \"Import previous FOE/FOE-R stats\" button, and a new Hide offline friends button (Social panel and inventory) by @phckd\n- Social Media chat tag is now a small yellow M box like the others by @phckd\n- Fabled dry streak only counts while a Fabled event is on, and ends as soon as the Fabled is caught by @phckd\n- Contest panel level colours match the game's brackets by @phckd\n- Grey brackets on pet XP in tooltips by @phckd"
+    },
+    {
       "versionNumber": "1.0.86+1.21.11",
       "name": "FOE+ 1.0.86+1.21.11",
       "datePublished": "2026-11-19",

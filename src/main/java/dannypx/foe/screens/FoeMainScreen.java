@@ -179,18 +179,23 @@ public class FoeMainScreen extends Screen {
                             // the FOE-R boxes take the top corners: the panels there move down to make room
                             if (dannypx.foe.screens.element.hud.FoeRBoxes.on()) dannypx.foe.screens.element.hud.FoeRBoxes.makeRoom();
                         }));
-                out.add(tile("Sounds", Items.NOTE_BLOCK, "Every FOE+ sound, and your own", b -> mc.setScreen(new SoundsScreen(this))));
             }
             case STATS -> {
                 out.add(tile("Import Dry Streaks", Items.CLOCK, "From your newest FOE or FOE-R install", b -> dannypx.foe.handler.io.DryStreakImporter.importNow()));
                 out.add(tile("Edit Dry Streaks", Items.NAME_TAG, "Set your dry streaks by hand", b -> mc.setScreen(new DryStreakEditScreen(this))));
                 out.add(tile("Edit All-Time Stats", Items.KNOWLEDGE_BOOK, "Fix any total that counted wrong", b -> mc.setScreen(new StatsEditScreen(this))));
-                out.add(tile("Import FOE Stats", Items.BOOK, "Dry streaks, fish time and fish/hour from FOE", b -> dannypx.foe.handler.io.FoeStatsImporter.importNow(false)));
-                out.add(tile("Import FOE-R Stats", Items.WRITABLE_BOOK, "Another FOE-R's stats, if it has more fish. Shift-click: pick the install's folder yourself",
+                // one button for both: FOE's dry streaks, fish time and fish/hour, and FOE-R's stats (if it has more fish)
+                out.add(tile("Import previous FOE/FOE-R stats", Items.BOOK, "From FOE and FOE-R. Shift-click: pick a FOE-R install's folder yourself",
                         b -> {
-                            if (net.minecraft.client.Minecraft.getInstance().hasShiftDown() && net.minecraft.client.Minecraft.getInstance().player != null)
+                            if (net.minecraft.client.Minecraft.getInstance().hasShiftDown() && net.minecraft.client.Minecraft.getInstance().player != null) {
                                 dannypx.foe.handler.io.FoerStatsImporter.chooseFolder(net.minecraft.client.Minecraft.getInstance().player.getUUID());
-                            else dannypx.foe.handler.io.FoerStatsImporter.importNow();
+                            } else {
+                                // FOE's when it has a file; FOE-R's always (it says what it found, and offers the folder
+                                // window when neither turns up)
+                                boolean foe = dannypx.foe.handler.io.FoeStatsImporter.available();
+                                if (foe) dannypx.foe.handler.io.FoeStatsImporter.importNow(false);
+                                dannypx.foe.handler.io.FoerStatsImporter.importNow(!foe);
+                            }
                         }));
                 out.add(tile("Reset Fish Timer", Items.COMPASS, "Start fish/hour from zero", b -> dannypx.foe.handler.logic.FishSessionHandler.instance().reset()));
             }
@@ -206,13 +211,21 @@ public class FoeMainScreen extends Screen {
                             Configs.hudConfig.showCrewPanel.accept(!Configs.hudConfig.showCrewPanel.get());
                             Configs.hudConfig.save();
                         }));
+                // the Social HUD and the inventory's box share it
+                out.add(new TileSpec("Hide offline friends", FoeMainScreen::hideOfflineLabel, Items.GRAY_DYE,
+                        "In the Social HUD and the box beside your inventory", true,
+                        b -> {
+                            Configs.inventoryScreenConfig.timersOffline.accept(!Configs.inventoryScreenConfig.timersOffline.get());
+                            Configs.inventoryScreenConfig.save();
+                        }));
             }
             case TOOLS -> {
                 out.add(tile("Auto Tip", Items.GOLD_NUGGET, "Tip reaction winners and chummers (M)", b -> mc.setScreen(new AutotipScreen(this))));
                 out.add(new TileSpec("Pet Prices", null, Items.EMERALD,
-                        PetPriceScreen.ENABLED ? "The pet price table (U)" : "Being reworked: back in a later update", PetPriceScreen.ENABLED,
+                        PetPriceScreen.ENABLED ? "What pets sell for, and yours to edit (U)" : "Being reworked: back in a later update", PetPriceScreen.ENABLED,
                         b -> { if (PetPriceScreen.ENABLED) mc.setScreen(new PetPriceScreen(this)); }));
                 out.add(tile("Bait Prices", Items.WHEAT_SEEDS, "What your baitboxes are worth, in chat", b -> mc.setScreen(new BaitPricesScreen(this))));
+                out.add(tile("Sounds", Items.NOTE_BLOCK, "Every FOE+ sound, and your own", b -> mc.setScreen(new SoundsScreen(this))));
                 out.add(tile("More Tools", Items.CHEST, "Triggers, timers, notifications, snippets", b -> mc.setScreen(new MainScreen(this))));
             }
         }
@@ -229,6 +242,11 @@ public class FoeMainScreen extends Screen {
     //region Labels that show a setting's value
     private static Component iconStyleLabel() {
         return Component.literal("Icons: ").append(Component.literal(Configs.rendererConfig.iconStyle.get().displayName()).withStyle(ChatFormatting.AQUA));
+    }
+
+    private static Component hideOfflineLabel() {
+        boolean hidden = !Configs.inventoryScreenConfig.timersOffline.get();
+        return Component.literal("Hide offline friends: ").append(Component.literal(hidden ? "On" : "Off").withStyle(hidden ? ChatFormatting.GREEN : ChatFormatting.RED));
     }
 
     private static Component crewPanelLabel() {

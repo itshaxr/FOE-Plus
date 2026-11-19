@@ -68,6 +68,12 @@ public final class FoeStatsImporter {
         }
     }
 
+    /// There's a FOE stats file for you to import from.
+    public static boolean available() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && Files.exists(statsFile(mc.player.getUUID()));
+    }
+
     /// Returns true when something was imported. Messages the player either way unless {@code quiet}.
     public static boolean importNow(boolean quiet) {
         Minecraft mc = Minecraft.getInstance();

@@ -61,7 +61,14 @@ public class SoundsScreen extends Screen {
     private int scroll = 0, rightScroll = 0;
     /// The open row: a sound id, ALL, or "custom:<index>".
     private String selected = "witching_hour";
-    private EditBox soundBox, nameBox, matchBox;
+    private EditBox soundBox, nameBox;
+    /// Your own trigger's page: 0 Match (when it sounds), 1 Sound, 2 Also (what else it does).
+    private int customTab = 0;
+    /// Small grey headings on the right side ({x, y} and the words), drawn with the page.
+    private final List<Object[]> labels = new ArrayList<>();
+    static final int[] WORD_COLORS = {0xFFD866, 0xFF5555, 0x55FF55, 0x55FFFF, 0x5599FF, 0xFF55FF, 0xFFAA00, 0xFFFFFF};
+    static final int[] COOLDOWNS = {0, 1, 3, 5, 10, 30, 60};
+    static final int MAX_TRIGGERS = 4, MAX_EXCEPTIONS = 3;
     private String typed = null;
     private final List<int[]> quickButtons = new ArrayList<>();
 
@@ -183,30 +190,35 @@ public class SoundsScreen extends Screen {
         listTop = py + 42;
         listBottom = py + ph - 10;
         quickButtons.clear();
+        labels.clear();
 
         NotifySounds.Setting s = current();
         NotifySounds.Custom custom = currentCustom();
         int y = py + 60 + (selected.equals(ALL) ? 12 : 0);
 
         if (custom != null) {
-            nameBox = new EditBox(font, rx + 60, y, rw - 68, 14, Component.literal("Name"));
-            nameBox.setMaxLength(40);
-            nameBox.setValue(custom.name);
-            nameBox.setResponder(v -> { custom.name = v; NotifySounds.save(); });
-            addRenderableWidget(nameBox);
-            y += 18;
-            matchBox = new EditBox(font, rx + 60, y, rw - 68 - 64, 14, Component.literal("Chat text"));
-            matchBox.setMaxLength(200);
-            matchBox.setValue(custom.match);
-            matchBox.setHint(Component.literal("text in the chat line").withStyle(ChatFormatting.DARK_GRAY));
-            matchBox.setResponder(v -> { custom.match = v; NotifySounds.save(); });
-            addRenderableWidget(matchBox);
-            addRenderableWidget(Button.builder(Component.literal(custom.regex ? "Pattern" : "Contains"), b -> {
-                custom.regex = !custom.regex;
-                NotifySounds.save();
-                rebuildWidgets();
-            }).bounds(rx + rw - 8 - 60, y, 60, 14).build());
-            y += 20;
+            // your own trigger: three pages, like ChatNotify's (when it sounds, the sound, what else it does)
+            String[] tabs = {"Match", "Sound", "Also"};
+            int tw = (rw - 16 - 8) / 3;
+            for (int i = 0; i < tabs.length; i++) {
+                int tab = i;
+                Component label = i == customTab ? Component.literal(tabs[i]).withStyle(ChatFormatting.AQUA, ChatFormatting.UNDERLINE) : Component.literal(tabs[i]);
+                addRenderableWidget(Button.builder(label, b -> { customTab = tab; typed = null; rightScroll = 0; rebuildWidgets(); })
+                        .bounds(rx + 8 + i * (tw + 4), listTop + 4, tw, 14).build());
+            }
+            y = listTop + 24;
+            if (customTab == 0 || customTab == 2) {
+                if (customTab == 0) buildMatch(custom, y);
+                else buildAlso(custom, y);
+                addRenderableWidget(Button.builder(Component.literal("Delete").withStyle(ChatFormatting.RED), b -> {
+                    NotifySounds.removeCustom(custom);
+                    selected = "witching_hour";
+                    customTab = 0;
+                    rebuildWidgets();
+                }).bounds(rx + rw - 8 - 50, listBottom - 20, 50, 14).build());
+                addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(px + pw - 60, py + 8, 50, 16).build());
+                return;
+            }
         }
 
         // the sound: type to search every sound, or pick one below
@@ -267,14 +279,102 @@ public class SoundsScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("▶ Test"), b -> NotifySounds.play(current(), true))
                 .bounds(sx + sw / 2 + 2, slidersY + 38, sw - sw / 2 - 2, 15).build());
 
-        if (custom != null) {
-            addRenderableWidget(Button.builder(Component.literal("Delete").withStyle(ChatFormatting.RED), b -> {
-                NotifySounds.removeCustom(custom);
-                selected = "witching_hour";
-                rebuildWidgets();
-            }).bounds(rx + rw - 8 - 50, py + 44, 50, 13).build());
-        }
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(px + pw - 60, py + 8, 50, 16).build());
+    }
+
+    /// The Match page: the name, the triggers (any of them sets it off), the exceptions (none of them may be in the
+    /// line), and who / case / your own lines / cooldown.
+    private void buildMatch(NotifySounds.Custom c, int y) {
+        NotifySounds.upgrade(c);
+        int x = rx + 8, w = rw - 16;
+        labels.add(new Object[]{x, y + 3, "Name"});
+        nameBox = new EditBox(font, x + 32, y, w - 32 - 34, 14, Component.literal("Name"));
+        nameBox.setMaxLength(40);
+        nameBox.setValue(c.name);
+        nameBox.setResponder(v -> { c.name = v; NotifySounds.save(); });
+        addRenderableWidget(nameBox);
+        addRenderableWidget(Button.builder(Component.literal(c.on ? "On" : "Off").withStyle(c.on ? ChatFormatting.GREEN : ChatFormatting.RED),
+                b -> { c.on = !c.on; NotifySounds.save(); rebuildWidgets(); }).bounds(x + w - 30, y, 30, 14).build());
+        y += 20;
+        y = rules(c, c.triggers, "ᴡʜᴇɴ ᴄʜᴀᴛ ʜᴀꜱ (any of these)", "+ Add a trigger", MAX_TRIGGERS, x, y, w);
+        y = rules(c, c.exceptions, "ʙᴜᴛ ɴᴏᴛ ᴡʜᴇɴ ɪᴛ ʜᴀꜱ", "+ Add an exception", MAX_EXCEPTIONS, x, y, w);
+        int bw = (w - 9) / 4;
+        String from = switch (c.from == null ? "" : c.from) { case "PLAYERS" -> "Players"; case "SERVER" -> "Server"; default -> "Anyone"; };
+        addRenderableWidget(Button.builder(Component.literal("From: " + from), b -> {
+            c.from = "ANYONE".equals(c.from) ? "PLAYERS" : "PLAYERS".equals(c.from) ? "SERVER" : "ANYONE";
+            NotifySounds.save(); rebuildWidgets();
+        }).bounds(x, y, bw, 14).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Anyone, players' chat only, or the server's own lines only"))).build());
+        addRenderableWidget(Button.builder(Component.literal("Case: " + (c.caseSensitive ? "Match" : "Ignore")), b -> {
+            c.caseSensitive = !c.caseSensitive; NotifySounds.save(); rebuildWidgets();
+        }).bounds(x + bw + 3, y, bw, 14).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Match: SHINY and shiny are different"))).build());
+        addRenderableWidget(Button.builder(Component.literal("Mine: " + (c.skipOwn ? "Skip" : "Include")), b -> {
+            c.skipOwn = !c.skipOwn; NotifySounds.save(); rebuildWidgets();
+        }).bounds(x + 2 * (bw + 3), y, bw, 14).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Your own chat lines: left out, or counted too"))).build());
+        addRenderableWidget(Button.builder(Component.literal("Wait: " + c.cooldown + "s"), b -> {
+            int i = 0;
+            while (i < COOLDOWNS.length && COOLDOWNS[i] != c.cooldown) i++;
+            c.cooldown = COOLDOWNS[(i + 1) % COOLDOWNS.length];
+            NotifySounds.save(); rebuildWidgets();
+        }).bounds(x + 3 * (bw + 3), y, w - 3 * (bw + 3), 14).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Seconds before it can sound again"))).build());
+    }
+
+    /// A list of triggers or exceptions: the text, how it's looked for (click to change), and × to take it away.
+    private int rules(NotifySounds.Custom c, List<NotifySounds.Rule> list, String heading, String add, int max, int x, int y, int w) {
+        labels.add(new Object[]{x, y, heading});
+        y += 11;
+        for (NotifySounds.Rule rule : List.copyOf(list)) {
+            EditBox box = new EditBox(font, x, y, w - 100, 14, Component.literal("Text"));
+            box.setMaxLength(240);
+            box.setValue(rule.text);
+            box.setHint(Component.literal("KEY".equals(rule.mode) ? "a message key" : "REGEX".equals(rule.mode) ? "a pattern (regex)" : "text in the chat line").withStyle(ChatFormatting.DARK_GRAY));
+            box.setResponder(v -> { rule.text = v; NotifySounds.save(); });
+            addRenderableWidget(box);
+            addRenderableWidget(Button.builder(Component.literal(NotifySounds.modeName(rule.mode)), b -> {
+                rule.mode = NotifySounds.nextMode(rule.mode); NotifySounds.save(); rebuildWidgets();
+            }).bounds(x + w - 96, y, 76, 14).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(
+                    "Contains: anywhere in the line\nWhole word: on its own, not inside another word\nStarts with: the line starts with it\nPattern: a regular expression\nKey: the game's message key (for its own messages)"))).build());
+            addRenderableWidget(Button.builder(Component.literal("×").withStyle(ChatFormatting.RED), b -> {
+                list.remove(rule); NotifySounds.save(); rebuildWidgets();
+            }).bounds(x + w - 16, y, 16, 14).build());
+            y += 17;
+        }
+        if (list.size() < max) {
+            addRenderableWidget(Button.builder(Component.literal(add).withColor(0x55FFFF), b -> {
+                list.add(new NotifySounds.Rule()); NotifySounds.save(); rebuildWidgets();
+            }).bounds(x, y, Math.min(140, w), 13).build());
+            y += 16;
+        }
+        return y + 2;
+    }
+
+    /// The Also page: colour the matched words in chat (and bold / underline them), show the line on screen, flash the
+    /// game's icon.
+    private void buildAlso(NotifySounds.Custom c, int y) {
+        int x = rx + 8, w = rw - 16;
+        labels.add(new Object[]{x, y, "ᴡʜᴀᴛ ᴇʟꜱᴇ ɪᴛ ᴅᴏᴇꜱ"});
+        y += 12;
+        addRenderableWidget(Button.builder(onOff("Colour the words in chat", c.colorWords), b -> { c.colorWords = !c.colorWords; NotifySounds.save(); rebuildWidgets(); })
+                .bounds(x, y, w, 15).build());
+        y += 19;
+        int bw = (w - 6) / 3;
+        addRenderableWidget(Button.builder(Component.literal("Colour ■").withColor(c.wordColor & 0xFFFFFF), b -> {
+            int i = 0;
+            while (i < WORD_COLORS.length && WORD_COLORS[i] != c.wordColor) i++;
+            c.wordColor = WORD_COLORS[(i + 1) % WORD_COLORS.length];
+            NotifySounds.save(); rebuildWidgets();
+        }).bounds(x, y, bw, 15).build());
+        addRenderableWidget(Button.builder(onOff("Bold", c.bold), b -> { c.bold = !c.bold; NotifySounds.save(); rebuildWidgets(); }).bounds(x + bw + 3, y, bw, 15).build());
+        addRenderableWidget(Button.builder(onOff("Underline", c.underline), b -> { c.underline = !c.underline; NotifySounds.save(); rebuildWidgets(); }).bounds(x + 2 * (bw + 3), y, w - 2 * (bw + 3), 15).build());
+        y += 23;
+        addRenderableWidget(Button.builder(onOff("Show the line on screen", c.title), b -> { c.title = !c.title; NotifySounds.save(); rebuildWidgets(); })
+                .bounds(x, y, w, 15).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Big, at the top middle of the screen for 5 seconds"))).build());
+        y += 19;
+        addRenderableWidget(Button.builder(onOff("Flash the game's icon on your taskbar", c.flash), b -> { c.flash = !c.flash; NotifySounds.save(); rebuildWidgets(); })
+                .bounds(x, y, w, 15).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("When the game isn't the window in front"))).build());
+    }
+
+    private static Component onOff(String what, boolean on) {
+        return Component.literal(what + ": ").append(Component.literal(on ? "On" : "Off").withStyle(on ? ChatFormatting.GREEN : ChatFormatting.RED));
     }
 
     /// Every game and resource-pack sound with {@code text} in its name.
@@ -321,11 +421,12 @@ public class SoundsScreen extends Screen {
         Component title = selected.equals(ALL) ? Component.literal("Every notifier").withColor(0xFFD966)
                 : custom != null ? Component.literal(custom.name).withColor(0xFFFFFF)
                 : Component.literal(kindOf(selected).label()).withColor(kindOf(selected).color());
-        g.drawString(font, Component.empty().append(title).append(Component.literal("  sound").withColor(FoeMainScreen.DIM & 0xFFFFFF)), rx + 8, listTop + 6, -1, true);
+        if (custom == null) g.drawString(font, Component.empty().append(title).append(Component.literal("  sound").withColor(FoeMainScreen.DIM & 0xFFFFFF)), rx + 8, listTop + 6, -1, true);
         if (selected.equals(ALL)) g.drawString(font, "Changes here go to every one of FOE+'s sounds", rx + 8, listTop + 18, FoeMainScreen.DIM, false);
-        if (custom != null) {
-            g.drawString(font, "Name", rx + 8, nameBox.getY() + 3, FoeMainScreen.TEXT, false);
-            g.drawString(font, "Chat text", rx + 8, matchBox.getY() + 3, FoeMainScreen.TEXT, false);
+        for (Object[] l : labels) g.drawString(font, (String) l[2], (int) l[0], (int) l[1], FoeMainScreen.DIM, false);
+        if (custom != null && customTab != 1) {
+            if (customTab == 2) g.drawString(font, "Restyled words show on lines that set it off.", rx + 8, listBottom - 32, FoeMainScreen.DIM, false);
+            return;
         }
         if (typed == null || typed.isBlank()) {
             for (int[] q : quickButtons) g.drawString(font, QUICK[q[1]][0].toUpperCase(Locale.ROOT), rx + 8, q[0] + 1, FoeMainScreen.DIM, false);

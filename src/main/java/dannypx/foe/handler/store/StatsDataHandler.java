@@ -92,12 +92,17 @@ public class StatsDataHandler extends Handler {
         Stat<Integer, Integer> lastOfVariant = variants.get(fish.getVariant());
         int variantDryStreak = lastOfVariant == null || lastOfVariant.amount() == null || lastOfVariant.amount() == 0
                 ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastOfVariant.caughtOn();
+        // Fabled's only counts fish caught while a Fabled event is on where you are (⭐ on the boss bar), and ends
+        // at the Fabled: its "last caught on" moves along with every other fish, so those don't add to it.
+        boolean fabled = FABLED.equalsIgnoreCase(fish.getVariant());
+        if (fabled) variantDryStreak = lastOfVariant == null ? 1 : Math.max(1, statsData.fishTotal + 1 - lastOfVariant.caughtOn());
         // Same for Gigantic size.
         Stat<Integer, Integer> lastGigantic = statsData.fishData.getOrDefault(FishTagObject.FISH_SIZE, Map.of()).get("gigantic");
         int giganticDryStreak = lastGigantic == null || lastGigantic.amount() == null || lastGigantic.amount() == 0
                 ? statsData.fishTotal + 1 : statsData.fishTotal + 1 - lastGigantic.caughtOn();
         statsData.fishTotal++;
         countEventCatch();
+        if (!fabled && !fabledEventOn()) skipFabled(statsData);
         dannypx.foe.handler.logic.SessionStatsHandler.instance().onFish(fish.getRarity(), fish.getVariant(), fish.getFishSize());
 
         Pair<String, Integer> rarityDrystreak = this.updateFishData(statsData, FishTagObject.RARITY, fish.getRarity(), 1);
@@ -258,6 +263,30 @@ public class StatsDataHandler extends Handler {
         }
         Stat<Integer, Integer> stat = statsData.rareCatchData == null ? null : statsData.rareCatchData.get(key);
         return stat == null || stat.caughtOn() == null ? -1 : Math.max(0, statsData.fishTotal - stat.caughtOn());
+    }
+
+    static final String FABLED = "fabled";
+
+    /// A Fabled event is on where you are: the boss bar's weather shows ⭐.
+    static boolean fabledEventOn() {
+        try {
+            return dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons().contains("\u2B50");
+        } catch (RuntimeException | LinkageError e) {
+            return false;
+        }
+    }
+
+    /// A fish caught with no Fabled event on: the Fabled dry streak stays where it is (its "last caught on" moves
+    /// along with the fish total). Package-private for tests.
+    static void skipFabled(StatsDataModel statsData) {
+        Map<String, Stat<Integer, Integer>> variants = statsData.fishData.get(FishTagObject.VARIANT);
+        if (variants == null) {
+            variants = new HashMap<>();
+            statsData.fishData.put(FishTagObject.VARIANT, variants);
+        }
+        Stat<Integer, Integer> stat = variants.get(FABLED);
+        if (stat == null || stat.caughtOn() == null) variants.put(FABLED, Stat.of(stat == null || stat.amount() == null ? 0 : stat.amount(), statsData.fishTotal));
+        else variants.put(FABLED, Stat.of(stat.amount(), Math.min(statsData.fishTotal, stat.caughtOn() + 1)));
     }
 
     /// A fish was caught: the event-only dry streaks count it if their event is on.

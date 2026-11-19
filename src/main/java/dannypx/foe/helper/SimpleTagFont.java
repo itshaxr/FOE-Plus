@@ -28,7 +28,7 @@ public final class SimpleTagFont {
     private static final Set<Integer> RANK_CHARS = Set.of(
             0xF021, 0xF022, 0xF023, 0xF024, 0xF026, 0xF027, // owner, admin, manager, staff, designer, builder
             0xF028, 0xF029, 0xF030, 0xF031, 0xF032,         // admiral, captain, mariner, sailor, angler
-            0xF066, 0xF088);                                // media, community manager
+            0xF066, 0xF088, 0xF218);                        // media, community manager, social media
 
     /// Item rarity and event-variant tags.
     private static final Set<Integer> RARITY_CHARS = Set.of(

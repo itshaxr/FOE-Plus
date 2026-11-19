@@ -11,6 +11,7 @@
     {"type":"bitmap","file":"fishonmcextras:font/tag/sailor.png","ascent":7,"height":7,"chars":["\uF031"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/angler.png","ascent":7,"height":7,"chars":["\uF032"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/media.png","ascent":7,"height":7,"chars":["\uF066"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/socialmedia.png","ascent":7,"height":7,"chars":["\uF218"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/communitymanager.png","ascent":7,"height":7,"chars":["\uF088"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/common.png","ascent":7,"height":7,"chars":["\uF033"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/rare.png","ascent":7,"height":7,"chars":["\uF034"]},

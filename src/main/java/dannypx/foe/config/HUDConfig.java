@@ -485,6 +485,14 @@ public class HUDConfig extends Config {
     @Desc("§7\"Max Luck\" above the pet in green, with a green ♣. Off: the clover and text in the Luck colour")
     public ValidatedBoolean petPanelGreenLuck = new ValidatedBoolean(true);
 
+    @Name("Show the item box")
+    @Desc("§7The box beside the pet with the item it holds")
+    public ValidatedBoolean petPanelItemBox = new ValidatedBoolean(true);
+
+    @Name("Show the item line")
+    @Desc("§7The line with the name of the item the pet holds")
+    public ValidatedBoolean petPanelItemLine = new ValidatedBoolean(true);
+
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat petPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
@@ -700,9 +708,10 @@ public class HUDConfig extends Config {
     @Name("Show when the numbers were read from /menu")
     public ValidatedBoolean luckScalePanelBreakdown = new ValidatedBoolean(true);
 
+    // a new name, so it's on (green, like the pet panel's) for everyone
     @Name("Green clover for Luck")
-    @Desc("§7The Luck line with a green clover, in green. Off: the clover and Luck in the Luck colour")
-    public ValidatedBoolean luckScaleGreenClover = new ValidatedBoolean(false);
+    @Desc("§7The Luck line with the game's ♣ in green, in green (as on the pet panel). Off: the ♣ and Luck in the Luck colour")
+    public ValidatedBoolean luckScaleGreenLuck = new ValidatedBoolean(true);
 
     @Name("X Position in %")
     public ValidatedInt luckScalePanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);

@@ -1,40 +1,43 @@
 package dannypx.foe.screens;
 
 import dannypx.foe.handler.logic.InventoryHandler;
-import dannypx.foe.handler.logic.PetPriceSheetHandler;
+import dannypx.foe.handler.store.PetPrices;
 import dannypx.foe.item.PetTagObject;
+import dannypx.foe.screens.element.hud.PetPanelElement;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Pet price menu (U): the price sheet as a table — rating bands down the side, rarities across —
- * with a fixed header, alternating row shading, a scrollbar, and your equipped pet's row and
- * price cell highlighted. Type a rating in the box to jump to (and highlight) that row.
+ * Pet Prices (O → Tools, or U): your price table. Rating bands down the side with a Common's price (low, and high for
+ * a range), what that comes to for each rarity across, then the rarity multipliers and the Max Luck / Max Scale
+ * bonuses. Click any number to change it (Enter or a click elsewhere keeps it; Esc puts it back). Your equipped pet's
+ * band and price are lit up, with its price worked out at the bottom.
  */
 public class PetPriceScreen extends Screen {
-    /// Switched off while the prices are reworked: the U key, the O-menu button and the sheet download all
-    /// check this. Set to true to bring the menu back.
-    public static final boolean ENABLED = false;
+    /// The menu is on (the U key and the O menu's button check it).
+    public static final boolean ENABLED = true;
 
-    private static final int ROW_HEIGHT = 14;
-    private static final int HEADER_HEIGHT = 16;
-    private static final int SCROLLBAR_WIDTH = 6;
+    private static final int BG = 0xFF0A1420, PANEL = 0xE0081320, RIM = 0xFF2B4E6E, RULE = 0xFF1E3550,
+            FIELD_EDGE = 0xFF22405E, FIELD = 0xFF081320, TITLE = 0xFFEAF4FF, TEXT = 0xFFC9D7E6, DIM = 0xFF7F95AB,
+            GOLD = 0xFFFFD866;
+    private static final String[] BADGES = {"", "", "", "", ""};
+    private static final int ROW_H = 16, FIELD_W = 52;
 
     private final Screen parent;
-    private EditBox ratingBox;
-    private double scroll = 0;
-    private boolean draggingScrollbar = false;
-    private int highlightRow = -1;
-    private int highlightColumn = -1;
+    private EditBox editor;
+    /// What the editor is changing: "low:3", "high:3", "mult:2", "luck", "scale"; null when it's closed.
+    private String editing;
+    private double scroll;
+    private int petRow = -1, petRarity = -1;
+    private boolean petLuck, petScale;
 
     public PetPriceScreen(Screen parent) {
         super(Component.literal("Pet Prices"));
@@ -42,309 +45,265 @@ public class PetPriceScreen extends Screen {
     }
 
     //region Layout
-    private int tableLeft() { return Math.max(10, this.width / 2 - tableWidth() / 2); }
-    private int tableTop() { return 58; }
-    private int tableBottom() { return this.height - 34; }
-    private int visibleHeight() { return tableBottom() - tableTop() - HEADER_HEIGHT; }
-
-    private static final int CELL_PADDING = 12;
-
-    /// Each column's natural width: its widest cell or bold header, plus padding.
-    private int[] naturalWidths() {
-        PetPriceSheetHandler.Table table = PetPriceSheetHandler.instance().getTable();
-        int count = table.headers().size();
-        int[] widths = new int[count];
-        for (int c = 0; c < count; c++) {
-            if (c == table.notesColumn()) {
-                widths[c] = 24; // notes show as an "ⓘ" with a hover tooltip
-                continue;
-            }
-            int w = this.font.width(Component.literal(table.headers().get(c)).withStyle(ChatFormatting.BOLD));
-            for (List<String> row : table.rows()) {
-                if (c < row.size()) w = Math.max(w, this.font.width(row.get(c)));
-            }
-            widths[c] = w + CELL_PADDING;
-        }
-        return widths;
+    private int panelW() { return Math.min(width - 20, 720); }
+    private int panelH() { return height - 20; }
+    private int px() { return (width - panelW()) / 2; }
+    private int py() { return 10; }
+    private int tx() { return px() + 14; }
+    private int bodyTop() { return py() + 60; }
+    private int bodyBottom() { return py() + panelH() - 116; }
+    private int colX(int rarity) {
+        int start = tx() + 196;
+        int each = (px() + panelW() - 14 - start) / PetPrices.RARITIES.length;
+        return start + rarity * each;
     }
-
-    private int tableWidth() {
-        int natural = SCROLLBAR_WIDTH + 4;
-        for (int w : naturalWidths()) natural += w;
-        return Math.min(this.width - 20, Math.max(natural, 360));
-    }
-
-    /// Natural widths, spread out to fill the table, or shrunk (widest columns first) on small screens.
-    private int[] columnWidths() {
-        int[] widths = naturalWidths();
-        if (widths.length == 0) return widths;
-        int notes = PetPriceSheetHandler.instance().getTable().notesColumn();
-        int available = tableWidth() - SCROLLBAR_WIDTH - 4;
-        int total = 0;
-        for (int w : widths) total += w;
-
-        if (total < available) {
-            int extra = available - total;
-            int flexible = widths.length - (notes >= 0 ? 1 : 0);
-            for (int c = 0; c < widths.length; c++) {
-                if (c != notes) widths[c] += extra / flexible;
-            }
-        } else {
-            while (total > available) {
-                int widest = 0;
-                for (int c = 1; c < widths.length; c++) if (widths[c] > widths[widest]) widest = c;
-                if (widths[widest] <= 30) break;
-                widths[widest]--;
-                total--;
-            }
-        }
-        return widths;
-    }
-
-    private int contentHeight() {
-        return PetPriceSheetHandler.instance().getTable().rows().size() * ROW_HEIGHT;
-    }
-
-    private double maxScroll() {
-        return Math.max(0, contentHeight() - visibleHeight());
-    }
+    private int lowX() { return tx() + 62; }
+    private int highX() { return tx() + 126; }
+    private double maxScroll() { return Math.max(0, PetPrices.rows().size() * ROW_H - (bodyBottom() - bodyTop())); }
+    private int rowY(int i) { return bodyTop() + i * ROW_H - (int) scroll; }
+    private int multY() { return bodyBottom() + 8; }
+    private int bonusY() { return bodyBottom() + 28; }
+    private int petY() { return bodyBottom() + 48; }
     //endregion
 
     @Override
     protected void init() {
-        PetPriceSheetHandler.instance().tick();
-
-        ratingBox = new EditBox(this.font, tableLeft(), 32, 90, 18, Component.literal("Rating"));
-        ratingBox.setMaxLength(6);
-        ratingBox.setHint(Component.literal("Rating %").withStyle(ChatFormatting.DARK_GRAY));
-        ratingBox.setFilter(text -> text.matches("[0-9.]*"));
-        ratingBox.setResponder(text -> this.jumpToRating(text));
-        this.addRenderableWidget(ratingBox);
-
-        this.addRenderableWidget(Button.builder(Component.literal("Refresh"), b -> PetPriceSheetHandler.instance().refreshNow())
-                .bounds(tableLeft() + tableWidth() - 60, 31, 60, 20).build());
-
-        this.addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
-                .bounds(this.width / 2 - 50, this.height - 26, 100, 20).build());
-
-        this.highlightEquippedPet();
+        editor = new EditBox(font, 0, 0, FIELD_W, 13, Component.literal("Price"));
+        editor.setMaxLength(12);
+        editor.setBordered(false);
+        editor.setFilter(t -> t.matches("[0-9.,kKmMbB]*"));
+        editor.visible = false;
+        addRenderableWidget(editor);
+        addRenderableWidget(Button.builder(Component.literal("Reset to defaults"), b -> {
+            close(false);
+            PetPrices.reset();
+        }).bounds(px() + panelW() - 236, py() + panelH() - 26, 106, 18).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose())
+                .bounds(px() + panelW() - 124, py() + panelH() - 26, 110, 18).build());
+        readPet();
+        if (petRow >= 0) scroll = Math.max(0, Math.min(maxScroll(), petRow * ROW_H - (bodyBottom() - bodyTop()) / 2.0));
     }
 
-    /// Highlights (and scrolls to) the row and rarity cell for your equipped pet.
-    private void highlightEquippedPet() {
-        if (!InventoryHandler.instance().hasPet()) return;
-        PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        PetPriceSheetHandler sheet = PetPriceSheetHandler.instance();
-        highlightRow = sheet.rowFor(pet.getTotalPercent() * 100.0);
-        highlightColumn = sheet.columnFor(pet.getRarity());
-        scrollToRow(highlightRow);
-    }
-
-    private void jumpToRating(String text) {
-        if (text.isEmpty()) {
-            highlightEquippedPet();
-            return;
-        }
+    private void readPet() {
+        petRow = petRarity = -1;
+        petLuck = petScale = false;
         try {
-            int row = PetPriceSheetHandler.instance().rowFor(Double.parseDouble(text));
-            if (row >= 0) {
-                highlightRow = row;
-                scrollToRow(row);
-            }
-        } catch (NumberFormatException ignored) {
-        }
-    }
-
-    private void scrollToRow(int row) {
-        if (row < 0) return;
-        double target = row * ROW_HEIGHT - visibleHeight() / 2.0 + ROW_HEIGHT / 2.0;
-        scroll = Math.max(0, Math.min(maxScroll(), target));
-    }
-
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
-        super.render(guiGraphics, mouseX, mouseY, delta);
-
-        PetPriceSheetHandler sheet = PetPriceSheetHandler.instance();
-        PetPriceSheetHandler.Table table = sheet.getTable();
-        int left = tableLeft();
-        int width = tableWidth();
-
-        guiGraphics.drawCenteredString(this.font, Component.literal("Pet Prices").withStyle(ChatFormatting.BOLD), this.width / 2, 10, 0xFFFFFFFF);
-        guiGraphics.drawString(this.font, statusLine(sheet), left + 96, 37, 0xFFFFFFFF, true);
-
-        if (table.headers().isEmpty()) {
-            Component message = sheet.getLastError().isEmpty()
-                    ? Component.literal("Loading price sheet...").withStyle(ChatFormatting.GRAY)
-                    : Component.literal(sheet.getLastError()).withStyle(ChatFormatting.RED);
-            guiGraphics.drawCenteredString(this.font, message, this.width / 2, this.height / 2, 0xFFFFFFFF);
-            return;
-        }
-
-        int[] widths = columnWidths();
-        int top = tableTop();
-        int bodyTop = top + HEADER_HEIGHT;
-        int bottom = tableBottom();
-
-        // Background
-        guiGraphics.fill(left, top, left + width, bottom, 0xC0101010);
-
-        // Header
-        guiGraphics.fill(left, top, left + width, bodyTop, 0xFF2A2A2A);
-        int x = left + 2;
-        for (int c = 0; c < widths.length; c++) {
-            String header = c == table.notesColumn() ? "ⓘ" : table.headers().get(c);
-            Component text = Component.literal(fit(header, widths[c] - 4)).withStyle(ChatFormatting.BOLD).withColor(headerColor(c, table));
-            drawCell(guiGraphics, text, x, top + 4, widths[c], c == 0);
-            x += widths[c];
-        }
-
-        // Rows (clipped to the table body)
-        guiGraphics.enableScissor(left, bodyTop, left + width, bottom);
-        List<List<String>> rows = table.rows();
-        int hoveredRow = -1;
-        String hoveredFullText = null;
-        for (int r = 0; r < rows.size(); r++) {
-            int y = bodyTop + r * ROW_HEIGHT - (int) scroll;
-            if (y + ROW_HEIGHT < bodyTop || y > bottom) continue;
-
-            boolean hovered = mouseY >= Math.max(y, bodyTop) && mouseY < Math.min(y + ROW_HEIGHT, bottom)
-                    && mouseX >= left && mouseX < left + width - SCROLLBAR_WIDTH;
-            if (hovered) hoveredRow = r;
-
-            int shade = r == highlightRow ? 0x60FFAA00 : hovered ? 0x40FFFFFF : (r % 2 == 0 ? 0x20FFFFFF : 0x00000000);
-            if (shade != 0) guiGraphics.fill(left, y, left + width - SCROLLBAR_WIDTH, y + ROW_HEIGHT, shade);
-
-            List<String> row = rows.get(r);
-            x = left + 2;
-            for (int c = 0; c < widths.length; c++) {
-                String value = c < row.size() ? row.get(c) : "";
-                Component text;
-                if (c == table.notesColumn()) {
-                    text = Component.literal(value.isBlank() ? "" : "ⓘ").withStyle(ChatFormatting.AQUA);
-                } else if (c == 0) {
-                    text = Component.literal(value).withStyle(ChatFormatting.WHITE);
-                } else {
-                    boolean cellHighlight = r == highlightRow && c == highlightColumn;
-                    String shown = fit(value, widths[c] - 4);
-                    text = Component.literal(shown)
-                            .withStyle(cellHighlight ? ChatFormatting.GOLD : ChatFormatting.WHITE);
-                    if (hovered && !shown.equals(value) && mouseX >= x - 2 && mouseX < x - 2 + widths[c]) {
-                        hoveredFullText = value;
-                    }
-                    if (cellHighlight) guiGraphics.fill(x - 2, y, x - 2 + widths[c], y + ROW_HEIGHT, 0x80FFAA00);
-                }
-                drawCell(guiGraphics, text, x, y + 3, widths[c], c == 0);
-                x += widths[c];
-            }
-        }
-        guiGraphics.disableScissor();
-
-        // Scrollbar
-        if (maxScroll() > 0) {
-            int trackX = left + width - SCROLLBAR_WIDTH;
-            int trackHeight = bottom - bodyTop;
-            int thumbHeight = Math.max(16, (int) (trackHeight * (visibleHeight() / (double) contentHeight())));
-            int thumbY = bodyTop + (int) ((trackHeight - thumbHeight) * (scroll / maxScroll()));
-            guiGraphics.fill(trackX, bodyTop, trackX + SCROLLBAR_WIDTH, bottom, 0xFF202020);
-            guiGraphics.fill(trackX + 1, thumbY, trackX + SCROLLBAR_WIDTH - 1, thumbY + thumbHeight, 0xFF909090);
-        }
-
-        // Hover: full text of a shortened cell, otherwise the row's note
-        if (hoveredFullText != null) {
-            guiGraphics.setTooltipForNextFrame(this.font, Component.literal(hoveredFullText), mouseX, mouseY);
-        } else if (hoveredRow >= 0 && table.notesColumn() >= 0) {
-            String note = rows.get(hoveredRow).size() > table.notesColumn() ? rows.get(hoveredRow).get(table.notesColumn()) : "";
-            if (!note.isBlank()) {
-                guiGraphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(note), 220), mouseX, mouseY);
-            }
-        }
-    }
-
-    private Component statusLine(PetPriceSheetHandler sheet) {
-        if (InventoryHandler.instance().hasPet()) {
+            if (!InventoryHandler.instance().hasPet()) return;
             PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-            String price = sheet.priceFor(pet);
-            return Component.literal("Your pet: ").withStyle(ChatFormatting.GRAY)
-                    .append(pet.getName())
-                    .append(Component.literal(String.format(Locale.ROOT, " %.1f%%", pet.getTotalPercent() * 100)).withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal(" → ").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal(price == null ? "no price" : price).withStyle(ChatFormatting.GOLD));
+            petRow = PetPrices.rowFor(pet.getTotalPercent() * 100.0);
+            petRarity = PetPrices.rarityIndex(PetPanelElement.rarityOf(pet));
+            boolean[] max = PetPanelElement.maxedLuckScale(pet);
+            petLuck = max[0];
+            petScale = max[1];
+        } catch (RuntimeException ignored) {
+            // no pet to read
         }
-        if (sheet.getLastLoaded() > 0) {
-            long minutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - sheet.getLastLoaded());
-            return Component.literal("Updated " + (minutes == 0 ? "just now" : minutes + "m ago")).withStyle(ChatFormatting.DARK_GRAY);
+    }
+
+    //region Editing
+    /// The value a cell holds, as typed.
+    private String valueOf(String key) {
+        String[] k = key.split(":");
+        return switch (k[0]) {
+            case "low" -> PetPrices.format(PetPrices.rows().get(Integer.parseInt(k[1])).low);
+            case "high" -> {
+                long h = PetPrices.rows().get(Integer.parseInt(k[1])).high;
+                yield h > 0 ? PetPrices.format(h) : "";
+            }
+            case "mult" -> String.valueOf(PetPrices.multiplier(Integer.parseInt(k[1])));
+            case "luck" -> PetPrices.format(PetPrices.maxLuckBonus());
+            case "scale" -> PetPrices.format(PetPrices.maxScaleBonus());
+            default -> "";
+        };
+    }
+
+    private void open(String key, int x, int y) {
+        close(true);
+        editing = key;
+        editor.setX(x + 4);
+        editor.setY(y + 3);
+        editor.setValue(valueOf(key));
+        editor.visible = true;
+        setFocused(editor);
+        editor.setFocused(true);
+        editor.moveCursorToEnd(false);
+    }
+
+    /// Keeps (or, `keep` false, drops) what's typed and closes the editor.
+    private void close(boolean keep) {
+        if (editing == null) return;
+        String key = editing;
+        editing = null;
+        editor.visible = false;
+        editor.setFocused(false);
+        if (!keep) return;
+        String typed = editor.getValue().trim();
+        long v = PetPrices.parse(typed);
+        String[] k = key.split(":");
+        switch (k[0]) {
+            case "low" -> { if (v >= 0) PetPrices.rows().get(Integer.parseInt(k[1])).low = v; }
+            case "high" -> PetPrices.rows().get(Integer.parseInt(k[1])).high = typed.isEmpty() ? 0 : Math.max(0, v);
+            case "mult" -> { if (v > 0) PetPrices.setMultiplier(Integer.parseInt(k[1]), v); }
+            case "luck" -> { if (v >= 0) PetPrices.setMaxLuckBonus(v); }
+            case "scale" -> { if (v >= 0) PetPrices.setMaxScaleBonus(v); }
+            default -> { }
         }
-        return Component.empty();
+        PetPrices.save();
     }
 
-    private static int headerColor(int column, PetPriceSheetHandler.Table table) {
-        String header = table.headers().get(column).toLowerCase(Locale.ROOT);
-        if (header.startsWith("common")) return 0xFFFFFF;
-        if (header.startsWith("rare")) return 0x2B85C4;
-        if (header.startsWith("epic")) return 0x1CD832;
-        if (header.startsWith("legendary")) return 0xD98103;
-        if (header.startsWith("mythic")) return 0xC93832;
-        return 0xDDDDDD;
-    }
-
-    private void drawCell(GuiGraphics guiGraphics, Component text, int x, int y, int width, boolean leftAlign) {
-        int textX = leftAlign ? x + 2 : x + (width - 4) / 2 - this.font.width(text) / 2;
-        guiGraphics.drawString(this.font, text, textX, y, 0xFFFFFFFF, true);
-    }
-
-    /// Shortens text with "…" to fit a column.
-    private String fit(String text, int maxWidth) {
-        if (this.font.width(text) <= maxWidth) return text;
-        String out = text;
-        while (!out.isEmpty() && this.font.width(out + "…") > maxWidth) out = out.substring(0, out.length() - 1);
-        return out + "…";
-    }
-
-    //region Scrolling
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        scroll = Math.max(0, Math.min(maxScroll(), scroll - verticalAmount * ROW_HEIGHT * 2));
-        return true;
+    private static boolean in(double mx, double my, int x, int y, int w, int h) {
+        return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
-        int trackX = tableLeft() + tableWidth() - SCROLLBAR_WIDTH;
-        if (maxScroll() > 0 && event.x() >= trackX && event.x() < trackX + SCROLLBAR_WIDTH
-                && event.y() >= tableTop() + HEADER_HEIGHT && event.y() < tableBottom()) {
-            draggingScrollbar = true;
-            dragTo(event.y());
-            return true;
+        double mx = event.x(), my = event.y();
+        if (editing != null && editor.isMouseOver(mx, my)) return super.mouseClicked(event, doubled);
+        List<PetPrices.Row> rows = PetPrices.rows();
+        if (my >= bodyTop() - 2 && my < bodyBottom()) {
+            for (int i = 0; i < rows.size(); i++) {
+                int y = rowY(i);
+                if (in(mx, my, lowX(), y - 1, FIELD_W, 13)) { open("low:" + i, lowX(), y - 1); return true; }
+                if (in(mx, my, highX(), y - 1, FIELD_W, 13)) { open("high:" + i, highX(), y - 1); return true; }
+            }
         }
+        for (int r = 0; r < PetPrices.RARITIES.length; r++) {
+            if (in(mx, my, colX(r), multY() - 1, 40, 13)) { open("mult:" + r, colX(r), multY() - 1); return true; }
+        }
+        if (in(mx, my, tx() + 92, bonusY() - 1, FIELD_W, 13)) { open("luck", tx() + 92, bonusY() - 1); return true; }
+        if (in(mx, my, tx() + 344, bonusY() - 1, FIELD_W, 13)) { open("scale", tx() + 344, bonusY() - 1); return true; }
+        close(true);
         return super.mouseClicked(event, doubled);
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        if (draggingScrollbar) {
-            dragTo(event.y());
-            return true;
+    public boolean keyPressed(KeyEvent event) {
+        int key = event.key();
+        if (editing != null) {
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER
+                    || key == org.lwjgl.glfw.GLFW.GLFW_KEY_TAB) { close(true); return true; }
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) { close(false); return true; }
         }
-        return super.mouseDragged(event, dragX, dragY);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
-        draggingScrollbar = false;
-        return super.mouseReleased(event);
-    }
-
-    private void dragTo(double mouseY) {
-        int bodyTop = tableTop() + HEADER_HEIGHT;
-        double fraction = (mouseY - bodyTop) / (double) (tableBottom() - bodyTop);
-        scroll = Math.max(0, Math.min(maxScroll(), fraction * maxScroll()));
+    public boolean mouseScrolled(double mx, double my, double h, double v) {
+        if (my >= bodyTop() && my < bodyBottom()) {
+            close(true);
+            scroll = Math.max(0, Math.min(maxScroll(), scroll - v * ROW_H * 2));
+            return true;
+        }
+        return super.mouseScrolled(mx, my, h, v);
     }
     //endregion
 
+    private static void box(GuiGraphics g, int x, int y, int w, int h, int edge, int fill) {
+        g.fill(x, y, x + w, y + h, edge);
+        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
+    }
+
+    private void field(GuiGraphics g, String key, String text, int x, int y, int w) {
+        boolean open = key.equals(editing);
+        box(g, x, y, w, 13, open ? GOLD : FIELD_EDGE, FIELD);
+        if (!open) g.drawString(font, text, x + 4, y + 3, TITLE, false);
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
+        g.fill(0, 0, width, height, BG);
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
+        renderBackground(g, mouseX, mouseY, delta);
+        int X = px(), Y = py(), W = panelW(), H = panelH(), tx = tx();
+        box(g, X, Y, W, H, RIM, PANEL);
+        g.drawString(font, Component.literal("Pet Prices").withStyle(ChatFormatting.BOLD), X + 12, Y + 10, TITLE, true);
+        g.drawString(font, "Roughly what a pet sells for, by its rating and rarity (an estimate). Click any number to change it.", X + 12, Y + 24, DIM, false);
+        g.fill(X + 10, Y + 36, X + W - 10, Y + 37, RULE);
+
+        // the header
+        int hy = Y + 44;
+        g.drawString(font, "ʀᴀᴛɪɴɢ", tx, hy, DIM, false);
+        g.drawString(font, "ᴄᴏᴍᴍᴏɴ ᴘʀɪᴄᴇ (ʟᴏᴡ – ʜɪɢʜ)", lowX(), hy, DIM, false);
+        for (int r = 0; r < BADGES.length; r++) g.drawString(font, BADGES[r], colX(r), hy, 0xFFFFFFFF, false);
+
+        // the bands (scrolling)
+        List<PetPrices.Row> rows = PetPrices.rows();
+        int top = bodyTop(), bottom = bodyBottom();
+        g.enableScissor(X + 2, top - 2, X + W - 2, bottom);
+        for (int i = 0; i < rows.size(); i++) {
+            int y = rowY(i);
+            if (y + ROW_H < top - 2 || y > bottom) continue;
+            PetPrices.Row row = rows.get(i);
+            if (i % 2 == 0) g.fill(tx - 4, y - 2, X + W - 18, y + ROW_H - 2, 0x18FFFFFF);
+            if (i == petRow) g.renderOutline(tx - 4, y - 2, X + W - 14 - tx, ROW_H, GOLD);
+            g.drawString(font, row.label(), tx, y + 2, 0xFFFFFFFF, true);
+            field(g, "low:" + i, PetPrices.format(row.low), lowX(), y - 1, FIELD_W);
+            g.drawString(font, "–", lowX() + FIELD_W + 3, y + 2, DIM, false);
+            field(g, "high:" + i, row.high > 0 ? PetPrices.format(row.high) : "", highX(), y - 1, FIELD_W);
+            for (int r = 0; r < PetPrices.RARITIES.length; r++) {
+                String v = PetPrices.format(PetPrices.price(i, r, false, false));
+                boolean yours = i == petRow && r == petRarity;
+                g.drawString(font, v, colX(r), y + 2, yours ? GOLD : TEXT, false);
+            }
+        }
+        g.disableScissor();
+        // the scrollbar
+        double max = maxScroll();
+        if (max > 0) {
+            int trackX = X + W - 10, trackH = bottom - top;
+            int thumbH = Math.max(16, (int) (trackH * (trackH / (double) (rows.size() * ROW_H))));
+            int thumbY = top + (int) ((trackH - thumbH) * (scroll / max));
+            g.fill(trackX, top, trackX + 4, bottom, 0x30FFFFFF);
+            g.fill(trackX, thumbY, trackX + 4, thumbY + thumbH, 0xA0FFFFFF);
+        }
+        g.fill(X + 10, bottom + 2, X + W - 10, bottom + 3, RULE);
+
+        // multipliers and bonuses
+        g.drawString(font, "ʀᴀʀɪᴛʏ ×", tx, multY() + 2, DIM, false);
+        for (int r = 0; r < PetPrices.RARITIES.length; r++) field(g, "mult:" + r, "×" + PetPrices.multiplier(r), colX(r), multY() - 1, 40);
+        g.drawString(font, Component.literal("♣ ").withColor(0x55FF55).append(Component.literal("Max Luck adds").withColor(TEXT & 0xFFFFFF)), tx, bonusY() + 2, -1, false);
+        field(g, "luck", PetPrices.format(PetPrices.maxLuckBonus()), tx + 92, bonusY() - 1, FIELD_W);
+        g.drawString(font, Component.literal("⚓ ").withColor(0x4C88F1).append(Component.literal("Max Scale adds").withColor(TEXT & 0xFFFFFF)), tx + 250, bonusY() + 2, -1, false);
+        field(g, "scale", PetPrices.format(PetPrices.maxScaleBonus()), tx + 344, bonusY() - 1, FIELD_W);
+
+        // your pet
+        int y = petY();
+        boolean priced = petRow >= 0 && petRarity >= 0;
+        box(g, tx - 4, y, W - 20, 22, priced ? GOLD : FIELD_EDGE, priced ? 0x30FFD866 : 0x20FFFFFF);
+        g.drawString(font, yourPet(), tx + 2, y + 7, 0xFFFFFFFF, true);
+
+        // an estimate, not a fact: said plainly, in yellow, where every price is
+        g.drawString(font, Component.literal("⚠ ").withColor(0xFFC93C).append(Component.literal("Estimates only, not exact: real prices change with events and what people will pay.").withColor(0xE8D08A)),
+                X + 14, petY() + 27, -1, false);
+        super.render(g, mouseX, mouseY, delta);
+    }
+
+    /// "Your pet: [LEGENDARY] Duck Pet  82%  ♣ max luck  →  850K–3.65M".
+    private Component yourPet() {
+        try {
+            if (!InventoryHandler.instance().hasPet()) return Component.literal("Equip a pet to see its price here.").withColor(DIM & 0xFFFFFF);
+            PetTagObject pet = InventoryHandler.instance().getCurrentPet();
+            var line = Component.literal("Your pet: ").withStyle(ChatFormatting.GRAY)
+                    .append(pet.getRarityComponent()).append(Component.literal(" "))
+                    .append(pet.getName())
+                    .append(Component.literal("  " + (int) Math.floor(pet.getTotalPercent() * 100 + 1e-6) + "%").withStyle(ChatFormatting.WHITE));
+            if (petLuck) line.append(Component.literal("  ♣ max luck").withColor(0x55FF55));
+            if (petScale) line.append(Component.literal("  ⚓ max scale").withColor(0x4C88F1));
+            if (petRow < 0 || petRarity < 0) return line.append(Component.literal("  (no price for it in the table)").withStyle(ChatFormatting.GRAY));
+            return line.append(Component.literal("  →  ").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(PetPrices.format(PetPrices.price(petRow, petRarity, petLuck, petScale))).withStyle(ChatFormatting.GREEN));
+        } catch (RuntimeException e) {
+            return Component.literal("Equip a pet to see its price here.").withColor(DIM & 0xFFFFFF);
+        }
+    }
+
     @Override
     public void onClose() {
-        this.minecraft.setScreen(this.parent);
+        close(true);
+        minecraft.setScreen(parent);
     }
 
     @Override
