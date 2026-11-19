@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.86+1.21.11",
+      "name": "FOE+ 1.0.86+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- New: FOE-R HUD Style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures by @phckd\n- New: FOE-R bottom bar: the hotbar in a frame, with your rod parts and armour above it by @phckd\n- Every HUD can now have its own style, its border turned off, and be turned on or off right in the HUD Editor by @phckd\n- New: Chummer HUD: rarity, picture and time left (in the top bar on the FOE+ style) by @phckd\n- HUDs can be made smaller than before (they used to stop shrinking at about 20%) by @phckd\n- New: Sounds screen (O → Customize → Sounds): change every FOE+ sound and add your own chat sound triggers by @phckd\n- Pet catch popup, \"QUEST PET!\" for quest pets, and a redesigned pet panel by @phckd\n- Only pets you fish up count in your stats now (quest, contest and event pets don't) by @phckd\n- Daily quest warning when you're about to finish a section's last mission by @phckd\n- FOE+ users' \"+\" is remembered after you log off by @phckd\n- Fixed lures not stacking, lure names going missing, Auto Tip names overlapping, and the top bar's location disappearing by @phckd\n- Moon timer fixes itself after a server restart by @phckd\n- Aidanqt broke some shit and I fixed it by @phckd"
+    },
+    {
       "versionNumber": "1.0.82+1.21.11",
       "name": "FOE+ 1.0.82+1.21.11",
       "datePublished": "2026-11-11",
