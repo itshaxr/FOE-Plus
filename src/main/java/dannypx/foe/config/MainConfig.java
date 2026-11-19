@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 @Version(version = 4)
 @RootConfig
-@Translatable.Name("FishOnExtras Rebirth")
+@Translatable.Name("FOE+")
 @IgnoreVisibility
 public class MainConfig extends Config {
     public MainConfig() {

@@ -139,7 +139,7 @@ public class FoeMainScreen extends Screen {
                 }
             }
             case SETTINGS -> {
-                out.add(tile("All Settings", Items.COMMAND_BLOCK, "Every FOE+ option, by category", b -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID)));
+                out.add(tile("All Settings", Items.COMMAND_BLOCK, "Every FOE+ option, by category", b -> mc.setScreen(new FoeSettingsScreen(this))));
                 out.add(new TileSpec("Inspect", FoeMainScreen::inspectLabel, Items.SPYGLASS,
                         "When pet %, fish and armor details show", true,
                         b -> dannypx.foe.handler.logic.KeyBindHandler.cycleInspectAlways()));
@@ -235,8 +235,18 @@ public class FoeMainScreen extends Screen {
 
     /// One part of the settings, opened straight to it (all of them if that can't be done).
     private static void openConfig(String part) {
-        try { ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID + "." + part); }
-        catch (Throwable t) { ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID); }
+        Minecraft mc = Minecraft.getInstance();
+        Object config = switch (part.contains(".") ? part.substring(0, part.indexOf('.')) : part) {
+            case "hud_config" -> Configs.hudConfig;
+            case "renderer_config" -> Configs.rendererConfig;
+            case "keybinding_config" -> Configs.keyBindConfig;
+            case "inventory_config" -> Configs.inventoryScreenConfig;
+            case "autotip_config" -> Configs.autotipConfig;
+            default -> Configs.mainConfig;
+        };
+        FoeSettingsScreen s = FoeSettingsScreen.at(mc.screen, config);
+        if (part.contains(".")) s.group((me.fzzyhmstrs.fzzy_config.config.Config) config, part.substring(part.indexOf('.') + 1));
+        mc.setScreen(s);
     }
 
     //region Labels that show a setting's value

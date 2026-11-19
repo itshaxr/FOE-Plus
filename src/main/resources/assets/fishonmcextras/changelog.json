@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.88+1.21.11",
+      "name": "FOE+ 1.0.88+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- New: FOE+ Settings screen: every option by category (General, HUD, Inventory, Visuals, Controls, Auto Tip), a list of every HUD with its own settings, switches, pickers and sliders, and search across everything by @phckd\n- New: Chummer in the top bar shows its picture with the rarity badge over the time; or pick a short badge beside it or on its corner by @phckd\n- New: Fish caught (server's sound) in Sounds: keep it, mute it or swap it by @phckd\n- Your Fish bite (BITE!) sound now replaces the server's instead of playing over it by @phckd\n- Bait Prices: every lure colour shows its own picture, the search box keeps your typing, and a clicked price box still shows its price by @phckd\n- Bait sorter stacks lures whose name and tooltip match (Volcano Poppers too) by @phckd\n- FOE+ pet panel is hidden on the FOE-R HUD style (its own pet box shows instead) by @phckd\n- Every title now says FOE+ by @phckd"
+    },
+    {
       "versionNumber": "1.0.87+1.21.11",
       "name": "FOE+ 1.0.87+1.21.11",
       "datePublished": "2026-11-19",

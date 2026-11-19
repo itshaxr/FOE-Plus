@@ -72,7 +72,7 @@ public class MoveElementScreen extends DefaultModScreen {
 
             @Override
             public void onConfig() {
-                ConfigApiJava.INSTANCE.openScreen(show != null ? show.translationKey() : x.translationKey());
+                FoeSettingsScreen.open(show != null ? show : x);
             }
         });
         if (scale != null) scales.put(widget, scale);
@@ -136,7 +136,7 @@ public class MoveElementScreen extends DefaultModScreen {
 
                 @Override
                 public void onConfig() {
-                    ConfigApiJava.INSTANCE.openScreen(hud.catchRingOn.translationKey());
+                    FoeSettingsScreen.open(hud.catchRingOn);
                 }
             });
             scales.put(ringWidget, hud.catchRingScale);
@@ -185,7 +185,7 @@ public class MoveElementScreen extends DefaultModScreen {
 
                 @Override
                 public void onConfig() {
-                    ConfigApiJava.INSTANCE.openScreen(Configs.debugConfig.debugFieldElement.translationKey());
+                    FoeSettingsScreen.open(Configs.debugConfig.debugFieldElement);
                 }
             }));
         }

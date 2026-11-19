@@ -29,11 +29,11 @@ Sand Flea|common|bait_sandflea
 Sand Shrimp|common|bait_sandshrimp
 Sand Worm|common|bait_ragworm
 Scallop|common|bait_scallop
-Small Cut Squid|common|bait_cut_squid
+Small Cut Squid|common|bait_cutsquidmedium
 Cut Octopus|rare|bait_cut_octopus
 Fiddler Crab|rare|bait_fiddler_crab
 Herring Live Bait|rare|bait_threadfin_herring
-Medium Cut Squid|rare|bait_cut_squid
+Medium Cut Squid|rare|bait_cutsquidmedium
 Menhaden Live Bait|rare|bait_gulf_menhaden
 Mullet Live Bait|rare|bait_mulletbait
 Mussels|rare|bait_mussels
@@ -47,7 +47,7 @@ Ballyhoo Live Bait|legendary|bait_ballyhoo
 Bonito Live Bait|legendary|bait_bonito_livebait
 Cownose Ray Cutbait|legendary|bait_cownose_ray_cutbait
 Large Chunk Of Bonito Cutbait|legendary|bait_cutbait
-Large Cut Squid|legendary|bait_cut_squid
+Large Cut Squid|legendary|bait_cutsquidmedium
 Salmon Head|legendary|bait_sea_run_salmon_head
 Bardi Grub|rare|bait_bardi_grub
 Chicken Scraps|rare|bait_chicken_scraps
@@ -65,7 +65,7 @@ Creepy Crawlers|special|bait_creepycrawlers
 Frozen Crawlers|special|bait_frozencrawlers
 Southern Ray Cutbait|special|bait_southern_ray_cutbait
 Crankbait (Tiger Craw)|rare|lure_crankbait_tigercraw
-Crankbait (Smokin' Shad)|rare|lure_crankbait_sexyshad
+Crankbait (Smokin' Shad)|rare|lure_crankbait_smokinshad
 Roostertail (Fire Tiger)|rare|lure_roostertail_firetiger
 Roostertail (Bubblegum)|rare|lure_roostertail_pinkfluorescent
 Roostertail (White Chartreuse)|rare|lure_roostertail_whitechartreuse
@@ -98,6 +98,6 @@ Marlin Lure (Blue Green)|mythical|lure_marlinlure_greenblue
 Frog (Dark Rainforest)|epic|lure_frog_darkrainforest
 Spinner Bait (Lime)|legendary|lure_spinnerbait_lime
 Popper (Volcano)|legendary|lure_poppervolcano
-Roostertail (White Shimmer)|mythical|lure_roostertail_albino_cropped
-Roostertail (Black Shimmer)|mythical|lure_roostertail_melanistic_cropped
-Roostertail (Golden Shimmer)|mythical|lure_roostertail_trophy_cropped
+Roostertail (White Shimmer)|mythical|lure_roostertail_albino
+Roostertail (Black Shimmer)|mythical|lure_roostertail_melanistic
+Roostertail (Golden Shimmer)|mythical|lure_roostertail_trophy

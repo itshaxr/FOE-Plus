@@ -29,13 +29,19 @@ public final class SortPlanner {
     /// One bait or lure in a slot. {@code slot} is the container slot id used in click packets.
     /// {@code color} and {@code size} only matter for lures: two lures merge only when name, color and size all match.
     /// {@code amount} is how many baits (or lure uses) the stack holds, for sorting by amount.
-    public record Entry(int slot, String type, String name, String rarity, String color, String size, int amount) {
+    /// {@code look} is what the item's tooltip says apart from how many it holds (see {@link #look}): a lure the server
+    /// gives no colour or size (a Volcano Popper) still merges with one whose name and tooltip are the same.
+    public record Entry(int slot, String type, String name, String rarity, String color, String size, int amount, String look) {
         public Entry(int slot, String type, String name, String rarity) {
-            this(slot, type, name, rarity, "", "", 0);
+            this(slot, type, name, rarity, "", "", 0, "");
         }
 
         public Entry(int slot, String type, String name, String rarity, String color, String size) {
-            this(slot, type, name, rarity, color, size, 0);
+            this(slot, type, name, rarity, color, size, 0, "");
+        }
+
+        public Entry(int slot, String type, String name, String rarity, String color, String size, int amount) {
+            this(slot, type, name, rarity, color, size, amount, "");
         }
 
         /// What must be equal for two entries to merge, or null when this entry never merges.
@@ -44,8 +50,24 @@ public final class SortPlanner {
             if (LURE.equals(type) && !color.isEmpty() && !size.isEmpty()) {
                 return name + "|" + plainColor(color) + "|" + size.trim().toLowerCase(java.util.Locale.ROOT);
             }
+            if (LURE.equals(type) && !name.isEmpty() && look != null && !look.isEmpty()) return name + "|look|" + look;
             return null;
         }
+    }
+
+    /// Package-private for tests: a tooltip's lines as one text to compare, leaving out the line that says how many
+    /// the stack holds (one with that number in it, or one about uses / stock / what's left).
+    public static String look(List<String> lines, int amount) {
+        StringBuilder b = new StringBuilder();
+        String n = String.valueOf(amount);
+        for (String line : lines) {
+            String t = plainColor(line).replaceAll("\\s+", " ").trim();
+            if (t.isEmpty()) continue;
+            if (t.matches(".*\\b(uses?|stock|left|remaining|durability|amount|quantity)\\b.*")) continue;
+            if (amount > 0 && (" " + t.replace(",", "") + " ").matches(".*[^0-9.]" + n + "[^0-9.].*")) continue;
+            b.append(t).append('\n');
+        }
+        return b.toString();
     }
 
     /// A lure's colour as you read it ("Redhead"), whichever way the server wrote it: older lures carry it

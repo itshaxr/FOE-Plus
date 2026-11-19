@@ -147,7 +147,7 @@ public class DebugHandlerScreen extends DefaultModScreen {
 
             SystemToast.add(minecraftClient.getToastManager(),
                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                    Component.literal("Fish On Extras Rebirth"),
+                    Component.literal("FOE+"),
                     Component.literal("Copied " + hoveredName + " JSON"));
         }
     }

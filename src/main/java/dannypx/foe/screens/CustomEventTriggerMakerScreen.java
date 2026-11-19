@@ -389,7 +389,7 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
                         if(data.value3() > FishOnMCExtras.EVENT_TRIGGER_VERSION) {
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Could not Import. Imported Event Trigger is made on a newer version"));
                             return;
                         }
@@ -412,14 +412,14 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Imported Event Trigger"));
                     } catch (Exception e) {
                         LoggerHandler.error(e);
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Could not Import. Data invalid"));
                     }
                 })
@@ -455,14 +455,14 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Exported Button on your clipboard"));
                         } catch (Exception e) {
                             LoggerHandler.error(e);
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("An error has occurred"));
                         }
                     }
@@ -513,7 +513,7 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
             if(nameEditBox.getValue().isBlank()) {
                 SystemToast.add(minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Event Trigger name is empty"));
 
                 return false;
@@ -524,7 +524,7 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
             ) {
                 SystemToast.add(minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Event Trigger name already exist"));
 
                 return false;
@@ -535,7 +535,7 @@ public class CustomEventTriggerMakerScreen extends Screen implements ScreenConst
             )) {
                 SystemToast.add(minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Event does not exist"));
 
                 return false;

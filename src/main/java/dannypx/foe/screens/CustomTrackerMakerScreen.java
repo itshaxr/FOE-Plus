@@ -155,7 +155,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
                         if(data.value3() > FishOnMCExtras.TRACKER_VERSION) {
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Could not Import. Imported Tracker is made on a newer version"));
 
                             return;
@@ -176,14 +176,14 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Imported Notification"));
                     } catch (Exception e) {
                         LoggerHandler.error(e);
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Could not Import. Data invalid"));
                     }
                 })
@@ -222,14 +222,14 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Exported Tracker on your clipboard"));
                         } catch (Exception e) {
                             LoggerHandler.error(e);
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("An error has occurred"));
                         }
                     }
@@ -295,7 +295,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(editCustomTrackerWidget.idName.isBlank()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Tracker name is empty"));
 
                 return false;
@@ -306,7 +306,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             ) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Tracker name already exist"));
 
                 return false;
@@ -336,7 +336,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(!couldParse.get()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Default value is not correct format"));
 
                 return false;
@@ -387,7 +387,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(!couldParseValueToUse.get()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Value to use is not correct format"));
 
                 return false;
@@ -396,7 +396,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(!couldParseTrackerAction.get()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Tracker action does not exist"));
 
                 return false;
@@ -405,7 +405,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(!actionIdIsNotEmpty.get()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("An Action ID is empty"));
 
                 return false;
@@ -414,7 +414,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(!trackerActionIsNotEmpty.get()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("An Tracker Action is empty"));
 
                 return false;
@@ -427,7 +427,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(uniqueActionIds.size() != editCustomTrackerWidget.getEntries().size()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Action IDs are not unique"));
 
                 return false;
@@ -436,7 +436,7 @@ public class CustomTrackerMakerScreen extends Screen implements ScreenConstants 
             if(defaultValue == null) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Error at Default Value"));
 
                 return false;

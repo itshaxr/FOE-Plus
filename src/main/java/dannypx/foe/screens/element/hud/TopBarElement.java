@@ -158,8 +158,10 @@ public class TopBarElement extends Element {
     /// The chummer was drawn in the bar this frame (so its own panel stays hidden).
     static boolean chummerInBar = false;
 
-    /// The chummer's picture's size in the bar, and the gap before its time.
-    private static final int CHUMMER_ICON = 12, CHUMMER_GAP = 2;
+    /// The chummer's picture's size in the bar (bigger with the badge over the time), and the gap before its time.
+    private static final int CHUMMER_ICON = 12, CHUMMER_ICON_BIG = 14, CHUMMER_GAP = 2;
+    /// The short badge: the server's badge cut to its first letter (its left 8 pixels) and its right edge (2).
+    private static final int SHORT_LEFT = 8, SHORT_RIGHT = 2;
 
     /// The rarity's badge (the server's own box), or "" without a rarity.
     private static Component chummerRarity(dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
@@ -173,22 +175,77 @@ public class TopBarElement extends Element {
         return Component.literal(String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60)).withStyle(color);
     }
 
-    private static int chummerWidth(Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
-        return Math.max(CHUMMER_ICON, font.width(chummerRarity(c))) + CHUMMER_GAP + font.width(chummerTime(c));
+    private static dannypx.foe.type.ChummerStyle chummerStyle() {
+        return Configs.hudConfig.chummerBarStyle.get();
     }
 
-    /// The chummer at `x`: its rarity's badge above its picture, the time left beside the picture.
-    private static void drawChummer(GuiGraphics g, Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x) {
+    /// The short badge's width (0 without a rarity).
+    private static int shortWidth(Font font, Component rarity) {
+        int w = font.width(rarity);
+        return w <= 0 ? 0 : Math.min(w, SHORT_LEFT + SHORT_RIGHT);
+    }
+
+    static int chummerWidth(Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c) {
         Component rarity = chummerRarity(c);
-        int column = Math.max(CHUMMER_ICON, font.width(rarity));
-        int iconY = PADDING + 3;
-        PanelElement.drawText(g, font, rarity.getVisualOrderText(), x + (column - font.width(rarity)) / 2, 2);
+        int time = font.width(chummerTime(c));
+        return switch (chummerStyle()) {
+            case SHORT_BESIDE -> { int b = shortWidth(font, rarity); yield (b > 0 ? b + CHUMMER_GAP : 0) + CHUMMER_ICON + CHUMMER_GAP + time; }
+            case SHORT_CORNER -> CHUMMER_ICON_BIG + 3 + time;
+            default -> CHUMMER_ICON_BIG + CHUMMER_GAP + Math.max(font.width(rarity), time);
+        };
+    }
+
+    /// The rarity's badge cut short: its first letter and its right edge, drawn at `x`, its top at `y`.
+    private static void drawShortBadge(GuiGraphics g, Font font, Component rarity, int x, int y) {
+        int w = font.width(rarity);
+        if (w <= 0) return;
+        if (w <= SHORT_LEFT + SHORT_RIGHT) {
+            PanelElement.drawText(g, font, rarity.getVisualOrderText(), x, y);
+            return;
+        }
+        // the badge's left part where it is, then its right edge just after it
+        g.enableScissor(x, y - 2, x + SHORT_LEFT, y + font.lineHeight + 2);
+        PanelElement.drawText(g, font, rarity.getVisualOrderText(), x, y);
+        g.disableScissor();
+        g.enableScissor(x + SHORT_LEFT, y - 2, x + SHORT_LEFT + SHORT_RIGHT, y + font.lineHeight + 2);
+        PanelElement.drawText(g, font, rarity.getVisualOrderText(), x + SHORT_LEFT + SHORT_RIGHT - w, y);
+        g.disableScissor();
+    }
+
+    private static void drawIcon(GuiGraphics g, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x, int y, int size) {
         g.pose().pushMatrix();
-        g.pose().translate(x + (column - CHUMMER_ICON) / 2f, iconY);
-        g.pose().scale(CHUMMER_ICON / 16f, CHUMMER_ICON / 16f);
+        g.pose().translate(x, y);
+        g.pose().scale(size / 16f, size / 16f);
         g.renderItem(dannypx.foe.handler.fetch.ChummerHandler.instance().icon(c), 0, 0);
         g.pose().popMatrix();
-        g.drawString(font, chummerTime(c), x + column + CHUMMER_GAP, PADDING, 0xFFFFFFFF, true);
+    }
+
+    /// The chummer at `x`, in the style picked (see {@link dannypx.foe.type.ChummerStyle}).
+    private static void drawChummer(GuiGraphics g, Font font, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x) {
+        Component rarity = chummerRarity(c);
+        Component time = chummerTime(c);
+        int timeW = font.width(time);
+        switch (chummerStyle()) {
+            case SHORT_BESIDE -> {
+                int b = shortWidth(font, rarity);
+                if (b > 0) drawShortBadge(g, font, rarity, x, PADDING);
+                int ix = x + (b > 0 ? b + CHUMMER_GAP : 0);
+                drawIcon(g, c, ix, PADDING - 2, CHUMMER_ICON);
+                g.drawString(font, time, ix + CHUMMER_ICON + CHUMMER_GAP, PADDING, 0xFFFFFFFF, true);
+            }
+            case SHORT_CORNER -> {
+                drawIcon(g, c, x + 2, PADDING - 3, CHUMMER_ICON_BIG);
+                drawShortBadge(g, font, rarity, x, PADDING + 5);
+                g.drawString(font, time, x + CHUMMER_ICON_BIG + 3, PADDING, 0xFFFFFFFF, true);
+            }
+            default -> {
+                int col = Math.max(font.width(rarity), timeW);
+                int cx = x + CHUMMER_ICON_BIG + CHUMMER_GAP;
+                drawIcon(g, c, x, PADDING - 3, CHUMMER_ICON_BIG);
+                PanelElement.drawText(g, font, rarity.getVisualOrderText(), cx + (col - font.width(rarity)) / 2, 3);
+                g.drawString(font, time, cx + (col - timeW) / 2, PADDING + 5, 0xFFFFFFFF, true);
+            }
+        }
     }
 
     /// Name and level, and the level progress bar when `withBar`; each piece can be turned off.

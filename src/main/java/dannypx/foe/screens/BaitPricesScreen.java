@@ -48,6 +48,10 @@ public class BaitPricesScreen extends Screen {
     private boolean searchFocused = false;
     private int scroll = 0;
     private List<WikiBaits.Bait> shown = List.of();
+    /// The list's own widgets (each bait's price box and × button), swapped on their own when the search or the
+    /// scroll changes so the search box keeps your typing.
+    private final List<net.minecraft.client.gui.components.AbstractWidget> rowWidgets = new ArrayList<>();
+    private final List<EditBox> priceBoxes = new ArrayList<>();
 
     public BaitPricesScreen(Screen parent) {
         super(Component.literal("Bait Prices"));
@@ -143,8 +147,7 @@ public class BaitPricesScreen extends Screen {
             if (t.equals(search)) return;
             search = t;
             scroll = 0;
-            searchFocused = true;
-            rebuildWidgets();
+            buildRows();
         });
         addRenderableWidget(find);
         if (searchFocused) {
@@ -163,34 +166,9 @@ public class BaitPricesScreen extends Screen {
         }
 
         // the list
-        shown = filter(everything(), group, search, n -> BaitPriceOverrides.get(n) != null);
-        scroll = Math.max(0, Math.min(scroll, shown.size() - rowsFit()));
-        int y = listTop + 1;
-        for (int i = scroll; i < Math.min(shown.size(), scroll + rowsFit()); i++) {
-            WikiBaits.Bait bait = shown.get(i);
-            Rarity r = rarityOf(bait);
-            int px = left + PANEL_W - 12 - 16 - 2 - PRICE_W;
-            EditBox price = new EditBox(font, px, y + 1, PRICE_W, ROW - 4, Component.literal(bait.name()));
-            price.setMaxLength(9);
-            price.setFilter(t -> t.matches("\\d*"));
-            Long own = BaitPriceOverrides.get(bait.name());
-            price.setValue(own == null ? "" : String.valueOf(own));
-            price.setHint(Component.literal(r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get())).withStyle(ChatFormatting.DARK_GRAY));
-            price.setTooltip(Tooltip.create(Component.literal("Your price for one " + bait.name() + ". Empty: its rarity's price.")));
-            price.setResponder(t -> {
-                try {
-                    BaitPriceOverrides.set(bait.name(), t.isEmpty() ? null : Long.parseLong(t));
-                } catch (NumberFormatException ignored) {}
-            });
-            addRenderableWidget(price);
-            addRenderableWidget(Button.builder(Component.literal("×"), btn -> {
-                        BaitPriceOverrides.set(bait.name(), null);
-                        searchFocused = false;
-                        rebuildWidgets();
-                    }).bounds(left + PANEL_W - 12 - 16, y + 1, 16, ROW - 4)
-                    .tooltip(Tooltip.create(Component.literal("Back to its rarity's price"))).build());
-            y += ROW;
-        }
+        rowWidgets.clear();
+        priceBoxes.clear();
+        buildRows();
 
         // bottom
         int by = listBottom + 8, half = (PANEL_W - 24) / 2 - 2;
@@ -210,6 +188,45 @@ public class BaitPricesScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(left + 12 + half + 4, by, half, H).build());
     }
 
+    /// The rows the list shows now: their price boxes and × buttons (the old ones taken away first).
+    private void buildRows() {
+        for (var w : rowWidgets) {
+            if (getFocused() == w) setFocused(null);
+            removeWidget(w);
+        }
+        rowWidgets.clear();
+        priceBoxes.clear();
+        shown = filter(everything(), group, search, n -> BaitPriceOverrides.get(n) != null);
+        scroll = Math.max(0, Math.min(scroll, shown.size() - rowsFit()));
+        int y = listTop + 1;
+        for (int i = scroll; i < Math.min(shown.size(), scroll + rowsFit()); i++) {
+            WikiBaits.Bait bait = shown.get(i);
+            Rarity r = rarityOf(bait);
+            int px = left + PANEL_W - 12 - 16 - 2 - PRICE_W;
+            EditBox price = new EditBox(font, px, y + 1, PRICE_W, ROW - 4, Component.literal(bait.name()));
+            price.setMaxLength(9);
+            price.setFilter(t -> t.matches("\\d*"));
+            Long own = BaitPriceOverrides.get(bait.name());
+            price.setValue(own == null ? "" : String.valueOf(own));
+            price.setHint(Component.literal(r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get())).withStyle(ChatFormatting.DARK_GRAY));
+            price.setTooltip(Tooltip.create(Component.literal("Your price for one " + bait.name() + ". Empty: its rarity's price.")));
+            price.setResponder(t -> {
+                try {
+                    BaitPriceOverrides.set(bait.name(), t.isEmpty() ? null : Long.parseLong(t));
+                } catch (NumberFormatException ignored) {}
+            });
+            rowWidgets.add(addRenderableWidget(price));
+            priceBoxes.add(price);
+            rowWidgets.add(addRenderableWidget(Button.builder(Component.literal("×"), btn -> {
+                        BaitPriceOverrides.set(bait.name(), null);
+                        price.setValue("");
+                        setFocused(null);
+                    }).bounds(left + PANEL_W - 12 - 16, y + 1, 16, ROW - 4)
+                    .tooltip(Tooltip.create(Component.literal("Back to its rarity's price"))).build()));
+            y += ROW;
+        }
+    }
+
     private static Component onOff(boolean on) {
         return Component.literal(on ? "On" : "Off").withStyle(on ? ChatFormatting.GREEN : ChatFormatting.RED);
     }
@@ -220,8 +237,7 @@ public class BaitPricesScreen extends Screen {
             int next = Math.max(0, Math.min(scroll - (int) Math.signum(vertical) * 2, shown.size() - rowsFit()));
             if (next != scroll) {
                 scroll = next;
-                searchFocused = false;
-                rebuildWidgets();
+                buildRows();
             }
             return true;
         }
@@ -271,6 +287,14 @@ public class BaitPricesScreen extends Screen {
             g.drawString(font, name, left + 34, y + 6, 0xFFFFFFFF, true);
             if (own) g.drawString(font, Component.literal("●").withStyle(ChatFormatting.YELLOW), left + PANEL_W - 12 - 16 - 2 - PRICE_W - 9, y + 6, 0xFFFFFFFF, false);
             y += ROW;
+        }
+        for (EditBox box : priceBoxes) {
+            if (!box.isFocused() || !box.getValue().isEmpty()) continue;
+            Rarity r = null;
+            int i = scroll + priceBoxes.indexOf(box);
+            if (i < shown.size()) r = rarityOf(shown.get(i));
+            String hint = r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get());
+            g.drawString(font, Component.literal(hint).withStyle(ChatFormatting.DARK_GRAY), box.getX() + 4 + font.width("_"), box.getY() + (box.getHeight() - 8) / 2, 0xFFFFFFFF, false);
         }
         if (shown.isEmpty()) g.drawCenteredString(font, Component.literal("No bait matches").withStyle(ChatFormatting.DARK_GRAY), width / 2, listTop + 10, 0xFFFFFFFF);
         // scrollbar

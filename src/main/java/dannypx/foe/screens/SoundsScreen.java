@@ -121,9 +121,9 @@ public class SoundsScreen extends Screen {
 
     /// "Every notifier": shows the first of FOE+'s sounds; whatever you change on it goes to all of them.
     private NotifySounds.Setting allProxy() {
-        NotifySounds.Setting first = NotifySounds.get(NotifySounds.KINDS.getFirst().id());
+        NotifySounds.Setting first = NotifySounds.get(NotifySounds.notifiers().getFirst().id());
         NotifySounds.Setting p = new NotifySounds.Setting();
-        p.on = NotifySounds.KINDS.stream().anyMatch(k -> NotifySounds.get(k.id()).on);
+        p.on = NotifySounds.notifiers().stream().anyMatch(k -> NotifySounds.get(k.id()).on);
         p.sound = allSame(s -> s.sound) ? first.sound : first.sound;
         p.volume = first.volume;
         p.pitch = first.pitch;
@@ -132,15 +132,15 @@ public class SoundsScreen extends Screen {
     }
 
     private static boolean allSame(java.util.function.Function<NotifySounds.Setting, Object> f) {
-        Object v = f.apply(NotifySounds.get(NotifySounds.KINDS.getFirst().id()));
-        for (NotifySounds.Kind k : NotifySounds.KINDS) if (!java.util.Objects.equals(f.apply(NotifySounds.get(k.id())), v)) return false;
+        Object v = f.apply(NotifySounds.get(NotifySounds.notifiers().getFirst().id()));
+        for (NotifySounds.Kind k : NotifySounds.notifiers()) if (!java.util.Objects.equals(f.apply(NotifySounds.get(k.id())), v)) return false;
         return true;
     }
 
     /// Applies a change to the open row (or to all of FOE+'s sounds for "Every notifier") and saves.
     private void change(java.util.function.Consumer<NotifySounds.Setting> edit) {
         if (selected.equals(ALL)) {
-            for (NotifySounds.Kind k : NotifySounds.KINDS) edit.accept(NotifySounds.get(k.id()));
+            for (NotifySounds.Kind k : NotifySounds.notifiers()) edit.accept(NotifySounds.get(k.id()));
         } else {
             edit.accept(current());
         }
@@ -469,6 +469,8 @@ public class SoundsScreen extends Screen {
         int sx = bx + 30;
         FoeMainScreen.box(g, sx, y + 4, 92, 14, FoeMainScreen.RULE, 0xFF0D1A28);
         String label = r.all() && !allSame(t -> t.sound) ? "(mixed)" : soundName(s.sound);
+        if (!r.all() && r.custom() == null && r.kind() != null && r.kind().id().equals(dannypx.foe.handler.logic.CatchSound.ID)
+                && (s.sound == null || s.sound.isBlank())) label = s.on ? "Server's own" : "Muted";
         // the volume only when it isn't full
         String tail = s.sound == null || s.sound.isBlank() || s.volume >= 0.995f ? "" : " " + Math.round(s.volume * 100) + "%";
         g.drawString(font, Component.literal("♪ ").withColor(FoeMainScreen.ACCENT & 0xFFFFFF)
@@ -517,7 +519,7 @@ public class SoundsScreen extends Screen {
         int bx = x + w - 4 - 18 - 4 - 92 - 4 - 26;
         if (mx >= x + w - 22) {
             // ▶
-            NotifySounds.Setting s = r.all() ? NotifySounds.get(NotifySounds.KINDS.getFirst().id()) : r.custom() != null ? r.custom() : NotifySounds.get(r.kind().id());
+            NotifySounds.Setting s = r.all() ? NotifySounds.get(NotifySounds.notifiers().getFirst().id()) : r.custom() != null ? r.custom() : NotifySounds.get(r.kind().id());
             NotifySounds.play(s, true);
             return;
         }
@@ -525,7 +527,7 @@ public class SoundsScreen extends Screen {
             // on / off
             if (r.all()) {
                 boolean to = !allProxy().on;
-                for (NotifySounds.Kind k : NotifySounds.KINDS) NotifySounds.get(k.id()).on = to;
+                for (NotifySounds.Kind k : NotifySounds.notifiers()) NotifySounds.get(k.id()).on = to;
             } else {
                 NotifySounds.Setting s = r.custom() != null ? r.custom() : NotifySounds.get(r.kind().id());
                 s.on = !s.on;

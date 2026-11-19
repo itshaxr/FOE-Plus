@@ -31,6 +31,7 @@ Press **O** in game to open the FOE+ menu.
 - Quests, Pet (with held item, XP bar and a **Max Luck / Max Scale** tag), Bait, Luck & Scale (read from your /menu profile, boosters included).
 - Events: Fish Frenzy, Blooming Oasis, Gold Rush, Fabled, boosters, and the weather (rain showers, thunderstorms, supercells, moons) with how long they have left.
 - Timers (moon, Tackle Shop, Cosmetic Store, votes, community goal with catches per hour) and Social (crew and friends online, with the instance they're on).
+- **FOE+ Settings:** every option by category, every HUD in one list with its own settings, and search across everything (*O → All Settings*).
 - **HUD Editor:** change any panel's line spacing, padding, colours, text alignment, or put your own PNG/GIF in it. Each HUD can have its own style (FOE+ or FOE-R), its border turned off, and be turned on or off right there.
 - **FOE-R HUD style:** profile, pet and location boxes in place of the top bar, FOE+'s own weather pictures, and a brown FOE-R bottom bar with your rod parts and armour above the hotbar.
 - Chummer: rarity badge, picture and time left (in the top bar, or its own HUD on the FOE-R style).

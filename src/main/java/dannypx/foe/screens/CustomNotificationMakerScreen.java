@@ -142,7 +142,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
                         if(data.value3() > FishOnMCExtras.NOTIFICATION_VERSION) {
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Could not Import. Imported Notification is made on a newer version"));
 
                             return;
@@ -163,7 +163,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Imported Notification"));
 
                     } catch (Exception e) {
@@ -171,7 +171,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
 
                         SystemToast.add(this.minecraft.getToastManager(),
                                 SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                Component.literal("Fish On Extras Rebirth"),
+                                Component.literal("FOE+"),
                                 Component.literal("Could not Import. Data invalid"));
                     }
                 })
@@ -206,14 +206,14 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("Exported Notification on your clipboard"));
                         } catch (Exception e) {
                             LoggerHandler.error(e);
 
                             SystemToast.add(this.minecraft.getToastManager(),
                                     SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                                    Component.literal("Fish On Extras Rebirth"),
+                                    Component.literal("FOE+"),
                                     Component.literal("An error has occurred"));
                         }
                     }
@@ -279,7 +279,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
             if(editCustomNotificationWidget.newName.isBlank()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Notification name is empty"));
 
                 return false;
@@ -291,7 +291,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
             ) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Notification name already exist"));
 
                 return false;
@@ -302,7 +302,7 @@ public class CustomNotificationMakerScreen extends Screen implements ScreenConst
             if(!iconPattern.matcher(editCustomNotificationWidget.icon).matches()) {
                 SystemToast.add(this.minecraft.getToastManager(),
                         SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal("Fish On Extras Rebirth"),
+                        Component.literal("FOE+"),
                         Component.literal("Icon is wrong format"));
 
                 return false;

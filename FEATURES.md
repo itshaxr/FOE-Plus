@@ -6,7 +6,7 @@ Everything FOE+ adds to **play.fishonmc.net**. Press **O** in game to open the F
   <img src="docs/images/foe-plus-menu.png" alt="The FOE+ menu" width="640">
 </p>
 
-**Contents:** [HUD panels](#hud-panels) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Sounds](#sounds) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
+**Contents:** [HUD panels](#hud-panels) · [Settings](#settings) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Sounds](#sounds) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
 
 ---
 
@@ -28,7 +28,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Mini Event** | The mini event from /minievent: when the daily missions reroll ("Rerolls 23h 55m 2s") and every mission with its progress, in the server's colours (GIGANTIC as a badge). Missions go up as you catch, like Daily Quests, only when the catch matches everything the mission names (place, GIGANTIC and the other sizes, ALBINO and the other variants, rarity, fish); a finished one shows its ✔ for a few seconds and then leaves until the daily reroll (repeatable ones stay). FOE+ checks /minievent quietly every 10 minutes, about a minute after catches and right after the reroll, hiding its answer. Hidden when no mini event is on; can be set to show only while you're at the event's location. |
 | **Session Stats** | Everything All-Time Stats shows, for this session only: fish caught, fish/hour and fish time, quests, pets, shards, capsules, bottles, each rarity, gigantic and each variant, with shares and fish since the last one this session. Counted from your catches and cleared when you log out. Can be turned off. |
 | **Pet** | Your equipped pet (framed in its rarity colour), its level and XP bar (the game's look, or FOE+'s filled bars), its rating, the item it's holding, and **Max Luck** / **Max Scale** / **Max** when its rolls here are as good as they get (green clover by default). The item box and the item line can each be hidden. |
-| **Chummer** | A chummer in range: the server's rarity badge, its picture and the time it has left. In the top bar on the FOE+ style; its own small HUD (size it as you like) on the FOE-R style. |
+| **Chummer** | A chummer in range: the server's rarity badge, its picture and the time it has left. In the top bar on the FOE+ style (the badge over the time, or a short badge beside the picture or on its corner); its own small HUD (size it as you like) on the FOE-R style. |
 | **Bait** | The bait on your rod and how many you have left. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, a saltwater rod at a freshwater place (or the other way round), or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
@@ -42,6 +42,16 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Catch ring** | While you reel a fish in, a ring round the crosshair fills clockwise in green, and flashes full when it's caught. Move and size it like a panel. |
 
 The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of them back on in **O → Custom HUDs**. The first time you join with FOE+ the panels start in a tidy layout instead of on top of each other.
+
+---
+
+## Settings
+
+**O → All Settings** opens FOE+'s settings: a sidebar with General, HUD, Inventory, Visuals, Controls and Auto Tip (the developer pages behind a link at the bottom).
+- **HUD:** every HUD in a list (a green dot when it's on); pick one to see its settings, with its position as one line and a **Move…** button.
+- Each option has the control that fits it: a switch, a ‹ › picker (right-click goes back), a slider with its value, a text box, a key.
+- **Search** (Ctrl+F) finds any option, shown under where it lives.
+- **Reset** puts the page (or the HUD) you're looking at back to its starting values; **Classic view** opens the old settings screen.
 
 ---
 
@@ -222,6 +232,8 @@ The server's Presets menu on one screen, without paging.
 <p align="center"><img src="docs/images/foe-plus-sounds.png" alt="FOE+ Sounds screen" width="640"></p>
 
 **O → Tools → Sounds** lists every sound FOE+ plays: event alerts, server events, catches (including **Fish bite**, when BITE! pops up), the daily quest warning ("About to complete daily quest") and more. Turn each one on or off, pick any game or resource-pack sound, and set its volume and pitch.
+- **Fish bite** replaces the server's own bite sound while it's on (FOE+ learns which one it is over your first few bites).
+- **Fish caught (server's sound):** keep the server's catch sound, mute it, or swap it for another.
 
 **Your own triggers** (like ChatNotify):
 - **Match:** up to four triggers and three exceptions, each Contains, Whole word, Starts with, Regex or a translation key; case sensitive or not, and skip your own messages.

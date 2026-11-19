@@ -811,6 +811,10 @@ public class HUDConfig extends Config {
     @Name("Show Chummer Panel")
     public ValidatedBoolean showChummerPanel = new ValidatedBoolean(true);
 
+    @Name("In the top bar")
+    @Desc("§7How the chummer sits in the top bar: the rarity's badge over the time, or a short badge (its first letter) beside the picture or on its corner")
+    public ValidatedEnum<dannypx.foe.type.ChummerStyle> chummerBarStyle = new ValidatedEnum<>(dannypx.foe.type.ChummerStyle.BADGE_OVER_TIME, ValidatedEnum.WidgetType.CYCLING);
+
     @Name("X Position in %")
     public ValidatedInt chummerPanelXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 

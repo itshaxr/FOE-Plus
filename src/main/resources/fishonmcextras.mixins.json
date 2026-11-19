@@ -37,6 +37,7 @@
     "inject.BossHealthOverlayMixin",
     "inject.ChatScreenMixin",
     "inject.ClientPacketListenerMixin",
+    "inject.SoundManagerMixin",
     "inject.ContextualBarRendererMixin",
     "inject.CustomHeadLayerMixin",
     "inject.EditBoxMixin",

@@ -37,6 +37,11 @@ public final class NotifySounds {
     /// One of FOE+'s own sounds. {@code onByDefault}: whether it plays before you change anything.
     public record Kind(String id, String label, Group group, int color, boolean onByDefault) {}
 
+    /// The kinds "Every notifier" turns on and off together: all but the server's catch sound (that one isn't FOE+'s).
+    public static List<Kind> notifiers() {
+        return KINDS.stream().filter(k -> !k.id().equals(dannypx.foe.handler.logic.CatchSound.ID)).toList();
+    }
+
     public static final List<Kind> KINDS = List.of(
             new Kind("witching_hour", "Witching Hour", Group.EVENTS, 0xE09A5B, true),
             new Kind("titanoboa", "Titanoboa", Group.EVENTS, 0x7CD67C, true),
@@ -54,6 +59,8 @@ public final class NotifySounds {
             new Kind("booster", "Global booster", Group.SERVER, 0x55FF55, false),
 
             new Kind("fish_bite", "Fish bite (BITE!)", Group.CATCHES, 0x55FFFF, false),
+            // the server's own sound for a catch: On plays it (or the sound you pick instead), Off mutes it
+            new Kind(dannypx.foe.handler.logic.CatchSound.ID, "Fish caught (server's sound)", Group.CATCHES, 0x55FF55, true),
             new Kind("albino", "Albino", Group.CATCHES, 0xF2F2F2, false),
             new Kind("melanistic", "Melanistic", Group.CATCHES, 0x8A8AA0, false),
             new Kind("trophy", "Trophy", Group.CATCHES, 0xFFC93C, false),
@@ -284,9 +291,15 @@ public final class NotifySounds {
         SoundSource source = sourceOf(s.source);
         if (test && last != null) mc.getSoundManager().stop(last);
         last = instance(id, source, s.volume, s.pitch);
-        mc.getSoundManager().play(last);
-        if (s.echoVolume > 0f && s.echoPitch > 0f) {
-            mc.getSoundManager().play(instance(id, source, s.volume * s.echoVolume, s.pitch * s.echoPitch));
+        boolean was = dannypx.foe.handler.logic.CatchSound.own;
+        dannypx.foe.handler.logic.CatchSound.own = true;     // FOE+'s own: never taken for the server's catch sound
+        try {
+            mc.getSoundManager().play(last);
+            if (s.echoVolume > 0f && s.echoPitch > 0f) {
+                mc.getSoundManager().play(instance(id, source, s.volume * s.echoVolume, s.pitch * s.echoPitch));
+            }
+        } finally {
+            dannypx.foe.handler.logic.CatchSound.own = was;
         }
     }
 

@@ -30,7 +30,8 @@ public class PetPanelElement extends PanelElement {
                 isCopy);
     }
 
-    @Override protected boolean enabled() { return Configs.hudConfig.showPetPanel.get(); }
+    /// Off with the FOE-R HUD style: its own pet box (see PetElement) shows the pet there instead.
+    @Override protected boolean enabled() { return Configs.hudConfig.showPetPanel.get() && !FoeRBoxes.on(); }
     @Override protected float configX() { return Configs.hudConfig.petPanelXPosition.get() / 100f; }
     @Override protected float configY() { return Configs.hudConfig.petPanelYPosition.get() / 100f; }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.petPanelAlignment.get(); }

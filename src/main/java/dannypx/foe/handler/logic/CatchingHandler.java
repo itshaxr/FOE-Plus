@@ -94,6 +94,7 @@ public class CatchingHandler extends Handler {
                 // Each panel gets the catch on its own: one that fails can't keep the catch from the others (a
                 // failure here used to leave the daily quests waiting for /menu).
                 FishTagObject caught = foundFish.value2();
+                safely("catch sound", CatchSound::onCatch);
                 safely("quests", () -> QuestDataHandler.instance().setFish(caught));
                 safely("contest", () -> ContestTrackerHandler.instance().onFishCaught(caught));
                 safely("daily quests", () -> DailyQuestHandler.instance().onFishCaught(caught));

@@ -215,7 +215,7 @@ public class MainScreen extends DefaultModScreen {
                 width / 2 + PADDING_QUART + BUTTON_WIDTH + PADDING * 2 + PADDING_QUART,
                 height / 2 - BUTTON_HEIGHT / 2 + BUTTON_HEIGHT + PADDING + font.lineHeight - BUTTON_HEIGHT - PADDING_QUART,
                 BUTTON_WIDTH, BUTTON_HEIGHT,
-                button -> ConfigApiJava.INSTANCE.openScreen(Configs.keyBindConfig.translationKey()))
+                button -> FoeSettingsScreen.open(Configs.keyBindConfig))
                 .icon("Keybinds")
                 .color(0xFFCC0000)
                 .tooltip(Tooltip.create(Component.literal("Open Mod keybinds")))
@@ -225,7 +225,7 @@ public class MainScreen extends DefaultModScreen {
                 width / 2 + PADDING_QUART + BUTTON_WIDTH + PADDING * 2 + PADDING_QUART,
                 height / 2 - BUTTON_HEIGHT / 2 + BUTTON_HEIGHT + PADDING + font.lineHeight,
                 BUTTON_WIDTH, BUTTON_HEIGHT,
-                button -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID))
+                button -> FoeSettingsScreen.open(null))
                 .icon("Config")
                 .color(0xFFCC0000)
                 .tooltip(Tooltip.create(Component.literal("Open Configuration screen")))

@@ -162,6 +162,12 @@ public final class BaitPictures {
     public static ItemStack pictureFor(String baitName) {
         load();
         String k = match(baitName, saved.keySet());
+        // A seen bait whose name is only part of this one ("roostertail" for "Roostertail (Fire Tiger)": a lure seen
+        // before its colour was kept) is another colour of it: the server's own picture of this one comes first.
+        if (k != null && !specific(baitName, k)) {
+            ItemStack model = fromModel(baitName);
+            if (!model.isEmpty()) return model;
+        }
         if (k == null) {
             ItemStack model = fromModel(baitName);
             if (!model.isEmpty()) return model;
@@ -184,6 +190,22 @@ public final class BaitPictures {
         }
         stacks.put(k, s);
         return s;
+    }
+
+    /// Package-private for tests: whether a seen name is this bait itself (or names more than it does), not just part
+    /// of its name.
+    static boolean specific(String wanted, String seenKey) {
+        String w = key(wanted);
+        return seenKey.equals(w) || (" " + seenKey + " ").contains(" " + w + " ");
+    }
+
+    /// Package-private for tests: a bait's name with its lure colour ("Roostertail" and "Fire Tiger" → "Roostertail
+    /// (Fire Tiger)"), unless the name has it already.
+    static String withColor(String name, String color) {
+        String c = color == null ? "" : color.replaceAll("<#[0-9A-Fa-f]{6}>|</?[a-zA-Z_:#0-9]+>", "")
+                .replaceAll("§x(§[0-9A-Fa-f]){6}", "").replaceAll("§.", "").trim();
+        if (c.isEmpty() || (" " + key(name) + " ").contains(" " + key(c) + " ")) return name;
+        return name + " (" + c + ")";
     }
 
     /// Package-private for tests: a seen bait whose wiki picture is the same as this bait's, or null.
@@ -256,7 +278,11 @@ public final class BaitPictures {
         String type = data == null ? "" : data.copyTag().getStringOr("type", "");
         if (!type.equals("lure") && !dannypx.foe.handler.logic.BaitboxHandler.isBait(stack)) return;
         String rarity = dannypx.foe.handler.logic.BaitboxHandler.rarityName(dannypx.foe.handler.logic.BaitboxHandler.rarityOf(stack));
-        String k = key(stack.getHoverName().getString());
+        // a lure's colour is its own picture: kept under "Roostertail (Fire Tiger)", not just "Roostertail"
+        String shown = ChatFormatting.stripFormatting(stack.getHoverName().getString());
+        if (shown == null) shown = "";
+        if (type.equals("lure")) shown = withColor(shown, data.copyTag().getStringOr("color", ""));
+        String k = key(shown);
         if (k.isEmpty()) return;
         if (saved.containsKey(k)) {
             // learned before without its rarity (or its name / lure mark): fill those in now
@@ -265,7 +291,7 @@ public final class BaitPictures {
                 JsonObject o = old.getAsJsonObject();
                 boolean changed = false;
                 if (!rarity.isEmpty() && (!o.has("rarity") || o.get("rarity").getAsString().isEmpty())) { o.addProperty("rarity", rarity); changed = true; }
-                if (!o.has("name")) { o.addProperty("name", ChatFormatting.stripFormatting(stack.getHoverName().getString())); changed = true; }
+                if (!o.has("name")) { o.addProperty("name", shown); changed = true; }
                 if (!o.has("lure")) { o.addProperty("lure", type.equals("lure")); changed = true; }
                 if (changed) dirty = true;
             }
@@ -284,7 +310,7 @@ public final class BaitPictures {
             JsonObject entry = new JsonObject();
             entry.add("item", json);
             entry.addProperty("rarity", rarity);
-            entry.addProperty("name", ChatFormatting.stripFormatting(stack.getHoverName().getString()));
+            entry.addProperty("name", shown);
             entry.addProperty("lure", type.equals("lure"));
             saved.put(k, entry);
             stacks.put(k, look);

@@ -165,13 +165,20 @@ public class BaitSorterHandler {
                 continue;
             }
             CompoundTag tag = data.copyTag();
+            int amount = tag.getIntOr(dannypx.foe.item.TagObject.COUNTER, stack.getCount());
+            String name = tag.getStringOr("name", "");
+            if (name.isEmpty()) name = SortPlanner.plainColor(stack.getHoverName().getString());
+            java.util.List<String> lore = new ArrayList<>();
+            var loreData = stack.get(DataComponents.LORE);
+            if (loreData != null) for (var line : loreData.lines()) lore.add(line.getString());
             found.add(new SortPlanner.Entry(slot.index,
                     tag.getStringOr("type", ""),
-                    tag.getStringOr("name", ""),
+                    name,
                     tag.getStringOr("rarity", ""),
                     tag.getStringOr("color", ""),
                     tag.getStringOr("size", ""),
-                    tag.getIntOr(dannypx.foe.item.TagObject.COUNTER, stack.getCount())));
+                    amount,
+                    SortPlanner.look(lore, amount)));
         }
         return found;
     }

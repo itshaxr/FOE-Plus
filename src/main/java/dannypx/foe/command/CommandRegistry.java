@@ -302,7 +302,7 @@ public class CommandRegistry {
             }
 
             public static int openConfig(CommandContext<FabricClientCommandSource> context) {
-                return executeCommand(() -> ConfigApiJava.INSTANCE.openScreen(FishOnMCExtras.MOD_ID));
+                return executeCommand(() -> Minecraft.getInstance().setScreen(new dannypx.foe.screens.FoeSettingsScreen(null)));
             }
 
             public static int openMainScreen(CommandContext<FabricClientCommandSource> context) {
