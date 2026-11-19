@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.90+1.21.11",
+      "name": "FOE+ 1.0.90+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- Bait HUD on the FOE-R style is now a slot like the bottom bar's: the bait, and how many are left under it by @phckd\n- Bait HUD shows again when FOE+ couldn't read the bait on your rod (it now reads the server's newer item data) by @phckd\n- FOE-R bottom bar: rod parts and armour sit inside their frames instead of touching the top by @phckd"
+    },
+    {
       "versionNumber": "1.0.89+1.21.11",
       "name": "FOE+ 1.0.89+1.21.11",
       "datePublished": "2026-11-19",

@@ -33,7 +33,23 @@ public class FishingRodTagObject extends TagObject {
         this.reelItem = this.getItemStackList(REEL);
         this.tackleBox = this.getItemStackList(TACKLEBOX);
         this.activeBait = this.getItemStackList(ACTIVE_BAIT);
+        // in case the server renames it: any other list on the rod named for its bait
+        if (this.activeBait.isEmpty()) {
+            for (String key : this.compoundTag.keySet()) {
+                String k = key.toLowerCase(java.util.Locale.ROOT);
+                if (key.equals(ACTIVE_BAIT) || !k.contains("bait") || k.contains("disable")) continue;
+                List<TagObject> found = this.getItemStackList(key);
+                if (!found.isEmpty()) { this.activeBait = found; break; }
+            }
+        }
+        if (this.activeBait.isEmpty() && !this.getDisableBait() && !loggedNoBait) {
+            loggedNoBait = true;
+            dannypx.foe.handler.logic.LoggerHandler.info("Rod has no bait FOE+ can read; its data has: " + this.compoundTag.keySet()
+                    + (this.contains(ACTIVE_BAIT) ? " | activeBait=" + String.valueOf(this.get(ACTIVE_BAIT)).substring(0, Math.min(600, String.valueOf(this.get(ACTIVE_BAIT)).length())) : ""));
+        }
     }
+
+    private static boolean loggedNoBait = false;
 
     public List<TagObject> getLineItem() {
         return this.lineItem;

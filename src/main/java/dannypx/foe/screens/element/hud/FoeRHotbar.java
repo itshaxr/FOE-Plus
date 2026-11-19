@@ -24,7 +24,7 @@ import java.util.List;
 public final class FoeRHotbar {
     private FoeRHotbar() {}
 
-    static final int SLOT = 20, BAR_H = 24, GROUP_SLOT = 18, GROUP_H = 22;
+    static final int SLOT = 20, BAR_H = 24, GROUP_SLOT = 20, GROUP_H = 24;
     static final int RING = 0x6B4A2B, PICKED = 0xFFC9A26B;
 
     /// Drawn in place of the game's hotbar: the FOE-R style is on, the bar is switched on, and you're playing (not
@@ -108,10 +108,11 @@ public final class FoeRHotbar {
                 if (item.value1()) rarity = item.value2().getRarity();
             }
             if (stack.isEmpty()) continue;
-            g.renderItem(stack, sx + 1, y + 2);
-            if (parts != null) dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawMaxRodPart(g, stack, sx + 1, y + 2);
+            // a pixel clear of the frame all round, the underline below it
+            g.renderItem(stack, sx + 2, y + 3);
+            if (parts != null) dannypx.foe.handler.renderer.ItemRendererHandler.instance().drawMaxRodPart(g, stack, sx + 2, y + 3);
             int color = FoeLocations.rarityColor(rarity);
-            if (color >= 0) g.fill(sx + 2, y + GROUP_H - 3, sx + 16, y + GROUP_H - 2, 0xFF000000 | color);
+            if (color >= 0) g.fill(sx + 3, y + GROUP_H - 4, sx + 17, y + GROUP_H - 3, 0xFF000000 | color);
         }
     }
 }
