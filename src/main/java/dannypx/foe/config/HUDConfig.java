@@ -476,8 +476,8 @@ public class HUDConfig extends Config {
     @Desc("§7BAR_AND_NUMBERS: the bar and (251.50K/470.00K)\nBAR: just the bar\nHIDDEN: no XP, the level goes after the name")
     public ValidatedEnum<dannypx.foe.type.PetXpStyle> petPanelXp = new ValidatedEnum<>(dannypx.foe.type.PetXpStyle.BAR, ValidatedEnum.WidgetType.CYCLING);
 
-    @Name("Pet picture's frame colour")
-    @Desc("§7RATING: the colour of the pet's rating (Excellent is aqua)\nRARITY: the colour of its rarity")
+    @Name("Colour around the pet")
+    @Desc("§7Rating: the colour of the pet's rating (Excellent is aqua), the default. Rarity: the colour of its rarity (Legendary is orange). The FOE-R pet box uses it too")
     public ValidatedEnum<dannypx.foe.type.PetFrameColor> petPanelFrameColor = new ValidatedEnum<>(dannypx.foe.type.PetFrameColor.RATING, ValidatedEnum.WidgetType.CYCLING);
 
     // a new name, so it's back on (green) for everyone

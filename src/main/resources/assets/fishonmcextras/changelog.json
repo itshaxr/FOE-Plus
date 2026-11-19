@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.89+1.21.11",
+      "name": "FOE+ 1.0.89+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- Pet HUD: \"Colour around the pet\" switches the frame round your pet between its rating colour (the default) and its rarity colour, for the pet panel and the FOE-R pet box by @phckd\n- Settings: HUDs go by their short names (Pet, Pet box) by @phckd"
+    },
+    {
       "versionNumber": "1.0.88+1.21.11",
       "name": "FOE+ 1.0.88+1.21.11",
       "datePublished": "2026-11-19",

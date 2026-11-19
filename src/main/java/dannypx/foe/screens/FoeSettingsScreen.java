@@ -386,6 +386,19 @@ public class FoeSettingsScreen extends Screen {
         for (Node c : root.children) if (!c.group()) general.children.add(c);
         out.add(general);
         for (Node c : root.children) if (c.group()) out.add(c);
+        // the colour round the pet is the pet panel's option, and the FOE-R pet box's too: shown on both
+        Node frame = null, petBox = null;
+        for (Node g : out) {
+            if (g.fieldName.equals("petElementGroup")) petBox = g;
+            for (Node c : g.children) if (c.fieldName.equals("petPanelFrameColor")) frame = c;
+        }
+        if (frame != null && petBox != null) {
+            Node copy = new Node(frame.name, frame.desc, frame.entry, frame.config, frame.fieldName);
+            copy.parent = petBox;
+            int at = petBox.children.size();
+            for (int i = 0; i < petBox.children.size(); i++) if (petBox.children.get(i).group()) { at = i; break; }
+            petBox.children.add(at, copy);
+        }
         return out;
     }
 
@@ -472,7 +485,7 @@ public class FoeSettingsScreen extends Screen {
             if (found == 0) items.add(new Item(EMPTY, null, y, 20, "Nothing matches \"" + search.trim() + "\""));
         } else if (listPage()) {
             Node g = hud;
-            items.add(new Item(HEAD, g, y, 13, g.name.toUpperCase(Locale.ROOT)));
+            items.add(new Item(HEAD, g, y, 13, hudName(g).toUpperCase(Locale.ROOT)));
             y += 13;
             if (!g.desc.isEmpty()) {
                 for (FormattedCharSequence line : font.split(Component.literal(g.desc), cr - paneX)) {
@@ -646,7 +659,7 @@ public class FoeSettingsScreen extends Screen {
         g.drawString(font, VERSION, wx + 16, wy + wh - 16, OFF, false);
 
         // header
-        String crumb = searching() ? "Search" : listPage() ? "HUD  ›  " + hud.name : category().name();
+        String crumb = searching() ? "Search" : listPage() ? "HUD  ›  " + hudName(hud) : category().name();
         g.drawString(font, font.plainSubstrByWidth(crumb, Math.max(40, find.getX() - cx - 8)), cx, wy + 12, TITLE, true);
         g.fill(cx, wy + 30, cr, wy + 31, RULE);
         g.fill(cx, wy + 30, cx + 32, wy + 31, ACCENT);
@@ -691,7 +704,7 @@ public class FoeSettingsScreen extends Screen {
         // footer
         g.fill(cx, bottom + 2, cr, bottom + 3, RULE);
         int fx = cx;
-        fx = footerButton(g, fx, resetArmed ? "Click again to reset" : (listPage() ? "Reset " + hud.name : "Reset page"), mouseX, mouseY, false) + 6;
+        fx = footerButton(g, fx, resetArmed ? "Click again to reset" : (listPage() ? "Reset " + hudName(hud) : "Reset page"), mouseX, mouseY, false) + 6;
         if (category().list() || searching()) fx = footerButton(g, fx, "HUD Editor", mouseX, mouseY, false) + 6;
         footerButton(g, fx, "Classic view", mouseX, mouseY, false);
         drawDone(g, mouseX, mouseY);
@@ -882,7 +895,7 @@ public class FoeSettingsScreen extends Screen {
         if (my >= fy && my < fy + 16) {
             if (mx >= cr - 70 && mx < cr) { onClose(); return true; }
             int fx = cx;
-            String reset = resetArmed ? "Click again to reset" : (listPage() ? "Reset " + hud.name : "Reset page");
+            String reset = resetArmed ? "Click again to reset" : (listPage() ? "Reset " + hudName(hud) : "Reset page");
             if (mx >= fx && mx < fx + footerW(reset)) {
                 if (resetArmed) { resetShown(); resetArmed = false; } else resetArmed = true;
                 return true;
