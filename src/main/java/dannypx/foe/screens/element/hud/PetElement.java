@@ -47,7 +47,7 @@ public class PetElement extends Element {
     }
 
     //region Methods
-    static final int BAR_W = 40, HEIGHT = 30;
+    static final int BAR_W = 40, HEIGHT = 42;
 
     @Override
     public void render(GuiGraphics guiGraphics) {
@@ -70,6 +70,19 @@ public class PetElement extends Element {
         guiGraphics.pose().popMatrix();
         this.width = Math.round(w * scale);
         this.height = Math.round(HEIGHT * scale);
+    }
+
+    /// The held item's size after the name (it sits within the name's rail).
+    private static final int HELD = 8;
+    private static final float HELD_TEXT = 0.75f;
+
+    /// About 3/4 size, snapped so each of the font's pixels covers whole pixels on screen: at an in-between size a
+    /// thin letter (the "t" of "Amulet") lost its pixels.
+    static float heldTextScale() {
+        double screenPerUnit = Minecraft.getInstance().getWindow().getGuiScale() * FoeRBoxes.scale(Configs.hudConfig.petElementScale.get());
+        if (screenPerUnit <= 0) return HELD_TEXT;
+        double pixels = Math.max(1, Math.floor(HELD_TEXT * screenPerUnit + 0.4));
+        return (float) Math.min(1.0, pixels / screenPerUnit);
     }
 
     /// Draws the box at `x` (its left edge, or its right edge when `right`), `y`; returns how wide it came out.
@@ -107,7 +120,17 @@ public class PetElement extends Element {
                 .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
 
         int levelW = font.width(level) + 4 + BAR_W + 4 + font.width(after);
+        // the item it's holding, small, after its name (as the pet panel's item box; hidden with it)
+        net.minecraft.world.item.ItemStack held = Configs.hudConfig.petPanelItemBox.get()
+                ? dannypx.foe.item.PetHeldItem.of(pet) : net.minecraft.world.item.ItemStack.EMPTY;
+        // its name in the item's own colours (a gradient, as its tooltip shows it); the bar's nib in its first colour
+        Component heldName = held.isEmpty() ? null : held.getHoverName();
+        int heldColor = heldName == null ? -1 : PetPanelElement.ratingColor(heldName);
+        float textScale = heldTextScale();
+        int heldW = heldName == null ? 0 : HELD + 2 + (int) Math.ceil(font.width(heldName) * textScale) + 1;
         int rail1 = FoeRBoxes.railFor(font.width(head)), rail2 = FoeRBoxes.railFor(levelW);
+        // a longer tail than the other bars: the whole name sits where the bar is still dark
+        int rail3 = heldName == null ? 0 : FoeRBoxes.railFor(heldW) + 24;
 
         FoeRBoxes.box(g, x, y, right, ring);
         g.pose().pushMatrix();
@@ -119,12 +142,29 @@ public class PetElement extends Element {
         FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, ring);
 
         FoeRBoxes.text(g, font, head, railX, y + 4, right);
+        // the item it's holding hangs under the box on its own short rail, like the profile's money
+        if (heldName != null) {
+            int heldX = right ? x - 6 : x + 6;
+            FoeRBoxes.rail(g, heldX, y + 31, rail3, 11, right, heldColor < 0 ? ring : heldColor);
+            int hx = right ? heldX - FoeRBoxes.TEXT_IN - heldW : heldX + FoeRBoxes.TEXT_IN;
+            g.pose().pushMatrix();
+            g.pose().translate(hx, y + 32.5f);
+            g.pose().scale(HELD / 16f, HELD / 16f);
+            g.renderItem(held, 0, 0);
+            g.pose().popMatrix();
+            // a size smaller than the lines above, centred in its bar
+            g.pose().pushMatrix();
+            g.pose().translate(hx + HELD + 2, y + 32 + (11 - font.lineHeight * textScale) / 2f);
+            g.pose().scale(textScale, textScale);
+            PanelElement.drawText(g, font, heldName.getVisualOrderText(), 0, 0);
+            g.pose().popMatrix();
+        }
         int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
         PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
         int bx = lx + font.width(level) + 4;
         FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043);
         PanelElement.drawText(g, font, after.getVisualOrderText(), bx + BAR_W + 4, y + 18);
-        return FoeRBoxes.BOX + Math.max(rail1, rail2);
+        return Math.max(FoeRBoxes.BOX + Math.max(rail1, rail2), rail3 == 0 ? 0 : 6 + rail3);
     }
     //endregion
 }

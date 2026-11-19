@@ -101,9 +101,16 @@ public class BaitPanelElement extends PanelElement {
         return Component.literal("ʙᴀɪᴛ").withStyle(ChatFormatting.BOLD);
     }
 
+    /// The tacklebox is locked (the server keeps this bait on the rod).
+    private static boolean locked() {
+        FishingRodTagObject rod = InventoryHandler.instance().getCurrentFishingRod();
+        return rod != null && rod.getDisableBait();
+    }
+
     private static TagObject activeBait() {
         FishingRodTagObject rod = InventoryHandler.instance().getCurrentFishingRod();
-        if (rod == null || rod.getDisableBait() || rod.getActiveBait().isEmpty()) return null;
+        // (disableBait is the tacklebox lock: the bait is still on the rod and still used, so it still shows)
+        if (rod == null || rod.getActiveBait().isEmpty()) return null;
         return rod.getActiveBait().getFirst();
     }
 
@@ -122,7 +129,8 @@ public class BaitPanelElement extends PanelElement {
                 .append(Component.literal(bait.getItemStack().getHoverName().getString()).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(String.valueOf(bait.getCount())).withStyle(ChatFormatting.WHITE))
-                .append(Component.literal("x").withStyle(ChatFormatting.GRAY)));
+                .append(Component.literal("x").withStyle(ChatFormatting.GRAY))
+                .append(locked() ? Component.literal(" ʟᴏᴄᴋᴇᴅ").withStyle(ChatFormatting.DARK_GRAY) : Component.empty()));
         return lines;
     }
 

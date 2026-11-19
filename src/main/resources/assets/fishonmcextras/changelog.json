@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.91+1.21.11",
+      "name": "FOE+ 1.0.91+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- Fixed the Bait HUD vanishing while your tacklebox is locked (it now shows, marked locked) by @phckd\n- FOE-R pet box shows the item your pet is holding on its own bar under the box, like the profile's money, in the item's own colours (hidden with the pet HUD's item box option) by @phckd"
+    },
+    {
       "versionNumber": "1.0.90+1.21.11",
       "name": "FOE+ 1.0.90+1.21.11",
       "datePublished": "2026-11-19",

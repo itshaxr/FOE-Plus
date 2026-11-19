@@ -42,7 +42,7 @@ public class FishingRodTagObject extends TagObject {
                 if (!found.isEmpty()) { this.activeBait = found; break; }
             }
         }
-        if (this.activeBait.isEmpty() && !this.getDisableBait() && !loggedNoBait) {
+        if (this.activeBait.isEmpty() && this.contains(ACTIVE_BAIT) && !loggedNoBait) {
             loggedNoBait = true;
             dannypx.foe.handler.logic.LoggerHandler.info("Rod has no bait FOE+ can read; its data has: " + this.compoundTag.keySet()
                     + (this.contains(ACTIVE_BAIT) ? " | activeBait=" + String.valueOf(this.get(ACTIVE_BAIT)).substring(0, Math.min(600, String.valueOf(this.get(ACTIVE_BAIT)).length())) : ""));
