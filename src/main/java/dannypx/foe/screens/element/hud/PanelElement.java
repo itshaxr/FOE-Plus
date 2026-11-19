@@ -300,7 +300,7 @@ public abstract class PanelElement extends Element {
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
         if (!lines.isEmpty() && foeR()) {
             lines.addFirst(foeRTitle(shownTitle()));
-        } else if (!lines.isEmpty() && (Configs.hudConfig.panelTheme.get() == PanelTheme.OFF || !look().border)) {
+        } else if (!lines.isEmpty() && theme(look()) == PanelTheme.OFF) {
             lines.addFirst(look().titleColor < 0 ? shownTitle().copy().withStyle(ChatFormatting.GRAY) : shownTitle());
         }
         return lines;
@@ -643,12 +643,12 @@ public abstract class PanelElement extends Element {
         int opacity = look.opacity >= 0 ? look.opacity : opacityPercent();
         int bgAlpha = (Math.round(opacity / 100f * 255f) << 24) | (look.boxColor & 0xFFFFFF);
         boolean foeR = foeR();
-        boolean border = look.border;
+        boolean border = !"OFF".equals(look.frameMode());
         if (foeR && border) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha);
         else guiGraphics.fill(boxLeft, top, boxRight, top + innerHeight + PADDING * 3, bgAlpha);
         if (!look.imageInFront) drawImage(guiGraphics, look, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3);
 
-        PanelTheme theme = Configs.hudConfig.panelTheme.get();
+        PanelTheme theme = theme(look);
         if (!foeR && border && theme != PanelTheme.OFF) {
             int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
             int bottomY = top + PADDING * 2 + innerHeight;
@@ -860,6 +860,17 @@ public abstract class PanelElement extends Element {
 
     /// The titled line is given this much more room, so its badge clears the lines above and below.
     static final int RULE_TITLE_ROOM = 7, RULE_TITLE_ABOVE = 3;
+
+    /// The FOE+ border this HUD is drawn with (OFF: none): Info panel border style for every HUD, unless this HUD's
+    /// own Border is On (then that style, or Clean rounded when it's Off) or Off.
+    static PanelTheme theme(dannypx.foe.handler.store.HudLooks.Look look) {
+        PanelTheme all = Configs.hudConfig.panelTheme.get();
+        return switch (look.frameMode()) {
+            case "OFF" -> PanelTheme.OFF;
+            case "ON" -> all == PanelTheme.OFF ? PanelTheme.CLEAN_ROUNDED : all;
+            default -> all;
+        };
+    }
 
     /// This HUD has the FOE-R look: its own style from the HUD Editor, or else the one for every HUD (Customize →
     /// HUD Style).

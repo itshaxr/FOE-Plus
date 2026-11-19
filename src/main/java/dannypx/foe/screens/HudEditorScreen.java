@@ -161,9 +161,19 @@ public class HudEditorScreen extends Screen {
         this.addRenderableWidget(Button.builder(Component.literal("Style: ").append(Component.literal(styleName(l.style)).withStyle(ChatFormatting.AQUA)),
                 b -> { l.style = nextStyle(l.style); changed(); rebuildWidgets(); }).bounds(left, y, COL_W / 2 - 1, H)
                 .tooltip(Tooltip.create(Component.literal("This HUD's own style. Default: the one picked for every HUD in Customize → HUD Style (now " + dannypx.foe.config.Configs.hudConfig.hudStyle.get().displayName() + ")"))).build());
-        this.addRenderableWidget(Button.builder(Component.literal("Border: ").append(Component.literal(l.border ? "On" : "Off").withStyle(l.border ? ChatFormatting.GREEN : ChatFormatting.GRAY)),
-                b -> { l.border = !l.border; changed(); rebuildWidgets(); }).bounds(left + COL_W / 2 + 1, y, COL_W / 2 - 1, H)
-                .tooltip(Tooltip.create(Component.literal("Off: just the box, with its title as the first line"))).build());
+        String frame = l.frameMode();
+        boolean allOff = dannypx.foe.config.Configs.hudConfig.panelTheme.get() == dannypx.foe.type.PanelTheme.OFF;
+        String frameLabel = switch (frame) { case "ON" -> "On"; case "OFF" -> "Off"; default -> allOff ? "Default (off)" : "Default"; };
+        ChatFormatting frameColor = "ON".equals(frame) ? ChatFormatting.GREEN : "OFF".equals(frame) || allOff ? ChatFormatting.GRAY : ChatFormatting.AQUA;
+        this.addRenderableWidget(Button.builder(Component.literal("Border: ").append(Component.literal(frameLabel).withStyle(frameColor)),
+                b -> {
+                    l.frame = switch (l.frameMode()) { case "DEFAULT" -> "ON"; case "ON" -> "OFF"; default -> "DEFAULT"; };
+                    l.border = !"OFF".equals(l.frame);
+                    changed();
+                    rebuildWidgets();
+                }).bounds(left + COL_W / 2 + 1, y, COL_W / 2 - 1, H)
+                .tooltip(Tooltip.create(Component.literal("Default: as Info panel border style says for every HUD (now "
+                        + (allOff ? "Off" : "On") + "). On: this HUD always has its border. Off: just the box, with its title as the first line"))).build());
         y += ROW;
         slider(left, y, "Line spacing", 0, 8, () -> l.lineSpacing, v -> l.lineSpacing = v, "");
         y += ROW;

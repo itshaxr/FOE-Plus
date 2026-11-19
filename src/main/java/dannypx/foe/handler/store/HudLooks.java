@@ -61,12 +61,20 @@ public final class HudLooks {
         /// whether it has its border (off: just the box, its title as the first line).
         public String style = "DEFAULT";
         public boolean border = true;
+        /// The border: "DEFAULT" (as Info panel border style says for every HUD: none when that's Off), "ON" (always,
+        /// in that style, or Clean rounded when it's Off) or "OFF". Null in older saves: from {@link #border}.
+        public String frame = null;
+
+        public String frameMode() {
+            if (frame != null) return frame;
+            return border ? "DEFAULT" : "OFF";
+        }
 
         public boolean isDefault() {
             return lineSpacing == 2 && padding == 0 && boxColor == 0 && opacity == -1 && borderColor == 0xFFFFFF
                     && titleColor == -1 && "AUTO".equals(align) && picture.isEmpty() && hidden.isEmpty()
                     && (title == null || title.isEmpty()) && !columns && (image == null || image.isEmpty())
-                && (style == null || "DEFAULT".equals(style)) && border;
+                && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode());
         }
 
         public dannypx.foe.type.TextAlign textAlign() {
@@ -124,7 +132,7 @@ public final class HudLooks {
         to.title = from.title; to.columns = from.columns; to.hidden = new ArrayList<>(from.hidden);
         to.image = from.image; to.imageSize = from.imageSize; to.imageX = from.imageX; to.imageY = from.imageY;
         to.imageOpacity = from.imageOpacity; to.imageInFront = from.imageInFront; to.imageFill = from.imageFill;
-        to.style = from.style; to.border = from.border;
+        to.style = from.style; to.border = from.border; to.frame = from.frame;
     }
 
     /// Writes the edited looks. Unedited ones are left out of the file but kept in memory: the HUD Editor holds on
