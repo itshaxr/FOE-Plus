@@ -6,7 +6,7 @@ Everything FOE+ adds to **play.fishonmc.net**. Press **O** in game to open the F
   <img src="docs/images/foe-plus-menu.png" alt="The FOE+ menu" width="640">
 </p>
 
-**Contents:** [HUD panels](#hud-panels) · [Settings](#settings) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Sounds](#sounds) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
+**Contents:** [HUD panels](#hud-panels) · [Settings](#settings) · [HUD Editor](#hud-editor) · [Alerts](#alerts) · [Chat notifications](#chat-notifications) · [Pets](#pets) · [Pet Prices](#pet-prices) · [Rod parts](#rod-parts) · [Dry streaks & stats](#dry-streaks--stats) · [Contests](#contests) · [Travel map](#travel-map) · [Fishing presets](#fishing-presets) · [Personal Vault & bait](#personal-vault--bait) · [Tools](#tools) · [Sounds](#sounds) · [Keybinds](#keybinds) · [From FOE-R](#from-foe-r)
 
 ---
 
@@ -143,7 +143,22 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 - **Held item:** the item your pet is holding shows in the Pet panel, and pets holding an amulet get a star on their slot in the amulet's rarity colour.
 - **Pet tooltips:** rating letter and max Luck / max Scale markers, and the pet's price from your Pet Prices sheet at the top right, on its name's line (priced at the rating the tooltip shows). A pet wearing a skin gets its tooltip framed in the skin's own colours.
 - **Pet drops:** only pets you fish up count in your all-time and session stats; quest, daily quest, contest and event pets are told once and never counted.
-- **Pet Prices (`U`, or O → Tools → Pet Prices):** what a pet sells for by rating and rarity: two bands below 60%, then every percent from 60% to 100%, with ×2 Rare, ×4 Epic, ×8 Legendary and ×16 Mythical. Max Luck and Max Scale each add 50K. Click any number to change it (saved for you; Reset to defaults puts the starting prices back). Your equipped pet's row is highlighted with its price. These are estimates only: real prices change with events and what people will pay.
+- **Pet Prices:** what any pet is worth, on your own price sheet (see [Pet Prices](#pet-prices)).
+
+---
+
+## Pet Prices
+
+<p align="center"><img src="docs/images/foe-plus-pet-prices.png" alt="FOE+ Pet Prices screen" width="640"></p>
+
+Press **`U`** (or **O → Tools → Pet Prices**) for a price sheet of what a pet sells for, by its rating and rarity.
+- **The sheet:** two bands below 60%, then every percent from 60% to 100%, each with a Common price (a single price or a low–high range) and the price for every rarity beside it.
+- **Rarities:** ×2 Rare, ×4 Epic, ×8 Legendary and ×16 Mythical by default; change any multiplier.
+- **Max Luck / Max Scale:** each adds 50K by default, when the pet's rolls are at their best.
+- **Edit anything:** click any number to change it. It's saved for you, and **Reset to defaults** puts the starting prices back.
+- **Your pet:** your equipped pet's row is highlighted, with its price in the bar at the bottom.
+- **Used everywhere:** the same prices show at the top right of every pet's tooltip and in the trade value boxes. A pet is priced at the rating its tooltip shows (an 82.6% pet is priced as 83%).
+- **Estimates only:** real prices change with events and what people will pay.
 
 ---
 

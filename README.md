@@ -46,7 +46,8 @@ Press **O** in game to open the FOE+ menu.
 </p>
 <p align="center">
   <img src="docs/images/foe-plus-sounds.png" alt="FOE+ Sounds screen" width="560"><br>
-  <img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="560">
+  <img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="560"><br>
+  <img src="docs/images/foe-plus-pet-prices.png" alt="FOE+ Pet Prices screen" width="560">
 </p>
 
 **Chat**
@@ -60,7 +61,7 @@ Press **O** in game to open the FOE+ menu.
 - Bait Prices: your own price for each rarity and any single bait; baitbox totals and stack values use it.
 - Rod part icons: a small icon for what each rod part (or each part of a rod) is calibrated for, purple when it's rolled at its max.
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
-- Pet Prices (`U`): a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale; every number can be edited in game. Estimates only. A pet's price shows at the top right of its tooltip.
+- **Pet Prices (`U`):** your own price sheet for pets: a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale, every number editable in game. Every pet's tooltip shows its price at the top right, and trades are valued with it. Estimates only.
 - Sounds (*O → Tools → Sounds*): change every FOE+ sound (fish bite included) and add your own chat triggers with match modes, exceptions, cooldowns, coloured words, a title on screen and a taskbar flash.
 - Bobbers: 36 colour sets for the 3D bobber with previews (*O → Bobber*); other FOE+ users see yours.
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.
