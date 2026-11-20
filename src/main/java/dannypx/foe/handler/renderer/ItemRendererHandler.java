@@ -364,17 +364,17 @@ public class ItemRendererHandler extends Handler {
                 )) {
                     Pair<Boolean,TagObject> validatedItem = ValidateItem.isType(stack);
 
-                    if(validatedItem.value1()
-                            && (
-                                    validatedItem.value2().getType().equals("bait")
-                                    || (
-                                            validatedItem.value2().getType().equals("lure")
-                                            && validatedCursor.value2().getString("size").equals(validatedItem.value2().getString("size"))
-                                            && validatedCursor.value2().getString("color").equals(validatedItem.value2().getString("color"))
-                                    )
-                            )
-                            && validatedCursor.value2().getString("name").equals(validatedItem.value2().getString("name"))
-                    ) {
+                    // the same check as the bait sorter's merge: baits by name, lures by what makes them that lure
+                    // (however the server wrote it), so every one the sorter would merge gets the +
+                    TagObject held = validatedCursor.value2();
+                    boolean same = false;
+                    if (validatedItem.value1() && validatedItem.value2().getType().equals(held.getType())) {
+                        TagObject other = validatedItem.value2();
+                        same = held.getType().equals("bait")
+                                ? held.getString("name").equals(other.getString("name"))
+                                : dannypx.foe.helper.SortPlanner.lureKey(held::getString).equals(dannypx.foe.helper.SortPlanner.lureKey(other::getString));
+                    }
+                    if (same) {
                         Component baitStackIcon = Component.literal("+").withStyle(ChatFormatting.GREEN);
                         guiGraphics.drawString(font, baitStackIcon, x + 17 - font.width(baitStackIcon), y - 1, CommonColors.GREEN, true);
                     }

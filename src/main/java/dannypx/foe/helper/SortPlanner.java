@@ -81,6 +81,17 @@ public final class SortPlanner {
     /// The fields of a lure's data that say which lure it is (not how many uses it has left, nor its rolls).
     public static final List<String> LURE_FIELDS = List.of("name", "rarity", "color", "size", "intricacy", "water");
 
+    /// Which lure it is, from its data (`get` reads a field): its {@link #LURE_FIELDS}, each as read. Two lures with
+    /// the same key are the same lure (the sorter merges them, and one on the cursor shows a + over the other).
+    public static String lureKey(java.util.function.Function<String, String> get) {
+        StringBuilder b = new StringBuilder();
+        for (String k : LURE_FIELDS) {
+            String v = get.apply(k);
+            b.append(k).append('=').append(plainValue(v == null ? "" : v)).append('|');
+        }
+        return b.toString();
+    }
+
     /// A text value as compared between two lures: as read (codes and small capitals made plain, see {@link #plainColor}).
     public static String plainValue(String value) {
         String t = plainColor(value);

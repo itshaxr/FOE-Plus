@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.99+1.21.11",
+      "name": "FOE+ 1.0.99+1.21.11",
+      "datePublished": "2026-11-20",
+      "changelog": "## What's Changed\n- Holding a lure now shows the green + on every lure it can merge with (it uses the same check as the bait sorter, so lures written differently by the server match too) by @phckd"
+    },
+    {
       "versionNumber": "1.0.98+1.21.11",
       "name": "FOE+ 1.0.98+1.21.11",
       "datePublished": "2026-11-20",

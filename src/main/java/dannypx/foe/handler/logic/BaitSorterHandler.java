@@ -189,10 +189,7 @@ public class BaitSorterHandler {
     /// read (codes and small capitals made plain). Not how many uses it has left, nor its rolls. Two lures alike in
     /// these are the same lure; if the server ever won't merge two, the sorter puts the picked-up one back.
     static String sameData(CompoundTag tag) {
-        StringBuilder b = new StringBuilder();
-        for (String k : SortPlanner.LURE_FIELDS)
-            b.append(k).append('=').append(SortPlanner.plainValue(tag.getStringOr(k, ""))).append('|');
-        return b.toString();
+        return SortPlanner.lureKey(k -> tag.getStringOr(k, ""));
     }
 
     /// Lures that share a name but won't merge, in the log with what tells them apart (their colour, size and
