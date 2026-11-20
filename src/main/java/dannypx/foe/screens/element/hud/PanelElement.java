@@ -297,7 +297,11 @@ public abstract class PanelElement extends Element {
     /// A short line drawn just above the item boxes, centred on them (the pet's "Max Luck"), or null.
     protected Component iconCaption() { return null; }
 
+    /// Whether its pictures are in a row at its top (it has HUDs inside it) instead of beside its text.
+    private boolean iconsInRow = false;
+
     private int iconSpace() {
+        if (iconsInRow) return 0;
         int n = this.icons().size();
         if (n == 0) return 0;
         int w = n * iconSize() + (n - 1) * iconGap();
@@ -309,7 +313,7 @@ public abstract class PanelElement extends Element {
     /// How tall the text part has to be for the item boxes and their caption to fit inside the box.
     private int iconInnerHeight(Font font) {
         // the usual 18-pixel boxes with no caption always fitted: those panels keep their height
-        if (this.icons().isEmpty() || (iconCaption() == null && iconSize() <= 18)) return 0;
+        if (iconsInRow || this.icons().isEmpty() || (iconCaption() == null && iconSize() <= 18)) return 0;
         int caption = iconCaption() == null ? 0 : font.lineHeight + 2;
         return caption + iconSize() + 4 - PADDING;
     }
@@ -389,11 +393,13 @@ public abstract class PanelElement extends Element {
         List<Component> lines = new ArrayList<>(laidOut(this, partLines()));
         // the HUDs inside this one, each under a line with its title
         List<PanelElement> owners = new ArrayList<>(java.util.Collections.nCopies(lines.size(), (PanelElement) null));
+        boolean hasMembers = false;
         for (String id : HudCombine.members(lookId())) {
             PanelElement part = HudCombine.part(id, isCopy);
             if (part == null || !part.enabled()) continue;
             List<Component> more = laidOut(part, part.partLines());
             if (more.isEmpty()) continue;
+            HudCombine.drawn(id);
             Component rule = titledRule(part.shownTitle().getString());
             ruleIds.put(rule, id);
             lines.add(rule);
@@ -405,6 +411,14 @@ public abstract class PanelElement extends Element {
             }
             lines.addAll(more);
             for (int i = 0; i < more.size(); i++) owners.add(part);
+            hasMembers = true;
+        }
+        // with HUDs inside it, its own pictures go in a row at its top too (beside the text they ran down the
+        // whole box, over the HUDs inside it)
+        iconsInRow = hasMembers && !this.icons().isEmpty();
+        if (iconsInRow) {
+            lines.addFirst(iconRow(this));
+            owners.addFirst(this);
         }
         if (tiny) lines.replaceAll(l -> isRule(l) || isIconRow(l) ? l : tinyText(l));
         lineOwners.clear();
@@ -884,7 +898,7 @@ public abstract class PanelElement extends Element {
         }
 
         // Icon boxes on the anchored side, text beside them.
-        List<PanelIcon> icons = this.icons();
+        List<PanelIcon> icons = iconsInRow ? List.of() : this.icons();
         int iconSpace = iconSpace();
         final int ICON_SIZE = iconSize(), ICON_GAP = iconGap();
         int textLeft = contentLeft;

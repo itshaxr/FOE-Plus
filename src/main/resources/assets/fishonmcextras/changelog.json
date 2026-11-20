@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.98+1.21.11",
+      "name": "FOE+ 1.0.98+1.21.11",
+      "datePublished": "2026-11-20",
+      "changelog": "## What's Changed\n- Combined HUDs: a HUD with pictures (Pet, Bait) that has others inside it now shows its pictures in a row at its top, instead of down the side over the HUDs inside it by @phckd\n- Combined HUDs: a HUD inside another is only hidden from its own place while that HUD really shows it, so it can never disappear (the Bait HUD could vanish, even in Move HUD Elements) by @phckd\n- The FOE-R bait slot no longer draws twice when it's inside another HUD by @phckd"
+    },
+    {
       "versionNumber": "1.0.97+1.21.11",
       "name": "FOE+ 1.0.97+1.21.11",
       "datePublished": "2026-11-20",

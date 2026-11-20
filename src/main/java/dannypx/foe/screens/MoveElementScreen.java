@@ -240,7 +240,7 @@ public class MoveElementScreen extends DefaultModScreen {
         if (show != null && !show.get()) return;
         // a HUD inside another (that's showing) moves with that one
         String id = element instanceof dannypx.foe.screens.element.hud.PanelElement p ? p.lookId() : null;
-        if (id != null && dannypx.foe.screens.element.hud.HudCombine.shownInHost(id)) return;
+        if (id != null && dannypx.foe.screens.element.hud.HudCombine.movesWithHost(id)) return;
         MovableBoxWidget[] self = new MovableBoxWidget[1];
         MovableBoxWidget widget = new MovableBoxWidget(this.minecraft, element, anchors, new MovableBoxWidget.Callback() {
             @Override

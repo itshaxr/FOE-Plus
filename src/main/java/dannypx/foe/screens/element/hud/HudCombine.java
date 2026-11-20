@@ -240,6 +240,31 @@ public final class HudCombine {
         String host = hostOf(id);
         if (host == null) return false;
         PanelElement h = part(host, false);
-        return h != null && h.enabled();
+        if (h == null || !h.enabled()) return false;
+        // only while the host really draws it: a host that doesn't (one drawn its own way, or not on screen) would
+        // otherwise leave it shown nowhere
+        Long at = DRAWN.get(id);
+        return at != null && System.nanoTime() - at < 1_500_000_000L;
+    }
+
+    /// For Move HUD Elements: whether it moves with its host there. Yes when its host draws it in game, or when it has
+    /// nothing to show in game right now (its host's preview shows it). Not when its host doesn't draw it (it would be
+    /// nowhere): then it's its own box to move.
+    public static boolean movesWithHost(String id) {
+        String host = hostOf(id);
+        if (host == null) return false;
+        PanelElement h = part(host, false);
+        if (h == null || !h.enabled()) return false;
+        if (shownInHost(id)) return true;
+        PanelElement self = part(id, false);
+        return self == null || !self.enabled() || self.partLines().isEmpty();
+    }
+
+    /// When each HUD was last drawn inside its host.
+    private static final java.util.Map<String, Long> DRAWN = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /// A host drew `id` inside it just now.
+    static void drawn(String id) {
+        DRAWN.put(id, System.nanoTime());
     }
 }

@@ -44,6 +44,12 @@ public class BaitPanelElement extends PanelElement {
             return;
         }
         if (!enabled()) return;
+        // inside another HUD that's showing it: it's there, not here too
+        if (!showAlone && HudCombine.shownInHost(lookId())) {
+            this.width = 0;
+            this.height = 0;
+            return;
+        }
         if (!isCopy) {
             xPos = configX();
             yPos = configY();
