@@ -851,6 +851,10 @@ public class HUDConfig extends Config {
     @Name("Show inventory almost full warning")
     public ValidatedBoolean showInventoryWarning = new ValidatedBoolean(true);
 
+    @Name("Big inventory warning at the top of the screen")
+    @Desc("§7Off (default): the usual line in the Wrong Gear box while it's low. On: like the daily quest warning, big red text at the top for 5 seconds when you get to the warning, and again each time a slot fills")
+    public ValidatedBoolean inventoryWarningBig = new ValidatedBoolean(false);
+
     @Name("Warn at this many free slots or fewer")
     public ValidatedInt inventoryWarningThreshold = new ValidatedInt(3, 35, 1, ValidatedNumber.WidgetType.SLIDER);
 

@@ -42,7 +42,7 @@ public class GearWarningPanelElement extends PanelElement {
                 isCopy);
     }
 
-    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get() || Configs.hudConfig.showInventoryWarning.get(); }
+    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get() || (Configs.hudConfig.showInventoryWarning.get() && !Configs.hudConfig.inventoryWarningBig.get()); }
     @Override protected float configX() { return Configs.hudConfig.gearWarningXPosition.get() / 100f; }
     @Override protected float configY() { return Configs.hudConfig.gearWarningYPosition.get() / 100f; }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.gearWarningAlignment.get(); }
@@ -74,7 +74,8 @@ public class GearWarningPanelElement extends PanelElement {
 
         // Inventory almost full (FOE's FullInventoryHandler warning)
         dannypx.foe.handler.logic.FullInventoryHandler inventory = dannypx.foe.handler.logic.FullInventoryHandler.instance();
-        if (inventory.isAlmostFull()) {
+        // (with the big warning on, it's at the top of the screen instead)
+        if (inventory.isAlmostFull() && !Configs.hudConfig.inventoryWarningBig.get()) {
             lines.add(Component.empty()
                     .append(Component.literal("Inventory almost full. Slots left: ").withStyle(ChatFormatting.RED))
                     .append(Component.literal(String.valueOf(inventory.getSlotsLeft())).withStyle(ChatFormatting.WHITE))

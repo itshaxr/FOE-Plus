@@ -193,7 +193,7 @@ public class NotifierHandler extends Handler {
                     .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                     .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
             Component rating = pet.getRatingComponent();
-            if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
+            if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(dannypx.foe.helper.FoeChat.ratingLetter(rating));
             line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY));
             dannypx.foe.helper.FoeChat.send(line);
         }
@@ -252,7 +252,7 @@ public class NotifierHandler extends Handler {
                 .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f%%", pet.getTotalPercent() * 100f)).withStyle(ChatFormatting.WHITE));
         Component rating = pet.getRatingComponent();
-        if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(TextHelper.substring(rating, 0, 1));
+        if (!rating.getString().isBlank()) line.append(Component.literal(" ")).append(dannypx.foe.helper.FoeChat.ratingLetter(rating));
         line.append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY))
                 .append(dannypx.foe.helper.FoeChat.dryStreak(petDryStreak));
         dannypx.foe.helper.FoeChat.send(line);

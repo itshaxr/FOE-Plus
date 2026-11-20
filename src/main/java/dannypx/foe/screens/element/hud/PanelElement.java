@@ -385,6 +385,7 @@ public abstract class PanelElement extends Element {
 
     private List<Component> buildLines() {
         ruleIds.clear();
+        iconRows.clear();
         List<Component> lines = new ArrayList<>(laidOut(this, partLines()));
         // the HUDs inside this one, each under a line with its title
         List<PanelElement> owners = new ArrayList<>(java.util.Collections.nCopies(lines.size(), (PanelElement) null));
@@ -397,10 +398,15 @@ public abstract class PanelElement extends Element {
             ruleIds.put(rule, id);
             lines.add(rule);
             owners.add(null);
+            // its pictures (the pet and its item, the bait), in a row of their own under its title
+            if (!part.icons().isEmpty()) {
+                lines.add(iconRow(part));
+                owners.add(part);
+            }
             lines.addAll(more);
             for (int i = 0; i < more.size(); i++) owners.add(part);
         }
-        if (tiny) lines.replaceAll(l -> isRule(l) ? l : tinyText(l));
+        if (tiny) lines.replaceAll(l -> isRule(l) || isIconRow(l) ? l : tinyText(l));
         lineOwners.clear();
         for (int i = 0; i < lines.size(); i++) if (owners.get(i) != null) lineOwners.put(lines.get(i), owners.get(i));
         if (!lines.isEmpty() && foeR()) {
@@ -597,9 +603,72 @@ public abstract class PanelElement extends Element {
     /// The extra room the lines need: their pictures, and titled rules' badges.
     private int picRoom(List<Component> lines) {
         int n = 0;
-        for (Component l : lines) n += isRule(l) ? (ruleTitle(l).isEmpty() ? 0 : RULE_TITLE_ROOM) : picRoom(l);
+        for (Component l : lines) n += isRule(l) ? (ruleTitle(l).isEmpty() ? 0 : RULE_TITLE_ROOM) : isIconRow(l) ? iconRowRoom(l) : picRoom(l);
         return n;
     }
+
+    //region A combined HUD's pictures in a row of their own
+    private static final String ICON_ROW_KEY = "foe:icons";
+    /// The HUD each row of pictures belongs to.
+    private final java.util.Map<Component, PanelElement> iconRows = new java.util.IdentityHashMap<>();
+
+    /// A row as wide as `part`'s pictures (and their caption), for its pictures to be drawn in.
+    private Component iconRow(PanelElement part) {
+        Font font = Minecraft.getInstance().font;
+        int n = part.icons().size();
+        int w = n * part.iconSize() + (n - 1) * part.iconGap();
+        Component caption = part.iconCaption();
+        if (caption != null) w = Math.max(w, font.width(caption));
+        int spaces = Math.max(1, (w + font.width(" ") - 1) / Math.max(1, font.width(" ")));
+        Component row = Component.literal(" ".repeat(spaces)).withStyle(st -> st.withInsertion(ICON_ROW_KEY));
+        iconRows.put(row, part);
+        return row;
+    }
+
+    static boolean isIconRow(Component line) {
+        String ins = line.getStyle().getInsertion();
+        return ins != null && ins.equals(ICON_ROW_KEY);
+    }
+
+    /// The room a row of pictures takes beyond a line's: the boxes, a little gap, and the caption above them.
+    private int iconRowRoom(Component row) {
+        PanelElement part = iconRows.get(row);
+        if (part == null) return 0;
+        Font font = Minecraft.getInstance().font;
+        int captionH = part.iconCaption() == null ? 0 : font.lineHeight + 2;
+        return Math.max(0, captionH + part.iconSize() + 4 - lineHeight(font));
+    }
+
+    /// Draws `part`'s caption and picture boxes centred between `left` and `right`, from `y` down.
+    private static void drawIconRow(GuiGraphics g, Font font, PanelElement part, int left, int right, int y) {
+        List<PanelIcon> icons = part.icons();
+        int size = part.iconSize(), gap = part.iconGap();
+        Component caption = part.iconCaption();
+        int boxesW = icons.size() * size + (icons.size() - 1) * gap;
+        if (caption != null) {
+            g.drawString(font, caption, left + (right - left - font.width(caption)) / 2, y, 0xFFFFFFFF, true);
+            y += font.lineHeight + 2;
+        }
+        int x = left + (right - left - boxesW) / 2;
+        y += 1;
+        List<int[]> frames = new ArrayList<>();
+        for (PanelIcon icon : icons) {
+            crispOutline(g, x, y, size, size, icon.borderColor());
+            if (icon.stack() == null || icon.stack().isEmpty()) {
+                g.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x55000000);
+                g.drawString(font, "-", x + (size - font.width("-")) / 2, y + (size - font.lineHeight) / 2 + 1, 0xFF777777, false);
+            } else {
+                crispItem(g, icon.stack(), x + 2, y + 2, size - 4);
+            }
+            frames.add(new int[]{x, y, icon.borderColor()});
+            x += size + gap;
+        }
+        if (!frames.isEmpty()) {
+            g.nextStratum();
+            for (int[] f : frames) crispOutline(g, f[0], f[1], size, size, f[2]);
+        }
+    }
+    //endregion
 
     private void updateSize(List<Component> lines, Font font) {
         this.width = Math.round(outerWidth(lines, font) * dannypx.foe.utils.HudScale.crisp(scale()));
@@ -896,6 +965,13 @@ public abstract class PanelElement extends Element {
                 y += ruleTitle.isEmpty() ? lineHeight : lineHeight + RULE_TITLE_ROOM;
                 continue;
             }
+            if (isIconRow(line)) {
+                PanelElement part = iconRows.get(line);
+                if (part != null) drawIconRow(guiGraphics, font, part, textLeft, textRightEdge, y - 1);
+                first = false;
+                y += lineHeight + iconRowRoom(line);
+                continue;
+            }
             if (foeR && first) {
                 // FOE-R's heading: "- Title -", bold small caps, centred over the panel
                 int w = dannypx.foe.helper.TextHelper.getWidth(font, line, true);
@@ -934,7 +1010,7 @@ public abstract class PanelElement extends Element {
                 continue;
             }
             int x = owner.centeredLine(line) ? textLeft + (textRightEdge - textLeft - pr.width) / 2
-                    : lineX(align, centerText(), textRight, textLeft, textRightEdge, pr.width);
+                    : lineX(align, owner.centerText(), textRight, textLeft, textRightEdge, pr.width);
             this.lineRightEdge = textRightEdge;
             owner.lineRightEdge = textRightEdge;
             owner.beforeLine(guiGraphics, font, line, x, y);

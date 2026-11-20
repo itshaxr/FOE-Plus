@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.96+1.21.11",
+      "name": "FOE+ 1.0.96+1.21.11",
+      "datePublished": "2026-11-20",
+      "changelog": "## What's Changed\n- Every HUD can be combined: Warnings, Alerts, Chummer, Bait and Pet can now go inside other HUDs (Pet and Bait keep their pictures, in a row under their title) by @phckd\n- Pet chat lines (QUEST / EVENT / CONTEST PET!, PET PULLED!) copy as plain text, so the tag and rating letter survive pasting into chat by @phckd\n- New option: Big inventory warning at the top of the screen, like the daily quest warning (off by default) by @phckd"
+    },
+    {
       "versionNumber": "1.0.95+1.21.11",
       "name": "FOE+ 1.0.95+1.21.11",
       "datePublished": "2026-11-20",

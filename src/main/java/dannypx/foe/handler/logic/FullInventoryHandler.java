@@ -23,6 +23,19 @@ public class FullInventoryHandler {
         return INSTANCE;
     }
 
+    /// The free slots at the last big warning (MAX_VALUE: none shown since it was last fine).
+    private int flashedAt = Integer.MAX_VALUE;
+
+    /// "Your inventory is almost full: 2 slots left" / "Your inventory is full!", big and red like the daily quest
+    /// warning. Package-private for tests.
+    static net.minecraft.network.chat.Component message(int slots) {
+        var red = new net.minecraft.ChatFormatting[]{net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD};
+        if (slots <= 0) return net.minecraft.network.chat.Component.literal("Your inventory is full!").withStyle(red);
+        return net.minecraft.network.chat.Component.literal("Your inventory is almost full: ").withStyle(red)
+                .append(net.minecraft.network.chat.Component.literal(String.valueOf(slots)).withStyle(net.minecraft.ChatFormatting.WHITE, net.minecraft.ChatFormatting.BOLD))
+                .append(net.minecraft.network.chat.Component.literal(slots == 1 ? " slot left" : " slots left").withStyle(red));
+    }
+
     public int getSlotsLeft() {
         return slotsLeft;
     }
@@ -41,6 +54,13 @@ public class FullInventoryHandler {
             if (mc.player.getInventory().getNonEquipmentItems().get(i).isEmpty()) empty++;
         }
         slotsLeft = empty;
+
+        // The big warning at the top (like the daily quest one): when it gets low, and each time another slot fills.
+        if (!isAlmostFull() || !TabOverlayHandler.instance().isInInstance()) flashedAt = Integer.MAX_VALUE;
+        else if (slotsLeft < flashedAt) {
+            flashedAt = slotsLeft;
+            if (Configs.hudConfig.inventoryWarningBig.get()) dannypx.foe.handler.renderer.QuestWarning.flash(message(slotsLeft));
+        }
 
         // Sound, like FOE: not in the hub or on Crew Island.
         if (isAlmostFull()

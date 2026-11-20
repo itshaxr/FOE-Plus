@@ -42,8 +42,32 @@ public final class FoeChat {
     public static MutableComponent badgeLine(String tag, int color) {
         MutableComponent out = prefix();
         if (tag != null && !tag.isEmpty())
-            out.append(Component.literal(TextHelper.smallCaps(tag.toLowerCase(java.util.Locale.ROOT)) + " ").withColor(color).withStyle(ChatFormatting.BOLD));
+            out.append(smallCapsWord(tag.toUpperCase(java.util.Locale.ROOT) + " ").withColor(color).withStyle(ChatFormatting.BOLD));
         return out;
+    }
+
+    /// FOE+'s small capitals font: plain capitals (A-Z) drawn as the game's small capitals, everything else as normal.
+    public static final net.minecraft.network.chat.FontDescription SMALL_CAPS = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "small_caps"));
+
+    /// Text in small capitals that copies as plain letters ("QUEST PET!"): the server's chat drops the small
+    /// capital characters ("ǫᴜᴇѕᴛ"), so a copied line pasted into chat would lose them.
+    public static MutableComponent smallCapsWord(String text) {
+        return Component.literal(text).withStyle(st -> st.withFont(SMALL_CAPS));
+    }
+
+    /// A pet's rating letter ("ʙ" from "ʙᴀᴅ", in its colour) as a plain capital in the small capitals font, so it
+    /// looks the same and copies as "B".
+    public static Component ratingLetter(Component rating) {
+        String text = rating.getString();
+        if (text.isEmpty()) return Component.empty();
+        char c = Character.toUpperCase(TextHelper.normalLetter(text.charAt(0)));
+        Component first = TextHelper.substring(rating, 0, 1);
+        if (c < 'A' || c > 'Z') return first;
+        net.minecraft.network.chat.Style style = first.getStyle();
+        Component[] styled = {null};
+        first.visit((st, t) -> { if (!t.isEmpty() && styled[0] == null) styled[0] = Component.literal(String.valueOf(c)).setStyle(st.withFont(SMALL_CAPS)); return java.util.Optional.empty(); }, style);
+        return styled[0] != null ? styled[0] : Component.literal(String.valueOf(c)).setStyle(style.withFont(SMALL_CAPS));
     }
 
     public static Component sep() {
