@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.94+1.21.11",
+      "name": "FOE+ 1.0.94+1.21.11",
+      "datePublished": "2026-11-20",
+      "changelog": "## What's Changed\n- Pet tooltips show the pet's price from your Pet Prices sheet at the top right, on its name's line by @phckd\n- Pet prices use the rating as the tooltip shows it (an 82.6% pet is priced as 83%) by @phckd\n- FOE-R HUDs: profile, pet, location and the bottom bar each get border colour, box colour (colour wheel) and box opacity by @phckd\n- FOE-R pet box gets the pet HUD's options: Pet XP (bar, bar and numbers, hidden), colour around the pet, Green Max Luck, held item bar by @phckd\n- FOE-R bottom bar: a Size setting, and its rod parts and armour bars can be dragged anywhere and sized in Move HUD Elements by @phckd\n- HUDs in the FOE-R look use the HUD Editor's border and title colours by @phckd\n- Catch ring: the blue ring no longer drops out when a splash is missed or the game lags, carries on where it was, and stays full at the bite until the reel bar comes up by @phckd"
+    },
+    {
       "versionNumber": "1.0.93+1.21.11",
       "name": "FOE+ 1.0.93+1.21.11",
       "datePublished": "2026-11-19",

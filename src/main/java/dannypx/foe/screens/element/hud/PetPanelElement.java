@@ -92,6 +92,11 @@ public class PetPanelElement extends PanelElement {
 
     /// The pet's frame: its rating's colour (default) or its rarity's; whichever it can't read, the other; else grey.
     static int frameColor(PetTagObject pet) {
+        return frameColor(pet, frameByRating());
+    }
+
+    /// The same, by its rating's colour (`byRating`) or its rarity's (for the FOE-R pet box's own setting).
+    static int frameColor(PetTagObject pet, boolean byRating) {
         int rarity = dannypx.foe.helper.FoeLocations.rarityColor(petRarity(pet));
         int rating = -1;
         try {
@@ -99,7 +104,6 @@ public class PetPanelElement extends PanelElement {
         } catch (RuntimeException ignored) {
             // no rating to read
         }
-        boolean byRating = frameByRating();
         int color = byRating ? (rating >= 0 ? rating : rarity) : (rarity >= 0 ? rarity : rating);
         return color < 0 ? UNKNOWN_BORDER : 0xFF000000 | color;
     }
@@ -185,12 +189,17 @@ public class PetPanelElement extends PanelElement {
     /// Just the ♣ / ⚓ (both when perfect) for a pet whose rolls here are as good as they get, or null: for the FOE-R
     /// style's pet box, which has no room for the words.
     static Component maxIcons(PetTagObject pet) {
+        return maxIcons(pet, greenClover());
+    }
+
+    /// The same, the ♣ green or in the Luck colour (`green`; the FOE-R pet box's own setting).
+    static Component maxIcons(PetTagObject pet, boolean green) {
         try {
             boolean luck = maxed(pet.getClimatePercentMaxLuck(), pet.getLocationPercentMaxLuck());
             boolean scale = maxed(pet.getClimatePercentMaxScale(), pet.getLocationPercentMaxScale());
             if (!luck && !scale) return null;
-            Component club = greenClover() ? dannypx.foe.helper.NameTagMarker.club(GREEN_LUCK)
-                    : dannypx.foe.helper.NameTagMarker.clover(luckColor());
+            Component club = green ? dannypx.foe.helper.NameTagMarker.club(GREEN_LUCK)
+                    : dannypx.foe.helper.NameTagMarker.clover(LuckScalePanelElement.LUCK_COLOR);
             Component anchor = dannypx.foe.helper.NameTagMarker.anchor(LuckScalePanelElement.SCALE_COLOR);
             return luck && scale ? join(club, anchor) : luck ? club : anchor;
         } catch (RuntimeException ignored) {

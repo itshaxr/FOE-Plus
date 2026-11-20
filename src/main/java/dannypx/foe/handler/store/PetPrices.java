@@ -116,9 +116,10 @@ public final class PetPrices {
         save();
     }
 
-    /// The band a rating (in percent, 82.6) falls in (by its whole percent), or -1.
+    /// The band a rating (in percent, 82.6) falls in (rounded to a whole percent, as the server shows it), or -1.
     public static int rowFor(double percent) {
-        int p = (int) Math.floor(percent + 1e-6);
+        // rounded as the server shows it: an 82.6% pet reads "83%" in its tooltip, and is priced as 83%
+        int p = (int) Math.round(percent);
         List<Row> rows = rows();
         for (int i = 0; i < rows.size(); i++) if (p >= rows.get(i).from && p <= rows.get(i).to) return i;
         return -1;

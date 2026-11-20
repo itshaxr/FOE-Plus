@@ -22,6 +22,11 @@ public final class SkinTooltip {
 
     private static net.minecraft.world.item.ItemStack hovered = null;
 
+    /// The item under the mouse in a menu, or null.
+    public static net.minecraft.world.item.ItemStack hovered() {
+        return hovered;
+    }
+
     /// The item under the mouse in a menu (for the dump).
     public static void hover(net.minecraft.world.item.ItemStack stack) {
         hovered = stack;

@@ -66,6 +66,10 @@ public class MainConfig extends Config {
     @Desc("§7On a bait's Stock line: what the stack is worth at your prices (Stock: 18x · $4,500)")
     public ValidatedBoolean baitTooltipValue = new ValidatedBoolean(true);
 
+    @Name("Pet price in tooltips")
+    @Desc("§7At the top right of a pet's tooltip, on its name's line: what it's worth on your pet price sheet (Pet Prices, U)")
+    public ValidatedBoolean petTooltipPrice = new ValidatedBoolean(true);
+
     // Pets on the travel map: off for now (TravelMapHandler.PETS_OFF), the setting kept for when they return.
     public transient me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean travelMapPets = new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean(true);
 

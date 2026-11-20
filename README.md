@@ -34,7 +34,7 @@ Press **O** in game to open the FOE+ menu.
 - **Combine HUDs:** Shift-drop a HUD onto another in the mover to share one box (Timers and Community Catches start together); change the order, put a part in two columns or split it off with the buttons on each part, or in the HUD Editor's Combine tab.
 - **FOE+ Settings:** every option by category, every HUD in one list with its own settings, and search across everything (*O → All Settings*).
 - **HUD Editor:** change any panel's line spacing, padding, colours (any colour, on a colour wheel), text alignment, or put your own PNG/GIF in it. Each HUD can have its own style (FOE+ or FOE-R), its border turned off, and be turned on or off right there.
-- **FOE-R HUD style:** profile, pet and location boxes in place of the top bar, FOE+'s own weather pictures, and a brown FOE-R bottom bar with your rod parts and armour above the hotbar.
+- **FOE-R HUD style:** profile, pet and location boxes in place of the top bar, FOE+'s own weather pictures, and a brown FOE-R bottom bar with your rod parts and armour above the hotbar. Every FOE-R HUD has its own colours, and the bottom bar's size and its rod parts and armour bars can be changed.
 - Chummer: rarity badge, picture and time left (in the top bar, or its own HUD on the FOE-R style).
 - Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers.
 - Warning box: wrong pet for the location (names the right one), wrong armor climate, inventory almost full. Hide it with `-` until you move.
@@ -60,7 +60,7 @@ Press **O** in game to open the FOE+ menu.
 - Bait Prices: your own price for each rarity and any single bait; baitbox totals and stack values use it.
 - Rod part icons: a small icon for what each rod part (or each part of a rod) is calibrated for, purple when it's rolled at its max.
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
-- Pet Prices (`U`): a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale; every number can be edited in game. Estimates only.
+- Pet Prices (`U`): a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale; every number can be edited in game. Estimates only. A pet's price shows at the top right of its tooltip.
 - Sounds (*O → Tools → Sounds*): change every FOE+ sound (fish bite included) and add your own chat triggers with match modes, exceptions, cooldowns, coloured words, a title on screen and a taskbar flash.
 - Bobbers: 36 colour sets for the 3D bobber with previews (*O → Bobber*); other FOE+ users see yours.
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.

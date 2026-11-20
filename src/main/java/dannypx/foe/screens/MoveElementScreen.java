@@ -36,6 +36,8 @@ public class MoveElementScreen extends DefaultModScreen {
     private final List<Pair<String, Element>> customHudElements = new ArrayList<>();
     /// Scale setting behind each drag box, for scroll-to-resize.
     private final Map<MovableBoxWidget, ValidatedFloat> scales = new HashMap<>();
+    /// Done before a box is sized with the scroll wheel (the FOE-R small bars: fixed where they are first).
+    private final Map<MovableBoxWidget, Runnable> beforeResize = new HashMap<>();
     /// The HUD each drag box is (the ones that can be combined).
     private final Map<MovableBoxWidget, String> hudIds = new HashMap<>();
 
@@ -218,6 +220,7 @@ public class MoveElementScreen extends DefaultModScreen {
     protected void init() {
         super.init();
         scales.clear();
+        beforeResize.clear();
         hudIds.clear();
         this.assembleCustomHudElements();
         this.addWidgets();
@@ -325,6 +328,11 @@ public class MoveElementScreen extends DefaultModScreen {
                     hud.petElementAlignment, hud.petElementScale, Alignment.getTopCorners());
             addPanel(new dannypx.foe.screens.element.hud.LocationElement(true), hud.showLocationElement, hud.locationElementXPosition, hud.locationElementYPosition,
                     hud.locationElementAlignment, hud.locationElementScale, Alignment.getTopCorners());
+            // the bottom bar's rod parts and armour bars: anywhere, any size
+            if (hud.showFoeRHotbar.get()) {
+                if (hud.foeRHotbarParts.get()) addGroup(false, hud.foeRHotbarPartsScale);
+                if (hud.foeRHotbarArmor.get()) addGroup(true, hud.foeRHotbarArmorScale);
+            }
         }
         addPanel(new CatchPopupElement(true), hud.showCatchPopup, hud.catchPopupXPosition, hud.catchPopupYPosition,
                 null, hud.catchPopupScale, List.of(Alignment.TOP));
@@ -465,6 +473,25 @@ public class MoveElementScreen extends DefaultModScreen {
         g.drawString(this.font, text, x + 4, ty + 2, 0xFFFFFFFF, true);
     }
 
+    /// The FOE-R bottom bar's rod parts (or armour) bar, to drag and size.
+    private void addGroup(boolean armor, ValidatedFloat scale) {
+        var el = new dannypx.foe.screens.element.hud.FoeRGroupElement(armor);
+        MovableBoxWidget w = new MovableBoxWidget(this.minecraft, el, List.of(Alignment.TOP_LEFT), new MovableBoxWidget.Callback() {
+            @Override
+            public void onRelease(int xPercent, int yPercent, Alignment newAlignment) {
+                el.save();
+            }
+
+            @Override
+            public void onConfig() {
+                FoeSettingsScreen.open(Configs.hudConfig.foeRHotbarArmor);
+            }
+        });
+        scales.put(w, scale);
+        beforeResize.put(w, el::save);
+        this.addRenderableWidget(w);
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (verticalAmount != 0) {
@@ -478,6 +505,8 @@ public class MoveElementScreen extends DefaultModScreen {
 
             for (Map.Entry<MovableBoxWidget, ValidatedFloat> entry : scales.entrySet()) {
                 if (entry.getKey().isMouseOver(mouseX, mouseY)) {
+                    Runnable first = beforeResize.get(entry.getKey());
+                    if (first != null) first.run();
                     resize(entry.getValue(), step);
                     return true;
                 }

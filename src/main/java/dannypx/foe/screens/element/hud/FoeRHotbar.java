@@ -36,23 +36,63 @@ public final class FoeRHotbar {
                 && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer();
     }
 
-    /// A frame `w` by `h`: a dark outline with rounded corners, the dark brown ring, dark glass with a glint on top.
+    /// A frame `w` by `h`: a dark outline with rounded corners, the ring (dark brown, or the colour picked), the glass
+    /// (dark, or the colour picked) with a glint on top.
     static void frame(GuiGraphics g, int x, int y, int w, int h) {
+        var cfg = Configs.hudConfig;
+        int ring = FoeRBoxes.ring(cfg.foeRHotbarBorderColor.get(), RING);
+        int c = dannypx.foe.screens.element.hud.GameXpBar.parse(cfg.foeRHotbarBoxColor.get());
+        int glass = Math.round(Math.max(0, Math.min(100, cfg.foeRHotbarOpacity.get())) * 255 / 100f) << 24 | (c < 0 ? 0x101418 : c);
         g.fill(x + 2, y, x + w - 2, y + h, 0xFF0B0B0B);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF0B0B0B);
         g.fill(x, y + 2, x + w, y + h - 2, 0xFF0B0B0B);
-        g.fill(x + 2, y + 1, x + w - 2, y + h - 1, 0xFF000000 | RING);
-        g.fill(x + 1, y + 2, x + w - 1, y + h - 2, 0xFF000000 | RING);
-        g.fill(x + 2, y + 2, x + w - 2, y + h - 2, 0xD0101418);
+        g.fill(x + 2, y + 1, x + w - 2, y + h - 1, 0xFF000000 | ring);
+        g.fill(x + 1, y + 2, x + w - 1, y + h - 2, 0xFF000000 | ring);
+        g.fill(x + 2, y + 2, x + w - 2, y + h - 2, glass);
         g.fill(x + 3, y + 2, x + w - 3, y + 3, 0x30FFFFFF);
+    }
+
+    /// The bar's width, and a small bar's (three slots), before sizing.
+    static final int BAR_W = 9 * SLOT + 4, GROUP_W = 3 * GROUP_SLOT + 4;
+
+    static float barScale() {
+        return Math.max(0.5f, Math.min(1.5f, Configs.hudConfig.foeRHotbarScale.get()));
+    }
+
+    /// Where a small bar sits by itself (above the bar's left end for the rod parts, the right for the armour):
+    /// {x, y} in GUI units, its top-left, at its own size.
+    public static int[] defaultGroupPos(boolean armor, int guiW, int guiH) {
+        float s = barScale();
+        float barLeft = guiW / 2f - BAR_W * s / 2f;
+        float x = armor ? barLeft + (BAR_W - GROUP_W) * s : barLeft;
+        float y = guiH - (30 + GROUP_H) * s;
+        return new int[]{Math.round(x), Math.round(y)};
+    }
+
+    /// A small bar's place and size: where it was moved to, or above the bar's end. {x, y} and its size.
+    static float[] groupPlace(boolean armor, int guiW, int guiH) {
+        var cfg = Configs.hudConfig;
+        float px = armor ? cfg.foeRHotbarArmorX.get() : cfg.foeRHotbarPartsX.get();
+        float py = armor ? cfg.foeRHotbarArmorY.get() : cfg.foeRHotbarPartsY.get();
+        if (px < 0 || py < 0) {
+            int[] d = defaultGroupPos(armor, guiW, guiH);
+            return new float[]{d[0], d[1], barScale()};
+        }
+        float size = armor ? cfg.foeRHotbarArmorScale.get() : cfg.foeRHotbarPartsScale.get();
+        return new float[]{px / 100f * guiW, py / 100f * guiH, size};
     }
 
     public static void render(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         Font font = mc.font;
-        int w = 9 * SLOT + 4;
-        int x = g.guiWidth() / 2 - w / 2, y = g.guiHeight() - BAR_H;
+        float s = barScale();
+        int guiW = g.guiWidth(), guiH = g.guiHeight();
+        g.pose().pushMatrix();
+        g.pose().translate(guiW / 2f, guiH);
+        g.pose().scale(s, s);
+        int w = BAR_W;
+        int x = -w / 2, y = -BAR_H;
         frame(g, x, y, w, BAR_H);
         for (int i = 1; i < 9; i++) g.fill(x + 2 + SLOT * i, y + 5, x + 3 + SLOT * i, y + BAR_H - 5, 0x22FFFFFF);
 
@@ -76,15 +116,32 @@ public final class FoeRHotbar {
             g.renderItem(stack, ix, iy);
             g.renderItemDecorations(font, stack, ix, iy);
         }
+        g.pose().popMatrix();
 
-        // the rod parts over the left end, the armour over the right, clear of the experience bar
-        int gw = 3 * GROUP_SLOT + 4, gy = g.guiHeight() - 30 - GROUP_H;
-        if (Configs.hudConfig.foeRHotbarParts.get()) {
+        // the rod parts and the armour: above the bar's ends, clear of the experience bar, or where they were moved
+        if (Configs.hudConfig.foeRHotbarParts.get()) drawGroup(g, false, guiW, guiH);
+        if (Configs.hudConfig.foeRHotbarArmor.get()) drawGroup(g, true, guiW, guiH);
+    }
+
+    private static void drawGroup(GuiGraphics g, boolean armor, int guiW, int guiH) {
+        float[] at = groupPlace(armor, guiW, guiH);
+        g.pose().pushMatrix();
+        g.pose().translate(at[0], at[1]);
+        g.pose().scale(at[2], at[2]);
+        drawGroupAt(g, armor);
+        g.pose().popMatrix();
+    }
+
+    /// The rod parts' (or armour's) small bar with its top-left at 0, 0, at its own size (for the HUD mover too).
+    @SuppressWarnings("rawtypes")
+    public static void drawGroupAt(GuiGraphics g, boolean armor) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) { frame(g, 0, 0, GROUP_W, GROUP_H); return; }
+        if (!armor) {
             FishingRodTagObject rod = InventoryHandler.instance().getCurrentFishingRod();
-            group(g, x, gy, gw, new List[]{rod.getReelItem(), rod.getPoleItem(), rod.getLineItem()}, null);
-        }
-        if (Configs.hudConfig.foeRHotbarArmor.get()) {
-            group(g, x + w - gw, gy, gw, null, new ItemStack[]{mc.player.getItemBySlot(EquipmentSlot.CHEST),
+            group(g, 0, 0, GROUP_W, new List[]{rod.getReelItem(), rod.getPoleItem(), rod.getLineItem()}, null);
+        } else {
+            group(g, 0, 0, GROUP_W, null, new ItemStack[]{mc.player.getItemBySlot(EquipmentSlot.CHEST),
                     mc.player.getItemBySlot(EquipmentSlot.LEGS), mc.player.getItemBySlot(EquipmentSlot.FEET)});
         }
     }

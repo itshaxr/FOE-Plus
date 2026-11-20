@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class TooltipRenderUtilMixin {
     @Inject(method = "renderTooltipBackground", at = @At("HEAD"), cancellable = true)
     private static void foe$skinFrame(GuiGraphics g, int x, int y, int w, int h, Identifier style, CallbackInfo ci) {
+        dannypx.foe.handler.renderer.PetTooltipPrice.background(x, y, w);
         boolean drew = dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer()
                 && dannypx.foe.handler.renderer.SkinTooltip.draw(g, x, y, w, h);
         dannypx.foe.handler.renderer.SkinTooltip.noteBackground(style, drew);

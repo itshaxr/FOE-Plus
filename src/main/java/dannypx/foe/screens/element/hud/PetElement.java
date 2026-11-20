@@ -66,7 +66,13 @@ public class PetElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
-        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        FoeRBoxes.skin(cfg.petElementBoxColor.get(), cfg.petElementOpacity.get());
+        int w;
+        try {
+            w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        } finally {
+            FoeRBoxes.unskin();
+        }
         guiGraphics.pose().popMatrix();
         this.width = Math.round(w * scale);
         this.height = Math.round(HEIGHT * scale);
@@ -97,7 +103,10 @@ public class PetElement extends Element {
             return FoeRBoxes.BOX + rail;
         }
         PetTagObject pet = InventoryHandler.instance().getCurrentPet();
-        int ring = PetPanelElement.frameColor(pet) & 0xFFFFFF;
+        var cfg = Configs.hudConfig;
+        int ring = FoeRBoxes.ring(cfg.petElementBorderColor.get(),
+                PetPanelElement.frameColor(pet, cfg.petElementFrameColor.get() == dannypx.foe.type.PetFrameColor.RATING) & 0xFFFFFF);
+        var xpStyle = cfg.petElementXp.get();
 
         Component head = TextHelper.concat(pet.getRarityComponent(), Component.literal(" "), pet.getName());
         Component level = TextHelper.concat(Component.literal("ʟᴠʟ ").withStyle(ChatFormatting.GRAY),
@@ -106,7 +115,7 @@ public class PetElement extends Element {
         float progress = max ? 1f : Math.max(0f, Math.min(1f, pet.getProgress()));
         // ♣ / ⚓ when its rolls here are maxed, then its rating's % in the rating's colour, the brackets grey
         net.minecraft.network.chat.MutableComponent after = Component.empty();
-        Component maxed = PetPanelElement.maxIcons(pet);
+        Component maxed = PetPanelElement.maxIcons(pet, cfg.petElementGreenLuck.get());
         if (maxed != null) after.append(maxed).append(Component.literal(" "));
         int ratingColor = -1;
         try {
@@ -119,9 +128,23 @@ public class PetElement extends Element {
                         .withColor(ratingColor < 0 ? 0xFFFFFF : ratingColor))
                 .append(Component.literal(")").withStyle(ChatFormatting.GRAY));
 
-        int levelW = font.width(level) + 4 + BAR_W + 4 + font.width(after);
+        // the XP: the bar (and its numbers), or none
+        boolean bar = xpStyle != dannypx.foe.type.PetXpStyle.HIDDEN;
+        if (xpStyle == dannypx.foe.type.PetXpStyle.BAR_AND_NUMBERS) {
+            float current = pet.contains(PetTagObject.XP_CURRENT) ? pet.getFloat(PetTagObject.XP_CURRENT) : 0f;
+            float needed = pet.contains(PetTagObject.XP_NEED) ? pet.getFloat(PetTagObject.XP_NEED) : 0f;
+            net.minecraft.network.chat.MutableComponent nums = Component.empty()
+                    .append(Component.literal("(").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(GameXpBar.num(current)).withStyle(ChatFormatting.AQUA))
+                    .append(Component.literal("/").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(max ? "MAX" : GameXpBar.num(needed)).withStyle(ChatFormatting.BLUE))
+                    .append(Component.literal(") ").withStyle(ChatFormatting.GRAY));
+            after = nums.append(after);
+        }
+        int barRoom = bar ? 4 + BAR_W + 4 : 4;
+        int levelW = font.width(level) + barRoom + font.width(after);
         // the item it's holding, small, after its name (as the pet panel's item box; hidden with it)
-        net.minecraft.world.item.ItemStack held = Configs.hudConfig.petPanelItemBox.get()
+        net.minecraft.world.item.ItemStack held = cfg.petElementHeldItem.get()
                 ? dannypx.foe.item.PetHeldItem.of(pet) : net.minecraft.world.item.ItemStack.EMPTY;
         // its name in the item's own colours (a gradient, as its tooltip shows it); the bar's nib in its first colour
         Component heldName = held.isEmpty() ? null : held.getHoverName();
@@ -162,9 +185,9 @@ public class PetElement extends Element {
         int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
         PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
         int bx = lx + font.width(level) + 4;
-        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043,
+        if (bar) FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043,
                 GameXpBar.colour(dannypx.foe.config.Configs.hudConfig.petElementXpBarColor::get));
-        PanelElement.drawText(g, font, after.getVisualOrderText(), bx + BAR_W + 4, y + 18);
+        PanelElement.drawText(g, font, after.getVisualOrderText(), lx + font.width(level) + barRoom, y + 18);
         return Math.max(FoeRBoxes.BOX + Math.max(rail1, rail2), rail3 == 0 ? 0 : 6 + rail3);
     }
     //endregion

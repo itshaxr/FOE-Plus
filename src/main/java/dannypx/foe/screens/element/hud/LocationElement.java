@@ -65,7 +65,13 @@ public class LocationElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
-        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        FoeRBoxes.skin(cfg.locationElementBoxColor.get(), cfg.locationElementOpacity.get());
+        int w;
+        try {
+            w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        } finally {
+            FoeRBoxes.unskin();
+        }
         guiGraphics.pose().popMatrix();
         this.width = Math.round(w * scale);
         this.height = Math.round(HEIGHT * scale);
@@ -78,7 +84,8 @@ public class LocationElement extends Element {
         BossEventHandler boss = BossEventHandler.instance();
         Component weather = boss.getWeather();
         Component temperature = boss.getTemperature();
-        int ring = weather.getStyle().getColor() != null ? weather.getStyle().getColor().getValue() & 0xFFFFFF : SKY;
+        int ring = FoeRBoxes.ring(Configs.hudConfig.locationElementBorderColor.get(),
+                weather.getStyle().getColor() != null ? weather.getStyle().getColor().getValue() & 0xFFFFFF : SKY);
 
         String place = boss.getLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
         MutableComponent top = Component.empty();

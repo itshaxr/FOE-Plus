@@ -48,6 +48,17 @@ public class HUDConfig extends Config {
     @Name("Anchor point")
     public ValidatedChoice<Alignment> profileElementAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getTopCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
 
+    @Name("Border colour")
+    @Desc("§7The colour of the box's ring and the nibs on its bars. Click to pick one; Default is gold")
+    public ValidatedString profileElementBorderColor = new ValidatedString("");
+
+    @Name("Box colour")
+    @Desc("§7The colour of the box's glass (and its bars). Click to pick one; Default is FOE-R's dark glass")
+    public ValidatedString profileElementBoxColor = new ValidatedString("");
+
+    @Name("Box opacity in %")
+    public ValidatedInt profileElementOpacity = new ValidatedInt(81, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
     @Name("XP bar colour")
     @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
     public ValidatedString profileElementXpBarColor = new ValidatedString("");
@@ -72,6 +83,17 @@ public class HUDConfig extends Config {
 
     @Name("Anchor point")
     public ValidatedChoice<Alignment> locationElementAlignment = new ValidatedChoice<>(Alignment.TOP_RIGHT, Alignment.getTopCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Border colour")
+    @Desc("§7The colour of the box's ring and the nibs on its bars. Click to pick one; Default is the location's own colour")
+    public ValidatedString locationElementBorderColor = new ValidatedString("");
+
+    @Name("Box colour")
+    @Desc("§7The colour of the box's glass (and its bars). Click to pick one; Default is FOE-R's dark glass")
+    public ValidatedString locationElementBoxColor = new ValidatedString("");
+
+    @Name("Box opacity in %")
+    public ValidatedInt locationElementOpacity = new ValidatedInt(81, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @ConfigGroup.Pop
     @Name("Scale")
@@ -135,6 +157,33 @@ public class HUDConfig extends Config {
     @Name("XP bar colour")
     @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
     public ValidatedString petElementXpBarColor = new ValidatedString("");
+
+    @Name("Pet XP")
+    @Desc("§7BAR_AND_NUMBERS: the bar and (251.50K/470.00K)\nBAR: just the bar\nHIDDEN: no XP bar")
+    public ValidatedEnum<dannypx.foe.type.PetXpStyle> petElementXp = new ValidatedEnum<>(dannypx.foe.type.PetXpStyle.BAR, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Colour around the pet")
+    @Desc("§7Rating: the colour of the pet's rating (Excellent is aqua), the default. Rarity: the colour of its rarity (Legendary is orange)")
+    public ValidatedEnum<dannypx.foe.type.PetFrameColor> petElementFrameColor = new ValidatedEnum<>(dannypx.foe.type.PetFrameColor.RATING, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Green Max Luck")
+    @Desc("§7The ♣ for Max Luck in green. Off: in the Luck colour")
+    public ValidatedBoolean petElementGreenLuck = new ValidatedBoolean(true);
+
+    @Name("Show the held item bar")
+    @Desc("§7The bar under the box with the item the pet holds")
+    public ValidatedBoolean petElementHeldItem = new ValidatedBoolean(true);
+
+    @Name("Border colour")
+    @Desc("§7The colour of the box's ring and the nibs on its bars. Click to pick one; Default is the pet's rating (or rarity) colour")
+    public ValidatedString petElementBorderColor = new ValidatedString("");
+
+    @Name("Box colour")
+    @Desc("§7The colour of the box's glass (and its bars). Click to pick one; Default is FOE-R's dark glass")
+    public ValidatedString petElementBoxColor = new ValidatedString("");
+
+    @Name("Box opacity in %")
+    public ValidatedInt petElementOpacity = new ValidatedInt(81, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @ConfigGroup.Pop
     @Name("Scale")
@@ -842,9 +891,33 @@ public class HUDConfig extends Config {
     @Name("Show rod parts above it")
     public ValidatedBoolean foeRHotbarParts = new ValidatedBoolean(true);
 
-    @ConfigGroup.Pop
     @Name("Show armour above it")
     public ValidatedBoolean foeRHotbarArmor = new ValidatedBoolean(true);
+
+    @Name("Size")
+    @Desc("§7How big the bottom bar is (the rod parts and armour bars are sized in Move HUD Elements)")
+    public ValidatedFloat foeRHotbarScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 1.5f, 0.5f), 0.05f);
+
+    /// Where the rod parts' and armour's bars are (their top-left, % of the screen) and how big; -1: above the bar's
+    /// ends, as they start. Moved and sized in Move HUD Elements.
+    public ValidatedFloat foeRHotbarPartsX = new ValidatedFloat(-1f, 100f, -1f);
+    public ValidatedFloat foeRHotbarPartsY = new ValidatedFloat(-1f, 100f, -1f);
+    public ValidatedFloat foeRHotbarPartsScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
+    public ValidatedFloat foeRHotbarArmorX = new ValidatedFloat(-1f, 100f, -1f);
+    public ValidatedFloat foeRHotbarArmorY = new ValidatedFloat(-1f, 100f, -1f);
+    public ValidatedFloat foeRHotbarArmorScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
+
+    @Name("Border colour")
+    @Desc("§7The colour of the box's ring and the nibs on its bars. Click to pick one; Default is FOE-R's brown")
+    public ValidatedString foeRHotbarBorderColor = new ValidatedString("");
+
+    @Name("Box colour")
+    @Desc("§7The colour of the box's glass (and its bars). Click to pick one; Default is FOE-R's dark glass")
+    public ValidatedString foeRHotbarBoxColor = new ValidatedString("");
+
+    @ConfigGroup.Pop
+    @Name("Box opacity in %")
+    public ValidatedInt foeRHotbarOpacity = new ValidatedInt(81, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @Name("Chummer Panel")
     @Desc("§7While you stand in a chummer's range: its picture, rarity and the time it has left. With the top bar on, it sits in the bar between your name and the location instead")

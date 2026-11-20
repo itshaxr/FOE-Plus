@@ -38,8 +38,8 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Social** | Whether a crew member is in range, then your crew and friends, online first, with the instance each is on ("InfernalShadow (i5)", from a quiet /find). In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
 | **Catch popup** | Big popup for the fish you just caught. Give it a box with a border in any colour. |
-| **FOE-R boxes** | With the FOE-R HUD style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures. Only shown (and only in the HUD Editor) while that style is on. |
-| **FOE-R bottom bar** | With the FOE-R HUD style: the hotbar in a dark brown frame, with your rod parts and armour above it. Each part can be turned off. |
+| **FOE-R boxes** | With the FOE-R HUD style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures. Each has its own border colour, box colour (colour wheel) and box opacity; the pet box has the pet HUD's options too (Pet XP, colour around the pet, Green Max Luck, the held item bar). Only shown (and only in the HUD Editor) while that style is on. |
+| **FOE-R bottom bar** | With the FOE-R HUD style: the hotbar in a dark brown frame, with your rod parts and armour above it. Size it, colour its border and glass, and drag the rod parts and armour bars anywhere in Move HUD Elements (scroll over them to size them). Each part can be turned off. |
 | **Catch ring** | A ring by the crosshair that fills in blue as a fish swims to your bobber (from its trail in the water, so you see the bite coming), then in green as you reel it in, and flashes full when it's caught. It only follows your own fish, even with other bobbers around, and other players' fish trails can be hidden (on by default). Both colours are yours to pick. Move and size it like a panel. |
 
 ### Combining HUDs
@@ -71,7 +71,7 @@ Pick any of FOE+'s panels and change how it looks: line spacing, padding, the bo
 - **HUD style:** FOE+'s panels, or the FOE-R look (boxes with rails in place of the top bar, and the FOE-R bottom bar).
 - **Per HUD:** each HUD can have its own **Style** (FOE+ or FOE-R), its **Border** turned off, and be **Shown** or hidden, right in the editor.
 - **Item icon style:** FOE+'s rarity dot and rating letter, or FOE's rarity corner, for players coming from FOE.
-- **Any colour:** the box, border and title colour rows end in a **+** that opens the colour wheel.
+- **Any colour:** the box, border and title colour rows end in a **+** that opens the colour wheel. A HUD in the FOE-R look takes them too (its bars in the border colour, its title in the title colour).
 - Panel frames stay crisp at any size, and small panels never shrink below readable.
 
 ---
@@ -141,7 +141,7 @@ In game, the rarity, variant and Gigantic badges appear in place of the words.
 
 - **Wrong pet warning:** a warning box plus a chat line when you arrive with the wrong pet, telling you whether the right one is in your inventory.
 - **Held item:** the item your pet is holding shows in the Pet panel, and pets holding an amulet get a star on their slot in the amulet's rarity colour.
-- **Pet tooltips:** rating letter and max Luck / max Scale markers. A pet wearing a skin gets its tooltip framed in the skin's own colours.
+- **Pet tooltips:** rating letter and max Luck / max Scale markers, and the pet's price from your Pet Prices sheet at the top right, on its name's line (priced at the rating the tooltip shows). A pet wearing a skin gets its tooltip framed in the skin's own colours.
 - **Pet drops:** only pets you fish up count in your all-time and session stats; quest, daily quest, contest and event pets are told once and never counted.
 - **Pet Prices (`U`, or O → Tools → Pet Prices):** what a pet sells for by rating and rarity: two bands below 60%, then every percent from 60% to 100%, with ×2 Rare, ×4 Epic, ×8 Legendary and ×16 Mythical. Max Luck and Max Scale each add 50K. Click any number to change it (saved for you; Reset to defaults puts the starting prices back). Your equipped pet's row is highlighted with its price. These are estimates only: real prices change with events and what people will pay.
 

@@ -66,7 +66,13 @@ public class ProfileElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
-        int w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        FoeRBoxes.skin(cfg.profileElementBoxColor.get(), cfg.profileElementOpacity.get());
+        int w;
+        try {
+            w = draw(guiGraphics, Minecraft.getInstance().font, x, y, right);
+        } finally {
+            FoeRBoxes.unskin();
+        }
         guiGraphics.pose().popMatrix();
         this.width = Math.round(w * scale);
         this.height = Math.round(HEIGHT * scale);
@@ -96,13 +102,14 @@ public class ProfileElement extends Element {
         int rail3 = FoeRBoxes.railFor(font.width(money));
         int railX = right ? x - FoeRBoxes.BOX : x + FoeRBoxes.BOX;
 
-        FoeRBoxes.box(g, x, y, right, GOLD);
+        int ring = FoeRBoxes.ring(Configs.hudConfig.profileElementBorderColor.get(), GOLD);
+        FoeRBoxes.box(g, x, y, right, ring);
         renderHead(g, FoeRBoxes.inside(x, right), y + 3);
-        FoeRBoxes.rail(g, railX, y + 2, rail1, FoeRBoxes.RAIL_H, right, GOLD);
-        FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, GOLD);
+        FoeRBoxes.rail(g, railX, y + 2, rail1, FoeRBoxes.RAIL_H, right, ring);
+        FoeRBoxes.rail(g, railX, y + 16, rail2, FoeRBoxes.RAIL_H, right, ring);
         // money and credits hang under the box on their own short rail
         int moneyX = right ? x - 6 : x + 6;
-        FoeRBoxes.rail(g, moneyX, y + 31, rail3, 11, right, GOLD);
+        FoeRBoxes.rail(g, moneyX, y + 31, rail3, 11, right, ring);
 
         FoeRBoxes.text(g, font, name, railX, y + 4, right);
         int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;

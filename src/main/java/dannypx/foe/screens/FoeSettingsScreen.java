@@ -258,20 +258,40 @@ public class FoeSettingsScreen extends Screen {
 
     enum Kind { TOGGLE, SLIDER, CYCLE, TEXT, KEY, OPEN, COLOR }
 
-    /// The colour settings (each HUD's XP bar colour), which get a colour wheel.
+    /// The colour settings (every HUD setting kept as "#RRGGBB" text: XP bars, borders, boxes, the catch ring...),
+    /// which get a colour wheel.
+    private static java.util.Set<Object> colourEntries;
+
     static boolean colourEntry(Object entry) {
         var c = dannypx.foe.config.Configs.hudConfig;
-        return c != null && (entry == c.topBarXpBarColor || entry == c.petPanelXpBarColor || entry == c.communityPanelXpBarColor
-                || entry == c.profileElementXpBarColor || entry == c.petElementXpBarColor || entry == c.catchPopupBorderColor
-                || entry == c.catchRingComingColor || entry == c.catchRingReelColor);
+        if (c == null || !(entry instanceof me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString)) return false;
+        if (colourEntries == null) {
+            java.util.Set<Object> found = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+            for (java.lang.reflect.Field f : c.getClass().getFields()) {
+                if (!f.getName().endsWith("Color") || f.getType() != me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString.class) continue;
+                try {
+                    found.add(f.get(c));
+                } catch (IllegalAccessException ignored) {
+                    // not one then
+                }
+            }
+            colourEntries = found;
+        }
+        return colourEntries.contains(entry);
     }
 
-    /// The colour a colour setting has when it's left at Default (the bar's own).
+    /// The colour a colour setting has when it's left at Default (the part's own).
     static int ownColour(Object entry) {
         var c = dannypx.foe.config.Configs.hudConfig;
         if (entry == c.catchPopupBorderColor) return 0xFFD866;
         if (entry == c.catchRingComingColor) return 0x7CD8FF;
         if (entry == c.catchRingReelColor) return 0x7CF07C;
+        if (entry == c.profileElementBorderColor) return 0xE8B54A;
+        if (entry == c.petElementBorderColor) return 0x55FFFF;
+        if (entry == c.locationElementBorderColor) return 0x55AAFF;
+        if (entry == c.foeRHotbarBorderColor) return 0x6B4A2B;
+        if (entry == c.profileElementBoxColor || entry == c.petElementBoxColor || entry == c.locationElementBoxColor
+                || entry == c.foeRHotbarBoxColor) return 0x101418;
         if (dannypx.foe.screens.element.hud.GameXpBar.gameStyle()) return dannypx.foe.screens.element.hud.GameXpBar.FILL;
         return entry == c.profileElementXpBarColor ? 0xFFD866 : 0x7CF07C;
     }

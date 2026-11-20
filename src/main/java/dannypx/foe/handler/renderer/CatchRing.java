@@ -122,6 +122,11 @@ public final class CatchRing {
         }
         // a fish on its way: the ring fills in blue as it comes, and pulses as it gets to the bobber
         float coming = Configs.hudConfig.catchRingApproach.get() && mc.player.fishing != null ? dannypx.foe.handler.logic.FishApproach.progress() : -1f;
+        if (coming >= 0) lastComingAt = now;
+        else if (approachAt != 0 && mc.player.fishing != null && now - lastComingAt < (approachShown > 0.8f ? HOLD_BITE_MS : HOLD_GAP_MS)) {
+            // the trail lost for a moment, or the fish at the bobber with the reel bar still to come: kept as it was
+            coming = approachShown;
+        }
         if (coming >= 0) {
             if (approachAt == 0) { approachAt = now; approachShown = 0f; }
             approachShown += (coming - approachShown) * 0.3f;
@@ -134,7 +139,9 @@ public final class CatchRing {
         } else approachAt = 0;
     }
 
-    private static long approachAt = 0;
+    private static long approachAt = 0, lastComingAt = 0;
+    /// How long the blue ring stays through a gap in the trail, and at the bite until the reel bar comes up.
+    static final long HOLD_GAP_MS = 900, HOLD_BITE_MS = 2_500;
     private static float approachShown = 0f;
     /// The fill's light and deep colour, the head's and the ripple's: green reeling in, blue while a fish comes.
     private static final int[] GREEN = {0x7CF07C, 0x3FCB5A, 0xD8FFD8}, BLUE = {0x7CD8FF, 0x3A9FE0, 0xDDF4FF};

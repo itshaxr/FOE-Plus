@@ -36,6 +36,31 @@ public final class FoeRBoxes {
                 && dannypx.foe.handler.fetch.TabOverlayHandler.instance().isInInstance();
     }
 
+    /// FOE-R's dark glass.
+    static final int GLASS = 0x101418, GLASS_ALPHA = 0xD0;
+    /// The glass (ARGB) of the box being drawn, and the colour its bars fade from: set by each box from its settings.
+    private static int glass = GLASS_ALPHA << 24 | GLASS, railRgb = 0;
+
+    /// The colours for the box drawn next, from its settings ("#RRGGBB" or "" for FOE-R's own; opacity in %).
+    static void skin(String boxColor, int opacityPercent) {
+        int c = GameXpBar.parse(boxColor);
+        int a = Math.round(Math.max(0, Math.min(100, opacityPercent)) * 255 / 100f);
+        glass = a << 24 | (c < 0 ? GLASS : c);
+        railRgb = c < 0 ? 0 : c;
+    }
+
+    /// Back to FOE-R's own colours (after a box is drawn).
+    static void unskin() {
+        glass = GLASS_ALPHA << 24 | GLASS;
+        railRgb = 0;
+    }
+
+    /// The border colour picked in a box's settings, or `own` (RGB).
+    static int ring(String borderColor, int own) {
+        int c = GameXpBar.parse(borderColor);
+        return c < 0 ? own : c;
+    }
+
     /// The box at `x` (its left edge; its right edge when `right`), `y`: a dark edge, the coloured ring, dark glass.
     static void box(GuiGraphics g, int x, int y, boolean right, int ring) {
         box(g, x, y, right, ring, BOX);
@@ -46,7 +71,7 @@ public final class FoeRBoxes {
         int left = right ? x - w : x;
         g.fill(left, y, left + w, y + BOX, 0xFF0B0B0B);
         g.fill(left + 1, y + 1, left + w - 1, y + BOX - 1, 0xFF000000 | ring);
-        g.fill(left + 2, y + 2, left + w - 2, y + BOX - 2, 0xD0101418);
+        g.fill(left + 2, y + 2, left + w - 2, y + BOX - 2, glass);
         g.fill(left + 2, y + 2, left + w - 2, y + 3, 0x30FFFFFF);
     }
 
@@ -106,7 +131,7 @@ public final class FoeRBoxes {
             float k = 1f - (float) i / len;
             int a = Math.round(0xB0 * k * k);
             int px = right ? x - 1 - i : x + i;
-            g.fill(px, y, px + 1, y + h, a << 24);
+            g.fill(px, y, px + 1, y + h, a << 24 | railRgb);
         }
         if (right) g.fill(x - 2, y + 1, x, y + h - 1, 0xFF000000 | ring);
         else g.fill(x, y + 1, x + 2, y + h - 1, 0xFF000000 | ring);

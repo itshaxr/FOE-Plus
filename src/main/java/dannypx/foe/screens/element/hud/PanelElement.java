@@ -404,7 +404,7 @@ public abstract class PanelElement extends Element {
         lineOwners.clear();
         for (int i = 0; i < lines.size(); i++) if (owners.get(i) != null) lineOwners.put(lines.get(i), owners.get(i));
         if (!lines.isEmpty() && foeR()) {
-            lines.addFirst(foeRTitle(shownTitle()));
+            lines.addFirst(foeRTitle(shownTitle(), look().titleColor));
         } else if (!lines.isEmpty() && theme(look()) == PanelTheme.OFF) {
             lines.addFirst(look().titleColor < 0 ? shownTitle().copy().withStyle(ChatFormatting.GRAY) : shownTitle());
         }
@@ -757,7 +757,7 @@ public abstract class PanelElement extends Element {
         int bgAlpha = (Math.round(opacity / 100f * 255f) << 24) | (look.boxColor & 0xFFFFFF);
         boolean foeR = foeR();
         boolean border = !"OFF".equals(look.frameMode());
-        if (foeR && border) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha);
+        if (foeR && border) drawFoeRBox(guiGraphics, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3, bgAlpha, look.borderColor);
         else guiGraphics.fill(boxLeft, top, boxRight, top + innerHeight + PADDING * 3, bgAlpha);
         if (!look.imageInFront) drawImage(guiGraphics, look, boxLeft, top, boxRight - boxLeft, innerHeight + PADDING * 3);
 
@@ -1022,9 +1022,14 @@ public abstract class PanelElement extends Element {
 
     /// FOE-R's heading line: "- Title -" (grey dashes, white title, both bold).
     static Component foeRTitle(Component title) {
+        return foeRTitle(title, -1);
+    }
+
+    /// The same, the title in `color` (the HUD Editor's title colour; -1: white).
+    static Component foeRTitle(Component title, int color) {
         return Component.empty()
                 .append(Component.literal("- ").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD))
-                .append(Component.literal(title.getString()).withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
+                .append(Component.literal(title.getString()).withStyle(st -> st.withColor(color < 0 ? 0xFFFFFF : color & 0xFFFFFF).withBold(true)))
                 .append(Component.literal(" -").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD));
     }
 
@@ -1032,15 +1037,22 @@ public abstract class PanelElement extends Element {
 
     /// FOE-R's box, as its custom HUDs draw it: the see-through middle, and a dark bar (with its little nibs)
     /// along the top and bottom.
-    private static void drawFoeRBox(GuiGraphics g, int x, int y, int w, int h, int bgAlpha) {
+    /// FOE-R's bars in grey, to take the border colour picked in the HUD Editor (with their shading).
+    private static final Identifier FOE_R_BARS_TINT = Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "textures/gui/sprites/elements/sidebar_atlas_tint.png");
+
+    /// `border`: the HUD Editor's border colour (white, the start: FOE-R's own brown bars).
+    private static void drawFoeRBox(GuiGraphics g, int x, int y, int w, int h, int bgAlpha, int border) {
         final int TW = 17, TH = 11, CORNER = 8, BAR_W = 1, BAR_H = 5, NIB = 3, PAD = 5;
         g.fill(x + PAD, y + 1, x + w - PAD, y + h - 3, bgAlpha);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x, y, 0, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + CORNER, y, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + w - CORNER, y, CORNER + BAR_W, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x, y + h - CORNER, 0, 0, CORNER, CORNER, CORNER, CORNER, TW, TH);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + CORNER, y + h - CORNER + NIB, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH);
-        g.blit(RenderPipelines.GUI_TEXTURED, FOE_R_BARS, x + w - CORNER, y + h - CORNER, CORNER + BAR_W, 0, CORNER, CORNER, CORNER, CORNER, TW, TH);
+        boolean own = (border & 0xFFFFFF) == 0xFFFFFF;
+        Identifier bars = own ? FOE_R_BARS : FOE_R_BARS_TINT;
+        int tint = own ? 0xFFFFFFFF : 0xFF000000 | border;
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x, y, 0, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH, tint);
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x + CORNER, y, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH, tint);
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x + w - CORNER, y, CORNER + BAR_W, NIB, CORNER, CORNER, CORNER, CORNER, TW, TH, tint);
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x, y + h - CORNER, 0, 0, CORNER, CORNER, CORNER, CORNER, TW, TH, tint);
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x + CORNER, y + h - CORNER + NIB, CORNER, NIB, w - CORNER * 2, BAR_H, BAR_W, BAR_H, TW, TH, tint);
+        g.blit(RenderPipelines.GUI_TEXTURED, bars, x + w - CORNER, y + h - CORNER, CORNER + BAR_W, 0, CORNER, CORNER, CORNER, CORNER, TW, TH, tint);
     }
 
     private static Identifier sprite(PanelTheme theme, String piece) {

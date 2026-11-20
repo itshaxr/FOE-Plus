@@ -19,6 +19,8 @@ public final class TrailTracker {
     static final int SURE = 4;
     /// A trail splashes every tick: one missing for more than this many ticks (packets can come a little late) is gone.
     static final int GONE_TICKS = 3;
+    /// One known to be coming to a bobber is kept through a longer gap (a lag spike), so the ring doesn't drop it.
+    static final int SURE_GONE_TICKS = 10;
     /// How near a tenth (or two) of a block a tick a splash must close in.
     static final double TOLERANCE = 0.03;
 
@@ -46,7 +48,7 @@ public final class TrailTracker {
     /// bobber whose trail it carries on, or -1 when it starts a trail (or is nobody's, as yet).
     public int offer(Map<Integer, Double> distances, long tick) {
         trails.keySet().retainAll(distances.keySet());
-        for (List<Trail> list : trails.values()) list.removeIf(t -> tick - t.lastTick > GONE_TICKS);
+        for (List<Trail> list : trails.values()) list.removeIf(t -> tick - t.lastTick > (t.steps >= SURE ? SURE_GONE_TICKS : GONE_TICKS));
         int bestHook = -1;
         Trail best = null;
         double bestErr = Double.MAX_VALUE;
@@ -57,9 +59,12 @@ public final class TrailTracker {
             for (Trail t : list) {
                 // the second splash of the same tick, at the same place: the same trail
                 if (tick == t.lastTick && Math.abs(t.last - d) < 0.02) return t.steps >= SURE ? e.getKey() : -1;
-                // each tick's place is a tenth of a block nearer than the last (whenever its packet arrives)
+                // each tick's place is a tenth of a block nearer than the last (whenever its packet arrives); a
+                // splash or two missed (or the rain's double steps) makes it two to four tenths
                 double step = t.last - d;
-                double err = Math.min(Math.abs(step - 0.1), Math.abs(step - 0.2));
+                long k = Math.round(step / 0.1);
+                if (k < 1 || k > 4) continue;
+                double err = Math.abs(step - 0.1 * k);
                 if (err < TOLERANCE && err < bestErr) { bestErr = err; best = t; bestHook = e.getKey(); }
             }
         }
@@ -85,7 +90,7 @@ public final class TrailTracker {
         if (list == null) return null;
         Trail best = null;
         for (Trail t : list) {
-            if (t.steps < SURE || tick - t.lastTick > GONE_TICKS) continue;
+            if (t.steps < SURE || tick - t.lastTick > SURE_GONE_TICKS) continue;
             if (best == null || t.steps > best.steps) best = t;
         }
         return best;

@@ -75,10 +75,27 @@ public final class FishApproach {
         return tracker.coming(mc.player.fishing.getId(), mc.level.getGameTime());
     }
 
+    /// The trail last shown: where it started, where it was, when, and on which bobber, so a fish whose trail is
+    /// lost for a moment and found again carries on from where the ring was rather than starting it over.
+    private static double shownStart = -1, shownLast = -1;
+    private static long shownAt = 0;
+    private static int shownHook = -1;
+
     /// How close the fish is: 0 as the trail starts, 1 at the bobber; -1 when no fish is coming to yours.
     public static float progress() {
         TrailTracker.Trail t = current();
-        return t == null ? -1f : closeness(t.start, t.last);
+        if (t == null) return -1f;
+        Minecraft mc = Minecraft.getInstance();
+        int hook = mc.player.fishing.getId();
+        long now = System.currentTimeMillis();
+        double start = t.start;
+        // the same fish, found again: within a second and a half, on the same bobber, no farther out than it was
+        if (hook == shownHook && now - shownAt < 1_500 && shownStart > start && t.last <= shownLast + 0.3) start = shownStart;
+        shownStart = start;
+        shownLast = t.last;
+        shownAt = now;
+        shownHook = hook;
+        return closeness(start, t.last);
     }
 
     /// Package-private for tests: how far along a trail that started `start` blocks out is at `now` blocks.

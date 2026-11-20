@@ -26,8 +26,20 @@ public abstract class GuiGraphicsMixin {
         if (!dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer()) return lines;
         long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
         var out = dannypx.foe.handler.renderer.SkinTooltip.recolour(lines);
+        dannypx.foe.helper.Safe.run("pet tooltip price", () -> dannypx.foe.handler.renderer.PetTooltipPrice.prepare(out,
+                dannypx.foe.handler.renderer.SkinTooltip.hovered(), net.minecraft.client.Minecraft.getInstance().font));
         dannypx.foe.handler.logic.FoeProfiler.end("items: tooltip skin", _p);
         return out;
+    }
+
+    /// The tooltip drawn: a pet's price on its name's row (PetTooltipPrice), over the text.
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;IILnet/minecraft/client/gui/screens/inventory/tooltip/ClientTooltipPositioner;Lnet/minecraft/resources/Identifier;)V",
+            at = @At("TAIL"))
+    private void foe$petPrice(Font font, java.util.List<net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent> lines,
+                              int x, int y, net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner positioner,
+                              net.minecraft.resources.Identifier style, CallbackInfo ci) {
+        GuiGraphics g = (GuiGraphics) (Object) this;
+        dannypx.foe.helper.Safe.run("pet tooltip price", () -> dannypx.foe.handler.renderer.PetTooltipPrice.draw(g, font));
     }
 
     @Shadow public abstract Matrix3x2fStack pose();

@@ -127,7 +127,8 @@ public final class TradeValueBox {
         side.other += st.getCount();
     }
 
-    private static long[] petPrice(PetTagObject pet) {
+    /// A pet's price on your pet price sheet: {low, high}, or null when it can't be priced.
+    public static long[] petPrice(PetTagObject pet) {
         try {
             int row = PetPrices.rowFor(pet.getTotalPercent() * 100.0);
             int rarity = PetPrices.rarityIndex(PetPanelElement.rarityOf(pet));
