@@ -178,10 +178,21 @@ public class BaitSorterHandler {
                     tag.getStringOr("color", ""),
                     tag.getStringOr("size", ""),
                     amount,
-                    SortPlanner.look(lore, amount)));
+                    SortPlanner.look(lore, amount),
+                    SortPlanner.LURE.equals(tag.getStringOr("type", "")) ? sameData(tag) : ""));
         }
         logLureMisses(found);
         return found;
+    }
+
+    /// What makes a lure the lure it is, from its own data: name, rarity, colour, size, intricacy and water, each as
+    /// read (codes and small capitals made plain). Not how many uses it has left, nor its rolls. Two lures alike in
+    /// these are the same lure; if the server ever won't merge two, the sorter puts the picked-up one back.
+    static String sameData(CompoundTag tag) {
+        StringBuilder b = new StringBuilder();
+        for (String k : SortPlanner.LURE_FIELDS)
+            b.append(k).append('=').append(SortPlanner.plainValue(tag.getStringOr(k, ""))).append('|');
+        return b.toString();
     }
 
     /// Lures that share a name but won't merge, in the log with what tells them apart (their colour, size and
@@ -201,7 +212,7 @@ public class BaitSorterHandler {
                 for (SortPlanner.Entry e : g.getValue())
                     b.append("\n  slot ").append(e.slot()).append(" name=").append(e.name()).append(" color=").append(e.color())
                             .append(" size=").append(e.size()).append(" rarity=").append(e.rarity()).append(" key=").append(e.mergeKey())
-                            .append(" look=").append(e.look().replace("\n", " / "));
+                            .append(" look=").append(e.look().replace("\n", " / ")).append(" data=").append(e.data());
                 if (LOGGED.add(b.toString()) && LOGGED.size() < 200) LoggerHandler.info(b.toString());
             }
         } catch (RuntimeException ignored) {
@@ -209,7 +220,28 @@ public class BaitSorterHandler {
         }
     }
 
+    /// The slot the last group picked up from (-1: none), to put back a lure the server wouldn't merge.
+    private int lastPick = -1;
+    /// Ticks until the check after the last click that nothing is left on the cursor (0: none due).
+    private int finalCheck = 0;
+
+    /// Puts down whatever is on the cursor: where the last group picked it up if that's empty, else in an empty slot
+    /// of yours (a merge the server didn't take leaves the picked-up lure there).
+    private void putBack(Minecraft mc, AbstractContainerMenu menu) {
+        if (mc.player == null || mc.gameMode == null || menu.getCarried().isEmpty()) return;
+        int to = -1;
+        if (lastPick >= 0 && lastPick < menu.slots.size() && menu.slots.get(lastPick).getItem().isEmpty()) to = lastPick;
+        if (to < 0) for (Slot slot : menu.slots)
+            if (slot.container instanceof Inventory && slot.getContainerSlot() < 36 && slot.getItem().isEmpty()) { to = slot.index; break; }
+        if (to < 0) return;
+        mc.gameMode.handleInventoryMouseClick(menu.containerId, to, 0, ClickType.PICKUP, mc.player);
+    }
+
     private void process(Minecraft mc) {
+        if (finalCheck > 0 && --finalCheck == 0 && mc.screen instanceof AbstractContainerScreen<?> open
+                && open.getMenu().containerId == containerId) {
+            putBack(mc, open.getMenu());
+        }
         if (!busy()) {
             return;
         }
@@ -224,6 +256,9 @@ public class BaitSorterHandler {
         if (cooldown-- > 0) {
             return;
         }
+        // a merge the server didn't take (two lures it doesn't count as one) leaves the picked-up one on the cursor:
+        // put it back where it came from (that slot is empty now) before going on
+        putBack(mc, screen.getMenu());
         credit += Configs.keyBindConfig.baitSortClickSpeed.get() / 2.0;
         while (credit >= 1 && busy()) {
             if (queue.isEmpty()) {
@@ -232,11 +267,17 @@ public class BaitSorterHandler {
                     continue;
                 }
             }
-            for (SortPlanner.Click click : queue.poll()) {
+            List<SortPlanner.Click> group = queue.poll();
+            lastPick = group.isEmpty() || group.get(0).shift() ? -1 : group.get(0).slot();
+            for (SortPlanner.Click click : group) {
                 mc.gameMode.handleInventoryMouseClick(containerId, click.slot(), 0,
                         click.shift() ? ClickType.QUICK_MOVE : ClickType.PICKUP, mc.player);
             }
             credit--;
+            if (queue.isEmpty() && stages.isEmpty()) {
+                // the last one: nothing may stay on the cursor (checked once the server has answered)
+                finalCheck = 3;
+            }
             if (queue.isEmpty()) {
                 cooldown = TICKS_BETWEEN_STAGES;
                 credit = 0;

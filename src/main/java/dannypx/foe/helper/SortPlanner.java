@@ -31,7 +31,11 @@ public final class SortPlanner {
     /// {@code amount} is how many baits (or lure uses) the stack holds, for sorting by amount.
     /// {@code look} is what the item's tooltip says apart from how many it holds (see {@link #look}): a lure the server
     /// gives no colour or size (a Volcano Popper) still merges with one whose name and tooltip are the same.
-    public record Entry(int slot, String type, String name, String rarity, String color, String size, int amount, String look) {
+    public record Entry(int slot, String type, String name, String rarity, String color, String size, int amount, String look, String data) {
+        public Entry(int slot, String type, String name, String rarity, String color, String size, int amount, String look) {
+            this(slot, type, name, rarity, color, size, amount, look, "");
+        }
+
         public Entry(int slot, String type, String name, String rarity) {
             this(slot, type, name, rarity, "", "", 0, "");
         }
@@ -47,6 +51,9 @@ public final class SortPlanner {
         /// What must be equal for two entries to merge, or null when this entry never merges.
         public String mergeKey() {
             if (BAIT.equals(type)) return name;
+            // a lure's own data, what makes it that lure ({@link #LURE_FIELDS}): two alike are one lure, whatever their
+            // tooltips say (their uses-left lines are in small capitals, which the tooltip compare didn't see past)
+            if (LURE.equals(type) && data != null && !data.isEmpty()) return "data|" + data;
             // a lure's name, colour and size each as read, whatever codes the server wrote them with (older and newer
             // lures write them differently, and only the colour used to be read past its codes)
             String n = plainColor(name), c = plainColor(color), z = plainColor(size);
@@ -68,6 +75,17 @@ public final class SortPlanner {
             if (amount > 0 && (" " + t.replace(",", "") + " ").matches(".*[^0-9.]" + n + "[^0-9.].*")) continue;
             b.append(t).append('\n');
         }
+        return b.toString();
+    }
+
+    /// The fields of a lure's data that say which lure it is (not how many uses it has left, nor its rolls).
+    public static final List<String> LURE_FIELDS = List.of("name", "rarity", "color", "size", "intricacy", "water");
+
+    /// A text value as compared between two lures: as read (codes and small capitals made plain, see {@link #plainColor}).
+    public static String plainValue(String value) {
+        String t = plainColor(value);
+        StringBuilder b = new StringBuilder(t.length());
+        t.codePoints().forEach(cp -> b.appendCodePoint(cp < 0x10000 ? Character.toLowerCase(TextHelper.normalLetter((char) cp)) : cp));
         return b.toString();
     }
 
