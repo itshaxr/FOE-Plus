@@ -371,15 +371,16 @@ public class PetPanelElement extends PanelElement {
         int start = x + font.width(text.substring(0, at)) + gap;
         int width = font.width(BAR) - gap * 2;
         if (text.length() == at + BAR.length()) width = Math.max(width, lineRightEdge - start);
-        if (GameXpBar.gameStyle()) drawGameBar(g, start, y, width, shownFraction);
-        else drawBar(g, start, y + 3, width, shownFraction, 0xFF7CF07C, 0xFF2EA043, true, 2);
+        int c = GameXpBar.colour(dannypx.foe.config.Configs.hudConfig.petPanelXpBarColor::get);
+        if (GameXpBar.gameStyle()) drawGameBar(g, start, y, width, shownFraction, c);
+        else drawBar(g, start, y + 3, width, shownFraction, GameXpBar.foeLight(0xFF7CF07C, c), GameXpBar.foeDark(0xFF2EA043, c), true, 2);
     }
 
     /// The game's own XP bar, as in the pet's tooltip (a struck-through line, teal over dark grey, with the
     /// text's shadow), but filled to the exact pixel so it slides instead of jumping a space at a time.
-    static void drawGameBar(GuiGraphics g, int x, int y, int w, float fraction) {
+    static void drawGameBar(GuiGraphics g, int x, int y, int w, float fraction, int c) {
         int fill = Math.round(w * Math.max(0f, Math.min(1f, fraction)));
-        int teal = 0xFF000000 | GameXpBar.FILL, grey = 0xFF555555;
+        int teal = 0xFF000000 | GameXpBar.fill(c), grey = 0xFF555555;
         g.pose().pushMatrix();
         g.pose().translate(0f, 0.5f);               // where the font draws a strikethrough
         g.fill(x + 1, y + 4, x + w + 1, y + 5, shadow(grey));

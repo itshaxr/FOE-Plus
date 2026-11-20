@@ -22,6 +22,9 @@ public class ModUserType {
     /// Your 3D bobber preset ({'B', id}), so FOE+ users see each other's bobbers. A preset an
     /// older version doesn't have shows as Classic there.
     private static final int BOBBER_TYPE = 45;
+    /// Your + in a colour of your own: 'R', 1 (or 0 for none), red, green, blue. FOE+ versions before it only read
+    /// the list colour sent with it ({@link #COLOR_TYPE}), the nearest one.
+    private static final int CUSTOM_COLOR_TYPE = 46;
     private static final Map<UUID, dannypx.foe.type.BobberStyle> bobberStyles = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final double NEARBY_RANGE = 24.0;
@@ -47,6 +50,7 @@ public class ModUserType {
         NearbyDispatcher.register(FOE_PLUS_TYPE, ModUserType::onReceiveFoePlus);
         NearbyDispatcher.register(COLOR_TYPE, ModUserType::onReceiveColor);
         NearbyDispatcher.register(BOBBER_TYPE, ModUserType::onReceiveBobber);
+        NearbyDispatcher.register(CUSTOM_COLOR_TYPE, ModUserType::onReceiveCustomColor);
         ClientTickEvents.END_CLIENT_TICK.register(ModUserType::tick);
     }
 
@@ -102,7 +106,19 @@ public class ModUserType {
         NearbyDispatcher.queue(PACKET_TYPE, new byte[]{1});
         NearbyDispatcher.queue(FOE_PLUS_TYPE, FOE_PLUS_PAYLOAD);
         NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+        NearbyDispatcher.queue(CUSTOM_COLOR_TYPE, customColorPayload());
         NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
+    }
+
+    private static byte[] customColorPayload() {
+        int rgb = dannypx.foe.screens.element.hud.GameXpBar.parse(dannypx.foe.config.Configs.rendererConfig.foePlusCustomColor.get());
+        return rgb < 0 ? new byte[]{'R', 0, 0, 0, 0} : new byte[]{'R', 1, (byte) (rgb >> 16), (byte) (rgb >> 8), (byte) rgb};
+    }
+
+    private static void onReceiveCustomColor(UUID sender, byte[] payload) {
+        if (payload.length != 5 || payload[0] != 'R') return;
+        int rgb = payload[1] == 0 ? -1 : (payload[2] & 0xFF) << 16 | (payload[3] & 0xFF) << 8 | (payload[4] & 0xFF);
+        TextDisplayHandler.instance().setFoePlusRgb(sender, rgb);
     }
 
     private static byte[] bobberPayload() {
@@ -135,6 +151,7 @@ public class ModUserType {
     public static void announceColor() {
         if (!ConnectionHandler.instance().isOnServer()) return;
         NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+        NearbyDispatcher.queue(CUSTOM_COLOR_TYPE, customColorPayload());
     }
 
     private static void onReceiveColor(UUID sender, byte[] payload) {
@@ -162,6 +179,7 @@ public class ModUserType {
             NearbyDispatcher.queue(PACKET_TYPE, new byte[]{1});
             NearbyDispatcher.queue(FOE_PLUS_TYPE, FOE_PLUS_PAYLOAD);
             NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
+            NearbyDispatcher.queue(CUSTOM_COLOR_TYPE, customColorPayload());
             NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
         }
     }

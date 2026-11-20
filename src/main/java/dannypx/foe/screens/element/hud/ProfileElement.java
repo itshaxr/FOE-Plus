@@ -108,7 +108,8 @@ public class ProfileElement extends Element {
         int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
         PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
         int bx = lx + font.width(level) + 4;
-        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFFFFD866, 0xFFD9901A);
+        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFFFFD866, 0xFFD9901A,
+                GameXpBar.colour(dannypx.foe.config.Configs.hudConfig.profileElementXpBarColor::get));
         g.drawString(font, percent, bx + BAR_W + 4, y + 18, 0xFFFFFFFF, true);
         FoeRBoxes.text(g, font, money, moneyX, y + 33, right);
 

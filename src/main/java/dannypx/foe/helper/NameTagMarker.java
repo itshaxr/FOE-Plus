@@ -23,6 +23,24 @@ public final class NameTagMarker {
             net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "plus"));
     public static final String PLUS_GLYPH = "\uE002";
 
+    /// The + in any colour (RGB): a colour picked on the colour wheel.
+    public static Component rgbMarker(int rgb) {
+        return plus(rgb & 0xFFFFFF);
+    }
+
+    /// The list colour nearest to `rgb` (for FOE+ versions that only know the list).
+    public static int nearestListColor(int rgb) {
+        int best = 0;
+        long bestD = Long.MAX_VALUE;
+        for (int i = 0; i < PLUS_COLORS.size(); i++) {
+            int c = PLUS_COLORS.get(i).rgb();
+            long dr = (c >> 16 & 255) - (rgb >> 16 & 255), dg = (c >> 8 & 255) - (rgb >> 8 & 255), db = (c & 255) - (rgb & 255);
+            long d = dr * dr * 3 + dg * dg * 4 + db * db * 2;
+            if (d < bestD) { bestD = d; best = i; }
+        }
+        return best;
+    }
+
     private static Component plus(int rgb) {
         return Component.literal(PLUS_GLYPH).withStyle(style -> style.withFont(PLUS_FONT).withColor(rgb));
     }

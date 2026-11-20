@@ -66,7 +66,6 @@ public class SoundsScreen extends Screen {
     private int customTab = 0;
     /// Small grey headings on the right side ({x, y} and the words), drawn with the page.
     private final List<Object[]> labels = new ArrayList<>();
-    static final int[] WORD_COLORS = {0xFFD866, 0xFF5555, 0x55FF55, 0x55FFFF, 0x5599FF, 0xFF55FF, 0xFFAA00, 0xFFFFFF};
     static final int[] COOLDOWNS = {0, 1, 3, 5, 10, 30, 60};
     static final int MAX_TRIGGERS = 4, MAX_EXCEPTIONS = 3;
     private String typed = null;
@@ -357,12 +356,14 @@ public class SoundsScreen extends Screen {
                 .bounds(x, y, w, 15).build());
         y += 19;
         int bw = (w - 6) / 3;
-        addRenderableWidget(Button.builder(Component.literal("Colour ■").withColor(c.wordColor & 0xFFFFFF), b -> {
-            int i = 0;
-            while (i < WORD_COLORS.length && WORD_COLORS[i] != c.wordColor) i++;
-            c.wordColor = WORD_COLORS[(i + 1) % WORD_COLORS.length];
-            NotifySounds.save(); rebuildWidgets();
-        }).bounds(x, y, bw, 15).build());
+        // any colour, on the colour wheel (Default: the gold it starts as)
+        addRenderableWidget(Button.builder(Component.literal("Colour ■").withColor(c.wordColor & 0xFFFFFF), b ->
+                minecraft.setScreen(new ColorPickerScreen(this, "Colour of the words in chat", String.format(java.util.Locale.ROOT, "#%06X", c.wordColor & 0xFFFFFF), 0xFFD866,
+                        hex -> {
+                            int col = dannypx.foe.screens.element.hud.GameXpBar.parse(hex);
+                            c.wordColor = col < 0 ? 0xFFD866 : col;
+                        }, NotifySounds::save))
+        ).bounds(x, y, bw, 15).build());
         addRenderableWidget(Button.builder(onOff("Bold", c.bold), b -> { c.bold = !c.bold; NotifySounds.save(); rebuildWidgets(); }).bounds(x + bw + 3, y, bw, 15).build());
         addRenderableWidget(Button.builder(onOff("Underline", c.underline), b -> { c.underline = !c.underline; NotifySounds.save(); rebuildWidgets(); }).bounds(x + 2 * (bw + 3), y, w - 2 * (bw + 3), 15).build());
         y += 23;

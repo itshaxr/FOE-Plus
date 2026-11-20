@@ -65,8 +65,23 @@ public class DailyQuestPanelElement extends PanelElement {
         return out;
     }
 
+    /// The place names shown now (centred, see centeredLine).
+    /// (Made when first needed: the panel's constructor already asks for its lines, before fields are set.)
+    private java.util.Set<String> places;
+
+    private java.util.Set<String> places() {
+        if (places == null) places = new java.util.HashSet<>();
+        return places;
+    }
+
+    @Override
+    protected boolean centeredLine(Component line) {
+        return Configs.hudConfig.dailyQuestCenterPlaces.get() && places().contains(line.getString());
+    }
+
     @Override
     protected List<Component> lines() {
+        places().clear();
         List<Component> lines = new ArrayList<>();
         if (!DailyQuestHandler.instance().isInitialized()) {
             lines.add(label("ᴏᴘᴇɴ ᴛʜᴇ ᴍᴀɪɴ ᴍᴇɴᴜ ᴛᴏ ʟᴏᴀᴅ"));
@@ -75,7 +90,9 @@ public class DailyQuestPanelElement extends PanelElement {
         String lastSection = "";
         for (DailyQuestHandler.Quest quest : DailyQuestHandler.instance().quests) {
             if (!quest.section.isEmpty() && !quest.section.equals(lastSection)) {
-                lines.add(sectionTitle(quest.section));
+                Component title = sectionTitle(quest.section);
+                places().add(title.getString());
+                lines.add(title);
                 lastSection = quest.section;
             }
             Component prefix = Configs.hudConfig.dailyQuestNumbers.get() ? label("#" + quest.slot + ": ") : Component.empty();
@@ -96,6 +113,8 @@ public class DailyQuestPanelElement extends PanelElement {
 
     @Override
     protected List<Component> previewLines() {
+        places().clear();
+        places().add(sectionTitle("Base Missions").getString());
         return List.of(
                 sectionTitle("Base Missions"),
                 join(Configs.hudConfig.dailyQuestNumbers.get() ? label("#1: ") : Component.empty(), Component.literal("Open the main menu").withStyle(ChatFormatting.GREEN)));

@@ -30,14 +30,15 @@ Press **O** in game to open the FOE+ menu.
 - All-Time Stats: fish, fish/hour, fish time, rarities, Gigantic and variants with dry streaks.
 - Quests, Pet (with held item, XP bar and a **Max Luck / Max Scale** tag), Bait, Luck & Scale (read from your /menu profile, boosters included).
 - Events: Fish Frenzy, Blooming Oasis, Gold Rush, Fabled, boosters, and the weather (rain showers, thunderstorms, supercells, moons) with how long they have left.
-- Timers (moon, Tackle Shop, Cosmetic Store, votes, community goal with catches per hour) and Social (crew and friends online, with the instance they're on).
+- Timers (moon, Tackle Shop, Cosmetic Store, votes), Community Catches (the community goal with catches per hour) and Social (crew and friends online, with the instance they're on).
+- **Combine HUDs:** Shift-drop a HUD onto another in the mover to share one box (Timers and Community Catches start together); change the order, put a part in two columns or split it off with the buttons on each part, or in the HUD Editor's Combine tab.
 - **FOE+ Settings:** every option by category, every HUD in one list with its own settings, and search across everything (*O → All Settings*).
-- **HUD Editor:** change any panel's line spacing, padding, colours, text alignment, or put your own PNG/GIF in it. Each HUD can have its own style (FOE+ or FOE-R), its border turned off, and be turned on or off right there.
+- **HUD Editor:** change any panel's line spacing, padding, colours (any colour, on a colour wheel), text alignment, or put your own PNG/GIF in it. Each HUD can have its own style (FOE+ or FOE-R), its border turned off, and be turned on or off right there.
 - **FOE-R HUD style:** profile, pet and location boxes in place of the top bar, FOE+'s own weather pictures, and a brown FOE-R bottom bar with your rod parts and armour above the hotbar.
 - Chummer: rarity badge, picture and time left (in the top bar, or its own HUD on the FOE-R style).
 - Alerts: Witching Hour, Titanoboa, Rougarou, Garaboncias, Bessie and Fabled events, with timers.
 - Warning box: wrong pet for the location (names the right one), wrong armor climate, inventory almost full. Hide it with `-` until you move.
-- Top bar (level in your chat colours, location in the travel menu's colours, spot, weather, time, balance, credits, catches, TPS & ping; every part can be turned off), equipment bar, catch popup, catch ring, moon timer (inventory screen).
+- Top bar (level in your chat colours, location in the travel menu's colours, spot, weather, time, balance, credits, catches, TPS & ping; every part can be turned off), equipment bar, catch popup, catch ring (blue as your fish swims to the bobber, green as you reel in; other players' fish trails hidden), moon timer (inventory screen). XP bars in any colour, per HUD.
 
 <p align="center">
   <img src="docs/images/foe-plus-panels.png" alt="FOE+ Events and Timers panels" width="560"><br>
@@ -55,6 +56,7 @@ Press **O** in game to open the FOE+ menu.
 **Tools**
 - Bait sorter (`B`): merges every copy of a bait or lure (mythical too) between your inventory and the vault, then sorts. **Save Layout** in the vault: arrange a page your way and `B` puts everything back there.
 - Personal Vault and chests: page buttons, Bait, Armor and Pet Sorter boxes, and what the fish (or bait) inside are worth.
+- Trade value: what each side of a trade puts in, and what you gain or lose by it.
 - Bait Prices: your own price for each rarity and any single bait; baitbox totals and stack values use it.
 - Rod part icons: a small icon for what each rod part (or each part of a rod) is calibrated for, purple when it's rolled at its max.
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
@@ -62,7 +64,7 @@ Press **O** in game to open the FOE+ menu.
 - Sounds (*O → Tools → Sounds*): change every FOE+ sound (fish bite included) and add your own chat triggers with match modes, exceptions, cooldowns, coloured words, a title on screen and a taskbar flash.
 - Bobbers: 36 colour sets for the 3D bobber with previews (*O → Bobber*); other FOE+ users see yours.
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.
-- `+` (or the FOE+ icon) after the names of nearby FOE+ users, and in the tab list.
+- `+` (or the FOE+ icon) after the names of nearby FOE+ users, and in the tab list, in any colour you pick.
 - Friends (`/foe friend` or O → Social): add friends, see their balance and crew, join their instance.
 
 **Stats**

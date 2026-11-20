@@ -45,6 +45,9 @@ public final class HudLooks {
         /// left, numbers lined up on the right) instead of as sentences.
         public String title = "";
         public boolean columns = false;
+        /// Its lines split into two columns side by side (half on the left, the rest on the right), for HUDs of many
+        /// short lines (the quests).
+        public boolean twoColumns = false;
         /// Your own picture in the box (a file in config/fishonmcextras/hud_images, "" for none): its size (percent of
         /// the box's width), where it sits (percent across and down the room left), how solid it is, whether it goes
         /// over the text or behind it, and whether it fills the whole box (a background).
@@ -73,7 +76,7 @@ public final class HudLooks {
         public boolean isDefault() {
             return lineSpacing == 2 && padding == 0 && boxColor == 0 && opacity == -1 && borderColor == 0xFFFFFF
                     && titleColor == -1 && "AUTO".equals(align) && picture.isEmpty() && hidden.isEmpty()
-                    && (title == null || title.isEmpty()) && !columns && (image == null || image.isEmpty())
+                    && (title == null || title.isEmpty()) && !columns && !twoColumns && (image == null || image.isEmpty())
                 && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode());
         }
 
@@ -129,7 +132,7 @@ public final class HudLooks {
     private static void copyInto(Look from, Look to) {
         to.lineSpacing = from.lineSpacing; to.padding = from.padding; to.boxColor = from.boxColor; to.opacity = from.opacity;
         to.borderColor = from.borderColor; to.titleColor = from.titleColor; to.align = from.align; to.picture = from.picture;
-        to.title = from.title; to.columns = from.columns; to.hidden = new ArrayList<>(from.hidden);
+        to.title = from.title; to.columns = from.columns; to.twoColumns = from.twoColumns; to.hidden = new ArrayList<>(from.hidden);
         to.image = from.image; to.imageSize = from.imageSize; to.imageX = from.imageX; to.imageY = from.imageY;
         to.imageOpacity = from.imageOpacity; to.imageInFront = from.imageInFront; to.imageFill = from.imageFill;
         to.style = from.style; to.border = from.border; to.frame = from.frame;
@@ -162,5 +165,19 @@ public final class HudLooks {
         String k = t.substring(0, cut).strip();
         if (k.isEmpty()) k = t.length() > 16 ? t.substring(0, 16) : t;
         return k.toLowerCase(Locale.ROOT);
+    }
+
+    /// Each line's label, as {@link #key}, but where several lines share one (eight "Epic 3/30" quests) the second on
+    /// are told apart by their place ("epic #2"), so each can be hidden on its own. Blank lines get null.
+    public static List<String> keys(List<String> texts) {
+        List<String> out = new ArrayList<>(texts.size());
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        for (String t : texts) {
+            if (t == null || t.isBlank()) { out.add(null); continue; }
+            String k = key(t);
+            int n = seen.merge(k, 1, Integer::sum);
+            out.add(n == 1 ? k : k + " #" + n);
+        }
+        return out;
     }
 }

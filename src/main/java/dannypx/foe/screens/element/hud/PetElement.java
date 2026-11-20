@@ -162,7 +162,8 @@ public class PetElement extends Element {
         int lx = right ? railX - FoeRBoxes.TEXT_IN - levelW : railX + FoeRBoxes.TEXT_IN;
         PanelElement.drawText(g, font, level.getVisualOrderText(), lx, y + 18);
         int bx = lx + font.width(level) + 4;
-        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043);
+        FoeRBoxes.levelBar(g, bx, y + 21, BAR_W, progress, 0xFF7CF07C, 0xFF2EA043,
+                GameXpBar.colour(dannypx.foe.config.Configs.hudConfig.petElementXpBarColor::get));
         PanelElement.drawText(g, font, after.getVisualOrderText(), bx + BAR_W + 4, y + 18);
         return Math.max(FoeRBoxes.BOX + Math.max(rail1, rail2), rail3 == 0 ? 0 : 6 + rail3);
     }

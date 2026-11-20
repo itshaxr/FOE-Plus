@@ -39,6 +39,9 @@ public abstract class PanelElement extends Element {
         if (font != null) this.updateSize(this.buildLines(), font);
     }
 
+    /// Shown in its own place even when it's inside another HUD (the HUD Editor's preview of it).
+    public boolean showAlone = false;
+
     /// This panel's look from the HUD Editor (spacing, colours, picture, hidden lines).
     public String lookId() {
         return this.getClass().getSimpleName();
@@ -71,7 +74,8 @@ public abstract class PanelElement extends Element {
     static List<Component> withoutHidden(List<Component> lines, List<String> hidden) {
         if (hidden == null || hidden.isEmpty()) return lines;
         List<Component> out = new ArrayList<>();
-        for (Component l : lines) if (l.getString().isBlank() || !hidden.contains(dannypx.foe.handler.store.HudLooks.key(l.getString()))) out.add(l);
+        List<String> keys = dannypx.foe.handler.store.HudLooks.keys(lines.stream().map(Component::getString).toList());
+        for (int i = 0; i < lines.size(); i++) if (keys.get(i) == null || !hidden.contains(keys.get(i))) out.add(lines.get(i));
         // No two blank lines in a row where something was hidden between them.
         List<Component> tidy = new ArrayList<>();
         for (Component l : out) {
@@ -234,6 +238,27 @@ public abstract class PanelElement extends Element {
     /// A box's frame drawn on the screen's own pixels: the same thickness on all four sides at any panel or GUI
     /// scale (a plain outline at an in-between scale comes out thicker on some sides than others), and thin: half
     /// a panel pixel, never less than one screen pixel.
+    /// An item as big as fits in `size` panel units at (x, y), centred there, each of its pixels a whole number of
+    /// screen pixels and placed on the screen's own pixels.
+    static void crispItem(GuiGraphics g, net.minecraft.world.item.ItemStack stack, int x, int y, int size) {
+        var pose = g.pose();
+        org.joml.Vector2f a = pose.transformPosition(x, y, new org.joml.Vector2f());
+        org.joml.Vector2f b = pose.transformPosition(x + size, y + size, new org.joml.Vector2f());
+        double gui = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale();
+        double screenSize = (b.x - a.x) * gui;
+        int perTexel = Math.max(1, (int) Math.floor(screenSize / 16.0 + 0.0001));
+        int drawn = perTexel * 16;
+        int sx = (int) Math.round(a.x * gui + (screenSize - drawn) / 2.0);
+        int sy = (int) Math.round(a.y * gui + ((b.y - a.y) * gui - drawn) / 2.0);
+        pose.pushMatrix();
+        pose.identity();
+        pose.scale((float) (1.0 / gui), (float) (1.0 / gui));
+        pose.translate(sx, sy);
+        pose.scale(perTexel, perTexel);
+        g.renderItem(stack, 0, 0);
+        pose.popMatrix();
+    }
+
     static void crispOutline(GuiGraphics g, int x, int y, int w, int h, int color) {
         var pose = g.pose();
         org.joml.Vector2f a = pose.transformPosition(x, y, new org.joml.Vector2f());
@@ -242,7 +267,8 @@ public abstract class PanelElement extends Element {
         int ax = (int) Math.round(a.x * gui), ay = (int) Math.round(a.y * gui);
         int bx = (int) Math.round(b.x * gui), by = (int) Math.round(b.y * gui);
         double perPixel = (b.x - a.x) * gui / Math.max(1, w);
-        int t = Math.max(1, (int) Math.floor(perPixel * 0.5 + 0.0001));
+        // a whole panel pixel thick (it was half one, and looked thin next to the item)
+        int t = Math.max(1, (int) Math.round(perPixel));
         pose.pushMatrix();
         pose.identity();
         pose.scale((float) (1.0 / gui), (float) (1.0 / gui));
@@ -289,15 +315,94 @@ public abstract class PanelElement extends Element {
     }
     //endregion
 
-    private List<Component> buildLines() {
+    /// This HUD's own lines as it shows them (its hidden ones left out, no blank lines at the ends), without its title:
+    /// what it brings to a HUD it's inside.
+    List<Component> partLines() {
         List<Component> lines = new ArrayList<>();
         if (isCopy || LoadingHandler.instance().isLoadingDone()) lines.addAll(this.lines());
         if (lines.isEmpty() && isCopy) lines.addAll(this.previewLines());
         lines = new ArrayList<>(withoutHidden(lines, look().hidden));
-        if (tiny) lines.replaceAll(l -> isRule(l) ? l : tinyText(l));
-        // Trim blank lines at the ends.
         while (!lines.isEmpty() && lines.getFirst().getString().isBlank()) lines.removeFirst();
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
+        return lines;
+    }
+
+    /// The HUD each line inside this one came from (the HUDs combined into it), so it draws its own bars.
+    private final java.util.Map<Component, PanelElement> lineOwners = new java.util.IdentityHashMap<>();
+
+    private static final String PAIR_KEY = "foe:pair";
+    /// The room between the two columns of a HUD split in two.
+    static final int PAIR_GAP = 10;
+
+    /// Whether this line is two lines side by side (a HUD in two columns): never cut into name and number columns.
+    static boolean isPair(Component line) {
+        return PAIR_KEY.equals(line.getStyle().getInsertion());
+    }
+
+    /// Package-private for tests: the lines in two columns, the first half on the left and the rest on the right, the
+    /// right ones all starting at the same place. Left as they are when there are too few, or when one is a line
+    /// across, has its own right-hand part or a picture (those are drawn by where they are in the line).
+    static List<Component> twoColumns(List<Component> lines, java.util.function.ToIntFunction<Component> width) {
+        if (lines.size() < 3) return lines;
+        for (Component l : lines) if (isRule(l) || l.getString().indexOf('\t') >= 0 || hasInline(l)) return lines;
+        int half = (lines.size() + 1) / 2;
+        int leftMax = 0;
+        for (int i = 0; i < half; i++) leftMax = Math.max(leftMax, width.applyAsInt(lines.get(i)));
+        List<Component> out = new ArrayList<>(half);
+        for (int i = 0; i < half; i++) {
+            Component left = lines.get(i);
+            if (i + half >= lines.size()) { out.add(left); continue; }
+            int pad = leftMax - width.applyAsInt(left) + PAIR_GAP;
+            out.add(Component.empty().withStyle(st -> st.withInsertion(PAIR_KEY)).append(left)
+                    .append(Component.literal("".repeat(Math.max(1, pad))).withStyle(st -> st.withFont(PAIR_SPACE)))
+                    .append(lines.get(i + half)));
+        }
+        return out;
+    }
+
+    /// FOE+'s one-pixel space (font fishonmcextras:gap_one), to line the right column up to the pixel.
+    private static final net.minecraft.network.chat.FontDescription PAIR_SPACE = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "gap_one"));
+
+    /// A HUD's lines as it brings them here: in two columns when it's set to (not at the tiny size, whose letters
+    /// are narrower than the spaces lining them up).
+    private List<Component> laidOut(PanelElement part, List<Component> lines) {
+        if (tiny || !part.look().twoColumns) return lines;
+        Font font = Minecraft.getInstance().font;
+        return twoColumns(lines, font::width);
+    }
+
+    /// Where each HUD inside this one is in it, as last drawn (screen units): its id and the line with its title
+    /// ({x, y, w, h}), for the HUD mover's buttons. The first is this HUD's own (its title at the top).
+    public final List<Section> sections = new ArrayList<>();
+    public record Section(String id, int x, int y, int w, int h) {}
+    /// The HUD each titled line across is the start of.
+    private final java.util.Map<Component, String> ruleIds = new java.util.IdentityHashMap<>();
+
+    private void noteSection(String id, int x, int y, int w, int h) {
+        sections.add(new Section(id, Math.round(x * drawScale), Math.round(y * drawScale), Math.round(w * drawScale), Math.round(h * drawScale)));
+    }
+
+    private List<Component> buildLines() {
+        ruleIds.clear();
+        List<Component> lines = new ArrayList<>(laidOut(this, partLines()));
+        // the HUDs inside this one, each under a line with its title
+        List<PanelElement> owners = new ArrayList<>(java.util.Collections.nCopies(lines.size(), (PanelElement) null));
+        for (String id : HudCombine.members(lookId())) {
+            PanelElement part = HudCombine.part(id, isCopy);
+            if (part == null || !part.enabled()) continue;
+            List<Component> more = laidOut(part, part.partLines());
+            if (more.isEmpty()) continue;
+            Component rule = titledRule(part.shownTitle().getString());
+            ruleIds.put(rule, id);
+            lines.add(rule);
+            owners.add(null);
+            lines.addAll(more);
+            for (int i = 0; i < more.size(); i++) owners.add(part);
+        }
+        if (tiny) lines.replaceAll(l -> isRule(l) ? l : tinyText(l));
+        lineOwners.clear();
+        for (int i = 0; i < lines.size(); i++) if (owners.get(i) != null) lineOwners.put(lines.get(i), owners.get(i));
         if (!lines.isEmpty() && foeR()) {
             lines.addFirst(foeRTitle(shownTitle()));
         } else if (!lines.isEmpty() && theme(look()) == PanelTheme.OFF) {
@@ -358,14 +463,14 @@ public abstract class PanelElement extends Element {
 
     /// Package-private for tests: a two-part line as one ("Lofoten Islands  17:57"), or just the first part when the
     /// second is empty.
-    static Component joinTab(Component[] parts) {
+    public static Component joinTab(Component[] parts) {
         if (parts[1].getString().isBlank()) return parts[0];
         if (parts[0].getString().isBlank()) return parts[1];
         return Component.empty().append(parts[0]).append(Component.literal("  ")).append(parts[1]);
     }
 
     /// The parts of a line on either side of its TAB, or null when it has none.
-    static Component[] tabParts(Component line) {
+    public static Component[] tabParts(Component line) {
         String t = line.getString();
         int i = t.indexOf('\t');
         return i < 0 ? null : new Component[]{slice(line, 0, i), slice(line, i + 1, t.length())};
@@ -504,6 +609,12 @@ public abstract class PanelElement extends Element {
     @Override
     public void render(GuiGraphics guiGraphics) {
         if (!enabled()) return;
+        // inside another HUD (that's showing): it shows there, not in its own place (but in the HUD Editor's preview)
+        if (!showAlone && HudCombine.shownInHost(lookId())) {
+            this.width = 0;
+            this.height = 0;
+            return;
+        }
 
         Minecraft minecraft = Minecraft.getInstance();
         Font font = minecraft.font;
@@ -606,7 +717,7 @@ public abstract class PanelElement extends Element {
             p.tab0W = font.width(p.tab0);
             p.tab1W = font.width(p.tab1);
         } else {
-            p.cols = columns && !p.inline ? split(shown) : null;
+            p.cols = columns && !p.inline && !isPair(shown) ? split(shown) : null;
             if (p.cols != null) {
                 p.label = p.cols.label().getVisualOrderText();
                 p.value = p.cols.value().getVisualOrderText();
@@ -638,6 +749,8 @@ public abstract class PanelElement extends Element {
         contentLeft += pad;
         contentRight += pad;
         if (preparedPicRoom < 0) preparedPicRoom = picRoom(lines);
+        sections.clear();
+        noteSection(lookId(), contentLeft - pad, top - PADDING - 4, contentRight - contentLeft + pad * 2, 12);
         int innerHeight = Math.max((lines.size() - 1) * lineHeight + pad * 2 + preparedPicRoom, iconInnerHeight(font));
 
         int opacity = look.opacity >= 0 ? look.opacity : opacityPercent();
@@ -730,17 +843,9 @@ public abstract class PanelElement extends Element {
                     guiGraphics.fill(x + 1, iconBoxY + 1, x + ICON_SIZE - 1, iconBoxY + ICON_SIZE - 1, 0x55000000);
                     guiGraphics.drawString(font, "-", x + (ICON_SIZE - font.width("-")) / 2, iconBoxY + (ICON_SIZE - font.lineHeight) / 2 + 1, 0xFF777777, false);
                 } else {
-                    if (ICON_SIZE == 18) {
-                        guiGraphics.renderItem(icon.stack(), x + 1, iconBoxY + 1);
-                    } else {
-                        // a bigger box: the item scaled up, a pixel clear of the frame all round
-                        float itemScale = (ICON_SIZE - 4) / 16f;
-                        guiGraphics.pose().pushMatrix();
-                        guiGraphics.pose().translate(x + 2, iconBoxY + 2);
-                        guiGraphics.pose().scale(itemScale, itemScale);
-                        guiGraphics.renderItem(icon.stack(), 0, 0);
-                        guiGraphics.pose().popMatrix();
-                    }
+                    // inside the frame with a pixel clear all round, every pixel of the item a whole number
+                    // of screen pixels (at an in-between size it came out uneven and blurry)
+                    crispItem(guiGraphics, icon.stack(), x + 2, iconBoxY + 2, ICON_SIZE - 4);
                 }
                 frames.add(new int[]{x, iconBoxY, icon.borderColor()});
                 x += ICON_SIZE + ICON_GAP;
@@ -764,6 +869,8 @@ public abstract class PanelElement extends Element {
                 String ruleTitle = ruleTitle(line);
                 // a titled line sits a little lower, with room above its badge
                 int ry = y + lineHeight / 2 - 1 + (ruleTitle.isEmpty() ? 0 : RULE_TITLE_ABOVE);
+                String partId = ruleIds.get(line);
+                if (partId != null) noteSection(partId, textLeft, ry - 6, textRightEdge - textLeft, 13);
                 if (ruleTitle.isEmpty()) {
                     guiGraphics.fill(textLeft, ry, textRightEdge, ry + 1, 0x66FFFFFF);
                 } else {
@@ -777,7 +884,8 @@ public abstract class PanelElement extends Element {
                         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_left"), tx - 16, ry - 7, 16, 16, white);
                         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_middle"), tx, ry - 7, tw, 16, white);
                         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_right"), tx + tw, ry - 7, 16, 16, white);
-                        guiGraphics.drawString(font, t, tx, ry + 1 - font.lineHeight / 2, 0xFFFFFFFF, false);
+                        // the same 3 pixels below the plate's top as the HUD's own title (4 sat it low in its plate)
+                        guiGraphics.drawString(font, t, tx, ry - font.lineHeight / 2, 0xFFFFFFFF, false);
                     } else {
                         guiGraphics.fill(textLeft, ry, tx - 4, ry + 1, 0x66FFFFFF);
                         guiGraphics.fill(tx + tw + 4, ry, textRightEdge, ry + 1, 0x66FFFFFF);
@@ -798,6 +906,7 @@ public abstract class PanelElement extends Element {
                 continue;
             }
             first = false;
+            PanelElement owner = lineOwners.getOrDefault(line, this);
             Prep pr = prep(line, font, look.columns, look.textAlign() == dannypx.foe.type.TextAlign.AUTO);
             if (pr.joined != null) line = pr.joined;
             int room = !tiny && pr.inline ? PIC_ROOM : 0;
@@ -824,9 +933,11 @@ public abstract class PanelElement extends Element {
                 y += lineHeight;
                 continue;
             }
-            int x = lineX(align, centerText(), textRight, textLeft, textRightEdge, pr.width);
+            int x = owner.centeredLine(line) ? textLeft + (textRightEdge - textLeft - pr.width) / 2
+                    : lineX(align, centerText(), textRight, textLeft, textRightEdge, pr.width);
             this.lineRightEdge = textRightEdge;
-            this.beforeLine(guiGraphics, font, line, x, y);
+            owner.lineRightEdge = textRightEdge;
+            owner.beforeLine(guiGraphics, font, line, x, y);
             if (pr.inline) drawInline(guiGraphics, font, line, x, y);
             drawText(guiGraphics, font, pr.seq, x, y);
             if (pr.hover) HudHover.note(x, y, pr.width, lineHeight, drawScale, line);
@@ -860,6 +971,11 @@ public abstract class PanelElement extends Element {
 
     /// The titled line is given this much more room, so its badge clears the lines above and below.
     static final int RULE_TITLE_ROOM = 7, RULE_TITLE_ABOVE = 3;
+
+    /// A line always centred, whatever the text alignment (the daily quests' place names).
+    protected boolean centeredLine(Component line) {
+        return false;
+    }
 
     /// The FOE+ border this HUD is drawn with (OFF: none): Info panel border style for every HUD, unless this HUD's
     /// own Border is On (then that style, or Clean rounded when it's Off) or Off.

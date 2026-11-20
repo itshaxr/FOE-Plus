@@ -269,10 +269,11 @@ public class TopBarElement extends Element {
                     .append(Component.literal("]").withStyle(ChatFormatting.DARK_GRAY));
         }
         if (!withBar || !cfg.topBarShowLevelBar.get()) return out;
+        int barColour = GameXpBar.colour(cfg.topBarXpBarColor::get);
         if (!out.getSiblings().isEmpty()) out.append(Component.literal(" "));
         return out
-                .append(GameXpBar.gameStyle() ? GameXpBar.bar(progress, 20) : Component.empty()
-                        .append(Component.literal(" ".repeat(filled)).withStyle(ChatFormatting.GREEN, ChatFormatting.STRIKETHROUGH))
+                .append(GameXpBar.gameStyle() ? GameXpBar.bar(progress, 20, barColour) : Component.empty()
+                        .append(Component.literal(" ".repeat(filled)).withStyle(s -> s.withColor(barColour < 0 ? 0x55FF55 : barColour).withStrikethrough(true)))
                         .append(Component.literal(" ".repeat(20 - filled)).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.STRIKETHROUGH)))
                 .append(Component.literal(" (").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.literal(Math.round(progress * 100) + "%").withStyle(ChatFormatting.GRAY))

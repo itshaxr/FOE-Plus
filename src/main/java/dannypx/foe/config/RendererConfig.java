@@ -87,6 +87,10 @@ public class RendererConfig extends Config {
     @Desc("§7The colour of the + after your name, for everyone with FOE+ (pick it in the O menu). -1 = default")
     public ValidatedInt foePlusColor = new ValidatedInt(-1, 16, -1);
 
+    /// Your + in a colour of your own from the colour wheel ("#FF77CC"; "" for one from the list). Picked in the O
+    /// menu, so it has no line of its own in the settings.
+    public ValidatedString foePlusCustomColor = new ValidatedString("");
+
     @Name("Clean tab list tags")
     @Desc("§7Show rank tags in the tab list as FOE's compact lettered squares")
     public ValidatedBoolean cleanTabListTags = new ValidatedBoolean(true);

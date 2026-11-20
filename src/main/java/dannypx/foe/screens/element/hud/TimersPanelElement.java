@@ -55,7 +55,8 @@ public class TimersPanelElement extends PanelElement {
     protected List<Component> lines() {
         // the timers, then the community catches under a line; your crew and friends have their own panel
         CrewPanelElement.splitOnce();
-        return withCommunity(TimersCrewBox.timers(), Configs.hudConfig.timersShowCommunity.get() ? community().lines() : List.of());
+        // the community catches are their own HUD now (inside this one to start with: see HudCombine)
+        return TimersCrewBox.timers();
     }
 
     /// Package-private for tests: the timers, a line, then the community catches (no line when either is missing).
@@ -67,13 +68,9 @@ public class TimersPanelElement extends PanelElement {
         return out;
     }
 
-    @Override
-    protected void beforeLine(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.gui.Font font, Component line, int x, int y) {
-        community().beforeLine(g, font, line, x, y);
-    }
 
     @Override
     protected List<Component> previewLines() {
-        return withCommunity(TimersCrewBox.timers(), Configs.hudConfig.timersShowCommunity.get() ? community().previewLines() : List.of());
+        return TimersCrewBox.timers();
     }
 }

@@ -82,7 +82,7 @@ public class EventsPanelElement extends PanelElement {
 
     /// " · Shards 1 in 25": what the event does, unless descriptions are turned off.
     private static Component description(String text) {
-        if (!Configs.hudConfig.eventsShowDescriptions.get()) return Component.empty();
+        if (!Configs.hudConfig.eventsDescriptions.get()) return Component.empty();
         return join(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                 Component.literal(text).withStyle(ChatFormatting.GRAY));
     }

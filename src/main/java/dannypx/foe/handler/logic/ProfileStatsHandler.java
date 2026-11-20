@@ -80,6 +80,9 @@ public class ProfileStatsHandler {
         fishTimeSynced = false;
         fishTimeRequestedAt = 0L;
         joinedAt = 0L;
+        // the first place seen after joining is read at once (Luck & Scale, Daily Quests), even the same as before
+        locationKnown = false;
+        lastLocation = null;
     }
 
     private boolean luckBoosted = false, scaleBoosted = false;
@@ -166,12 +169,15 @@ public class ProfileStatsHandler {
     //region Auto refresh on location change
     /// Wait after arriving, so the server has applied the new location's bonuses.
     private static final long ARRIVAL_DELAY_MS = 3_000L;
+    /// The first read after joining.
+    private static final long FIRST_READ_DELAY_MS = 1_000L;
     private FoeLocations.Location lastLocation = null;
     private boolean locationKnown = false;
 
     private void tickAutoRefresh(Minecraft mc) {
         FoeLocations.Location here = PetLocationHandler.currentLocation();
         if (locationKnown && here == lastLocation) return;
+        boolean first = !locationKnown;
         locationKnown = true;
         lastLocation = here;
         if (here == null) return;
@@ -179,7 +185,8 @@ public class ProfileStatsHandler {
         boolean menu = (Configs.hudConfig.showLuckScalePanel.get() && Configs.hudConfig.luckScaleAutoRefresh.get())
                 || (Configs.hudConfig.showDailyQuestPanel.get() && Configs.hudConfig.dailyQuestAutoRefresh.get());
         boolean quests = Configs.hudConfig.showQuestPanel.get();
-        SilentMenuHandler.instance().requestLocationRefresh(ARRIVAL_DELAY_MS, menu, quests);
+        // just joined: your profile is already set, so read it at once (a new place waits for its bonuses to apply)
+        SilentMenuHandler.instance().requestLocationRefresh(first ? FIRST_READ_DELAY_MS : ARRIVAL_DELAY_MS, menu, quests);
     }
 
     /// Once each login, a quiet /menu read a few seconds in, for "Time Fishing" (skipped if you

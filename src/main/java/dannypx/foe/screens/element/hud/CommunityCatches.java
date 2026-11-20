@@ -23,7 +23,9 @@ import java.util.Locale;
  * is reached.
  */
 final class CommunityCatches {
-    static final String BAR = " ".repeat(40);
+    /// The bar's line: short, so it never makes a box wider; the bar itself runs to the box's right edge.
+    static final String BAR = " ".repeat(20);
+    static final int GAME_BAR_CHARS = 20;
     private float target = 0f, shown = 0f;
     private long lastNs = 0L;
 
@@ -47,7 +49,7 @@ final class CommunityCatches {
                 Component.literal(" Catches").withStyle(ChatFormatting.GRAY), PanelElement.TAB,
                 Component.literal(String.format(Locale.ROOT, "%.1f%%", pct * 100f)).withStyle(ChatFormatting.AQUA)));
         // the game's look by default: a struck-through line, filled in teal (see GameXpBar)
-        lines.add(GameXpBar.gameStyle() ? GameXpBar.bar(pct, 40) : Component.literal(BAR));
+        lines.add(Component.literal(BAR));
         lines.add(PanelElement.join(Component.literal("Per hour ").withStyle(ChatFormatting.GRAY),
                 perHour < 0 ? Component.literal("counting…").withStyle(ChatFormatting.DARK_GRAY)
                         : Component.literal("+" + num(Math.round(perHour))).withStyle(ChatFormatting.GREEN),
@@ -68,14 +70,26 @@ final class CommunityCatches {
     }
 
     /// Draws the bar on its line (called by the panel just before each line).
-    void beforeLine(GuiGraphics g, Font font, Component line, int x, int y) {
-        if (GameXpBar.gameStyle() || !line.getString().equals(BAR)) return;
+    /// `right`: the box's right edge for text (the bar runs to it, however wide the box is), 0 when not known.
+    void beforeLine(GuiGraphics g, Font font, Component line, int x, int y, int right) {
+        if (!line.getString().equals(BAR)) return;
+        int w = right > x ? Math.max(font.width(line), right - x) : font.width(line);
+        if (GameXpBar.gameStyle()) {
+            // the game's look (a struck-through line, filled in teal), drawn so it runs the box's width
+            int filled = Math.round(Math.max(0f, Math.min(1f, target)) * w);
+            int ly = y + 3;
+            g.fill(x + 1, ly + 1, x + filled + 1, ly + 2, 0xFF003B2C);
+            g.fill(x + filled + 1, ly + 1, x + w + 1, ly + 2, 0xFF151515);
+            g.fill(x, ly, x + filled, ly + 1, 0xFF000000 | GameXpBar.fill(barColour()));
+            g.fill(x + filled, ly, x + w, ly + 1, 0xFF555555);
+            return;
+        }
         long now = System.nanoTime();
         float dt = lastNs == 0 ? 0.016f : Math.min(0.1f, (now - lastNs) / 1e9f);
         lastNs = now;
         shown = ease(shown, target, dt);
         // still, no shine running along it: the community count creeps up all the time, a moving bar distracts
-        PetPanelElement.drawBar(g, x, y + 3, font.width(line), shown, 0xFF7CF07C, 0xFF2EA043, false, 3);
+        PetPanelElement.drawBar(g, x, y + 3, w, shown, GameXpBar.foeLight(0xFF7CF07C, barColour()), GameXpBar.foeDark(0xFF2EA043, barColour()), false, 3);
     }
 
     /// Package-private for tests: the bar's fill easing gently to the count (about two seconds to settle), back to
@@ -89,5 +103,10 @@ final class CommunityCatches {
 
     List<Component> previewLines() {
         return communityLines(11_190, 100_000, 7_190, 12 * 3_600_000L + 21 * 60_000L, 352);
+    }
+
+    /// The Community Catches HUD's "XP bar colour", or -1 for the bar's own.
+    private static int barColour() {
+        return GameXpBar.colour(() -> dannypx.foe.config.Configs.hudConfig.communityPanelXpBarColor.get());
     }
 }

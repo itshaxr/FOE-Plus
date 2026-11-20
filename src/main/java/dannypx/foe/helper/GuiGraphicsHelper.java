@@ -21,17 +21,16 @@ public class GuiGraphicsHelper {
         drawString(guiGraphics, font, component, x, y, styles);
     }
 
+    /// Each piece of the text in its own style, the component's own text first and then its siblings (each taking
+    /// its parent's style where it has none of its own). Only the siblings were drawn before, so a name whose text
+    /// sat in the component itself (a fish's, since a server update) came out as just its last piece, a letter.
     private static int drawString(GuiGraphics guiGraphics, Font font, Component component, int x, int y, EnumSet<StringStyle> styles) {
-        List<Component> siblings = component.getSiblings();
-
-        if (siblings.isEmpty()) {
-            return drawGlyphs(guiGraphics, font, component.getString(), x, y, component.getStyle(), styles);
-        }
-
-        for (Component sibling : siblings) {
-            x = drawString(guiGraphics, font, sibling, x, y, styles);
-        }
-        return x;
+        int[] at = {x};
+        component.visit((style, text) -> {
+            if (!text.isEmpty()) at[0] = drawGlyphs(guiGraphics, font, text, at[0], y, style, styles);
+            return Optional.empty();
+        }, Style.EMPTY);
+        return at[0];
     }
 
     private static int drawGlyphs(GuiGraphics guiGraphics, Font font, String text, int x, int y, Style style, EnumSet<StringStyle> styles) {

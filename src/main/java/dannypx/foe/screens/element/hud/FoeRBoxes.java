@@ -123,9 +123,9 @@ public final class FoeRBoxes {
     }
 
     /// A level bar `w` wide, its top at `y`: the game's own look or FOE+'s (as picked for every XP bar).
-    static void levelBar(GuiGraphics g, int x, int y, int w, float fraction, int light, int dark) {
-        if (GameXpBar.gameStyle()) PetPanelElement.drawGameBar(g, x, y - 3, w, fraction);
-        else PetPanelElement.drawBar(g, x, y, w, fraction, light, dark, true, 2);
+    static void levelBar(GuiGraphics g, int x, int y, int w, float fraction, int light, int dark, int c) {
+        if (GameXpBar.gameStyle()) PetPanelElement.drawGameBar(g, x, y - 3, w, fraction, c);
+        else PetPanelElement.drawBar(g, x, y, w, fraction, GameXpBar.foeLight(light, c), GameXpBar.foeDark(dark, c), true, 2);
     }
 
     /// The panels that can sit in a top corner, by their settings' names.

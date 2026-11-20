@@ -81,6 +81,11 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
         this.height = element.height;
     }
 
+    /// The HUD this box moves.
+    public Element element() {
+        return element;
+    }
+
     @Override
     protected void renderWidget(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
         this.renderBox(guiGraphics);

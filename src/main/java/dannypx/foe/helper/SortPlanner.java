@@ -45,12 +45,13 @@ public final class SortPlanner {
         }
 
         /// What must be equal for two entries to merge, or null when this entry never merges.
-        String mergeKey() {
+        public String mergeKey() {
             if (BAIT.equals(type)) return name;
-            if (LURE.equals(type) && !color.isEmpty() && !size.isEmpty()) {
-                return name + "|" + plainColor(color) + "|" + size.trim().toLowerCase(java.util.Locale.ROOT);
-            }
-            if (LURE.equals(type) && !name.isEmpty() && look != null && !look.isEmpty()) return name + "|look|" + look;
+            // a lure's name, colour and size each as read, whatever codes the server wrote them with (older and newer
+            // lures write them differently, and only the colour used to be read past its codes)
+            String n = plainColor(name), c = plainColor(color), z = plainColor(size);
+            if (LURE.equals(type) && !c.isEmpty() && !z.isEmpty()) return n + "|" + c + "|" + z;
+            if (LURE.equals(type) && !n.isEmpty() && look != null && !look.isEmpty()) return n + "|look|" + look;
             return null;
         }
     }
@@ -77,7 +78,11 @@ public final class SortPlanner {
         if (color == null) return "";
         return color.replaceAll("<#[0-9A-Fa-f]{6}>|</?[a-zA-Z_:#0-9]+>", "")
                 .replaceAll("§x(§[0-9A-Fa-f]){6}", "")
+                .replaceAll("&x(&[0-9A-Fa-f]){6}", "")
+                .replaceAll("[&{]#[0-9A-Fa-f]{6}}?", "")
                 .replaceAll("§.", "")
+                .replaceAll("&[0-9A-Fa-fK-Ok-oRr]", "")
+                .replaceAll("\\s+", " ")
                 .trim().toLowerCase(java.util.Locale.ROOT);
     }
 

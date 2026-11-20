@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.93+1.21.11",
+      "name": "FOE+ 1.0.93+1.21.11",
+      "datePublished": "2026-11-19",
+      "changelog": "## What's Changed\n- Combine HUDs: Shift-drop a HUD onto another in Move HUD Elements to share one box; point at a combined HUD for buttons to change the order, put a part in two columns or split it off (also in the HUD Editor's new Combine tab) by @phckd\n- Community Catches is its own HUD, inside the Timers to start with (split it off to move it on its own); its XP bar spans the box by @phckd\n- Two columns: a HUD of many short lines (the quests) can lay them out side by side by @phckd\n- HUD Editor Lines tab lists every combined part's lines, and lines with the same label (eight EPIC quests) can each be hidden by @phckd\n- Colour wheel: XP bar colour per HUD (top bar, pet, Community Catches, FOE-R boxes), catch popup border, catch ring colours, any box/border/title colour in the HUD Editor, sound trigger word colour and your + colour (older FOE+ versions see the nearest list colour) by @phckd\n- Catch ring fills in blue as your fish swims to the bobber (from its trail), then green as you reel in; it only follows your own fish, and other players' fish trails are hidden (a setting) by @phckd\n- Trade value: on a trade, a box beside each side adds up what it puts in, and what you gain or lose by @phckd\n- Luck & Scale and Daily Quests load a second or two after joining (FOE+ reads /menu before its other quiet commands) by @phckd\n- Lures written by the server in older and newer ways now combine with the bait sorter by @phckd\n- Events: just the event and its time (descriptions are a setting, off by default) by @phckd\n- Daily quest place names sit in the middle; FOE-R notifier shows the whole fish name; pet and held item icons are crisp with a thicker frame; titles on combined HUDs sit evenly in their plates by @phckd"
+    },
+    {
       "versionNumber": "1.0.92+1.21.11",
       "name": "FOE+ 1.0.92+1.21.11",
       "datePublished": "2026-11-19",

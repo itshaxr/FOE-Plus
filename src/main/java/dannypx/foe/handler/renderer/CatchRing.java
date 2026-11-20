@@ -103,7 +103,9 @@ public final class CatchRing {
             shown += (p - shown) * 0.25f;
             float in = Math.min(1f, (now - shownAt) / 160f);
             float pop = 0.6f + 0.4f * easeOutBack(in);
+            colours = reel();
             draw(g, shown, in, pop, now, 0f);
+            colours = GREEN;
             return;
         }
         if (wasOn) {
@@ -113,8 +115,44 @@ public final class CatchRing {
         long since = now - caughtAt;
         if (caughtAt > 0 && since < 650) {
             float t = since / 650f;
+            colours = reel();
             draw(g, 1f, 1f - t * t, 1f + 0.12f * (float) Math.sin(Math.min(1f, t * 3f) * Math.PI), now, t);
+            colours = GREEN;
+            return;
         }
+        // a fish on its way: the ring fills in blue as it comes, and pulses as it gets to the bobber
+        float coming = Configs.hudConfig.catchRingApproach.get() && mc.player.fishing != null ? dannypx.foe.handler.logic.FishApproach.progress() : -1f;
+        if (coming >= 0) {
+            if (approachAt == 0) { approachAt = now; approachShown = 0f; }
+            approachShown += (coming - approachShown) * 0.3f;
+            float in = Math.min(1f, (now - approachAt) / 160f);
+            float pop = 0.6f + 0.4f * easeOutBack(in);
+            if (approachShown > 0.85f) pop += 0.06f * (float) Math.sin(now / 45.0);
+            colours = ringColours(Configs.hudConfig.catchRingComingColor.get(), BLUE);
+            draw(g, approachShown, in, pop, now, 0f);
+            colours = GREEN;
+        } else approachAt = 0;
+    }
+
+    private static long approachAt = 0;
+    private static float approachShown = 0f;
+    /// The fill's light and deep colour, the head's and the ripple's: green reeling in, blue while a fish comes.
+    private static final int[] GREEN = {0x7CF07C, 0x3FCB5A, 0xD8FFD8}, BLUE = {0x7CD8FF, 0x3A9FE0, 0xDDF4FF};
+    private static int[] colours = GREEN;
+
+    /// The ring's colours from a picked colour ("#FF77CC"): it as the light edge, a deeper shade, and a pale one for
+    /// the head; `own` when none is picked.
+    static int[] ringColours(String picked, int[] own) {
+        int c = dannypx.foe.screens.element.hud.GameXpBar.parse(picked);
+        if (c < 0) return own;
+        int r = c >> 16 & 255, gr = c >> 8 & 255, b = c & 255;
+        int deep = (r * 72 / 100) << 16 | (gr * 72 / 100) << 8 | (b * 72 / 100);
+        return new int[]{c, deep, toward(c, 0xFFFFFF, 0.7f)};
+    }
+
+    /// The reeling colours (picked, or green), for the reeling ring and the catch.
+    private static int[] reel() {
+        return ringColours(Configs.hudConfig.catchRingReelColor.get(), GREEN);
     }
 
     private static float easeOutBack(float t) {
@@ -144,7 +182,9 @@ public final class CatchRing {
     public static void preview(GuiGraphics g, double centreX, double centreY, float size) {
         long now = System.currentTimeMillis();
         float f = (now % 2400L) / 2000f;
+        colours = reel();
         draw(g, centreX, centreY, Math.min(1f, f), 1f, size, now, f > 1f ? (f - 1f) / 0.2f * 0.6f : 0f);
+        colours = GREEN;
     }
 
     /// The ring centred on (`centreX`, `centreY`) in gui pixels, drawn pixel by pixel on the GUI's own pixel grid
@@ -173,15 +213,15 @@ public final class CatchRing {
                         if (filled) {
                             // lighter on the ring's top-left edge, deeper on its bottom-right, like the game's items
                             boolean light = d > outer - 1 && fy < 0 || d < inner + 1 && fy > 0;
-                            int base = light ? 0x7CF07C : 0x3FCB5A;
+                            int base = light ? colours[0] : colours[1];
                             double headGap = Math.abs(ang - headAng);
-                            if (fraction > 0.02f && fraction < 0.999f && caught == 0f && headGap * d < 1.2) base = 0xD8FFD8;
+                            if (fraction > 0.02f && fraction < 0.999f && caught == 0f && headGap * d < 1.2) base = colours[2];
                             color = a << 24 | toward(base, 0xFFFFFF, flash);
                         } else color = (a * 0xC0 / 255) << 24 | 0x2A2A2A;
                     } else if (d > outer && d <= outer + 1 || d < inner && d >= inner - 1) {
                         color = (a * 0xD0 / 255) << 24 | 0x0B0B0B;      // the outline
                     } else if (ripple > 0 && d > ripple - 1 && d <= ripple) {
-                        color = ((int) (a * 0.7f * (1 - caught))) << 24 | 0x7CF07C;
+                        color = ((int) (a * 0.7f * (1 - caught))) << 24 | colours[0];
                     }
                 }
                 if (color != runColor) {

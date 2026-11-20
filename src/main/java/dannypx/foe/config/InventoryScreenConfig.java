@@ -55,6 +55,10 @@ public class InventoryScreenConfig extends Config {
     @Name("Show what your fish are worth beside chests and your vault")
     public ValidatedBoolean showFishValue = new ValidatedBoolean(true);
 
+    @Name("Trade value")
+    @Desc("§7On a trade, what each side puts in is worth (fish, bait, pets, money) at your prices, and what you gain or lose")
+    public ValidatedBoolean showTradeValue = new ValidatedBoolean(true);
+
     @Name("Show which instance each is on")
     @Desc("§7\"InfernalShadow (Instance 5)\": FOE+ runs /find quietly for each of them (all at once when you join, then every so often) and hides the answers")
     public ValidatedBoolean timersInstances = new ValidatedBoolean(true);

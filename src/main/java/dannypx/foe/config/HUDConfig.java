@@ -48,6 +48,10 @@ public class HUDConfig extends Config {
     @Name("Anchor point")
     public ValidatedChoice<Alignment> profileElementAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getTopCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
 
+    @Name("XP bar colour")
+    @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
+    public ValidatedString profileElementXpBarColor = new ValidatedString("");
+
     @ConfigGroup.Pop
     @Name("Scale")
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
@@ -127,6 +131,10 @@ public class HUDConfig extends Config {
 
     @Name("Anchor point")
     public ValidatedChoice<Alignment> petElementAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getTopCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("XP bar colour")
+    @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
+    public ValidatedString petElementXpBarColor = new ValidatedString("");
 
     @ConfigGroup.Pop
     @Name("Scale")
@@ -342,6 +350,10 @@ public class HUDConfig extends Config {
     @Desc("§7#1, #2... before each mission in the Daily Quests panel")
     public ValidatedBoolean dailyQuestNumbers = new ValidatedBoolean(false);
 
+    @Name("Place names in the middle")
+    @Desc("§7Each place's name (Hawaii, Anywhere) centred over its quests, whatever the panel's text alignment")
+    public ValidatedBoolean dailyQuestCenterPlaces = new ValidatedBoolean(true);
+
     @Name("Update after every catch")
     @Desc("§7Quietly reads Daily Missions from /menu after each catch (the menu never shows), so progress is exact")
     public ValidatedBoolean dailyQuestAutoRefresh = new ValidatedBoolean(true);
@@ -493,6 +505,10 @@ public class HUDConfig extends Config {
     @Desc("§7The line with the name of the item the pet holds")
     public ValidatedBoolean petPanelItemLine = new ValidatedBoolean(true);
 
+    @Name("XP bar colour")
+    @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
+    public ValidatedString petPanelXpBarColor = new ValidatedString("");
+
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat petPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
@@ -587,7 +603,7 @@ public class HUDConfig extends Config {
 
     @Name("Show event descriptions")
     @Desc("§7What an event does, next to its name: \"Shards 1 in 25\" for a Gold Rush, \"+100% Pet Luck\" for a Blooming Oasis")
-    public ValidatedBoolean eventsShowDescriptions = new ValidatedBoolean(true);
+    public ValidatedBoolean eventsDescriptions = new ValidatedBoolean(false);
 
     @Name("Check /events quietly now and then")
     @Desc("§7/events and /active, after you join and every 15 minutes, never while a menu is open; their answers are hidden. Syncs the frenzy, the Tackle Shop / Cosmetic Store timers and the booster timers")
@@ -651,8 +667,7 @@ public class HUDConfig extends Config {
     @Name("Show Timers Panel")
     public ValidatedBoolean showTimersPanel = new ValidatedBoolean(true);
 
-    @Name("Show community catches")
-    @Desc("§7The community goal under the timers, below a line: how far along it is, catches per hour, when it'll be reached")
+    /// Old: whether the Timers showed the community catches (now its own HUD, inside the Timers to start with).
     public ValidatedBoolean timersShowCommunity = new ValidatedBoolean(true);
 
     @Name("X Position in %")
@@ -670,6 +685,33 @@ public class HUDConfig extends Config {
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat timersPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Community Catches Panel")
+    @Desc("§7The community goal: how far along it is, catches per hour, when it'll be reached, what you helped. Inside the Timers to start with (split it off in the HUD Editor's Combine tab)")
+    public ConfigGroup communityPanelGroup = new ConfigGroup("community_panel_group");
+
+    @Name("Show Community Catches")
+    public ValidatedBoolean showCommunityPanel = new ValidatedBoolean(true);
+
+    @Name("X Position in %")
+    public ValidatedInt communityPanelXPosition = new ValidatedInt(1, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt communityPanelYPosition = new ValidatedInt(62, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> communityPanelAlignment = new ValidatedChoice<>(Alignment.TOP_LEFT, Alignment.getCorners(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt communityPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("XP bar colour")
+    @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
+    public ValidatedString communityPanelXpBarColor = new ValidatedString("");
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat communityPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("Social Panel")
     @Desc("§7Who of your crew and friends is on, and the instance they're on; whether a crew member is in range")
@@ -847,6 +889,10 @@ public class HUDConfig extends Config {
     @Name("Show the level progress bar")
     public ValidatedBoolean topBarShowLevelBar = new ValidatedBoolean(true);
 
+    @Name("XP bar colour")
+    @Desc("§7The colour of this HUD's XP bar. Click to pick one; Default is the bar's own colour")
+    public ValidatedString topBarXpBarColor = new ValidatedString("");
+
     @Name("Show location")
     @Desc("§7The place you're in (Cypress Lake, Cairns...)")
     public ValidatedBoolean topBarShowLocation = new ValidatedBoolean(true);
@@ -898,7 +944,7 @@ public class HUDConfig extends Config {
     public ValidatedFloat topBarScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
 
     @Name("Catch Ring")
-    @Desc("§7While you reel a fish in: a ring that fills clockwise in green as the catch goes on. Move and size it in Move HUD Elements")
+    @Desc("§7A ring by the crosshair: it fills in blue as a fish swims to your bobber, then in green as you reel it in (both colours yours to pick). Move and size it in Move HUD Elements")
     public ConfigGroup catchRingGroup = new ConfigGroup("catch_ring_group");
 
     // a new name, so it starts off for everyone (it used to be on)
@@ -910,6 +956,22 @@ public class HUDConfig extends Config {
 
     @Name("Y Position in % (its centre)")
     public ValidatedFloat catchRingY = new ValidatedFloat(50f, 100f, 0f);
+
+    @Name("Show the fish coming")
+    @Desc("§7Before a bite, the ring fills in blue as the fish swims to your bobber (from its trail in the water), so you see the bite coming. Then it fills green as you reel in")
+    public ValidatedBoolean catchRingApproach = new ValidatedBoolean(true);
+
+    @Name("Colour while the fish comes")
+    @Desc("§7The ring's colour as a fish swims to your bobber. Click to pick one; Default is blue")
+    public ValidatedString catchRingComingColor = new ValidatedString("");
+
+    @Name("Colour while reeling in")
+    @Desc("§7The ring's colour as you reel the fish in. Click to pick one; Default is green")
+    public ValidatedString catchRingReelColor = new ValidatedString("");
+
+    @Name("Hide other players' fish trails")
+    @Desc("§7Only your own fish's trail is drawn in the water: the ones swimming to other players' bobbers are hidden")
+    public ValidatedBoolean hideOtherFishTrails = new ValidatedBoolean(true);
 
     @ConfigGroup.Pop
     @Name("Size")
@@ -934,6 +996,10 @@ public class HUDConfig extends Config {
 
     @Name("Show length")
     public ValidatedBoolean catchPopupShowLength = new ValidatedBoolean(true);
+
+    @Name("Border colour")
+    @Desc("§7A box behind the catch popup with a border in this colour. Click to pick one; Default is no box, just the words")
+    public ValidatedString catchPopupBorderColor = new ValidatedString("");
 
     @Name("Display time in seconds")
     public ValidatedInt catchPopupTime = new ValidatedInt(5, 30, 1, ValidatedNumber.WidgetType.SLIDER);

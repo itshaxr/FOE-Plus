@@ -268,6 +268,6 @@ public class CommunityEventHandler {
 
     /// The Timers panel shows the community catches.
     public static boolean communityInTimers() {
-        return Configs.hudConfig.showTimersPanel.get() && Configs.hudConfig.timersShowCommunity.get();
+        return dannypx.foe.screens.element.hud.HudCombine.visible("CommunityPanelElement");
     }
 }

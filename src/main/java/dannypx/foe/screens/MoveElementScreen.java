@@ -36,6 +36,179 @@ public class MoveElementScreen extends DefaultModScreen {
     private final List<Pair<String, Element>> customHudElements = new ArrayList<>();
     /// Scale setting behind each drag box, for scroll-to-resize.
     private final Map<MovableBoxWidget, ValidatedFloat> scales = new HashMap<>();
+    /// The HUD each drag box is (the ones that can be combined).
+    private final Map<MovableBoxWidget, String> hudIds = new HashMap<>();
+
+    /// The HUD box under the mouse, other than `dragged`, or null (any HUD, so a drop on one that can't take it can
+    /// say why).
+    private MovableBoxWidget boxUnderMouse(MovableBoxWidget dragged) {
+        var window = minecraft.getWindow();
+        double mx = minecraft.mouseHandler.getScaledXPos(window), my = minecraft.mouseHandler.getScaledYPos(window);
+        for (var w : hudIds.keySet()) {
+            if (w == dragged) continue;
+            if (mx >= w.getX() && mx < w.getX() + w.getWidth() && my >= w.getY() && my < w.getY() + w.getHeight()) return w;
+        }
+        // the mouse slipped off: the box the dragged one's middle is over
+        if (dragged != null) {
+            double cx = dragged.getX() + dragged.getWidth() / 2.0, cy = dragged.getY() + dragged.getHeight() / 2.0;
+            for (var w : hudIds.keySet()) {
+                if (w == dragged) continue;
+                if (cx >= w.getX() && cx < w.getX() + w.getWidth() && cy >= w.getY() && cy < w.getY() + w.getHeight()) return w;
+            }
+        }
+        return null;
+    }
+
+    /// What a Shift-drop of `dragged` onto `target` would do: {host, member} to combine, or null with `why` set.
+    private String[] combineFor(String dragged, String target, String[] why) {
+        if (!dannypx.foe.screens.element.hud.HudCombine.combinable(dragged)) {
+            why[0] = dannypx.foe.screens.element.hud.HudCombine.name(dragged) + " can't go inside another HUD";
+            return null;
+        }
+        if (!dannypx.foe.screens.element.hud.HudCombine.combinable(target)) {
+            why[0] = "HUDs can't go inside " + dannypx.foe.screens.element.hud.HudCombine.name(target);
+            return null;
+        }
+        // dropped onto a HUD: it goes inside that one; when it already holds HUDs (the Timers), the one dropped on
+        // goes inside it instead
+        if (dannypx.foe.screens.element.hud.HudCombine.canCombine(target, dragged)) return new String[]{target, dragged};
+        if (dannypx.foe.screens.element.hud.HudCombine.canCombine(dragged, target)) return new String[]{dragged, target};
+        why[0] = "Both of these hold other HUDs";
+        return null;
+    }
+
+    /// The box being dragged with Shift held, or null.
+    private MovableBoxWidget shiftDragging() {
+        if (!minecraft.hasShiftDown()) return null;
+        return dragging != null && hudIds.containsKey(dragging) ? dragging : null;
+    }
+
+    /// The box being dragged with the left button, or null.
+    private MovableBoxWidget dragging;
+
+    /// A small button on a HUD in the mover (move a part up or down, two columns, split it off): where, what it shows,
+    /// what it says when pointed at, and what it does.
+    private record PartButton(int x, int y, String glyph, int colour, boolean on, String tip, Runnable action) {
+        static final int SIZE = 11;
+
+        boolean over(double mx, double my) {
+            return mx >= x && mx < x + SIZE && my >= y && my < y + SIZE;
+        }
+    }
+
+    private final List<PartButton> partButtons = new ArrayList<>();
+    /// The box the buttons are on (kept while the mouse is on it or its buttons).
+    private MovableBoxWidget buttonsOn;
+
+    /// The buttons for the HUD box under the mouse: on each part's line (its own title for the top one) ▲ ▼ to change
+    /// the order, ⫼ for two columns and ✕ to split it off.
+    private void makePartButtons(int mouseX, int mouseY) {
+        partButtons.clear();
+        MovableBoxWidget box = null;
+        if (dragging == null) {
+            if (buttonsOn != null && hudIds.containsKey(buttonsOn) && (buttonsOn.isMouseOver(mouseX, mouseY) || nearButtons(buttonsOn, mouseX, mouseY)))
+                box = buttonsOn;
+            else for (var w : hudIds.keySet()) if (w.isMouseOver(mouseX, mouseY)) { box = w; break; }
+        }
+        buttonsOn = box;
+        if (box == null || !(box.element() instanceof PanelElement p)) return;
+        String hostId = hudIds.get(box);
+        if (!dannypx.foe.screens.element.hud.HudCombine.combinable(hostId)) return;
+        List<String> members = dannypx.foe.screens.element.hud.HudCombine.members(hostId);
+        for (PanelElement.Section s : List.copyOf(p.sections)) {
+            String id = s.id();
+            boolean top = id.equals(hostId);
+            int idx = members.indexOf(id);
+            if (!top && idx < 0) continue;
+            String name = dannypx.foe.screens.element.hud.HudCombine.name(id);
+            List<PartButton> row = new ArrayList<>();
+            if (!top) row.add(new PartButton(0, 0, "▲", 0xFFFFFFFF, false,
+                    idx == 0 ? "Move " + name + " to the top" : "Move " + name + " up",
+                    () -> dannypx.foe.screens.element.hud.HudCombine.up(id)));
+            if (!members.isEmpty() && (top || idx < members.size() - 1)) row.add(new PartButton(0, 0, "▼", 0xFFFFFFFF, false,
+                    "Move " + name + " down", () -> dannypx.foe.screens.element.hud.HudCombine.down(id)));
+            boolean two = dannypx.foe.handler.store.HudLooks.get(id).twoColumns;
+            row.add(new PartButton(0, 0, "cols", two ? 0xFF6BE36B : 0xFFFFFFFF, two,
+                    two ? name + ": back to one column" : name + ": two columns (for lots of short lines)",
+                    () -> {
+                        var look = dannypx.foe.handler.store.HudLooks.edit(id);
+                        look.twoColumns = !look.twoColumns;
+                        dannypx.foe.handler.store.HudLooks.save();
+                    }));
+            if (!top) row.add(new PartButton(0, 0, "split", 0xFFFF6B6B, false, "Split " + name + " off (back to its own place)",
+                    () -> dannypx.foe.screens.element.hud.HudCombine.split(id)));
+            // right-aligned on the part's line, inside the box
+            int x = s.x() + s.w() - row.size() * (PartButton.SIZE + 1) + 1;
+            int y = s.y() + (s.h() - PartButton.SIZE) / 2;
+            if (top) y = Math.max(s.y(), box.getY() + 2);
+            for (PartButton b : row) {
+                partButtons.add(new PartButton(x, y, b.glyph(), b.colour(), b.on(), b.tip(), b.action()));
+                x += PartButton.SIZE + 1;
+            }
+        }
+    }
+
+    private boolean nearButtons(MovableBoxWidget box, double mx, double my) {
+        for (PartButton b : partButtons) if (b.over(mx, my)) return true;
+        return false;
+    }
+
+    private void renderPartButtons(GuiGraphics g, int mouseX, int mouseY) {
+        makePartButtons(mouseX, mouseY);
+        if (partButtons.isEmpty()) return;
+        g.nextStratum();
+        for (PartButton b : partButtons) {
+            boolean hot = b.over(mouseX, mouseY);
+            int s = PartButton.SIZE;
+            g.fill(b.x(), b.y(), b.x() + s, b.y() + s, hot ? 0xF0505A60 : 0xE0202428);
+            g.renderOutline(b.x(), b.y(), s, s, hot ? 0xFFFFFFFF : b.on() ? 0xFF6BE36B : 0xFF7A8590);
+            // the game's font has no ⫼ or ✕: those two are drawn
+            switch (b.glyph()) {
+                case "cols" -> {
+                    g.fill(b.x() + 3, b.y() + 3, b.x() + 5, b.y() + s - 3, b.colour());
+                    g.fill(b.x() + s - 5, b.y() + 3, b.x() + s - 3, b.y() + s - 3, b.colour());
+                }
+                case "split" -> {
+                    for (int i = 0; i < 5; i++) {
+                        g.fill(b.x() + 3 + i, b.y() + 3 + i, b.x() + 4 + i, b.y() + 4 + i, b.colour());
+                        g.fill(b.x() + s - 4 - i, b.y() + 3 + i, b.x() + s - 3 - i, b.y() + 4 + i, b.colour());
+                    }
+                }
+                default -> g.drawString(this.font, b.glyph(), b.x() + (s - this.font.width(b.glyph())) / 2 + 1, b.y() + 2, b.colour(), false);
+            }
+            if (hot) g.setTooltipForNextFrame(this.font, Component.literal(b.tip()), mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubled) {
+        if (event.button() == 0) {
+            for (PartButton b : partButtons) {
+                if (b.over(event.x(), event.y())) {
+                    b.action().run();
+                    minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1f));
+                    partButtons.clear();
+                    rebuildWidgets();
+                    return true;
+                }
+            }
+        }
+        boolean r = super.mouseClicked(event, doubled);
+        // the box that took the click (the one on top where they overlap)
+        dragging = r && event.button() == 0 && getFocused() instanceof MovableBoxWidget w ? w : null;
+        return r;
+    }
+
+    @Override
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        boolean r = super.mouseReleased(event);
+        dragging = null;
+        return r;
+    }
+
+    /// A message shown for a moment after a Shift-drop.
+    private Component dropNote;
+    private long dropNoteAt;
 
     public MoveElementScreen(Screen parent) {
         super(parent, Component.literal("Move HUD Elements"), true);
@@ -45,6 +218,7 @@ public class MoveElementScreen extends DefaultModScreen {
     protected void init() {
         super.init();
         scales.clear();
+        hudIds.clear();
         this.assembleCustomHudElements();
         this.addWidgets();
     }
@@ -61,9 +235,36 @@ public class MoveElementScreen extends DefaultModScreen {
     private void addPanel(Element element, ValidatedBoolean show, ValidatedInt x, ValidatedInt y,
                           ValidatedChoice<Alignment> alignment, ValidatedFloat scale, List<Alignment> anchors) {
         if (show != null && !show.get()) return;
+        // a HUD inside another (that's showing) moves with that one
+        String id = element instanceof dannypx.foe.screens.element.hud.PanelElement p ? p.lookId() : null;
+        if (id != null && dannypx.foe.screens.element.hud.HudCombine.shownInHost(id)) return;
+        MovableBoxWidget[] self = new MovableBoxWidget[1];
         MovableBoxWidget widget = new MovableBoxWidget(this.minecraft, element, anchors, new MovableBoxWidget.Callback() {
             @Override
             public void onRelease(int xPercent, int yPercent, Alignment newAlignment) {
+                // held Shift and dropped onto another HUD: put it inside that one (it keeps its own place for later)
+                MovableBoxWidget onto = id != null && minecraft.hasShiftDown() ? boxUnderMouse(self[0]) : null;
+                if (onto != null) {
+                    String[] why = new String[1];
+                    String[] pair = combineFor(id, hudIds.get(onto), why);
+                    if (pair != null) {
+                        dannypx.foe.screens.element.hud.HudCombine.combine(pair[0], pair[1]);
+                        dropNote = Component.literal(dannypx.foe.screens.element.hud.HudCombine.name(pair[1]) + " is now inside "
+                                + dannypx.foe.screens.element.hud.HudCombine.name(pair[0])).withStyle(ChatFormatting.GREEN);
+                        dropNoteAt = net.minecraft.util.Util.getMillis();
+                        // the host keeps its place; the one put inside it keeps its own for when it's split off
+                        if (pair[0].equals(id)) {
+                            x.accept(xPercent);
+                            y.accept(yPercent);
+                            if (alignment != null) alignment.accept(newAlignment);
+                            Configs.hudConfig.save();
+                        }
+                        minecraft.execute(() -> rebuildWidgets());
+                        return;
+                    }
+                    dropNote = Component.literal(why[0]).withStyle(ChatFormatting.RED);
+                    dropNoteAt = net.minecraft.util.Util.getMillis();
+                }
                 x.accept(xPercent);
                 y.accept(yPercent);
                 if (alignment != null) alignment.accept(newAlignment);
@@ -75,6 +276,8 @@ public class MoveElementScreen extends DefaultModScreen {
                 FoeSettingsScreen.open(show != null ? show : x);
             }
         });
+        self[0] = widget;
+        if (id != null) hudIds.put(widget, id);
         if (scale != null) scales.put(widget, scale);
         this.addRenderableWidget(widget);
     }
@@ -100,6 +303,8 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.luckScalePanelAlignment, hud.luckScalePanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.TimersPanelElement(true), hud.showTimersPanel, hud.timersPanelXPosition, hud.timersPanelYPosition,
                 hud.timersPanelAlignment, hud.timersPanelScale, Alignment.getCorners());
+        addPanel(new dannypx.foe.screens.element.hud.CommunityPanelElement(true), hud.showCommunityPanel, hud.communityPanelXPosition, hud.communityPanelYPosition,
+                hud.communityPanelAlignment, hud.communityPanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.CrewPanelElement(true), hud.showCrewPanel, hud.crewPanelXPosition, hud.crewPanelYPosition,
                 hud.crewPanelAlignment, hud.crewPanelScale, Alignment.getCorners());
         addPanel(new dannypx.foe.screens.element.hud.EventsPanelElement(true), hud.showEventsPanel, hud.eventsPanelXPosition, hud.eventsPanelYPosition,
@@ -214,8 +419,50 @@ public class MoveElementScreen extends DefaultModScreen {
 
         Component help = Component.literal("Drag to move • Click to change anchor • Scroll to resize • Middle-click for settings")
                 .withStyle(ChatFormatting.GRAY);
+        Component combine = Component.literal("Shift + drop a HUD onto another to put it inside • Point at a HUD for its order, columns and split buttons")
+                .withStyle(ChatFormatting.DARK_GRAY);
         guiGraphics.drawString(this.font, help, this.width / 2 - this.font.width(help) / 2, this.height - this.font.lineHeight - 4, 0xFFFFFFFF, true);
+        guiGraphics.drawString(this.font, combine, this.width / 2 - this.font.width(combine) / 2, this.height - this.font.lineHeight * 2 - 6, 0xFFFFFFFF, true);
         renderSize(guiGraphics);
+        renderPartButtons(guiGraphics, mouseX, mouseY);
+        renderCombine(guiGraphics);
+    }
+
+    /// While Shift-dragging over another HUD: that one outlined green (and what will happen) or red (and why not).
+    /// After a drop, what happened.
+    private void renderCombine(GuiGraphics g) {
+        Component text = null;
+        int tx = this.width / 2, ty = this.height / 2;
+        MovableBoxWidget dragged = shiftDragging();
+        if (dragged != null) {
+            MovableBoxWidget target = boxUnderMouse(dragged);
+            if (target != null) {
+                String[] why = new String[1];
+                String[] pair = combineFor(hudIds.get(dragged), hudIds.get(target), why);
+                int colour = pair != null ? 0xFF55FF55 : 0xFFFF5555;
+                g.renderOutline(target.getX() - 3, target.getY() - 3, target.getWidth() + 6, target.getHeight() + 6, colour);
+                g.renderOutline(target.getX() - 2, target.getY() - 2, target.getWidth() + 4, target.getHeight() + 4, colour);
+                text = pair != null
+                        ? Component.literal("Let go to show " + dannypx.foe.screens.element.hud.HudCombine.name(pair[1]) + " inside "
+                        + dannypx.foe.screens.element.hud.HudCombine.name(pair[0])).withStyle(ChatFormatting.GREEN)
+                        : Component.literal(why[0]).withStyle(ChatFormatting.RED);
+                tx = target.getX() + target.getWidth() / 2;
+                ty = target.getY() - 16 >= 2 ? target.getY() - 16 : target.getY() + target.getHeight() + 5;
+            } else {
+                text = Component.literal("Drop onto another HUD to put it inside").withStyle(ChatFormatting.YELLOW);
+                tx = dragged.getX() + dragged.getWidth() / 2;
+                ty = dragged.getY() - 16 >= 2 ? dragged.getY() - 16 : dragged.getY() + dragged.getHeight() + 5;
+            }
+        } else if (dropNote != null && net.minecraft.util.Util.getMillis() - dropNoteAt < 2500) {
+            text = dropNote;
+            ty = this.height - this.font.lineHeight * 3 - 14;
+        }
+        if (text == null) return;
+        int w = this.font.width(text) + 8;
+        int x = Math.max(2, Math.min(this.width - w - 2, tx - w / 2));
+        g.fill(x, ty, x + w, ty + 12, 0xDD000000);
+        g.renderOutline(x, ty, w, 12, 0xFF555555);
+        g.drawString(this.font, text, x + 4, ty + 2, 0xFFFFFFFF, true);
     }
 
     @Override

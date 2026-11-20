@@ -95,6 +95,33 @@ public class SilentMenuHandler {
     /// one a moment ago at least, you haven't just typed a command, and no silent read is in
     /// progress. Anything that can't run now waits and tries again.
     public boolean isQuietForBackgroundCommand() {
+        // a /menu or /quests read that can go now goes first: the server takes one command every 5 seconds, and
+        // the other quiet commands on joining (/communityevent, /active, /events, /minievent, the contest) used to
+        // put Luck & Scale and the Daily Quests 20 to 30 seconds back
+        return quiet() && !readReady(System.currentTimeMillis());
+    }
+
+    /// Whether a read is due (or nearly) and could be sent: one the other background commands wait for.
+    private boolean readReady(long now) {
+        Minecraft mc = Minecraft.getInstance();
+        boolean bobberOut = mc.player != null && mc.player.fishing != null;
+        for (Target target : Target.values()) {
+            Long due = dueAt.get(target);
+            if (due != null && due <= now + 2_500L && sendable(target, now, Math.max(0L, now - due), bobberOut)) return true;
+        }
+        return false;
+    }
+
+    /// Whether a due read may be sent now (a priority one between casts, an ordinary one not too soon after the
+    /// last nor while you're fishing).
+    private boolean sendable(Target target, long now, long sinceDue, boolean bobberOut) {
+        if (Boolean.TRUE.equals(priority.get(target)))
+            return !waitForBobber(bobberOut, sinceDue, bobberWait.getOrDefault(target, PRIORITY_WAIT_FOR_BOBBER_MS));
+        return now - lastRead.getOrDefault(target, 0L) >= MIN_GAP_MS && now - lastFishingSeen >= QUIET_AFTER_FISHING_MS;
+    }
+
+    /// No screen open, nothing typed just now, no other background command just sent, no read under way.
+    private boolean quiet() {
         Minecraft mc = Minecraft.getInstance();
         long now = System.currentTimeMillis();
         if (mc.player == null || mc.getConnection() == null || mc.screen != null) return false;
@@ -236,7 +263,7 @@ public class SilentMenuHandler {
         boolean bobberOut = mc.player.fishing != null;
         if (bobberOut) lastFishingSeen = now;
 
-        if (dueAt.isEmpty() || !isQuietForBackgroundCommand()) return;
+        if (dueAt.isEmpty() || !quiet()) return;
 
         for (Target target : Target.values()) {
             Long due = dueAt.get(target);
@@ -247,14 +274,8 @@ public class SilentMenuHandler {
                 bobberWait.remove(target);
                 continue;
             }
-            boolean urgent = Boolean.TRUE.equals(priority.get(target));
-            if (urgent) {
-                // Prefer a moment between casts, but don't wait for ever.
-                if (waitForBobber(bobberOut, now - due, bobberWait.getOrDefault(target, PRIORITY_WAIT_FOR_BOBBER_MS))) continue;
-            } else {
-                if (now - lastRead.getOrDefault(target, 0L) < MIN_GAP_MS) continue;
-                if (now - lastFishingSeen < QUIET_AFTER_FISHING_MS) continue;
-            }
+            // a priority read prefers a moment between casts, but doesn't wait for ever
+            if (!sendable(target, now, now - due, bobberOut)) continue;
             send(mc, target, now);
             return; // one at a time; the next one waits for the command gap
         }

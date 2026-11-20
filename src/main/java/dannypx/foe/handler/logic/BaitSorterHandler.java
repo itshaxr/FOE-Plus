@@ -180,7 +180,33 @@ public class BaitSorterHandler {
                     amount,
                     SortPlanner.look(lore, amount)));
         }
+        logLureMisses(found);
         return found;
+    }
+
+    /// Lures that share a name but won't merge, in the log with what tells them apart (their colour, size and
+    /// tooltip as the server wrote them), so a lure that never combines can be looked into. Once per set of lures.
+    private static final java.util.Set<String> LOGGED = new java.util.HashSet<>();
+
+    private static void logLureMisses(List<SortPlanner.Entry> found) {
+        try {
+            java.util.Map<String, List<SortPlanner.Entry>> byName = new java.util.LinkedHashMap<>();
+            for (SortPlanner.Entry e : found)
+                if (SortPlanner.LURE.equals(e.type())) byName.computeIfAbsent(SortPlanner.plainColor(e.name()), k -> new ArrayList<>()).add(e);
+            for (var g : byName.entrySet()) {
+                java.util.Set<String> keys = new java.util.HashSet<>();
+                for (SortPlanner.Entry e : g.getValue()) keys.add(String.valueOf(e.mergeKey()));
+                if (g.getValue().size() < 2 || keys.size() < 2) continue;
+                StringBuilder b = new StringBuilder("[FOE+ bait sorter] lures named \"" + g.getKey() + "\" won't merge:");
+                for (SortPlanner.Entry e : g.getValue())
+                    b.append("\n  slot ").append(e.slot()).append(" name=").append(e.name()).append(" color=").append(e.color())
+                            .append(" size=").append(e.size()).append(" rarity=").append(e.rarity()).append(" key=").append(e.mergeKey())
+                            .append(" look=").append(e.look().replace("\n", " / "));
+                if (LOGGED.add(b.toString()) && LOGGED.size() < 200) LoggerHandler.info(b.toString());
+            }
+        } catch (RuntimeException ignored) {
+            // only a note in the log
+        }
     }
 
     private void process(Minecraft mc) {

@@ -246,6 +246,19 @@ public class CatchPopupElement extends Element {
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
+        int border = GameXpBar.colour(Configs.hudConfig.catchPopupBorderColor::get);
+        if (border >= 0) {
+            // a box behind it, its border in the colour picked
+            float widest = 0, total = 0;
+            for (Line line : shown) {
+                widest = Math.max(widest, font.width(line.text()) * line.size());
+                total += lineHeight(font, line.size());
+            }
+            int bx0 = Math.round(centerX - widest / 2f) - 6, bx1 = Math.round(centerX + widest / 2f) + 6;
+            int by0 = Math.round(y) - 5, by1 = Math.round(y + total) + 2;
+            guiGraphics.fill(bx0, by0, bx1, by1, 0xB0101418);
+            guiGraphics.renderOutline(bx0, by0, bx1 - bx0, by1 - by0, 0xFF000000 | border);
+        }
         for (Line line : shown) {
             drawCentered(guiGraphics, font, line.text(), centerX, y, line.size());
             y += lineHeight(font, line.size());

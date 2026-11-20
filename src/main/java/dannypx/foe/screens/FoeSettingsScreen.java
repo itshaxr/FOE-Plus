@@ -167,6 +167,16 @@ public class FoeSettingsScreen extends Screen {
         }
     }
 
+    /// The same without saving (the colour wheel, many times a second while dragged; saved when it's closed).
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static void setQuiet(Node n, Object value) {
+        try {
+            ((ValidatedField) n.entry).accept(value);
+        } catch (Throwable t) {
+            dannypx.foe.handler.logic.LoggerHandler.error(String.valueOf(t));
+        }
+    }
+
     private static final Map<String, Method> METHODS = new HashMap<>();
 
     private static Object call(Class<?> owner, String method, Object on) {
@@ -246,10 +256,29 @@ public class FoeSettingsScreen extends Screen {
         return n.name.contains("%") ? s + "%" : s;
     }
 
-    enum Kind { TOGGLE, SLIDER, CYCLE, TEXT, KEY, OPEN }
+    enum Kind { TOGGLE, SLIDER, CYCLE, TEXT, KEY, OPEN, COLOR }
+
+    /// The colour settings (each HUD's XP bar colour), which get a colour wheel.
+    static boolean colourEntry(Object entry) {
+        var c = dannypx.foe.config.Configs.hudConfig;
+        return c != null && (entry == c.topBarXpBarColor || entry == c.petPanelXpBarColor || entry == c.communityPanelXpBarColor
+                || entry == c.profileElementXpBarColor || entry == c.petElementXpBarColor || entry == c.catchPopupBorderColor
+                || entry == c.catchRingComingColor || entry == c.catchRingReelColor);
+    }
+
+    /// The colour a colour setting has when it's left at Default (the bar's own).
+    static int ownColour(Object entry) {
+        var c = dannypx.foe.config.Configs.hudConfig;
+        if (entry == c.catchPopupBorderColor) return 0xFFD866;
+        if (entry == c.catchRingComingColor) return 0x7CD8FF;
+        if (entry == c.catchRingReelColor) return 0x7CF07C;
+        if (dannypx.foe.screens.element.hud.GameXpBar.gameStyle()) return dannypx.foe.screens.element.hud.GameXpBar.FILL;
+        return entry == c.profileElementXpBarColor ? 0xFFD866 : 0x7CF07C;
+    }
 
     static Kind kind(Object entry) {
         if (entry instanceof ValidatedBoolean) return Kind.TOGGLE;
+        if (colourEntry(entry)) return Kind.COLOR;
         if (entry instanceof ValidatedEnum<?> || entry instanceof ValidatedChoice<?>) return Kind.CYCLE;
         if (entry instanceof ValidatedKeybind) return Kind.KEY;
         if (entry instanceof ValidatedString) return Kind.TEXT;
@@ -795,6 +824,16 @@ public class FoeSettingsScreen extends Screen {
                 g.drawCenteredString(font, key, controlX + 64, y + 7, TITLE);
             }
             case OPEN -> smallButton(g, cr - 70, y + 3, 64, "Open…", mouseX, mouseY);
+            case COLOR -> {
+                // the colour (or the bar's own, marked Default) and a button for the wheel
+                int rgb = dannypx.foe.screens.element.hud.GameXpBar.parse(String.valueOf(v));
+                boolean own = rgb < 0;
+                if (own) rgb = ownColour(n.entry);
+                boolean ch = mouseX >= controlX && mouseX < cr - 6 && mouseY >= y + 3 && mouseY < y + 19;
+                box(g, controlX, y + 4, 28, 14, ch ? ACCENT : TILE_EDGE, 0xFF000000 | rgb);
+                g.drawString(font, own ? (n.entry == dannypx.foe.config.Configs.hudConfig.catchPopupBorderColor ? "No box" : "Default") : String.format(java.util.Locale.ROOT, "#%06X", rgb), controlX + 34, y + 7, own ? DIM : TEXT, false);
+                smallButton(g, cr - 50, y + 3, 44, "Pick…", mouseX, mouseY);
+            }
             default -> { }
         }
         return hot && mouseX < controlX;
@@ -961,6 +1000,13 @@ public class FoeSettingsScreen extends Screen {
             }
             case OPEN -> {
                 if (mx >= cr - 70) ConfigApiJava.INSTANCE.openScreen(n.config.translationKey());
+            }
+            case COLOR -> {
+                if (mx >= controlX) {
+                    String hudTitle = n.parent != null ? hudName(n.parent) : "";
+                    minecraft.setScreen(new ColorPickerScreen(this, (hudTitle.isEmpty() ? "" : hudTitle + ": ") + label(n),
+                            String.valueOf(get(n.entry)), ownColour(n.entry), c -> setQuiet(n, c), () -> n.config.save()));
+                }
             }
             default -> { }
         }

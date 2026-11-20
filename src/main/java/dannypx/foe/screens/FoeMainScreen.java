@@ -299,7 +299,11 @@ public class FoeMainScreen extends Screen {
         int value = Configs.rendererConfig.foePlusColor.get();
         Component sign;
         String name;
-        if (dannypx.foe.helper.NameTagMarker.isListColor(value) || (!dev && !beta)) {
+        int custom = dannypx.foe.screens.element.hud.GameXpBar.parse(Configs.rendererConfig.foePlusCustomColor.get());
+        if (custom >= 0) {
+            sign = dannypx.foe.helper.NameTagMarker.rgbMarker(custom);
+            name = "Custom";
+        } else if (dannypx.foe.helper.NameTagMarker.isListColor(value) || (!dev && !beta)) {
             sign = dannypx.foe.helper.NameTagMarker.colorMarker(value);
             name = dannypx.foe.helper.NameTagMarker.plusColor(value).name();
         } else if (dev) {

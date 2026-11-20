@@ -129,6 +129,24 @@ public abstract class ClientPacketListenerMixin {
         dannypx.foe.helper.Safe.run("menu content (silent)", () -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onContainerContent(packet.containerId(), packet.items()));
     }
 
+    /// The trails fish leave coming to the bobbers: whose each is (for the catch ring), and other players' hidden when
+    /// "Hide other players' fish trails" is on.
+    @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
+    private void foe$fishTrail(net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
+        try {
+            if (!Minecraft.getInstance().isSameThread()) return;
+            var type = packet.getParticle().getType();
+            if (type == net.minecraft.core.particles.ParticleTypes.FISHING) {
+                if (dannypx.foe.handler.logic.FishApproach.onSplash(packet.getX(), packet.getY(), packet.getZ())) ci.cancel();
+            } else if (type == net.minecraft.core.particles.ParticleTypes.BUBBLE) {
+                if (dannypx.foe.handler.logic.FishApproach.onBubble(packet.getX(), packet.getY(), packet.getZ())) ci.cancel();
+            }
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("ClientPacketListenerMixin.foe$fishTrail", foe$t);
+        }
+    }
+
     @Inject(method = "handleBlockDestruction", at = @At("HEAD"))
     private void injectHandleBlockDestruction(ClientboundBlockDestructionPacket clientboundBlockDestructionPacket, CallbackInfo ci) {
         try {

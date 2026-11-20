@@ -20,26 +20,34 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | Panel | What it shows |
 |---|---|
 | **Contest** | Time left, contest type, the fish you need (Fish: in its rarity colour), the best baits (as pictures or by name; with only the best one shown, hover it with chat open for the rest), the top 3 and your rank. Warns you when you're not in the contest area. |
-| **Daily Quests** | Exact progress on each daily quest, updated after every catch. Quests you can do anywhere say "Anywhere"; number each mission (#1, #2...) if you like. |
+| **Daily Quests** | Exact progress on each daily quest, updated after every catch. Quests you can do anywhere say "Anywhere"; number each mission (#1, #2...) if you like. Place names sit in the middle (a setting of its own, not moved by the text alignment). Loads a second or two after you join. |
 | **Quests** | Your active location quests. |
 | **All-Time Stats** | Total Caught (with the share of your catches that were fish), fish per hour, fish time (the server's "Time Fishing" from your /menu profile, read on each login and counted up from there) and quests; Total Pets, Shards, Infusion Capsules and Lightning Bottles with their dry streaks; then rarities, variants and Gigantic. |
-| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Refreshes automatically when you change location. Luck has a green clover (a setting). |
-| **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (♣) and a Gold Rush (⚠, shards 1 in 25), each about 15 minutes while its symbol is on the boss bar, and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes.  Weather shows here too: rain showers, thunderstorms and supercells (one at a time, wherever you are), with how long they have left once FOE+ has seen one end, and the moon while it's up (10 minutes, every 160 minutes) with its time left. Global Money and XP boosters show here too, counting down; Luck and Scale boosters show next to their numbers on Luck & Scale. FOE+ checks /active quietly a few seconds after you join, every 15 minutes, after a booster's chat line and when a booster ends so boosters popped before you logged in show as well. |
+| **Luck & Scale** | Your real Luck and Scale, read from your `/menu` profile so boosters count, with a live countdown while a global Luck or Scale booster is on. Loads a second or two after you join (FOE+ reads /menu before its other quiet commands) and refreshes automatically when you change location. Luck has a green clover (a setting). |
+| **Events** | An active Fish Frenzy (where, and how long is left of its hour), a Blooming Oasis (♣) and a Gold Rush (⚠, shards 1 in 25), each about 15 minutes while its symbol is on the boss bar, and an active Fabled event (until it's caught). Kept in sync with `/events`, which FOE+ checks quietly every 15 minutes.  Weather shows here too: rain showers, thunderstorms and supercells (one at a time, wherever you are), with how long they have left once FOE+ has seen one end, and the moon while it's up (10 minutes, every 160 minutes) with its time left. Just the event and its time: what each one does ("+100% Pet Luck") is off unless you turn on *Show event descriptions*. Global Money and XP boosters show here too, counting down; Luck and Scale boosters show next to their numbers on Luck & Scale. FOE+ checks /active quietly a few seconds after you join, every 15 minutes, after a booster's chat line and when a booster ends so boosters popped before you logged in show as well. |
 | **Mini Event** | The mini event from /minievent: when the daily missions reroll ("Rerolls 23h 55m 2s") and every mission with its progress, in the server's colours (GIGANTIC as a badge). Missions go up as you catch, like Daily Quests, only when the catch matches everything the mission names (place, GIGANTIC and the other sizes, ALBINO and the other variants, rarity, fish); a finished one shows its ✔ for a few seconds and then leaves until the daily reroll (repeatable ones stay). FOE+ checks /minievent quietly every 10 minutes, about a minute after catches and right after the reroll, hiding its answer. Hidden when no mini event is on; can be set to show only while you're at the event's location. |
 | **Session Stats** | Everything All-Time Stats shows, for this session only: fish caught, fish/hour and fish time, quests, pets, shards, capsules, bottles, each rarity, gigantic and each variant, with shares and fish since the last one this session. Counted from your catches and cleared when you log out. Can be turned off. |
-| **Pet** | Your equipped pet (framed in its rating colour, or its rarity colour with *Colour around the pet*), its level and XP bar (the game's look, or FOE+'s filled bars), its rating, the item it's holding, and **Max Luck** / **Max Scale** / **Max** when its rolls here are as good as they get (green clover by default). The item box and the item line can each be hidden. |
+| **Pet** | Your equipped pet (framed in its rating colour, or its rarity colour with *Colour around the pet*), its level and XP bar (the game's look, or FOE+'s filled bars, in any colour you pick), its rating, the item it's holding, and **Max Luck** / **Max Scale** / **Max** when its rolls here are as good as they get (green clover by default). The item box and the item line can each be hidden. |
 | **Chummer** | A chummer in range: the server's rarity badge, its picture and the time it has left. In the top bar on the FOE+ style (the badge over the time, or a short badge beside the picture or on its corner); its own small HUD (size it as you like) on the FOE-R style. |
 | **Bait** | The bait on your rod and how many you have left. On the FOE-R style it's a slot like the bottom bar's: the bait, and how many are left under it. |
 | **Alerts** | Active and upcoming cryptid windows with live timers. |
 | **Warning** | Wrong pet for this location (names the right one), wrong armor climate, a saltwater rod at a freshwater place (or the other way round), or a nearly full inventory. Not shown at Cypress Lake's spawn until you reach the water. Its text is centred and it stays where you put it. |
 | **Top bar** | Your name and level (in the exact colours chat gives it, animated ones too), level progress, location in the travel menu's colours, the spot you're at (Big Bear Dock, Thunderwood Marina...), catch range, weather, the in-game time (ticking minute by minute), balance, credits, catches and catch rate, the server's TPS and your ping, plus the community event total and your contribution. Every part can be turned off in **HUD settings → Top bar**. Fits any screen size. |
-| **Timers** | Next to your inventory and as a HUD panel: next moon, Tackle Shop restock (every 4 hours, ✔ once you've checked it), Cosmetic Store reset (7pm EST), your votes (x/7 in the last 24 hours), and the community goal under a line: how far along it is, catches per hour and when it'll be reached. |
+| **Timers** | Next to your inventory and as a HUD panel: next moon, Tackle Shop restock (every 4 hours, ✔ once you've checked it), Cosmetic Store reset (7pm EST) and your votes (x/7 in the last 24 hours). Starts with the Community Catches inside it. |
+| **Community Catches** | The community goal: how far along it is (with its XP bar, in any colour you pick), catches per hour, when it'll be reached and what you helped. Inside the Timers to start with; split it off to give it its own place. |
 | **Social** | Whether a crew member is in range, then your crew and friends, online first, with the instance each is on ("InfernalShadow (i5)", from a quiet /find). In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
-| **Catch popup** | Big popup for the fish you just caught. |
+| **Catch popup** | Big popup for the fish you just caught. Give it a box with a border in any colour. |
 | **FOE-R boxes** | With the FOE-R HUD style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures. Only shown (and only in the HUD Editor) while that style is on. |
 | **FOE-R bottom bar** | With the FOE-R HUD style: the hotbar in a dark brown frame, with your rod parts and armour above it. Each part can be turned off. |
-| **Catch ring** | While you reel a fish in, a ring round the crosshair fills clockwise in green, and flashes full when it's caught. Move and size it like a panel. |
+| **Catch ring** | A ring by the crosshair that fills in blue as a fish swims to your bobber (from its trail in the water, so you see the bite coming), then in green as you reel it in, and flashes full when it's caught. It only follows your own fish, even with other bobbers around, and other players' fish trails can be hidden (on by default). Both colours are yours to pick. Move and size it like a panel. |
+
+### Combining HUDs
+
+Put text HUDs inside each other so they share one box (Timers with the Community Catches, Quests with the Daily Quests...), each under a line with its title. Everything inside keeps updating as before.
+- **In the mover:** hold **Shift** and drop a HUD onto another (it outlines green when it can go in). Point at a combined HUD for its buttons on each part: **▲ ▼** to change the order (▲ on the first one makes it the top HUD, in the same place), two columns, and **✕** to split it back off to its own place.
+- **In the HUD Editor:** the **Combine** tab lists the parts with the same buttons, and **+ Add a HUD…**. The Lines tab shows every part's lines, each hidden in its own HUD.
+- **Two columns:** a HUD of many short lines (the quests) can lay them out side by side, so a combined box isn't left half empty.
 
 The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of them back on in **O → Custom HUDs**. The first time you join with FOE+ the panels start in a tidy layout instead of on top of each other.
 
@@ -52,6 +60,7 @@ The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of t
 - Each option has the control that fits it: a switch, a ‹ › picker (right-click goes back), a slider with its value, a text box, a key.
 - **Search** (Ctrl+F) finds any option, shown under where it lives.
 - **Reset** puts the page (or the HUD) you're looking at back to its starting values; **Classic view** opens the old settings screen.
+- **Colours** open a colour wheel: pick the hue and strength on the wheel and the brightness beside it, type a hex code, or use one of the ready colours. It shows on the HUD as you pick. Each HUD with an XP bar has its own XP bar colour, and so do the catch ring and the catch popup's border.
 
 ---
 
@@ -62,6 +71,7 @@ Pick any of FOE+'s panels and change how it looks: line spacing, padding, the bo
 - **HUD style:** FOE+'s panels, or the FOE-R look (boxes with rails in place of the top bar, and the FOE-R bottom bar).
 - **Per HUD:** each HUD can have its own **Style** (FOE+ or FOE-R), its **Border** turned off, and be **Shown** or hidden, right in the editor.
 - **Item icon style:** FOE+'s rarity dot and rating letter, or FOE's rarity corner, for players coming from FOE.
+- **Any colour:** the box, border and title colour rows end in a **+** that opens the colour wheel.
 - Panel frames stay crisp at any size, and small panels never shrink below readable.
 
 ---
@@ -200,7 +210,7 @@ The server's Presets menu on one screen, without paging.
 
 <p align="center"><img src="docs/images/foe-plus-bait-prices.png" alt="FOE+ Bait Prices" width="560"></p>
 
-- **Bait sorter (`B`):** merges and sorts the baits and lures (mythical ones too) in your inventory, chests and vault, by rarity, amount or name. Every copy of a bait on a vault page merges through the one in your inventory and goes back, and twins that are only in the vault are pulled out to merge. It remembers the order you last picked on the vault's sort buttons.
+- **Bait sorter (`B`):** merges and sorts the baits and lures (mythical ones too; lures written by the server in older and newer ways match up) in your inventory, chests and vault, by rarity, amount or name. Every copy of a bait on a vault page merges through the one in your inventory and goes back, and twins that are only in the vault are pulled out to merge. It remembers the order you last picked on the vault's sort buttons.
 - **Save Layout:** arrange a vault page the way you like and press **Save Layout**: from then on `B` puts every item on that page back in the slot you saved it in, until you use one of the sort buttons. Each page has its own; Shift-click to forget it.
 - **Personal Vault:** page buttons 1–7, a **Bait Sorter** box (sort baits by amount, rarity or name; name groups every Crankbait together), an **Armor Sorter** box (by quality, rarity, climate or rolls) and a **Pet Sorter** box (by percent, luck, scale, rarity or name). Everything else stays put, Shift-click reverses, the boxes are on chests too, and locked pages show their rank badge.
 - **Bait Prices (Tools → Bait Prices):** what a bait is worth to you: a price for each rarity, and your own price for any single bait. Every bait and lure from the wiki's Tacklebox list is there with its rarity and picture.
@@ -211,6 +221,7 @@ The server's Presets menu on one screen, without paging.
 
 <p align="center"><img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="640"></p>
 
+- **Trade value:** on a trade, a box beside each side of the menu adds up what it puts in: fish at their sell value, bait and lures at your bait prices, pets at your pet prices, money offered, and how many other things; under theirs, what you gain or lose by it. Estimates from your own prices; can be turned off in Inventory settings.
 - **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
 - **Inventory search:** the Personal Vault's search bar above your inventory and in chests too; matching items get a red outline (the search help shows only on the vault's bar), and while you type, keys like Q and 1–9 don't drop or swap items.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
@@ -220,7 +231,7 @@ The server's Presets menu on one screen, without paging.
 - **Dismiss warnings (`-`):** hides the warning box until you move to another location.
 - **Bobber timer:** how long your bobber has been out ("12.4s") floating over your own bobber; it hides once a fish is on. On by default (from FOE's bobber tracker).
 - **Bobber presets:** 36 colour sets for the 3D bobber (Classic, Cherry, Ocean, Ice, Lime, Emerald, Mint, Gold, Bee, Pumpkin, Lava, Candy, Royal, Galaxy, Midnight, Snow, Diamond, Ruby, stripes, polka dots, Galaxy Swirl, Gradient, Sunset, Toxic, Checkered, Pixel, Wave, Forest and Snowflake), with sharp textures and a real preview, picked in **O → Bobber**. Other FOE+ users near you see your preset, and you see theirs. Players without FOE+ stay Classic.
-- **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours). Optionally the FOE+ icon above their heads, and the + in the tab list.
+- **FOE+ users:** a **+** (with a 1-pixel gap so it never touches) after the name of nearby players who use FOE+, in the colour they pick in the O menu (16 colours, or any colour on the colour wheel; players on an older FOE+ see the nearest of the 16). Optionally the FOE+ icon above their heads, and the + in the tab list.
 - **Hide offline friends:** one button in **O → Social** hides offline crew and friends on the Social panel and next to your inventory.
 - **Chat tags:** the server's tags are small boxes (Social Media is a yellow **M**).
 - **Safety net:** if the server changes how something looks, the FOE+ part that reads it is skipped instead of crashing your game.
@@ -238,7 +249,7 @@ The server's Presets menu on one screen, without paging.
 **Your own triggers** (like ChatNotify):
 - **Match:** up to four triggers and three exceptions, each Contains, Whole word, Starts with, Regex or a translation key; case sensitive or not, and skip your own messages.
 - **Sound:** any sound, volume, pitch, and a cooldown so it doesn't spam.
-- **Also:** colour the matched words, make them bold or underlined, show a title on screen, and flash the game in your taskbar.
+- **Also:** colour the matched words (any colour, on the colour wheel), make them bold or underlined, show a title on screen, and flash the game in your taskbar.
 
 ---
 

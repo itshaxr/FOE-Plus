@@ -25,6 +25,7 @@ public final class ContainerBoxes {
         if (!Configs.mainConfig.enableMod.get()) return;
         if (screen instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen
                 || screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen) return;
+        TradeValueBox.render(g, screen);
         boolean[] w = which(screen.getTitle().getString(), screen instanceof ContainerScreen);
         boolean fish = w[0] && FishValueBox.shown(screen);
         if (fish) FishValueBox.render(g, screen, ((ContainerScreen) screen).getMenu().getRowCount(), "Chest");
