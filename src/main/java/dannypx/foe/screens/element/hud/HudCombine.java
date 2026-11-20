@@ -37,6 +37,7 @@ public final class HudCombine {
         PARTS.put("StatsPanelElement", StatsPanelElement::new);
         PARTS.put("SessionStatsPanelElement", SessionStatsPanelElement::new);
         PARTS.put("MiniEventPanelElement", MiniEventPanelElement::new);
+        PARTS.put("LuckScalePanelElement", LuckScalePanelElement::new);
     }
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

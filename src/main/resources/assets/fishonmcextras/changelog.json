@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.0.95+1.21.11",
+      "name": "FOE+ 1.0.95+1.21.11",
+      "datePublished": "2026-11-20",
+      "changelog": "## What's Changed\n- Luck & Scale can be combined with other HUDs (Shift-drop it in Move HUD Elements, or the HUD Editor's Combine tab) by @phckd\n- Pet prices no longer show on the tooltips in Move HUD Elements (only on pets in menus) by @phckd\n- Pet Prices screen says \"Max Luck\" / \"Max Scale\" by @phckd"
+    },
+    {
       "versionNumber": "1.0.94+1.21.11",
       "name": "FOE+ 1.0.94+1.21.11",
       "datePublished": "2026-11-20",

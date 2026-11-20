@@ -290,8 +290,8 @@ public class PetPriceScreen extends Screen {
                     .append(pet.getRarityComponent()).append(Component.literal(" "))
                     .append(pet.getName())
                     .append(Component.literal("  " + (int) Math.floor(pet.getTotalPercent() * 100 + 1e-6) + "%").withStyle(ChatFormatting.WHITE));
-            if (petLuck) line.append(Component.literal("  ♣ max luck").withColor(0x55FF55));
-            if (petScale) line.append(Component.literal("  ⚓ max scale").withColor(0x4C88F1));
+            if (petLuck) line.append(Component.literal("  ♣ Max Luck").withColor(0x55FF55));
+            if (petScale) line.append(Component.literal("  ⚓ Max Scale").withColor(0x4C88F1));
             if (petRow < 0 || petRarity < 0) return line.append(Component.literal("  (no price for it in the table)").withStyle(ChatFormatting.GRAY));
             return line.append(Component.literal("  →  ").withStyle(ChatFormatting.DARK_GRAY))
                     .append(Component.literal(PetPrices.format(PetPrices.price(petRow, petRarity, petLuck, petScale))).withStyle(ChatFormatting.GREEN));

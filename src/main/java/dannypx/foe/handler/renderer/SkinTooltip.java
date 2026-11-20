@@ -21,15 +21,22 @@ public final class SkinTooltip {
     private static long pendingAt = 0L;
 
     private static net.minecraft.world.item.ItemStack hovered = null;
+    private static long hoveredAt = 0L;
 
-    /// The item under the mouse in a menu, or null.
+    /// The item under the mouse in the menu open now, or null: it's set as a menu draws its tooltip, so outside a
+    /// menu (the HUD mover, the settings), or once it's a moment old, it's nobody's (the pet price would land on
+    /// those screens' own tooltips).
     public static net.minecraft.world.item.ItemStack hovered() {
+        if (!(net.minecraft.client.Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>))
+            return null;
+        if (System.nanoTime() - hoveredAt > 250_000_000L) return null;
         return hovered;
     }
 
-    /// The item under the mouse in a menu (for the dump).
+    /// The item under the mouse in a menu (for the dump and the pet price).
     public static void hover(net.minecraft.world.item.ItemStack stack) {
         hovered = stack;
+        hoveredAt = System.nanoTime();
     }
 
     private static String itemInfo(net.minecraft.world.item.ItemStack s) {

@@ -44,7 +44,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 
 ### Combining HUDs
 
-Put text HUDs inside each other so they share one box (Timers with the Community Catches, Quests with the Daily Quests...), each under a line with its title. Everything inside keeps updating as before.
+Put text HUDs inside each other so they share one box (Timers with the Community Catches, Quests with the Daily Quests, Luck & Scale with your Stats...), each under a line with its title. Everything inside keeps updating as before.
 - **In the mover:** hold **Shift** and drop a HUD onto another (it outlines green when it can go in). Point at a combined HUD for its buttons on each part: **▲ ▼** to change the order (▲ on the first one makes it the top HUD, in the same place), two columns, and **✕** to split it back off to its own place.
 - **In the HUD Editor:** the **Combine** tab lists the parts with the same buttons, and **+ Add a HUD…**. The Lines tab shows every part's lines, each hidden in its own HUD.
 - **Two columns:** a HUD of many short lines (the quests) can lay them out side by side, so a combined box isn't left half empty.
