@@ -60,7 +60,29 @@ public class CrewPanelElement extends PanelElement {
         if (!Configs.inventoryScreenConfig.timersCrew.get()) return List.of();
         // offline names follow the inventory box's "Show offline names" switch, so both always agree
         TimersCrewBox.Crew crew = TimersCrewBox.crew();
-        return lines(crew.range(), crew.total(), TimersCrewBox.legend(), crew.onlineNames(), crew.offlineNames());
+        List<Component> all = lines(crew.range(), crew.total(), TimersCrewBox.legend(), crew.onlineNames(), crew.offlineNames());
+        return fitBelow(all, roomForLines());
+    }
+
+    /// How many lines fit between where the panel starts and the screen's bottom, for a panel anchored at the top
+    /// (it grows down: kept on screen, a longer list used to push the whole panel up instead); no limit otherwise.
+    private int roomForLines() {
+        Alignment a = configAlignment();
+        if (a != Alignment.TOP_LEFT && a != Alignment.TOP_RIGHT) return Integer.MAX_VALUE;
+        Minecraft mc = Minecraft.getInstance();
+        float s = Math.max(0.1f, scale());
+        float screenH = mc.getWindow().getGuiScaledHeight() / s;
+        float room = screenH - screenH * configY() - 24;      // its border, title and padding
+        return Math.max(3, (int) (room / (mc.font.lineHeight + 2)));
+    }
+
+    /// Package-private for tests: the first lines that fit in `max`, the last one then saying how many more there
+    /// are ("+4 more").
+    static List<Component> fitBelow(List<Component> lines, int max) {
+        if (lines.size() <= max) return lines;
+        List<Component> out = new ArrayList<>(lines.subList(0, max - 1));
+        out.add(Component.literal("+" + (lines.size() - (max - 1)) + " more").withStyle(ChatFormatting.DARK_GRAY));
+        return out;
     }
 
     /// Package-private for tests: the panel's lines: the range line, then (when there's anyone) the key and the

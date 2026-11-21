@@ -44,6 +44,8 @@ public final class HudLooks {
         /// The title in your own words ("" for the panel's own), and the lines laid out in columns (names on the
         /// left, numbers lined up on the right) instead of as sentences.
         public String title = "";
+        /// No title at all: no name on its border (nor as its first line).
+        public boolean noTitle = false;
         public boolean columns = false;
         /// Its lines split into two columns side by side (half on the left, the rest on the right), for HUDs of many
         /// short lines (the quests).
@@ -76,7 +78,7 @@ public final class HudLooks {
         public boolean isDefault() {
             return lineSpacing == 2 && padding == 0 && boxColor == 0 && opacity == -1 && borderColor == 0xFFFFFF
                     && titleColor == -1 && "AUTO".equals(align) && picture.isEmpty() && hidden.isEmpty()
-                    && (title == null || title.isEmpty()) && !columns && !twoColumns && (image == null || image.isEmpty())
+                    && (title == null || title.isEmpty()) && !noTitle && !columns && !twoColumns && (image == null || image.isEmpty())
                 && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode());
         }
 
@@ -132,7 +134,7 @@ public final class HudLooks {
     private static void copyInto(Look from, Look to) {
         to.lineSpacing = from.lineSpacing; to.padding = from.padding; to.boxColor = from.boxColor; to.opacity = from.opacity;
         to.borderColor = from.borderColor; to.titleColor = from.titleColor; to.align = from.align; to.picture = from.picture;
-        to.title = from.title; to.columns = from.columns; to.twoColumns = from.twoColumns; to.hidden = new ArrayList<>(from.hidden);
+        to.title = from.title; to.noTitle = from.noTitle; to.columns = from.columns; to.twoColumns = from.twoColumns; to.hidden = new ArrayList<>(from.hidden);
         to.image = from.image; to.imageSize = from.imageSize; to.imageX = from.imageX; to.imageY = from.imageY;
         to.imageOpacity = from.imageOpacity; to.imageInFront = from.imageInFront; to.imageFill = from.imageFill;
         to.style = from.style; to.border = from.border; to.frame = from.frame;

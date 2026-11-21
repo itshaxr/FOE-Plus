@@ -82,6 +82,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                         && !dannypx.foe.handler.logic.FriendInfoHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.ActiveBoostersHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.MiniEventHandler.instance().onGameMessage(message)
+                        && !dannypx.foe.handler.logic.AutotipHandler.instance().hidePayLine(message.getString())
                         && ContestTrackerHandler.instance().filterGameMessage(message)), true);
             dannypx.foe.handler.logic.FoeProfiler.end("chat FOE+ readers", _p);
             return keep;

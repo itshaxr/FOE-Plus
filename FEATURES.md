@@ -37,7 +37,7 @@ Panels stay exactly where you put them (only kept on screen), and can overlap if
 | **Community Catches** | The community goal: how far along it is (with its XP bar, in any colour you pick), catches per hour, when it'll be reached and what you helped. Inside the Timers to start with; split it off to give it its own place. |
 | **Social** | Whether a crew member is in range, then your crew and friends, online first, with the instance each is on ("InfernalShadow (i5)", from a quiet /find). In the inventory a **+** adds a friend and the list scrolls. |
 | **Equipment bar** | Armor, rod parts and bait at a glance. |
-| **Catch popup** | Big popup for the fish you just caught. Give it a box with a border in any colour. |
+| **Catch popup** | Big popup for the fish (or pet) you just caught. Give it a box with a border in any colour, and let it **fade away**. The pet popup is yours to set: turn its name, rarity, level, rating, stats, stat names and held item on or off. `/foe showpet` shows it for the pet in your hand (or the one you have out), to show it off. |
 | **FOE-R boxes** | With the FOE-R HUD style: profile, pet and location boxes in place of the top bar, with FOE+'s own weather pictures. Each has its own border colour, box colour (colour wheel) and box opacity; the pet box has the pet HUD's options too (Pet XP, colour around the pet, Green Max Luck, the held item bar). Only shown (and only in the HUD Editor) while that style is on. |
 | **FOE-R bottom bar** | With the FOE-R HUD style: the hotbar in a dark brown frame, with your rod parts and armour above it. Size it, colour its border and glass, and drag the rod parts and armour bars anywhere in Move HUD Elements (scroll over them to size them). Each part can be turned off. |
 | **Catch ring** | A ring by the crosshair that fills in blue as a fish swims to your bobber (from its trail in the water, so you see the bite coming), then in green as you reel it in, and flashes full when it's caught. It only follows your own fish, even with other bobbers around, and other players' fish trails can be hidden (on by default). Both colours are yours to pick. Move and size it like a panel. |
@@ -69,7 +69,7 @@ The default FOE-R HUDs start hidden so the screen isn't cluttered. Turn any of t
 Pick any of FOE+'s panels and change how it looks: line spacing, padding, the box's colour and how see-through it is, the border's and title's colours, text alignment (follow the corner, or always left, centred or right), lines to hide, and your own picture (PNG or GIF, it plays) from `config/fishonmcextras/hud_images/`.
 
 - **HUD style:** FOE+'s panels, or the FOE-R look (boxes with rails in place of the top bar, and the FOE-R bottom bar).
-- **Per HUD:** each HUD can have its own **Style** (FOE+ or FOE-R), its **Border** turned off, and be **Shown** or hidden, right in the editor.
+- **Per HUD:** each HUD can have its own **Style** (FOE+ or FOE-R), its **Border** turned off, **no title** at all, and be **Shown** or hidden, right in the editor.
 - **Item icon style:** FOE+'s rarity dot and rating letter, or FOE's rarity corner, for players coming from FOE.
 - **Any colour:** the box, border and title colour rows end in a **+** that opens the colour wheel. A HUD in the FOE-R look takes them too (its bars in the border colour, its title in the title colour).
 - Panel frames stay crisp at any size, and small panels never shrink below readable.
@@ -206,7 +206,7 @@ The server's Locations menu (`/tt`, or the travel NPC) opens as a detailed world
 - **Same clicks as the menu:** hover for the server's own tooltip, left-click to teleport, right-click to view species.
 - **Two maps:** **Realistic** (built from the places themselves, shown above) or **Fantasy** (the painted map). **Change view** switches between them and the server's plain menu any time; "Back to travel map" above that menu returns. Turn the map off altogether with **O → Travel map**.
 - **Favourites:** star one teleport spot in each place.
-- **What's on:** a Fabled fish waiting to be caught, a Fish Frenzy and its time left, or the place's own event, right on its place.
+- **What's on:** a Fabled fish waiting to be caught, a Fish Frenzy and its time left, the mini event, or the place's own event, right on its place.
 
 ## Fishing presets
 
@@ -237,7 +237,8 @@ The server's Presets menu on one screen, without paging.
 <p align="center"><img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="640"></p>
 
 - **Trade value:** on a trade, a box beside each side of the menu adds up what it puts in: fish at their sell value, bait and lures at your bait prices, pets at your pet prices, money offered, and how many other things; under theirs, what you gain or lose by it. Estimates from your own prices; can be turned off in Inventory settings.
-- **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total.
+- **Auto Tip (`M`):** automatically tips reaction winners and chummers, with per-tip amounts, rarity badges and a session total. One `[FOE+] AUTO TIP` line per tip (the server's matching PAY line is hidden).
+- **Private messages:** what you type after `/msg <name>` (or `/r`) is in the server's message green.
 - **Inventory search:** the Personal Vault's search bar above your inventory and in chests too; matching items get a red outline (the search help shows only on the vault's bar), and while you type, keys like Q and 1–9 don't drop or swap items.
 - **Inspect:** hold Shift to see fish details, pet % and armor rolls, or set Inspect to **Always On**, **Pets Only** or **Armor Only** in the O menu.
 - **Friends:** `/foe friend` (or **O → Social → Friends**) opens your friends in one window: add someone by name (online players come up as you type), see each friend's balance and crew on their card, and **Join instance** takes you to theirs. `/foe friend add <name>`, `remove` and `list` work too. Friends show on the Social panel in blue; a friend who is also in your crew is light blue with an orange ★ (the crew colour).

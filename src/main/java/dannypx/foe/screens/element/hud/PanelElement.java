@@ -400,7 +400,7 @@ public abstract class PanelElement extends Element {
             List<Component> more = laidOut(part, part.partLines());
             if (more.isEmpty()) continue;
             HudCombine.drawn(id);
-            Component rule = titledRule(part.shownTitle().getString());
+            Component rule = titledRule(part.look().noTitle ? "" : part.shownTitle().getString());
             ruleIds.put(rule, id);
             lines.add(rule);
             owners.add(null);
@@ -423,7 +423,9 @@ public abstract class PanelElement extends Element {
         if (tiny) lines.replaceAll(l -> isRule(l) || isIconRow(l) ? l : tinyText(l));
         lineOwners.clear();
         for (int i = 0; i < lines.size(); i++) if (owners.get(i) != null) lineOwners.put(lines.get(i), owners.get(i));
-        if (!lines.isEmpty() && foeR()) {
+        if (look().noTitle) {
+            // no title: nothing on top
+        } else if (!lines.isEmpty() && foeR()) {
             lines.addFirst(foeRTitle(shownTitle(), look().titleColor));
         } else if (!lines.isEmpty() && theme(look()) == PanelTheme.OFF) {
             lines.addFirst(look().titleColor < 0 ? shownTitle().copy().withStyle(ChatFormatting.GRAY) : shownTitle());
@@ -566,7 +568,7 @@ public abstract class PanelElement extends Element {
                 ? Math.max(colsWidth(colWidths(lines, font)), lines.stream().filter(l -> split(l) == null).mapToInt(l -> lineWidth(l, font)).max().orElse(0))
                 : lines.stream().mapToInt(l -> lineWidth(l, font)).max().orElse(0);
         int pic = picture().isEmpty() ? 0 : 11;
-        max = Math.max(max + iconSpace(), font.width(shownTitle()) + 8 + pic);
+        max = look().noTitle ? max + iconSpace() : Math.max(max + iconSpace(), font.width(shownTitle()) + 8 + pic);
         return max + PADDING * 4 + pad() * 2;
     }
 
@@ -883,7 +885,8 @@ public abstract class PanelElement extends Element {
             }
             guiGraphics.pose().popMatrix();
             // the title's plate stays with its text, at the panel's own size (snapped, the two
-            // could end up a pixel apart and the text ran off the plate)
+            // could end up a pixel apart and the text ran off the plate); none with no title
+            if (!look.noTitle) {
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_left"), titleX - 16, top - PADDING, 16, 16, white);
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_middle"), titleX, top - PADDING, titleWidth, 16, white);
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_right"), titleX + titleWidth, top - PADDING, 16, 16, white);
@@ -895,6 +898,7 @@ public abstract class PanelElement extends Element {
                 guiGraphics.pose().popMatrix();
             }
             guiGraphics.drawString(font, title, titleX + picW, top - font.lineHeight / 2 - 1, 0xFFFFFFFF, false);
+            }
         }
 
         // Icon boxes on the anchored side, text beside them.

@@ -167,12 +167,17 @@ public class MiniEventHandler {
     public boolean onGameMessage(Component message) {
         long now = System.currentTimeMillis();
         boolean ours = now < hideUntil;
-        boolean hide = false;
+        boolean hide = false, announcement = false;
         for (MutableComponent line : splitLines(message)) {
+            String text = ChatFormatting.stripFormatting(line.getString());
+            // the server's own news ("MURRAY MINI EVENT » MISSION COMPLETE" and its rewards, a pet drop) is never
+            // part of our /minievent's answer: its blank line inside used to hide the whole message when it came
+            // just after FOE+ asked
+            if (text != null && (UPDATE.matcher(text).matches() || PET_DROP.matcher(text).find())) announcement = true;
             boolean partOfOurs = ours || (capturing && captureOurs && now <= captureUntil);
             if (onLine(line, now, ours) && (partOfOurs || (capturing && captureOurs))) hide = true;
         }
-        return hide;
+        return hide && !announcement;
     }
 
     /// One line of chat; true when it belonged to a /minievent answer. Package-private for tests.
@@ -180,6 +185,8 @@ public class MiniEventHandler {
         String text = ChatFormatting.stripFormatting(line.getString());
         if (text == null) return false;
         if (capturing && now > captureUntil) finishCapture();
+        // the server's news arriving in the middle of our answer ends the answer (it isn't a mission of it)
+        if (capturing && (UPDATE.matcher(text).matches() || PET_DROP.matcher(text).find())) finishCapture();
         if (capturing && captureOurs) ours = true;
 
         Matcher m = HEADER.matcher(text);

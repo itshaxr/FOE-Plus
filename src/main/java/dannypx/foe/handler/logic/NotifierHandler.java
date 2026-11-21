@@ -241,9 +241,22 @@ public class NotifierHandler extends Handler {
                 .append(dannypx.foe.helper.FoeChat.dryStreak(dryStreak)));
     }
 
+    /// A pet rated Perfect (its rating word, or every stat at its max).
+    static boolean isPerfect(PetTagObject pet) {
+        try {
+            String rating = pet.getRatingComponent().getString();
+            StringBuilder plain = new StringBuilder();
+            for (char c : rating.toCharArray()) plain.append(Character.toLowerCase(TextHelper.normalLetter(c)));
+            return plain.toString().contains("perfect") || pet.getTotalPercent() >= 0.9995f;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     /// [FOE+] PET PULLED! <rarity badge> Eagle Pet (87.0% A) · Dry streak 164
     public void chatPet(PetTagObject pet, int petDryStreak, int rarityDryStreak) {
-        dannypx.foe.handler.store.NotifySounds.play("pet_pulled");
+        // a perfect one gets its own sound (on by default), else the usual one
+        dannypx.foe.handler.store.NotifySounds.play(isPerfect(pet) ? "perfect_pet" : "pet_pulled");
         if (!Configs.hudConfig.showPetCatchChat.get() || minecraft.player == null) return;
         MutableComponent line = dannypx.foe.helper.FoeChat.badgeLine("PET PULLED!", dannypx.foe.helper.FoeChat.PURPLE)
                 .append(rarityBadge(pet))

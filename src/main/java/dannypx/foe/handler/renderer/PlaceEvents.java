@@ -27,9 +27,17 @@ final class PlaceEvents {
     static List<Banner> live(FoeLocations.Location place, String itemName) {
         EventTimesHandler ev = EventTimesHandler.instance();
         AlertHandler al = AlertHandler.instance();
-        return at(place, itemName,
+        List<Banner> out = at(place, itemName,
                 ev.frenzyActive() ? ev.frenzyLocation() : "", ev.frenzyRemainingMs(),
                 al.isFabledActive(), al.fabledLocationName(), al.active());
+        // the mini event's place (lit up like a frenzy's)
+        var mini = dannypx.foe.handler.logic.MiniEventHandler.instance();
+        if (place != null && mini.active() && mini.location() == place) {
+            int c = mini.eventColor() & 0xFFFFFF;
+            out = new ArrayList<>(out);
+            out.add(new Banner(sym("\u2726", c), "Mini Event!", StoreTimerHandler.clock(mini.endsInMs()) + " left", c));
+        }
+        return out;
     }
 
     /// Package-private for tests: the same, from the facts given. `itemName` is the menu item's name: the

@@ -111,7 +111,8 @@ public class CatchingHandler extends Handler {
             }
         } else if (!scanDone && System.currentTimeMillis() > startScanTime + (Configs.handlerConfig.catchingStatusCooldown.get() * 1000L)){
             this.scanDone = true;
-            LoggerHandler._debug("Did not find fish");
+            // in the log, so a catch that was missed (no variant line, no dry streak) can be looked into
+            LoggerHandler.info("catch not found: looked for \"" + fishNameToFind + "\" among your new fish");
         }
     }
 
@@ -150,6 +151,12 @@ public class CatchingHandler extends Handler {
                     Pair<Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setPet(validatePet.value2());
                     lastCaughtPet = validatePet.value2();
                     lastDataPet = prevStats;
+                } else if (source == PetSourceHandler.Source.UNKNOWN) {
+                    // the reward line ("QUEST Complete [#3] ... 1x Fox Pet") can come a moment after the pet:
+                    // look again in two seconds
+                    ItemStack copy = itemStack.copy();
+                    PetTagObject pet = validatePet.value2();
+                    CodeExecuterHandler.runLater(40, () -> RewardPets.notify(copy, pet, PetSourceHandler.instance().sourceOfNewPet()));
                 } else {
                     RewardPets.notify(itemStack, validatePet.value2(), source);
                 }
@@ -216,12 +223,34 @@ public class CatchingHandler extends Handler {
             if(validatedFish.value1()
                     && validatedFish.value2().isOwn()
                     && !InventoryHandler.instance().getTrackedFish().contains(validatedFish.value2().getID())
-                    && fishNameToFind.contains(itemStack.getHoverName().getString())
+                    && sameFishName(fishNameToFind, itemStack.getHoverName().getString())
             ) {
                 return validatedFish.value2();
             }
         }
         return null;
+    }
+
+    /// Whether the catch's name on screen (`shown`, with the server's badges) is this item's name (`item`): by their
+    /// letters alone, either holding the other (a variant's item or title can carry "Albino" where the other
+    /// doesn't, and missed the catch: no variant line, no dry streak). Package-private for tests.
+    static boolean sameFishName(String shown, String item) {
+        if (shown == null || item == null) return false;
+        if (shown.contains(item)) return true;
+        String a = letters(shown), b = letters(item);
+        if (a.length() < 3 || b.length() < 3) return false;
+        return a.contains(b) || b.contains(a);
+    }
+
+    /// A name's ordinary letters and spaces only (small capitals made plain), lower case, single spaces.
+    static String letters(String s) {
+        StringBuilder b = new StringBuilder();
+        for (char c : s.toCharArray()) {
+            char n = dannypx.foe.helper.TextHelper.normalLetter(c);
+            if (n < 0x3000 && Character.isLetter(n)) b.append(Character.toLowerCase(n));
+            else if (b.length() > 0 && b.charAt(b.length() - 1) != ' ') b.append(' ');
+        }
+        return b.toString().trim();
     }
 
     public void scanFishListener(Component title) {

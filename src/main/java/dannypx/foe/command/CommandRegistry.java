@@ -72,6 +72,23 @@ public class CommandRegistry {
                                 .then(command("list").executes(Command.Friend::list))
                         )
                         .then(command("item").executes(Command.Foe::copyHeldItem))
+                        .then(command("showpet").executes(ctx -> {
+                            // the pet popup, to show a pet off: the one in your hand, else the one you have out
+                            var mc = Minecraft.getInstance();
+                            dannypx.foe.item.PetTagObject pet = null;
+                            if (mc.player != null) {
+                                var held = dannypx.foe.item.ValidateItem.isPet(mc.player.getMainHandItem());
+                                if (held.value1()) pet = held.value2();
+                            }
+                            if (pet == null) pet = dannypx.foe.handler.logic.InventoryHandler.instance().getCurrentPet();
+                            if (pet == null || pet.getName().getString().isBlank()) {
+                                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("PET", dannypx.foe.helper.FoeChat.PURPLE)
+                                        .append(dannypx.foe.helper.FoeChat.text("Hold a pet (or have one out) to show it off")));
+                                return 0;
+                            }
+                            dannypx.foe.screens.element.hud.CatchPopupElement.showOff(pet);
+                            return 1;
+                        }))
                         .then(command("menu").then(command("dump").executes(Command.Crew::dumpMenus)))
                         .then(command("memory").executes(ctx -> {
                             var report = dannypx.foe.handler.logic.MemoryGuard.writeReport("asked for");

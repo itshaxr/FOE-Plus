@@ -68,6 +68,7 @@ public final class NotifySounds {
             new Kind("gigantic", "Gigantic", Group.CATCHES, 0xFF5555, false),
             new Kind("rare_catch", "Capsule / Lightning Bottle", Group.CATCHES, 0xB04CFF, false),
             new Kind("pet_pulled", "Pet pulled", Group.CATCHES, 0xB04CFF, false),
+            new Kind("perfect_pet", "Perfect pet pulled", Group.CATCHES, 0xFF55FF, true),
             new Kind("reward_pet", "Contest / event / quest pet", Group.CATCHES, 0xFFAA00, false),
 
             new Kind("friend_online", "Friend online", Group.SOCIAL, 0x55FFFF, false),
@@ -222,7 +223,10 @@ public final class NotifySounds {
                         s.echoVolume = 0.5f;
                     }
                 }
-                default -> { }
+                default -> {
+                    // a perfect pet: a fanfare from the start (pick another in Sounds)
+                    if (id.equals("perfect_pet")) s.sound = "minecraft:ui.toast.challenge_complete";
+                }
             }
         } catch (Throwable ignored) {
             // config not loaded (tests): the plain defaults

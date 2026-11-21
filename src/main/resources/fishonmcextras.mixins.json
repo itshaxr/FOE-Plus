@@ -36,6 +36,7 @@
     "inject.AvatarRenderStateMixin",
     "inject.BossHealthOverlayMixin",
     "inject.ChatScreenMixin",
+    "inject.CommandSuggestionsMixin",
     "inject.ClientPacketListenerMixin",
     "inject.SoundManagerMixin",
     "inject.ContextualBarRendererMixin",

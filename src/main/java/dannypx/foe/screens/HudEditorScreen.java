@@ -158,13 +158,19 @@ public class HudEditorScreen extends Screen {
             return;
         }
         HudLooks.Look l = look();
-        net.minecraft.client.gui.components.EditBox name = new net.minecraft.client.gui.components.EditBox(font, left + 64, y, COL_W - 64, H, Component.literal("Title"));
+        net.minecraft.client.gui.components.EditBox name = new net.minecraft.client.gui.components.EditBox(font, left + 64, y, COL_W - 64 - 46, H, Component.literal("Title"));
         name.setMaxLength(32);
         name.setValue(l.title == null ? "" : l.title);
         name.setHint(Component.literal(panel().titleText().getString()).withStyle(ChatFormatting.DARK_GRAY));
         name.setResponder(t -> { l.title = t.strip(); changed(); });
         name.setTooltip(Tooltip.create(Component.literal("Call this HUD anything you like (empty: its own name)")));
+        name.active = !l.noTitle;
         this.addRenderableWidget(name);
+        // or no title at all
+        this.addRenderableWidget(Button.builder(Component.literal(l.noTitle ? "None" : "Show").withStyle(l.noTitle ? ChatFormatting.RED : ChatFormatting.GREEN),
+                b -> { l.noTitle = !l.noTitle; changed(); rebuildWidgets(); }).bounds(left + COL_W - 44, y, 44, H)
+                .tooltip(Tooltip.create(Component.literal(l.noTitle ? "No title: nothing on its border. Click to show its title again"
+                        : "Showing its title. Click for no title at all"))).build());
         titleRowY = y;
         y += ROW;
         me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean shown = showSetting(panel().lookId());

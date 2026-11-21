@@ -103,21 +103,27 @@ public class CatchPopupElement extends Element {
 
     /// Package-private for tests and previews.
     static List<Line> petLines(PetTagObject pet, Component rarity) {
+        var cfg = Configs.hudConfig;
         List<Line> out = new ArrayList<>();
-        out.add(new Line(pet.getName().copy(), BIG));
+        if (cfg.petPopupName.get()) out.add(new Line(pet.getName().copy(), BIG));
 
-        MutableComponent level = Component.empty()
-                .append(rarity)
-                .append(Component.literal(" Lv. ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(String.valueOf(pet.getLevel())).withStyle(ChatFormatting.GREEN));
-        out.add(new Line(level, BIG));
+        // its rarity and (if wanted) level: "Lv. 0" for every pet just fished up, so off unless you turn it on
+        MutableComponent level = Component.empty();
+        if (cfg.petPopupRarity.get()) level.append(rarity);
+        if (cfg.petPopupLevel.get()) {
+            level.append(Component.literal(cfg.petPopupRarity.get() ? " Lv. " : "Lv. ").withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(String.valueOf(pet.getLevel())).withStyle(ChatFormatting.GREEN));
+        }
+        if (!level.getString().isEmpty()) out.add(new Line(level, BIG));
 
-        Component rating = pet.getRatingComponent();
-        int ratingColor = firstColor(rating, 0xFFFFFF);
-        MutableComponent ratingLine = Component.empty();
-        if (!rating.getString().isBlank()) ratingLine.append(rating).append(Component.literal(" "));
-        ratingLine.append(Component.literal(percent(pet.getTotalPercent())).withColor(ratingColor));
-        out.add(new Line(ratingLine, BIG));
+        if (cfg.petPopupRating.get()) {
+            Component rating = pet.getRatingComponent();
+            int ratingColor = firstColor(rating, 0xFFFFFF);
+            MutableComponent ratingLine = Component.empty();
+            if (!rating.getString().isBlank()) ratingLine.append(rating).append(Component.literal(" "));
+            ratingLine.append(Component.literal(percent(pet.getTotalPercent())).withColor(ratingColor));
+            out.add(new Line(ratingLine, BIG));
+        }
 
         // the four stats, then under them which is which: climate luck, climate scale, location luck, location scale
         int luck = PetPanelElement.luckColor();
@@ -129,7 +135,7 @@ public class CatchPopupElement extends Element {
             if (i > 0) row.append(Component.literal(i == 2 ? "    " : "  "));
             row.append(Component.literal(percent(stats[i])).withColor(stats[i] >= 0.9995f ? MAX_COLOR : (i % 2 == 0 ? luck : scale)));
         }
-        out.add(new Line(row, BIG));
+        if (cfg.petPopupStats.get()) out.add(new Line(row, BIG));
 
         dannypx.foe.helper.FoeLocations.Climate climate = dannypx.foe.helper.FoeLocations.climateFromId(pet.getString("climate"));
         dannypx.foe.helper.FoeLocations.Location location = dannypx.foe.handler.logic.PetLocationHandler.locationOf(pet);
@@ -141,9 +147,9 @@ public class CatchPopupElement extends Element {
         String place = location == null ? null : dannypx.foe.helper.FoeLocations.displayName(location);
         if (place != null) key.append(dannypx.foe.helper.FoeLocations.styledName(place)).append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
         key.append(Component.literal("Luck").withColor(luck)).append(Component.literal(" ")).append(Component.literal("Scale").withColor(scale));
-        out.add(new Line(key, MID));
+        if (cfg.petPopupStatNames.get()) out.add(new Line(key, MID));
 
-        ItemStack held = dannypx.foe.item.PetHeldItem.decodeUncached(pet);
+        ItemStack held = cfg.petPopupItem.get() ? dannypx.foe.item.PetHeldItem.decodeUncached(pet) : ItemStack.EMPTY;
         if (!held.isEmpty()) {
             out.add(new Line(Component.literal("Item: ").withStyle(ChatFormatting.GRAY).append(held.getHoverName().copy()), MID));
         }
@@ -244,6 +250,8 @@ public class CatchPopupElement extends Element {
         float centerX = mc.getWindow().getGuiScaledWidth() * xPos / scale;
         float y = mc.getWindow().getGuiScaledHeight() * yPos / scale;
 
+        int alpha = isCopy ? 255 : fadeAlpha(elapsed, Configs.hudConfig.catchPopupTime.get() * 1000L, Configs.hudConfig.catchPopupFade.get());
+        if (alpha < 4) return;
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
         int border = GameXpBar.colour(Configs.hudConfig.catchPopupBorderColor::get);
@@ -256,21 +264,38 @@ public class CatchPopupElement extends Element {
             }
             int bx0 = Math.round(centerX - widest / 2f) - 6, bx1 = Math.round(centerX + widest / 2f) + 6;
             int by0 = Math.round(y) - 5, by1 = Math.round(y + total) + 2;
-            guiGraphics.fill(bx0, by0, bx1, by1, 0xB0101418);
-            guiGraphics.renderOutline(bx0, by0, bx1 - bx0, by1 - by0, 0xFF000000 | border);
+            guiGraphics.fill(bx0, by0, bx1, by1, (0xB0 * alpha / 255) << 24 | 0x101418);
+            guiGraphics.renderOutline(bx0, by0, bx1 - bx0, by1 - by0, alpha << 24 | border);
         }
         for (Line line : shown) {
-            drawCentered(guiGraphics, font, line.text(), centerX, y, line.size());
+            drawCentered(guiGraphics, font, line.text(), centerX, y, line.size(), alpha);
             y += lineHeight(font, line.size());
         }
         guiGraphics.pose().popMatrix();
     }
 
-    private static void drawCentered(GuiGraphics guiGraphics, Font font, Component line, float centerX, float y, float size) {
+    /// How solid the popup is `elapsed` ms into its `total`: fully, or with Fade away on, fading in over its first
+    /// fifth of a second and out over its last second (a third of it, if it's shorter). Package-private for tests.
+    static int fadeAlpha(long elapsed, long total, boolean fade) {
+        if (!fade || total <= 0) return 255;
+        long out = Math.min(1000L, total / 3);
+        float a = 1f;
+        if (elapsed < 200L) a = elapsed / 200f;
+        long left = total - elapsed;
+        if (left < out) a = Math.min(a, left / (float) out);
+        return Math.max(0, Math.min(255, Math.round(a * 255f)));
+    }
+
+    /// Shows the popup for a pet whenever you like (/foe showpet), to show it off.
+    public static void showOff(PetTagObject pet) {
+        showPet(pet);
+    }
+
+    private static void drawCentered(GuiGraphics guiGraphics, Font font, Component line, float centerX, float y, float size, int alpha) {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(centerX, y);
         guiGraphics.pose().scale(size, size);
-        guiGraphics.drawString(font, line, -font.width(line) / 2, 0, 0xFFFFFFFF, true);
+        guiGraphics.drawString(font, line, -font.width(line) / 2, 0, alpha << 24 | 0xFFFFFF, true);
         guiGraphics.pose().popMatrix();
     }
 }

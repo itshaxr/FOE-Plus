@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.0+1.21.11",
+      "name": "FOE+ 1.1.0+1.21.11",
+      "datePublished": "2026-11-21",
+      "changelog": "## What's Changed\n- Auto Tip: the server's PAY line after a tip is hidden, so each tip is one [FOE+] AUTO TIP line by @phckd\n- Pet popup: no more \"Lv. 0\"; every line (name, rarity, level, rating, stats, stat names, held item) can be turned on or off by @phckd\n- /foe showpet shows the pet popup for the pet in your hand (or the one you have out), to show it off by @phckd\n- Catch popup: new Fade away option by @phckd\n- New sound: Perfect pet pulled (on by default) by @phckd\n- HUD Editor: a HUD can have no title at all by @phckd\n- Travel map: the mini event's place lights up, like a frenzy by @phckd\n- /msg and /r: what you type is in the server's message green instead of yellow by @phckd\n- Fixed: variant catches (albino...) could be missed, losing their chat line and dry streak; a missed catch is now written to the log by @phckd\n- Fixed: the mini event's MISSION COMPLETE message could be hidden when it came just after FOE+ checked /minievent by @phckd\n- Fixed: quest reward pets got no QUEST PET! line when the quest message came a moment after the pet by @phckd\n- Fixed: the Social HUD moved up when its list got long near the bottom of the screen; it now stays put and shows \"+N more\" by @phckd"
+    },
+    {
       "versionNumber": "1.0.99+1.21.11",
       "name": "FOE+ 1.0.99+1.21.11",
       "datePublished": "2026-11-20",

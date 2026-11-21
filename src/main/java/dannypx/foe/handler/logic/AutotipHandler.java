@@ -99,6 +99,22 @@ public class AutotipHandler {
                 .anyMatch(name -> name.equalsIgnoreCase(player));
     }
 
+    /// The player the last announced tip went to, and until when the server's "PAY » You sent..." line for it is
+    /// hidden (the [FOE+] AUTO TIP line says the same).
+    private String payLineFor = null;
+    private long payLineUntil = 0L;
+
+    /// Whether `text` is the server's "PAY » You sent $1.17K to Steve!" for the tip just announced (then it's hidden,
+    /// once).
+    public boolean hidePayLine(String text) {
+        if (payLineFor == null || System.currentTimeMillis() > payLineUntil) return false;
+        String t = text.trim();
+        if (!t.startsWith("PAY") || !t.contains("You sent")) return false;
+        if (!t.toLowerCase(Locale.ROOT).contains(payLineFor.toLowerCase(Locale.ROOT))) return false;
+        payLineFor = null;
+        return true;
+    }
+
     /// Sends queued tips, one per /pay cooldown.
     public void tick() {
         if (queue.isEmpty()) return;
@@ -136,6 +152,9 @@ public class AutotipHandler {
         dannypx.foe.handler.store.NotifySounds.play("auto_tip");
 
         if (Configs.autotipConfig.announceTips.get()) {
+            // the server's own "PAY » You sent $500 to Steve!" for it says the same, so it's hidden
+            payLineFor = tip.player();
+            payLineUntil = now + 15_000L;
             // [FOE+] AUTO TIP Tipped Steve $500 · reaction
             dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("AUTO TIP", dannypx.foe.helper.FoeChat.GOLD)
                     .append(dannypx.foe.helper.FoeChat.text("Tipped "))

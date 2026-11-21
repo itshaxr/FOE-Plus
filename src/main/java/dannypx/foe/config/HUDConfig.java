@@ -1081,6 +1081,35 @@ public class HUDConfig extends Config {
     @Name("Display time in seconds")
     public ValidatedInt catchPopupTime = new ValidatedInt(5, 30, 1, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("Fade away")
+    @Desc("§7The popup fades out over its last second (and in over its first few moments) instead of vanishing")
+    public ValidatedBoolean catchPopupFade = new ValidatedBoolean(false);
+
+    @Name("Pet popup: name")
+    @Desc("§7The pet popup's lines: turn off any you don't want")
+    public ValidatedBoolean petPopupName = new ValidatedBoolean(true);
+
+    @Name("Pet popup: rarity")
+    public ValidatedBoolean petPopupRarity = new ValidatedBoolean(true);
+
+    @Name("Pet popup: level")
+    @Desc("§7Its level (\"Lv. 0\": a pet you just fished up is always level 0)")
+    public ValidatedBoolean petPopupLevel = new ValidatedBoolean(false);
+
+    @Name("Pet popup: rating")
+    public ValidatedBoolean petPopupRating = new ValidatedBoolean(true);
+
+    @Name("Pet popup: stats")
+    @Desc("§7Its four stats: climate luck and scale, location luck and scale")
+    public ValidatedBoolean petPopupStats = new ValidatedBoolean(true);
+
+    @Name("Pet popup: stat names")
+    @Desc("§7The line under the stats saying which is which")
+    public ValidatedBoolean petPopupStatNames = new ValidatedBoolean(true);
+
+    @Name("Pet popup: held item")
+    public ValidatedBoolean petPopupItem = new ValidatedBoolean(true);
+
     @ConfigGroup.Pop
     @Name("Scale")
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
