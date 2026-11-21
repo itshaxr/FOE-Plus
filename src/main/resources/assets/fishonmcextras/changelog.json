@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.1+1.21.11",
+      "name": "FOE+ 1.1.1+1.21.11",
+      "datePublished": "2026-11-21",
+      "changelog": "## What's Changed\n- Travel map: a gold trophy marks where a contest is on, with its type and time left in the tooltip by @phckd\n- Travel map: the mini event has its own pink; with two things on at one place the border is split half and half (Fabled and frenzies first) by @phckd\n- Fixed: the mini event didn't show on the map unless the Mini Event HUD was on by @phckd"
+    },
+    {
       "versionNumber": "1.1.0+1.21.11",
       "name": "FOE+ 1.1.0+1.21.11",
       "datePublished": "2026-11-21",

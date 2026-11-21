@@ -19,6 +19,10 @@ final class PlaceEvents {
     private PlaceEvents() {}
 
     static final int FABLED_COLOR = 0xFC3E35, FRENZY_COLOR = 0x55FF55;
+    /// The mini event's own colour on the map: a pink nothing else there uses.
+    static final int MINI_EVENT_COLOR = 0xFF4FB8;
+    /// A contest's, for its trophy and its line.
+    static final int CONTEST_COLOR = 0xFFC93C;
 
     /// One line of the box over a place's tooltip: a title in the event's colour, and its time on the right.
     record Banner(net.minecraft.network.chat.Component icon, String title, String detail, int color) {}
@@ -30,14 +34,21 @@ final class PlaceEvents {
         List<Banner> out = at(place, itemName,
                 ev.frenzyActive() ? ev.frenzyLocation() : "", ev.frenzyRemainingMs(),
                 al.isFabledActive(), al.fabledLocationName(), al.active());
-        // the mini event's place (lit up like a frenzy's)
+        // the mini event's place (lit up like a frenzy's, after a Fabled or a frenzy there)
         var mini = dannypx.foe.handler.logic.MiniEventHandler.instance();
         if (place != null && mini.active() && mini.location() == place) {
-            int c = mini.eventColor() & 0xFFFFFF;
             out = new ArrayList<>(out);
-            out.add(new Banner(sym("\u2726", c), "Mini Event!", StoreTimerHandler.clock(mini.endsInMs()) + " left", c));
+            out.add(new Banner(sym("\u2726", MINI_EVENT_COLOR), "Mini Event!", StoreTimerHandler.clock(mini.endsInMs()) + " left", MINI_EVENT_COLOR));
         }
         return out;
+    }
+
+    /// The contest at `place` right now, as a line for its tooltip (its trophy is drawn on the map); null if none.
+    static Banner contest(FoeLocations.Location place) {
+        var c = dannypx.foe.handler.logic.ContestTrackerHandler.instance();
+        if (place == null || !c.isContest || c.location == null || c.location.isBlank() || FoeLocations.fromName(c.location) != place) return null;
+        String what = c.type == null || c.type.isBlank() ? "" : c.type.trim() + " · ";
+        return new Banner(sym("\u00BB", CONTEST_COLOR), "Contest!", what + StoreTimerHandler.clock(c.timeLeft) + " left", CONTEST_COLOR);
     }
 
     /// Package-private for tests: the same, from the facts given. `itemName` is the menu item's name: the

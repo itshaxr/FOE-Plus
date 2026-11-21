@@ -311,7 +311,8 @@ public class MiniEventHandler {
             return;
         }
         if (joinedAt == 0L) joinedAt = now;
-        if (!Configs.hudConfig.showMiniEventPanel.get() || !Configs.hudConfig.miniEventAutoRefresh.get()) return;
+        // for the Mini Event HUD, or the travel map (which lights up the event's place)
+        if (!(Configs.hudConfig.showMiniEventPanel.get() || Configs.mainConfig.travelMap.get()) || !Configs.hudConfig.miniEventAutoRefresh.get()) return;
         boolean due;
         if (lastCheckAt == 0L) due = now - joinedAt >= FIRST_CHECK_MS;
         else if (catchRefreshAt != 0L && now >= catchRefreshAt) due = true;

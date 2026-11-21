@@ -391,11 +391,17 @@ public final class TravelMapHandler {
             int frame = hot ? 0xFFFFF4D6 : current ? 0xFFF2B33D : 0xFF120C08;
             // Something on there (a Fabled fish, a frenzy, the place's own event): the square in its colour,
             // with a soft glow round it that breathes.
+            // In order (a Fabled fish, a frenzy, the place's event, the mini event): two on at once share the
+            // square, the first on its left half and the second on its right.
             List<PlaceEvents.Banner> on = placeEvents(e);
             if (!on.isEmpty()) {
                 int c = on.get(0).color() & 0xFFFFFF;
-                g.fill(cx - BOX - 3, cy - BOX - 3, cx + BOX + 3, cy + BOX + 3, (glowAlpha(System.currentTimeMillis()) << 24) | c);
-                g.fill(cx - BOX - 2, cy - BOX - 2, cx + BOX + 2, cy + BOX + 2, 0xFF000000 | (hot ? lighten(c) : c));
+                int c2 = on.size() > 1 ? on.get(1).color() & 0xFFFFFF : c;
+                int glow = glowAlpha(System.currentTimeMillis()) << 24;
+                g.fill(cx - BOX - 3, cy - BOX - 3, cx, cy + BOX + 3, glow | c);
+                g.fill(cx, cy - BOX - 3, cx + BOX + 3, cy + BOX + 3, glow | c2);
+                g.fill(cx - BOX - 2, cy - BOX - 2, cx, cy + BOX + 2, 0xFF000000 | (hot ? lighten(c) : c));
+                g.fill(cx, cy - BOX - 2, cx + BOX + 2, cy + BOX + 2, 0xFF000000 | (hot ? lighten(c2) : c2));
             } else if (current && !hot) g.fill(cx - BOX - 2, cy - BOX - 2, cx + BOX + 2, cy + BOX + 2, 0xFF7A4A12);
             g.fill(cx - BOX - 1, cy - BOX - 1, cx + BOX + 1, cy + BOX + 1, frame);
             g.fill(cx - BOX, cy - BOX, cx + BOX, cy + BOX, hot ? 0xFF4A3524 : current ? 0xFF3A2812 : 0xFF2B1D12);
@@ -405,6 +411,11 @@ public final class TravelMapHandler {
             g.renderItem(e.stack(), 0, 0);
             g.pose().popMatrix();
             if (e.spot() == null) continue;
+            // a contest there: a little gold trophy on the square's top left corner (the favourite star has the
+            // bottom right)
+            if (PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(e.spot().label())) != null) {
+                drawTrophy(g, cx - BOX - 1, cy - BOX - 1, PLACE_STAR);
+            }
             if (dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(e.spot().key()) != null) {
                 drawStar(g, cx, cy, BOX + 1, PLACE_STAR, true, onStar(cx, cy, BOX + 1, PLACE_STAR, mx, my));
             }
@@ -433,13 +444,65 @@ public final class TravelMapHandler {
         Entry starOver = viewMenuOpen ? null : favouriteStarAt(entries, mx, my);
         if (starOver != null) {
             g.setTooltipForNextFrame(font, Component.literal("\u2605 Go straight to " + dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(starOver.spot().key())).withStyle(ChatFormatting.GOLD), mouseX, mouseY);
-        } else if (hovered != null && !viewMenuOpen) ItemTooltip.draw(g, font, hovered.stack(), mouseX, mouseY, placeEvents(hovered));
+        } else if (hovered != null && !viewMenuOpen) ItemTooltip.draw(g, font, hovered.stack(), mouseX, mouseY, placeEventsAndContest(hovered));
     }
 
     /// What's on at a map item's place right now (nothing for the items that aren't places).
     private static List<PlaceEvents.Banner> placeEvents(Entry e) {
         if (e == null || e.spot() == null) return List.of();
         return PlaceEvents.live(dannypx.foe.helper.FoeLocations.fromName(e.spot().label()), e.stack().getHoverName().getString());
+    }
+
+    /// The same, with a contest there too (for its tooltip; the contest is the trophy on the map, not a colour).
+    private static List<PlaceEvents.Banner> placeEventsAndContest(Entry e) {
+        List<PlaceEvents.Banner> on = placeEvents(e);
+        PlaceEvents.Banner contest = e == null || e.spot() == null ? null : PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(e.spot().label()));
+        if (contest == null) return on;
+        List<PlaceEvents.Banner> all = new java.util.ArrayList<>(on);
+        all.add(contest);
+        return all;
+    }
+
+    /// The contest trophy (`size` panel units), centred on (cx, cy): drawn pixel by pixel like the favourite
+    /// star, gold with a dark edge, so it reads on any ground.
+    private static final String[] TROPHY = {
+            "#########",
+            "#.#####.#",
+            ".#######.",
+            "..#####..",
+            "...###...",
+            "....#....",
+            "....#....",
+            "..#####..",
+            "..#####..",
+    };
+
+    private void drawTrophy(GuiGraphics g, int cx, int cy, float size) {
+        int n = Math.max(9, Math.round(size * pixels));
+        int x0 = Math.round(cx * pixels - n / 2f), y0 = Math.round(cy * pixels - n / 2f);
+        boolean[][] m = new boolean[n][n];
+        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++) m[y][x] = TROPHY[y * 9 / n].charAt(x * 9 / n) == '#';
+        int edge = Math.max(1, Math.round(pixels / 2f));
+        g.pose().pushMatrix();
+        g.pose().scale(1f / pixels, 1f / pixels);
+        for (int y = -edge; y < n + edge; y++) {
+            int run = -1;
+            for (int x = -edge; x <= n + edge; x++) {
+                boolean o = x < n + edge && near(m, x, y, edge);
+                if (o && run < 0) run = x;
+                if (!o && run >= 0) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, 0xFF22160A); run = -1; }
+            }
+        }
+        for (int y = 0; y < n; y++) {
+            int run = -1, col = 0;
+            for (int x = 0; x <= n; x++) {
+                boolean in = x < n && m[y][x];
+                int c = in ? (x < n / 2 ? 0xFFFFD84A : 0xFFE09A1C) : 0;
+                if (run >= 0 && c != col) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, col); run = -1; }
+                if (in && run < 0) { run = x; col = c; }
+            }
+        }
+        g.pose().popMatrix();
     }
 
     /// Package-private for tests: the glow's opacity, breathing between faint and half over 1.6 seconds.

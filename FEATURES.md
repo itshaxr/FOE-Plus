@@ -206,7 +206,8 @@ The server's Locations menu (`/tt`, or the travel NPC) opens as a detailed world
 - **Same clicks as the menu:** hover for the server's own tooltip, left-click to teleport, right-click to view species.
 - **Two maps:** **Realistic** (built from the places themselves, shown above) or **Fantasy** (the painted map). **Change view** switches between them and the server's plain menu any time; "Back to travel map" above that menu returns. Turn the map off altogether with **O → Travel map**.
 - **Favourites:** star one teleport spot in each place.
-- **What's on:** a Fabled fish waiting to be caught, a Fish Frenzy and its time left, the mini event, or the place's own event, right on its place.
+- **What's on:** a Fabled fish waiting to be caught, a Fish Frenzy and its time left, the place's own event, or the mini event (in pink), right on its place. Two at once split the square's border half and half (a Fabled or a frenzy comes first).
+- **Contests:** a gold trophy on the corner of the place a contest is at, with its type and time left in the tooltip.
 
 ## Fishing presets
 
