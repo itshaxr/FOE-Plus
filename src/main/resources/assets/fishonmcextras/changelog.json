@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.2+1.21.11",
+      "name": "FOE+ 1.1.2+1.21.11",
+      "datePublished": "2026-11-21",
+      "changelog": "## What's Changed\n- Travel map: the contest trophy now sits at the end of the place's name, the height of a small letter, instead of being cut off on the corner by @phckd"
+    },
+    {
       "versionNumber": "1.1.1+1.21.11",
       "name": "FOE+ 1.1.1+1.21.11",
       "datePublished": "2026-11-21",

@@ -411,11 +411,6 @@ public final class TravelMapHandler {
             g.renderItem(e.stack(), 0, 0);
             g.pose().popMatrix();
             if (e.spot() == null) continue;
-            // a contest there: a little gold trophy on the square's top left corner (the favourite star has the
-            // bottom right)
-            if (PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(e.spot().label())) != null) {
-                drawTrophy(g, cx - BOX - 1, cy - BOX - 1, PLACE_STAR);
-            }
             if (dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(e.spot().key()) != null) {
                 drawStar(g, cx, cy, BOX + 1, PLACE_STAR, true, onStar(cx, cy, BOX + 1, PLACE_STAR, mx, my));
             }
@@ -463,46 +458,22 @@ public final class TravelMapHandler {
         return all;
     }
 
-    /// The contest trophy (`size` panel units), centred on (cx, cy): drawn pixel by pixel like the favourite
-    /// star, gold with a dark edge, so it reads on any ground.
+    /// The contest trophy, on a place's name plate.
     private static final String[] TROPHY = {
-            "#########",
-            "#.#####.#",
-            ".#######.",
-            "..#####..",
-            "...###...",
-            "....#....",
-            "....#....",
-            "..#####..",
-            "..#####..",
+            "#######",
+            "#.###.#",
+            "..###..",
+            "...#...",
+            "..###..",
     };
 
-    private void drawTrophy(GuiGraphics g, int cx, int cy, float size) {
-        int n = Math.max(9, Math.round(size * pixels));
-        int x0 = Math.round(cx * pixels - n / 2f), y0 = Math.round(cy * pixels - n / 2f);
-        boolean[][] m = new boolean[n][n];
-        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++) m[y][x] = TROPHY[y * 9 / n].charAt(x * 9 / n) == '#';
-        int edge = Math.max(1, Math.round(pixels / 2f));
-        g.pose().pushMatrix();
-        g.pose().scale(1f / pixels, 1f / pixels);
-        for (int y = -edge; y < n + edge; y++) {
-            int run = -1;
-            for (int x = -edge; x <= n + edge; x++) {
-                boolean o = x < n + edge && near(m, x, y, edge);
-                if (o && run < 0) run = x;
-                if (!o && run >= 0) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, 0xFF22160A); run = -1; }
-            }
-        }
-        for (int y = 0; y < n; y++) {
-            int run = -1, col = 0;
-            for (int x = 0; x <= n; x++) {
-                boolean in = x < n && m[y][x];
-                int c = in ? (x < n / 2 ? 0xFFFFD84A : 0xFFE09A1C) : 0;
-                if (run >= 0 && c != col) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, col); run = -1; }
-                if (in && run < 0) { run = x; col = c; }
-            }
-        }
-        g.pose().popMatrix();
+    /// The trophy at (x0, y0) in screen pixels, `k` screen pixels to each of its font-sized pixels (7 wide, 5 tall,
+    /// a small letter's height): gold, lighter on its left.
+    private static void drawTrophyPixels(GuiGraphics g, int x0, int y0, int k) {
+        for (int y = 0; y < TROPHY.length; y++)
+            for (int x = 0; x < TROPHY[y].length(); x++)
+                if (TROPHY[y].charAt(x) == '#')
+                    g.fill(x0 + x * k, y0 + y * k, x0 + (x + 1) * k, y0 + (y + 1) * k, x < 3 ? 0xFFFFD84A : x == 3 ? 0xFFF2B33D : 0xFFE09A1C);
     }
 
     /// Package-private for tests: the glow's opacity, breathing between faint and half over 1.6 seconds.
@@ -843,7 +814,10 @@ public final class TravelMapHandler {
         String pet = petOf(e.spot());
         int pet_ = pet == null ? 0 : petSize(plateRect(0, k, pixels, cx, cy, false)[3]);
         int gap = pet == null ? 0 : petGap(k);
-        int[] r = plateRect(font.width(label), k, pixels, cx, cy, current && !hot, gap + pet_);
+        // a contest there: a small gold trophy at the plate's end, as tall as a small letter and on the same line
+        boolean contest = PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(label)) != null;
+        int trophy = 7 * k, trophyRoom = contest ? 2 * k + trophy : 0;   // its width (7 font pixels, 5 tall)
+        int[] r = plateRect(font.width(label), k, pixels, cx, cy, current && !hot, gap + pet_ + trophyRoom);
         g.pose().pushMatrix();
         g.pose().scale(1f / pixels, 1f / pixels);
         int edge = current && !hot ? 2 : 1;
@@ -851,7 +825,7 @@ public final class TravelMapHandler {
         g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0xF01A120C);
         if (pet != null) {
             // the pet on the right, level with the name, the same room round it as the letters have
-            int px = r[0] + r[2] - PLATE_PAD_X - pet_, py = r[1] + (r[3] - pet_ + 1) / 2;
+            int px = r[0] + r[2] - PLATE_PAD_X - trophyRoom - pet_, py = r[1] + (r[3] - pet_ + 1) / 2;
             // a thin "|" between the name and the pet, as tall as the letters, in the name's colour but soft
             int lx = px - DIVIDER_ROOM * k - dividerW(k), ly = r[1] + PLATE_PAD_Y;
             g.fill(lx, ly, lx + dividerW(k), ly + 7 * k, 0x80F2B36A);
@@ -859,6 +833,7 @@ public final class TravelMapHandler {
                     net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "textures/gui/pets/" + pet + "_" + pet_ + ".png"),
                     px, py, 0, 0, pet_, pet_, pet_, pet_, pet_, pet_);
         }
+        if (contest) drawTrophyPixels(g, r[0] + r[2] - PLATE_PAD_X - trophy, r[1] + PLATE_PAD_Y + 2 * k, k);
         g.pose().translate(r[0] + PLATE_PAD_X, r[1] + PLATE_PAD_Y);
         g.pose().scale(k, k);
         g.drawString(font, colouredLabel(e.stack().getHoverName(), label), 0, 0, 0xFFFFFFFF, false);
