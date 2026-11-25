@@ -88,6 +88,15 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
 
     @Override
     protected void renderWidget(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
+        // the middle line it snapped to
+        if (snappedX) {
+            int mx = minecraft.getWindow().getGuiScaledWidth() / 2;
+            guiGraphics.fill(mx, 0, mx + 1, minecraft.getWindow().getGuiScaledHeight(), 0x9955FF55);
+        }
+        if (snappedY) {
+            int my = minecraft.getWindow().getGuiScaledHeight() / 2;
+            guiGraphics.fill(0, my, minecraft.getWindow().getGuiScaledWidth(), my + 1, 0x9955FF55);
+        }
         this.renderBox(guiGraphics);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
         this.renderAlignment(guiGraphics);
@@ -297,8 +306,7 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
                 element.alignment = this.nextAlignment();
                 this.setup(element);
 
-                callback.onRelease(Math.round(element.xPos * 100f),
-                        Math.round(element.yPos * 100f), element.alignment);
+                callback.onReleaseExact(element.xPos, element.yPos, element.alignment);
             } else if (click.button() == 2) {
                 callback.onConfig();
             }
@@ -320,11 +328,25 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
             case BOTTOM_LEFT, BOTTOM, BOTTOM_RIGHT -> this.deltaY -= deltaY;
         }
 
-        int calculatedPercentX = Math.clamp(Math.round((float) (originalX + this.deltaX) / (float) currentWidth * 100F), 0, 100);
-        int calculatedPercentY = Math.clamp(Math.round((float) (originalY + this.deltaY) / (float) currentHeight * 100F), 0, 100);
+        // to the pixel (whole percents made it jump, and nothing could sit exactly in the middle)
+        float fx = Math.clamp((float) ((originalX + this.deltaX) / currentWidth), 0f, 1f);
+        float fy = Math.clamp((float) ((originalY + this.deltaY) / currentHeight), 0f, 1f);
+        // near the middle of the screen it snaps there: the box's own middle on the screen's
+        snappedX = false;
+        snappedY = false;
+        float midX = switch (element.alignment) {
+            case TOP, BOTTOM -> 0.5f;
+            default -> (currentWidth / 2f - element.width / 2f) / currentWidth;
+        };
+        float midY = switch (element.alignment) {
+            case LEFT, RIGHT -> 0.5f;
+            default -> (currentHeight / 2f - element.height / 2f) / currentHeight;
+        };
+        if (Math.abs(fx - midX) * currentWidth <= SNAP_PX) { fx = midX; snappedX = true; }
+        if (Math.abs(fy - midY) * currentHeight <= SNAP_PX) { fy = midY; snappedY = true; }
 
-        element.setXPercent((float) calculatedPercentX / 100F);
-        element.setYPercent((float) calculatedPercentY / 100F);
+        element.setXPercent(fx);
+        element.setYPercent(fy);
 
         switch (element.alignment) {
             case LEFT, TOP_LEFT, BOTTOM_LEFT -> this.setX(Math.round(minecraft.getWindow().getGuiScaledWidth() * element.xPos));
@@ -361,15 +383,25 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
 
         this.deltaX = 0;
         this.deltaY = 0;
+        this.snappedX = false;
+        this.snappedY = false;
 
-        this.callback.onRelease(Math.round(element.xPos * 100f),
-                Math.round(element.yPos * 100f),
-                element.alignment);
+        this.callback.onReleaseExact(element.xPos, element.yPos, element.alignment);
     }
+
+    /// The box sits on the screen's middle line across or down (snapped there while dragging): a guide line shows.
+    public boolean snappedX = false, snappedY = false;
+    /// How close (GUI pixels) to the middle a box snaps onto it.
+    static final int SNAP_PX = 3;
 
     public interface Callback {
         void onRelease(int xPercent, int yPercent, Alignment alignment);
         void onConfig();
+
+        /// The exact place (0-1 of the screen); by default its whole percents go to {@link #onRelease}.
+        default void onReleaseExact(float x, float y, Alignment alignment) {
+            onRelease(Math.round(x * 100f), Math.round(y * 100f), alignment);
+        }
     }
 
     private Alignment nextAlignment() {

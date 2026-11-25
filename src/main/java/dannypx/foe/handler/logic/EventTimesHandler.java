@@ -86,10 +86,19 @@ public class EventTimesHandler {
             exact = false;
         }
 
-        void weather(String weather, long now) {
+        /// Where the symbol was last seen on the bar.
+        String barPlace = "";
+
+        void weather(String weather, long now) { weather(weather, "", now); }
+
+        /// `place`: where you are. The symbol going away only means it's over where it was seen: going to the
+        /// hub (whose bar has no event symbols) or another place never ends it ("" = not known, as before).
+        void weather(String weather, String place, long now) {
             boolean on = weather != null && weather.contains(symbol);
+            String here = place == null ? "" : place;
             if (on && !onBossBar && endsAt <= now) { endsAt = now + guessMs; exact = false; }
-            if (!on && onBossBar) endsAt = 0L; // the symbol went away: it's over
+            if (on) barPlace = here;
+            if (!on && onBossBar && (here.isEmpty() || barPlace.isEmpty() || here.equalsIgnoreCase(barPlace))) endsAt = 0L;
             onBossBar = on;
         }
 
@@ -199,9 +208,11 @@ public class EventTimesHandler {
     }
 
     /// The boss bar shows ♣ during a Blooming Oasis and ⚠ during a Gold Rush. Package-private for tests.
-    void onWeather(String weather, long now) {
-        oasis.weather(weather, now);
-        goldRush.weather(weather, now);
+    void onWeather(String weather, long now) { onWeather(weather, "", now); }
+
+    void onWeather(String weather, String place, long now) {
+        oasis.weather(weather, place, now);
+        goldRush.weather(weather, place, now);
     }
 
     /// A Blooming Oasis is on: its ♣ is on the boss bar, or the server said so and its time
@@ -230,6 +241,11 @@ public class EventTimesHandler {
 
     public boolean goldRushExact() {
         return goldRush.exact;
+    }
+
+    /// FOE+'s own quiet /events answer is coming in now (its lines are hidden).
+    public boolean answering() {
+        return System.currentTimeMillis() < hideUntil;
     }
 
     public boolean frenzyActive() {
@@ -311,7 +327,9 @@ public class EventTimesHandler {
         if (answerHadNoFabled(now)) AlertHandler.instance().clearFabled(answeredAt);
         if (joinedAt == 0L) joinedAt = now;
         try {
-            onWeather(dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons(), now);
+            String place = WeatherEventHandler.here();
+            // mid-teleport (the bar not read yet): nothing is decided
+            if (!place.isEmpty()) onWeather(dannypx.foe.handler.fetch.BossEventHandler.instance().weatherIcons(), place, now);
         } catch (RuntimeException e) {
             // no boss bar yet
         }

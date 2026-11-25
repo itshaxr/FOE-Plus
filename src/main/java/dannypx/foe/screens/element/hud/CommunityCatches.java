@@ -16,8 +16,8 @@ import java.util.Locale;
  * <pre>
  * 11.19K / 100.00K Catches          11.2%
  * ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
- * Per hour +7.19K           Goal in 12h 21m
- * You helped 352
+ * +7.19K/hr                 Goal in 12h 21m
+ * Contributions: 352
  * </pre>
  * Counts as the boss bar does (every catch), works out the pace over the last hour and starts over when the goal
  * is reached.
@@ -50,23 +50,31 @@ final class CommunityCatches {
                 Component.literal(String.format(Locale.ROOT, "%.1f%%", pct * 100f)).withStyle(ChatFormatting.AQUA)));
         // the game's look by default: a struck-through line, filled in teal (see GameXpBar)
         lines.add(Component.literal(BAR));
-        lines.add(PanelElement.join(Component.literal("Per hour ").withStyle(ChatFormatting.GRAY),
-                perHour < 0 ? Component.literal("counting…").withStyle(ChatFormatting.DARK_GRAY)
-                        : Component.literal("+" + num(Math.round(perHour))).withStyle(ChatFormatting.GREEN),
+        // "+2.52K/hr"
+        lines.add(PanelElement.join(perHour < 0 ? Component.literal("counting…").withStyle(ChatFormatting.DARK_GRAY)
+                        : Component.literal("+" + num(Math.round(perHour))).withStyle(ChatFormatting.GREEN)
+                                .append(Component.literal("/hr").withStyle(ChatFormatting.GRAY)),
                 PanelElement.TAB,
                 Component.literal("Goal in ").withStyle(ChatFormatting.GRAY),
                 msToGoal < 0 ? Component.literal("—").withStyle(ChatFormatting.DARK_GRAY)
                         : Component.literal(CommunityRateHandler.duration(msToGoal)).withStyle(ChatFormatting.YELLOW)));
-        if (mine >= 0) lines.add(PanelElement.join(Component.literal("You helped ").withStyle(ChatFormatting.GRAY),
+        if (mine >= 0) lines.add(PanelElement.join(Component.literal("Contributions: ").withStyle(ChatFormatting.GRAY),
                 Component.literal(num(mine)).withStyle(ChatFormatting.GOLD)));
         return lines;
     }
 
-    /// 11190 → "11.19K", 100000 → "100.00K", 352 → "352".
+    /// 11190 → "11.19K", 100000 → "100K", 74400 → "74.4K", 352 → "352" (no zeros left over at the end).
     static String num(long n) {
         if (n < 1_000) return String.valueOf(n);
-        if (n < 1_000_000) return String.format(Locale.ROOT, "%.2fK", n / 1_000.0);
-        return String.format(Locale.ROOT, "%.2fM", n / 1_000_000.0);
+        if (n < 1_000_000) return trim(String.format(Locale.ROOT, "%.2f", n / 1_000.0)) + "K";
+        return trim(String.format(Locale.ROOT, "%.2f", n / 1_000_000.0)) + "M";
+    }
+
+    /// "100.00" → "100", "74.40" → "74.4".
+    private static String trim(String s) {
+        if (!s.contains(".")) return s;
+        s = s.replaceAll("0+$", "");
+        return s.endsWith(".") ? s.substring(0, s.length() - 1) : s;
     }
 
     /// Draws the bar on its line (called by the panel just before each line).

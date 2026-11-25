@@ -252,6 +252,9 @@ public class FoeSettingsScreen extends Screen {
         String s;
         if (v instanceof Float || v instanceof Double) {
             s = String.format(Locale.ROOT, "%.2f", ((Number) v).doubleValue()).replaceAll("\\.?0+$", "");
+        } else if (v instanceof Integer i && n.name.contains("(seconds ahead") && i > 0) {
+            // "1:30" for 90 seconds
+            s = String.format(Locale.ROOT, "%d:%02d", i / 60, i % 60);
         } else s = String.valueOf(v);
         return n.name.contains("%") ? s + "%" : s;
     }
@@ -267,12 +270,15 @@ public class FoeSettingsScreen extends Screen {
         if (c == null || !(entry instanceof me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString)) return false;
         if (colourEntries == null) {
             java.util.Set<Object> found = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-            for (java.lang.reflect.Field f : c.getClass().getFields()) {
-                if (!f.getName().endsWith("Color") || f.getType() != me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString.class) continue;
-                try {
-                    found.add(f.get(c));
-                } catch (IllegalAccessException ignored) {
-                    // not one then
+            for (Object config : new Object[]{c, dannypx.foe.config.Configs.rendererConfig}) {
+                if (config == null) continue;
+                for (java.lang.reflect.Field f : config.getClass().getFields()) {
+                    if (!f.getName().endsWith("Color") || f.getType() != me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString.class) continue;
+                    try {
+                        found.add(f.get(config));
+                    } catch (IllegalAccessException ignored) {
+                        // not one then
+                    }
                 }
             }
             colourEntries = found;
@@ -284,6 +290,9 @@ public class FoeSettingsScreen extends Screen {
     static int ownColour(Object entry) {
         var c = dannypx.foe.config.Configs.hudConfig;
         if (entry == c.catchPopupBorderColor) return 0xFFD866;
+        if (entry == c.petPopupBorderColor) return 0xFFD866;
+        if (entry == dannypx.foe.config.Configs.rendererConfig.petEquippedMarkerColor) return 0xF2B33D;
+        if (entry == dannypx.foe.config.Configs.rendererConfig.fishingLineColor) return 0x000000;
         if (entry == c.catchRingComingColor) return 0x7CD8FF;
         if (entry == c.catchRingReelColor) return 0x7CF07C;
         if (entry == c.profileElementBorderColor) return 0xE8B54A;
@@ -588,21 +597,25 @@ public class FoeSettingsScreen extends Screen {
 
     /// A group's options, its own groups under subheadings. On the HUD page its X and Y become one Position line.
     private int groupBody(Node g, int y, boolean hudPage) {
-        Node xPos = null, yPos = null;
+        // each X with its Y ("catchPopupXPosition" with "catchPopupYPosition"): a group can have more than one pair
+        Map<String, Node[]> pairs = new java.util.LinkedHashMap<>();
         if (hudPage) for (Node c : g.children) {
             if (c.group()) continue;
-            if (c.fieldName.endsWith("XPosition")) xPos = c;
-            if (c.fieldName.endsWith("YPosition")) yPos = c;
+            if (c.fieldName.endsWith("XPosition")) pairs.computeIfAbsent(c.fieldName.substring(0, c.fieldName.length() - 9), k -> new Node[2])[0] = c;
+            if (c.fieldName.endsWith("YPosition")) pairs.computeIfAbsent(c.fieldName.substring(0, c.fieldName.length() - 9), k -> new Node[2])[1] = c;
         }
-        boolean placed = false;
+        java.util.Set<String> placed = new java.util.HashSet<>();
         for (Node c : g.children) {
             if (c.group()) continue;
-            if (xPos != null && yPos != null && (c == xPos || c == yPos)) {
-                if (!placed) {
-                    items.add(new Item(POSITION, c, y, 25, xPos.fieldName + "|" + yPos.fieldName));
-                    positions.put(c, new Node[]{xPos, yPos});
+            String prefix = c.fieldName.endsWith("XPosition") || c.fieldName.endsWith("YPosition")
+                    ? c.fieldName.substring(0, c.fieldName.length() - 9) : null;
+            Node[] pair = prefix == null ? null : pairs.get(prefix);
+            if (pair != null && pair[0] != null && pair[1] != null) {
+                if (placed.add(prefix)) {
+                    items.add(new Item(POSITION, c, y, 25, pair[0].fieldName + "|" + pair[1].fieldName));
+                    positions.put(c, new Node[]{pair[0], pair[1]});
+                    if (pairs.size() > 1) namedPositions.add(c);
                     y += 25;
-                    placed = true;
                 }
                 continue;
             }
@@ -619,6 +632,8 @@ public class FoeSettingsScreen extends Screen {
     }
 
     private final Map<Node, Node[]> positions = new HashMap<>();
+    /// Position lines in a group with more than one: each says whose it is ("Pet popup position").
+    private final java.util.Set<Node> namedPositions = new java.util.HashSet<>();
 
     private int option(Node n, int y) {
         items.add(new Item(OPTION, n, y, 25, null));
@@ -851,7 +866,7 @@ public class FoeSettingsScreen extends Screen {
                 if (own) rgb = ownColour(n.entry);
                 boolean ch = mouseX >= controlX && mouseX < cr - 6 && mouseY >= y + 3 && mouseY < y + 19;
                 box(g, controlX, y + 4, 28, 14, ch ? ACCENT : TILE_EDGE, 0xFF000000 | rgb);
-                g.drawString(font, own ? (n.entry == dannypx.foe.config.Configs.hudConfig.catchPopupBorderColor ? "No box" : "Default") : String.format(java.util.Locale.ROOT, "#%06X", rgb), controlX + 34, y + 7, own ? DIM : TEXT, false);
+                g.drawString(font, own ? (n.entry == dannypx.foe.config.Configs.hudConfig.catchPopupBorderColor || n.entry == dannypx.foe.config.Configs.hudConfig.petPopupBorderColor ? "No box" : "Default") : String.format(java.util.Locale.ROOT, "#%06X", rgb), controlX + 34, y + 7, own ? DIM : TEXT, false);
                 smallButton(g, cr - 50, y + 3, 44, "Pick…", mouseX, mouseY);
             }
             default -> { }
@@ -863,7 +878,9 @@ public class FoeSettingsScreen extends Screen {
         Node[] xy = positions.get(it.node());
         boolean hot = mouseX >= paneX && mouseX < cr && mouseY >= y && mouseY < y + 22;
         box(g, paneX, y, cr - paneX, 22, hot ? 0xFF2F5A80 : TILE_EDGE, hot ? TILE_HOT : TILE);
-        g.drawString(font, "Position", paneX + 8, y + 7, TEXT, false);
+        // "Pet popup X position" → "Pet popup position"; a plain "X position" → "Position"
+        String what = !namedPositions.contains(it.node()) || xy[0].name == null ? "" : xy[0].name.replaceFirst("(?i)\\s*X position( in %)?$", "").trim();
+        g.drawString(font, what.isEmpty() ? "Position" : what + " position", paneX + 8, y + 7, TEXT, false);
         g.drawString(font, get(xy[0].entry) + "%, " + get(xy[1].entry) + "%", cr - 136, y + 7, DIM, false);
         smallButton(g, cr - 70, y + 3, 64, "Move…", mouseX, mouseY);
     }

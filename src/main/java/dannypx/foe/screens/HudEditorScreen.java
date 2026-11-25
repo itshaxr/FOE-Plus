@@ -40,7 +40,8 @@ public class HudEditorScreen extends Screen {
                 new dannypx.foe.screens.element.hud.CommunityPanelElement(true), new dannypx.foe.screens.element.hud.CrewPanelElement(true),
                 new EventsPanelElement(true), new LuckScalePanelElement(true), new AlertPanelElement(true),
                 new MiniEventPanelElement(true), new PetPanelElement(true), new BaitPanelElement(true),
-                new GearWarningPanelElement(true), new dannypx.foe.screens.element.hud.ChummerPanelElement(true));
+                new GearWarningPanelElement(true), new dannypx.foe.screens.element.hud.InventoryWarningPanelElement(true),
+                new dannypx.foe.screens.element.hud.ChummerPanelElement(true));
     }
 
     static final int[] BOX_COLORS = {0x000000, 0x0B1A33, 0x0E2A1A, 0x2E0E0E, 0x25103A, 0x0A2C2E, 0x2A2A2A, 0x2E2010};
@@ -57,6 +58,8 @@ public class HudEditorScreen extends Screen {
     private static boolean linesTab = false;
     /// The Image tab: your own picture in the box.
     private static boolean imageTab = false;
+    /// The Decor tab: pictures on the HUD's corners.
+    private static boolean decorTab = false;
     /// The Combine tab: other HUDs shown inside this one.
     private static boolean combineTab = false;
     private boolean addOpen = false;
@@ -109,7 +112,12 @@ public class HudEditorScreen extends Screen {
 
         this.addRenderableWidget(Button.builder(Component.literal("HUD: ").append(Component.literal(nameOf(panel())).withStyle(ChatFormatting.AQUA))
                         .append(Component.literal(listOpen ? "  ^" : "  v").withStyle(ChatFormatting.GRAY)), b -> { listOpen = !listOpen; rebuildWidgets(); })
-                .bounds(left, top, COL_W, H).tooltip(Tooltip.create(Component.literal("Pick the HUD to edit"))).build());
+                .bounds(left, top, COL_W - 62, H).tooltip(Tooltip.create(Component.literal("Pick the HUD to edit"))).build());
+        // the catch and pet popups: their lines on and off
+        this.addRenderableWidget(Button.builder(Component.literal("Popups"), b -> {
+                    if (minecraft != null) minecraft.setScreen(new PopupLinesScreen(this));
+                }).bounds(left + COL_W - 60, top, 60, H)
+                .tooltip(Tooltip.create(Component.literal("The catch popup's and pet popup's lines: turn any of them off"))).build());
         int y = top + ROW;
         if (listOpen) {
             // two columns, by name, so every HUD fits on screen
@@ -126,20 +134,27 @@ public class HudEditorScreen extends Screen {
             return;
         }
 
-        int tabW = (COL_W - 6) / 4;
-        boolean lookTab = !linesTab && !imageTab && !combineTab;
-        this.addRenderableWidget(Button.builder(Component.literal(lookTab ? "§lLook" : "Look"), b -> { linesTab = false; imageTab = false; combineTab = false; rebuildWidgets(); })
+        int tabW = (COL_W - 8) / 5;
+        boolean lookTab = !linesTab && !imageTab && !combineTab && !decorTab;
+        this.addRenderableWidget(Button.builder(Component.literal(lookTab ? "§lLook" : "Look"), b -> { linesTab = false; imageTab = false; combineTab = false; decorTab = false; rebuildWidgets(); })
                 .bounds(left, y, tabW, H).build());
-        this.addRenderableWidget(Button.builder(Component.literal(linesTab ? "§lLines" : "Lines"), b -> { linesTab = true; imageTab = false; combineTab = false; rebuildWidgets(); })
+        this.addRenderableWidget(Button.builder(Component.literal(linesTab ? "§lLines" : "Lines"), b -> { linesTab = true; imageTab = false; combineTab = false; decorTab = false; rebuildWidgets(); })
                 .bounds(left + tabW + 2, y, tabW, H).build());
-        this.addRenderableWidget(Button.builder(Component.literal(imageTab ? "§lImage" : "Image"), b -> { imageTab = true; linesTab = false; combineTab = false; rebuildWidgets(); })
+        this.addRenderableWidget(Button.builder(Component.literal(imageTab ? "§lImage" : "Image"), b -> { imageTab = true; linesTab = false; combineTab = false; decorTab = false; rebuildWidgets(); })
                 .bounds(left + (tabW + 2) * 2, y, tabW, H).build());
-        this.addRenderableWidget(Button.builder(Component.literal(combineTab ? "§lCombine" : "Combine"), b -> { combineTab = true; imageTab = false; linesTab = false; addOpen = false; rebuildWidgets(); })
-                .bounds(left + (tabW + 2) * 3, y, COL_W - (tabW + 2) * 3, H)
+        this.addRenderableWidget(Button.builder(Component.literal(decorTab ? "§lDecor" : "Decor"), b -> { decorTab = true; imageTab = false; linesTab = false; combineTab = false; rebuildWidgets(); })
+                .bounds(left + (tabW + 2) * 3, y, tabW, H)
+                .tooltip(Tooltip.create(Component.literal("Little pictures on the HUD's corners: a heart, a fox in the grass, flower pots..."))).build());
+        this.addRenderableWidget(Button.builder(Component.literal(combineTab ? "§lCombine" : "Combine"), b -> { combineTab = true; imageTab = false; linesTab = false; decorTab = false; addOpen = false; rebuildWidgets(); })
+                .bounds(left + (tabW + 2) * 4, y, COL_W - (tabW + 2) * 4, H)
                 .tooltip(Tooltip.create(Component.literal("Show other HUDs inside this one, each under its title"))).build());
         y += ROW + 2;
         notesAt.clear();
         notes.clear();
+        if (decorTab) {
+            buildDecor(y);
+            return;
+        }
         if (combineTab) {
             buildCombine(y);
             return;
@@ -233,6 +248,44 @@ public class HudEditorScreen extends Screen {
     }
 
     /// The Image tab: pick your own picture or GIF, then size it, place it, and choose how solid it is.
+    /// The Decor tab: a picture for each corner of the HUD (FOECollab's flair), or none.
+    private void buildDecor(int y) {
+        HudLooks.Look l = look();
+        for (dannypx.foe.screens.element.hud.HudFlair.Corner corner : dannypx.foe.screens.element.hud.HudFlair.Corner.values()) {
+            String now = switch (corner) {
+                case TOP_LEFT -> l.flairTopLeft;
+                case TOP_RIGHT -> l.flairTopRight;
+                case BOTTOM_LEFT -> l.flairBottomLeft;
+                case BOTTOM_RIGHT -> l.flairBottomRight;
+            };
+            String name = dannypx.foe.screens.element.hud.HudFlair.nameOf(corner, now);
+            java.util.function.IntConsumer step = by -> {
+                String next = dannypx.foe.screens.element.hud.HudFlair.step(corner, now, by);
+                switch (corner) {
+                    case TOP_LEFT -> l.flairTopLeft = next;
+                    case TOP_RIGHT -> l.flairTopRight = next;
+                    case BOTTOM_LEFT -> l.flairBottomLeft = next;
+                    case BOTTOM_RIGHT -> l.flairBottomRight = next;
+                }
+                changed();
+                rebuildWidgets();
+            };
+            this.addRenderableWidget(Button.builder(Component.literal("<"), b -> step.accept(-1)).bounds(left, y, 20, H).build());
+            this.addRenderableWidget(Button.builder(Component.literal(corner.displayName + ": ")
+                            .append(Component.literal(name).withStyle(now == null || now.isEmpty() ? ChatFormatting.GRAY : ChatFormatting.AQUA)),
+                    b -> step.accept(1)).bounds(left + 22, y, COL_W - 44, H).build());
+            this.addRenderableWidget(Button.builder(Component.literal(">"), b -> step.accept(1)).bounds(left + COL_W - 20, y, 20, H).build());
+            y += ROW;
+        }
+        this.addRenderableWidget(Button.builder(Component.literal("Remove all"), b -> {
+            l.flairTopLeft = ""; l.flairTopRight = ""; l.flairBottomLeft = ""; l.flairBottomRight = "";
+            changed();
+            rebuildWidgets();
+        }).bounds(left, y, COL_W, H).build());
+        y += ROW;
+        done(y + 6);
+    }
+
     private void buildImage(int y) {
         HudLooks.Look l = look();
         this.addRenderableWidget(Button.builder(Component.literal("§a+ Choose an image or GIF..."), b -> choosePicture())
@@ -669,6 +722,12 @@ public class HudEditorScreen extends Screen {
         // The panel as it looks now
         g.drawString(font, Component.literal("Preview").withStyle(ChatFormatting.GRAY), previewX, previewY - 2, 0xFFFFFFFF, true);
         PanelElement p = panel();
+        // a HUD inside another: shown inside it, with its own look there (each HUD inside one keeps its own colours
+        // and text alignment)
+        String hostId = dannypx.foe.screens.element.hud.HudCombine.hostOf(p.lookId());
+        if (hostId != null && dannypx.foe.screens.element.hud.HudCombine.movesWithHost(p.lookId())) {
+            for (PanelElement other : panels) if (other.lookId().equals(hostId)) { p = other; break; }
+        }
         p.showAlone = true;
         p.alignment = Alignment.TOP_LEFT;
         p.xPos = (previewX - 4) / (float) width;

@@ -86,6 +86,7 @@ public class HudRenderHandler extends Handler {
             // The wrong-gear warning claims its spot first: it always stays exactly where you put
             // it, whatever its size, and the other panels make room while it is showing.
             elements.add(Pair.of("gear_warning", new GearWarningPanelElement()));
+            elements.add(Pair.of("inventory_warning", new dannypx.foe.screens.element.hud.InventoryWarningPanelElement()));
             // Event / cryptid alerts also keep their spot.
             elements.add(Pair.of("alert_panel", new AlertPanelElement()));
             // FOE-style info panels (ported from FOECollab)
@@ -94,6 +95,7 @@ public class HudRenderHandler extends Handler {
             elements.add(Pair.of("stats_panel", new StatsPanelElement()));
             elements.add(Pair.of("quest_panel", new QuestPanelElement()));
             elements.add(Pair.of("catch_popup", new CatchPopupElement()));
+            elements.add(Pair.of("pet_popup", new dannypx.foe.screens.element.hud.PetPopupElement()));
             elements.add(Pair.of("pet_panel", new PetPanelElement()));
             elements.add(Pair.of("bait_panel", new BaitPanelElement()));
             elements.add(Pair.of("luck_scale_panel", new LuckScalePanelElement()));
@@ -125,6 +127,10 @@ public class HudRenderHandler extends Handler {
             p = dannypx.foe.handler.logic.FoeProfiler.mark();
             if (Configs.mainConfig.enableMod.get() && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer())
                 dannypx.foe.helper.Safe.draw("hud catch ring", guiGraphics, () -> CatchRing.render(guiGraphics));
+            if (Configs.mainConfig.enableMod.get())
+                dannypx.foe.helper.Safe.draw("hud big catch", guiGraphics, () -> BigCatchMoment.render(guiGraphics));
+            if (Configs.mainConfig.enableMod.get())
+                dannypx.foe.helper.Safe.draw("hud variant pulse", guiGraphics, () -> VariantPulse.render(guiGraphics));
             if (Configs.mainConfig.enableMod.get() && dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer())
                 dannypx.foe.helper.Safe.draw("hud quest warning", guiGraphics, () -> QuestWarning.render(guiGraphics));
             // FOE+'s travel map, should the server close its menu for a moment while it zooms back out.

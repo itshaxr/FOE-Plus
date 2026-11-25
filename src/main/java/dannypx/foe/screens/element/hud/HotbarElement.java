@@ -52,8 +52,8 @@ public class HotbarElement extends Element {
     public HotbarElement() {
         super(WIDTH,
                 HEIGHT,
-                Configs.hudConfig.hotbarElementXPosition.get() / 100f,
-                Configs.hudConfig.hotbarElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementYPosition),
                 Configs.hudConfig.hotbarElementAlignment.get(),
                 Configs.hudConfig.hotbarElementGroup.translation("Hotbar Element"),
                 false);
@@ -62,8 +62,8 @@ public class HotbarElement extends Element {
     public HotbarElement(boolean isCopy) {
         super(WIDTH,
                 HEIGHT,
-                Configs.hudConfig.hotbarElementXPosition.get() / 100f,
-                Configs.hudConfig.hotbarElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementYPosition),
                 Configs.hudConfig.hotbarElementAlignment.get(),
                 Configs.hudConfig.hotbarElementGroup.translation("Hotbar Element"),
                 isCopy);
@@ -81,8 +81,8 @@ public class HotbarElement extends Element {
         if(LoadingHandler.instance().isLoadingDone() && Configs.hudConfig.showHotbarElement.get()) {
             // Position
             if(!isCopy) {
-                xPos = Configs.hudConfig.hotbarElementXPosition.get() / 100f;
-                yPos = Configs.hudConfig.hotbarElementYPosition.get() / 100f;
+                xPos = dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementXPosition);
+                yPos = dannypx.foe.helper.HudFine.get(Configs.hudConfig.hotbarElementYPosition);
             }
 
             int x = switch (Configs.hudConfig.hotbarElementAlignment.get()) {
@@ -320,7 +320,9 @@ public class HotbarElement extends Element {
                 if(Configs.hudConfig.showBaitLock.get()
                         && fishingRodTagObject.getDisableBait()
                 ) {
-                    guiGraphics.drawString(font, Component.literal("\uD83D\uDD12"), x + 2, y + baitY, CommonColors.WHITE, true);
+                    // a red padlock over the bait (drawn above the item) in the slot's top-left corner, clear of the count
+                    guiGraphics.nextStratum();
+                    dannypx.foe.helper.LockIcon.draw(guiGraphics, x + 1, y + baitY + 1, 1);
                 }
                 //endregion
             }

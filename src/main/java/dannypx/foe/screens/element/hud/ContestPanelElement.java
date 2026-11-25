@@ -20,16 +20,16 @@ public class ContestPanelElement extends PanelElement {
     }
 
     public ContestPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.contestPanelXPosition.get() / 100f,
-                Configs.hudConfig.contestPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.contestPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.contestPanelYPosition),
                 Configs.hudConfig.contestPanelAlignment.get(),
                 Component.literal("Contest Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showContestPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.contestPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.contestPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.contestPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.contestPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.contestPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.contestPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.contestPanelOpacity.get(); }
@@ -118,7 +118,7 @@ public class ContestPanelElement extends PanelElement {
         // levels, then the time
         List<Component> head = new ArrayList<>();
         if (levelLow > 0 && levelHigh > 0) {
-            head.add(label("ʟᴠ "));
+            head.add(label("ʟᴠʟ "));
             // each end in its level's own colour, as the server shows levels
             head.add(Component.literal(String.valueOf(levelLow)).withColor(dannypx.foe.helper.LevelColors.of(levelLow)));
             head.add(Component.literal("-").withStyle(ChatFormatting.GRAY));

@@ -39,7 +39,8 @@ public final class NotifySounds {
 
     /// The kinds "Every notifier" turns on and off together: all but the server's catch sound (that one isn't FOE+'s).
     public static List<Kind> notifiers() {
-        return KINDS.stream().filter(k -> !k.id().equals(dannypx.foe.handler.logic.CatchSound.ID)).toList();
+        return KINDS.stream().filter(k -> !k.id().equals(dannypx.foe.handler.logic.CatchSound.ID)
+                && !k.id().equals(dannypx.foe.handler.logic.CatchSound.SHARD_ID)).toList();
     }
 
     public static final List<Kind> KINDS = List.of(
@@ -59,13 +60,15 @@ public final class NotifySounds {
             new Kind("booster", "Global booster", Group.SERVER, 0x55FF55, false),
 
             new Kind("fish_bite", "Fish bite (BITE!)", Group.CATCHES, 0x55FFFF, false),
-            // the server's own sound for a catch: On plays it (or the sound you pick instead), Off mutes it
-            new Kind(dannypx.foe.handler.logic.CatchSound.ID, "Fish caught (server's sound)", Group.CATCHES, 0x55FF55, true),
-            new Kind("albino", "Albino", Group.CATCHES, 0xF2F2F2, false),
-            new Kind("melanistic", "Melanistic", Group.CATCHES, 0x8A8AA0, false),
-            new Kind("trophy", "Trophy", Group.CATCHES, 0xFFC93C, false),
-            new Kind("fabled", "Fabled catch", Group.CATCHES, 0xFC3E35, false),
-            new Kind("gigantic", "Gigantic", Group.CATCHES, 0xFF5555, false),
+            // ("Fish caught (server's sound)" is out for now, to be looked at again later)
+            new Kind(dannypx.foe.handler.logic.CatchSound.SHARD_ID, "Shard caught (server's sound)", Group.CATCHES, 0x55FF55, true),
+            // the big catch sounds, from tacklebox by landofif (MIT, used with permission)
+            new Kind("fabled", "Fabled catch", Group.CATCHES, 0xFC3E35, true),
+            new Kind("trophy", "Trophy", Group.CATCHES, 0xFFC93C, true),
+            new Kind("mythical", "Mythical", Group.CATCHES, 0xC93832, true),
+            new Kind("gigantic", "Gigantic", Group.CATCHES, 0xFF5555, true),
+            new Kind("albino", "Albino", Group.CATCHES, 0xF2F2F2, true),
+            new Kind("melanistic", "Melanistic", Group.CATCHES, 0x8A8AA0, true),
             new Kind("rare_catch", "Capsule / Lightning Bottle", Group.CATCHES, 0xB04CFF, false),
             new Kind("pet_pulled", "Pet pulled", Group.CATCHES, 0xB04CFF, false),
             new Kind("perfect_pet", "Perfect pet pulled", Group.CATCHES, 0xFF55FF, true),
@@ -93,10 +96,13 @@ public final class NotifySounds {
         /// A second play straight after (pitch × echoPitch, volume × echoVolume; 0: none). FOE+'s own alert
         /// and inventory sounds always played twice; a sound you pick plays once.
         public float echoPitch = 0f, echoVolume = 0f;
+        /// A third note with the other two (pitch × echo2Pitch, volume × echoVolume; 0: none): the trophy's chord.
+        public float echo2Pitch = 0f;
 
         Setting copy() {
             Setting s = new Setting();
             s.on = on; s.sound = sound; s.volume = volume; s.pitch = pitch; s.source = source; s.echoPitch = echoPitch; s.echoVolume = echoVolume;
+            s.echo2Pitch = echo2Pitch;
             return s;
         }
     }
@@ -159,6 +165,8 @@ public final class NotifySounds {
 
     static final class Saved {
         int version = 1;
+        /// The variant sounds have had the big catch sounds put in (once, 1.1.3). Null in older files.
+        Boolean bigCatchSounds;
         Map<String, Setting> sounds = new LinkedHashMap<>();
         List<Custom> custom = new ArrayList<>();
     }
@@ -178,6 +186,49 @@ public final class NotifySounds {
             saved.sounds.put(id, s);
         }
         return s;
+    }
+
+    /// The catches with a big catch sound, in the order one is picked when a fish is several of them.
+    public static final List<String> BIG_CATCH = List.of("fabled", "trophy", "mythical", "gigantic", "albino", "melanistic");
+
+    /// A fish was caught: the sound of the first of its big catch kinds whose sound is on (one sound, never a pile).
+    public static void playCatch(String rarity, String variant, String size) {
+        String r = rarity == null ? "" : rarity.toLowerCase(Locale.ROOT);
+        String v = variant == null ? "" : variant.toLowerCase(Locale.ROOT).trim();
+        String z = size == null ? "" : size.toLowerCase(Locale.ROOT);
+        for (String id : BIG_CATCH) {
+            boolean is = switch (id) {
+                case "mythical" -> r.equals("mythical") || r.equals("mythic");
+                case "gigantic" -> z.equals("gigantic");
+                default -> !v.isEmpty() && v.equals(id);
+            };
+            if (!is) continue;
+            // a variant's sound already played when it bit your line: not again
+            if (!id.equals("mythical") && !id.equals("gigantic") && dannypx.foe.handler.renderer.VariantPulse.soundedOnLine(id)) return;
+            try {
+                if (!Configs.mainConfig.enableMod.get()) return;
+                Setting s = get(id);
+                if (s.on && s.sound != null && !s.sound.isBlank()) {
+                    play(s, false);
+                    return;
+                }
+            } catch (Throwable ignored) {
+                return;
+            }
+        }
+    }
+
+    /// An albino, melanistic, trophy or fabled fish bit your line (its badge at your bobber): its sound, if it's on
+    /// and has one. Only for a variant: nothing else plays these.
+    public static void playVariant(String variant) {
+        if (variant == null || !List.of("albino", "melanistic", "trophy", "fabled").contains(variant)) return;
+        try {
+            if (!Configs.mainConfig.enableMod.get()) return;
+            Setting s = get(variant);
+            if (s.on && s.sound != null && !s.sound.isBlank()) play(s, false);
+        } catch (Throwable ignored) {
+            // not now
+        }
     }
 
     public static List<Custom> custom() {
@@ -226,6 +277,17 @@ public final class NotifySounds {
                 default -> {
                     // a perfect pet: a fanfare from the start (pick another in Sounds)
                     if (id.equals("perfect_pet")) s.sound = "minecraft:ui.toast.challenge_complete";
+                    // the big catch sounds (tacklebox's)
+                    switch (id) {
+                        case "fabled" -> { s.sound = "minecraft:block.conduit.activate"; s.volume = 0.9f; s.pitch = 0.9f; }
+                        case "trophy" -> { s.sound = "minecraft:block.note_block.bell"; s.volume = 0.7f; s.pitch = 1.0f;
+                            s.echoPitch = 1.26f; s.echoVolume = 1f; s.echo2Pitch = 1.5f; }
+                        case "mythical" -> { s.sound = "minecraft:entity.player.levelup"; s.volume = 0.8f; }
+                        case "gigantic" -> { s.sound = "minecraft:block.amethyst_block.chime"; s.pitch = 0.8f; }
+                        case "albino", "melanistic" -> { s.sound = "minecraft:block.note_block.chime"; s.volume = 0.6f;
+                            s.pitch = 1.2f; s.echoPitch = 1.25f; s.echoVolume = 1f; }
+                        default -> {}
+                    }
                 }
             }
         } catch (Throwable ignored) {
@@ -260,12 +322,35 @@ public final class NotifySounds {
                     if (s.sounds == null) s.sounds = new LinkedHashMap<>();
                     if (s.custom == null) s.custom = new ArrayList<>();
                     for (Custom c : s.custom) upgrade(c);
+                    // FOE+'s own sounds' ids from the test builds ("fishonmcextras:custom.mario_coin",
+                    // "fishonmcextras:file/x") are "foeplus:mario_coin" and "foeplus:file/x" now
+                    boolean renamed = false;
+                    for (Setting t : s.sounds.values()) renamed |= rename(t);
+                    for (Custom c : s.custom) renamed |= rename(c);
                     saved = s;
+                    if (renamed) save();
+                    if (!Boolean.TRUE.equals(s.bigCatchSounds)) {
+                        // these had no sound before 1.1.3: they get the big catch sounds once (one you picked stays)
+                        for (String id : BIG_CATCH) {
+                            Setting old = s.sounds.get(id);
+                            if (old != null && (old.sound == null || old.sound.isBlank())) s.sounds.put(id, defaults(id));
+                        }
+                        s.bigCatchSounds = true;
+                        save();
+                    }
                 }
             }
         } catch (Throwable ignored) {
             // a broken file: FOE+'s defaults
         }
+    }
+
+    private static boolean rename(Setting t) {
+        if (t == null || t.sound == null) return false;
+        String old = t.sound;
+        if (old.startsWith("fishonmcextras:custom.")) t.sound = "foeplus:" + old.substring("fishonmcextras:custom.".length());
+        else if (old.startsWith("fishonmcextras:file/")) t.sound = "foeplus:file/" + old.substring("fishonmcextras:file/".length());
+        return !old.equals(t.sound);
     }
 
     /// For tests.
@@ -302,12 +387,18 @@ public final class NotifySounds {
             if (s.echoVolume > 0f && s.echoPitch > 0f) {
                 mc.getSoundManager().play(instance(id, source, s.volume * s.echoVolume, s.pitch * s.echoPitch));
             }
+            if (s.echoVolume > 0f && s.echo2Pitch > 0f) {
+                mc.getSoundManager().play(instance(id, source, s.volume * s.echoVolume, s.pitch * s.echo2Pitch));
+            }
         } finally {
             dannypx.foe.handler.logic.CatchSound.own = was;
         }
     }
 
     private static SoundInstance instance(Identifier id, SoundSource source, float volume, float pitch) {
+        // one of your own sound files
+        FileSounds.Entry file = FileSounds.byId(id.toString());
+        if (file != null) return FileSounds.instance(file, source, Math.max(0f, Math.min(1f, volume)), Math.max(0.5f, Math.min(2f, pitch)));
         return new SimpleSoundInstance(id, source, Math.max(0f, Math.min(1f, volume)), Math.max(0.5f, Math.min(2f, pitch)),
                 SoundInstance.createUnseededRandom(), false, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true);
     }

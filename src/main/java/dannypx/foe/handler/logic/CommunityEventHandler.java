@@ -107,7 +107,8 @@ public class CommunityEventHandler {
             loadLast(now);
         }
         String boss = BossEventHandler.instance().getCommunityGoalCurrent().getString().trim();
-        long bossValue = parse(boss);
+        // only while the boss bar is showing it (else it's an old number, and /communityevent is asked more often)
+        long bossValue = BossEventHandler.instance().communityFresh() ? parse(boss) : -1;
         if (bossValue >= 0) noteTotal(bossValue, now);
         // Checked for the top bar's readout or the Community panel, whichever is on.
         boolean wanted = Configs.hudConfig.topBarShowCommunity.get() || communityInTimers();

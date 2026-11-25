@@ -114,7 +114,39 @@ public class SilentMenuHandler {
 
     /// Whether a due read may be sent now (a priority one between casts, an ordinary one not too soon after the
     /// last nor while you're fishing).
+    /// Where the server said "You cannot access quests here!" to our own /quests (your crew island): no /quests is
+    /// sent there again, until you're somewhere else.
+    private String questsDeniedAt = null;
+
+    private static String here() {
+        try {
+            return dannypx.foe.handler.fetch.BossEventHandler.instance().getLocation().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    /// "QUEST » You cannot access quests here!" in answer to FOE+'s own /quests: hidden, and /quests isn't sent
+    /// again at this place. Your own /quests' answer still shows.
+    private boolean hideQuestsDenied(String text) {
+        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
+        if (plain == null || !plain.toLowerCase(java.util.Locale.ROOT).contains("cannot access quests")) return false;
+        long now = System.currentTimeMillis();
+        boolean ours = now - lastRead.getOrDefault(Target.QUESTS, 0L) < 5_000L && lastUserActivity < lastRead.getOrDefault(Target.QUESTS, 0L);
+        if (!ours) return false;
+        questsDeniedAt = here();
+        dueAt.remove(Target.QUESTS);
+        priority.remove(Target.QUESTS);
+        bobberWait.remove(Target.QUESTS);
+        if (current == Target.QUESTS) { current = null; expectMenuUntil = 0L; }
+        return true;
+    }
+
     private boolean sendable(Target target, long now, long sinceDue, boolean bobberOut) {
+        if (target == Target.QUESTS && questsDeniedAt != null) {
+            if (questsDeniedAt.equals(here())) return false;
+            questsDeniedAt = null;   // somewhere else now: quests can be read again
+        }
         if (Boolean.TRUE.equals(priority.get(target)))
             return !waitForBobber(bobberOut, sinceDue, bobberWait.getOrDefault(target, PRIORITY_WAIT_FOR_BOBBER_MS));
         return now - lastRead.getOrDefault(target, 0L) >= MIN_GAP_MS && now - lastFishingSeen >= QUIET_AFTER_FISHING_MS;
@@ -151,6 +183,7 @@ public class SilentMenuHandler {
     /// The server's "Wait 5 seconds." answer to one of our background commands: hidden from chat,
     /// and the command is tried again once the wait is over. Your own commands' answers show.
     public boolean hideCooldownReply(String text) {
+        if (hideQuestsDenied(text)) return true;
         if (System.currentTimeMillis() - lastBackgroundCommandAt > 3_000L) return false;
         if (lastUserActivity >= lastBackgroundCommandAt) return false; // the reply may be to your own command
         String plain = net.minecraft.ChatFormatting.stripFormatting(text);

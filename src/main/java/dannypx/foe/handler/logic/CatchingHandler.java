@@ -79,6 +79,57 @@ public class CatchingHandler extends Handler {
     //region Methods
     public void tick() {
         this.scanFish();
+        if (++petTicks % 10 == 0) safely("owned pets", this::notePets);
+    }
+
+    private int petTicks = 0;
+    /// When each pet you have (in your inventory, or equipped) was first seen; 0 for those you already had when FOE+
+    /// first looked. A pet seen long before is never taken for a new one (your equipped pet, wearing a skin, coming
+    /// back into your inventory used to get a "QUEST PET!" line in place of the real reward).
+    private final java.util.Map<java.util.UUID, Long> petFirstSeen = new java.util.HashMap<>();
+    private boolean petsLooked = false;
+    static final long NEW_PET_MS = 15_000L;
+
+    private void notePets() {
+        if (minecraft.player == null) {
+            petsLooked = false;
+            petFirstSeen.clear();
+            return;
+        }
+        long now = System.currentTimeMillis();
+        long when = petsLooked ? now : 0L;
+        for (ItemStack stack : minecraft.player.getInventory().getNonEquipmentItems()) notePet(stack, when);
+        try {
+            PetTagObject equipped = InventoryHandler.instance().getCurrentPet();
+            if (equipped != null && equipped.getID() != null) petFirstSeen.putIfAbsent(equipped.getID(), when);
+        } catch (RuntimeException ignored) {}
+        petsLooked = true;
+    }
+
+    private void notePet(ItemStack stack, long when) {
+        if (stack == null || stack.isEmpty()) return;
+        Pair<Boolean, TagObject> t = ValidateItem.isType(stack);
+        if (!t.value1()) return;
+        Pair<Boolean, PetTagObject> p = ValidateItem.isPet(t.value2());
+        if (!p.value1()) return;
+        try {
+            java.util.UUID id = p.value2().getID();
+            if (id != null) petFirstSeen.putIfAbsent(id, when);
+        } catch (RuntimeException ignored) {}
+    }
+
+    /// A pet you had before now (seen a while ago, or your equipped one): not a new pet.
+    private boolean hadBefore(PetTagObject pet) {
+        try {
+            java.util.UUID id = pet.getID();
+            if (id == null) return false;
+            PetTagObject equipped = InventoryHandler.instance().getCurrentPet();
+            if (equipped != null && id.equals(equipped.getID())) return true;
+            Long seen = petFirstSeen.get(id);
+            return seen != null && System.currentTimeMillis() - seen > NEW_PET_MS;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     private void scanFish() {
@@ -95,6 +146,11 @@ public class CatchingHandler extends Handler {
                 // failure here used to leave the daily quests waiting for /menu).
                 FishTagObject caught = foundFish.value2();
                 safely("catch sound", CatchSound::onCatch);
+                safely("water rings", () -> dannypx.foe.handler.renderer.WaterRings.onCatch(caught.getRarity()));
+                safely("big catch sound", () -> dannypx.foe.handler.store.NotifySounds.playCatch(caught.getRarity(), caught.getVariant(), caught.getFishSize()));
+                safely("inventory full sound", () -> FullInventoryHandler.instance().onCatch());
+                safely("variant pulse", dannypx.foe.handler.renderer.VariantPulse::onCatch);
+                safely("big catch", () -> dannypx.foe.handler.renderer.BigCatchMoment.onCatch(caught));
                 safely("quests", () -> QuestDataHandler.instance().setFish(caught));
                 safely("contest", () -> ContestTrackerHandler.instance().onFishCaught(caught));
                 safely("daily quests", () -> DailyQuestHandler.instance().onFishCaught(caught));
@@ -144,6 +200,10 @@ public class CatchingHandler extends Handler {
             // Store to Stats
             Pair<Boolean, PetTagObject> validatePet = ValidateItem.isPet(validatedItem.value2());
             if(validatePet.value1()) {
+                // a pet you already had (moved, unequipped, its skin changed) is no new pet
+                if (hadBefore(validatePet.value2())) return;
+                // each pet once: it can be found both after a catch and from the server's line about it
+                if (!firstTime(validatePet.value2())) return;
                 // Only a pet fished up ("PET DROP!") counts; one from a contest, an event or a quest gets its own popup
                 PetSourceHandler.Source source = PetSourceHandler.instance().sourceOfNewPet();
                 PetSourceHandler.instance().used(source);
@@ -167,6 +227,38 @@ public class CatchingHandler extends Handler {
             }
             LoggerHandler._debug("Found Item: " + itemStack.getHoverName().getString(), itemStack);
         }
+    }
+
+    /// The pets already handled (their ids), so none gets two lines.
+    private final java.util.Set<String> handledPets = new java.util.LinkedHashSet<>();
+
+    /// Whether this pet is new to us (and from now on it isn't).
+    private boolean firstTime(PetTagObject pet) {
+        String key;
+        try {
+            java.util.UUID id = pet.getID();
+            key = id != null ? id.toString() : pet.getName().getString() + "|" + pet.getTotalPercent();
+        } catch (RuntimeException e) {
+            key = pet.getName().getString() + "|" + pet.getTotalPercent();
+        }
+        if (!handledPets.add(key)) return false;
+        if (handledPets.size() > 200) handledPets.remove(handledPets.iterator().next());
+        return true;
+    }
+
+    /// The server said you got a pet ("PET DROP!", or a contest, event or quest reward): the pets that came into
+    /// your inventory in the last few seconds that weren't handled yet get their line and count now. So a pet is
+    /// never missed when its catch wasn't found (that used to leave it without a line or a count).
+    public void lookForNewPets() {
+        if (minecraft.player == null) return;
+        long now = System.currentTimeMillis();
+        InventoryHandler.instance().getSnapshottedItems().stream()
+                .filter(item -> now - item.value1() < 8_000L)
+                .toList()
+                .forEach(item -> {
+                    Pair<Boolean, TagObject> t = ValidateItem.isType(item.value2());
+                    if (t.value1() && ValidateItem.isPet(t.value2()).value1()) scanItem(item.value2(), item.value3());
+                });
     }
 
     private Pair<Boolean, FishTagObject> findFish() {

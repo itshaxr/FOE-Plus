@@ -45,7 +45,7 @@ public class ContestTrackerHandler {
 
     //region Auto refresh (ported from FOECollab's ContestHandler / FishCatchHandler)
     private static final long AUTO_REFRESH_MS = 60_000L;
-    private static final long MIN_REFRESH_GAP_MS = 5_000L;
+    private static final long MIN_REFRESH_GAP_MS = 3_000L;
     private static final long HIDE_WINDOW_MS = 4_000L;
 
     /// The first automatic refresh waits this long after a contest starts, so it never lands on
@@ -351,7 +351,15 @@ public class ContestTrackerHandler {
             String value = improved.group(1).trim();
             this.rankStat = value;
             this.personalBest = Math.max(this.personalBest, parseNumber(value));
-            if (this.isContest) this.refreshDueAt = System.currentTimeMillis() + 1_000L;
+            if (this.isContest) {
+                // you're on the board: the participation mission counts now
+                DailyQuestHandler.instance().onContestEntry();
+                // re-read the rankings as soon as the server allows (with the new-best line once it's in)
+                this.pendingPersonalBest = true;
+                long now = System.currentTimeMillis();
+                if (now < this.hideUntil) this.announcePersonalBest = true;      // a re-read is on its way already
+                else this.refreshDueAt = Math.max(now, this.lastRefresh + MIN_REFRESH_GAP_MS);
+            }
             return;
         }
 

@@ -45,9 +45,15 @@ public class DefaultModScreen extends Screen implements ScreenConstants {
         widgets.forEach(this::addRenderableWidget);
     }
 
+    /// The Return button in the bottom left corner instead of the bottom right (the HUD mover).
+    protected boolean returnOnLeft() {
+        return false;
+    }
+
     private AbstractWidget backButton() {
-        return !isMiddle ? new SmallButtonBuilder(
-                width - PADDING_HALF - 50,
+        // the HUD mover's Return sits in the bottom left, wherever the screen would otherwise put it
+        return !isMiddle || returnOnLeft() ? new SmallButtonBuilder(
+                returnOnLeft() ? PADDING_HALF : width - PADDING_HALF - 50,
                 height - PADDING_HALF - BUTTON_HEIGHT,
                 50, BUTTON_HEIGHT,
                 button -> this.onClose())

@@ -69,6 +69,13 @@ public final class HudLooks {
         /// The border: "DEFAULT" (as Info panel border style says for every HUD: none when that's Off), "ON" (always,
         /// in that style, or Clean rounded when it's Off) or "OFF". Null in older saves: from {@link #border}.
         public String frame = null;
+        /// Decorations on its corners (FOECollab's flair): a picture's name for each, "" for none.
+        public String flairTopLeft = "", flairTopRight = "", flairBottomLeft = "", flairBottomRight = "";
+
+        public boolean hasFlair() {
+            return !(flairTopLeft == null || flairTopLeft.isEmpty()) || !(flairTopRight == null || flairTopRight.isEmpty())
+                    || !(flairBottomLeft == null || flairBottomLeft.isEmpty()) || !(flairBottomRight == null || flairBottomRight.isEmpty());
+        }
 
         public String frameMode() {
             if (frame != null) return frame;
@@ -79,7 +86,7 @@ public final class HudLooks {
             return lineSpacing == 2 && padding == 0 && boxColor == 0 && opacity == -1 && borderColor == 0xFFFFFF
                     && titleColor == -1 && "AUTO".equals(align) && picture.isEmpty() && hidden.isEmpty()
                     && (title == null || title.isEmpty()) && !noTitle && !columns && !twoColumns && (image == null || image.isEmpty())
-                && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode());
+                && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode()) && !hasFlair();
         }
 
         public dannypx.foe.type.TextAlign textAlign() {

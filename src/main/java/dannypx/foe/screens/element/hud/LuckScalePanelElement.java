@@ -25,16 +25,16 @@ public class LuckScalePanelElement extends PanelElement {
     }
 
     public LuckScalePanelElement(boolean isCopy) {
-        super(Configs.hudConfig.luckScalePanelXPosition.get() / 100f,
-                Configs.hudConfig.luckScalePanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.luckScalePanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.luckScalePanelYPosition),
                 Configs.hudConfig.luckScalePanelAlignment.get(),
                 Component.literal("Luck & Scale Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showLuckScalePanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.luckScalePanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.luckScalePanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.luckScalePanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.luckScalePanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.luckScalePanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.luckScalePanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.luckScalePanelOpacity.get(); }

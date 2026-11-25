@@ -61,8 +61,17 @@ public class BobberScreen extends Screen {
             options.add(new Option(style, button));
         }
 
+        // the shape: the block, or round like a real float (every preset works on both)
+        var shape = Configs.rendererConfig.bobberShape;
+        this.addRenderableWidget(Button.builder(Component.literal("Shape: ").append(Component.literal(shape.get().displayName()).withStyle(ChatFormatting.AQUA)), b -> {
+                    shape.accept(shape.get().next());
+                    Configs.rendererConfig.save();
+                    dannypx.foe.nearby_dispatcher.types.ModUserType.announceBobber();
+                    rebuildWidgets();
+                }).bounds(width / 2 - 104, gridBottom + previewH + 8, 100, BUTTON_H)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Classic: the block bobber. Round: a round float, like a real one. Your colours work on both"))).build());
         this.addRenderableWidget(Button.builder(Component.literal("Done"), b -> this.onClose())
-                .bounds(width / 2 - 50, gridBottom + previewH + 8, 100, BUTTON_H).build());
+                .bounds(width / 2 + 4, gridBottom + previewH + 8, 100, BUTTON_H).build());
     }
 
     private void pick(BobberStyle style) {
@@ -83,11 +92,16 @@ public class BobberScreen extends Screen {
                 width / 2, gridTop - 18, 0xFFFFFFFF);
 
         BobberStyle current = Configs.rendererConfig.bobberStyle.get();
+        boolean round = Configs.rendererConfig.bobberShape.get() == dannypx.foe.type.BobberShape.ROUND;
         for (Option option : options) {
             Button b = option.button();
             int sx = b.getX() + 5, sy = b.getY() + (b.getHeight() - SWATCH) / 2;
-            guiGraphics.fill(sx - 1, sy - 1, sx + SWATCH + 1, sy + SWATCH + 1, 0xFF000000);
-            drawBody(guiGraphics, option.style(), sx, sy, SWATCH, SWATCH);
+            if (round) {
+                drawRound(guiGraphics, option.style(), sx, sy, SWATCH);
+            } else {
+                guiGraphics.fill(sx - 1, sy - 1, sx + SWATCH + 1, sy + SWATCH + 1, 0xFF000000);
+                drawBody(guiGraphics, option.style(), sx, sy, SWATCH, SWATCH);
+            }
             if (option.style() == current) {
                 guiGraphics.renderOutline(b.getX() - 1, b.getY() - 1, b.getWidth() + 2, b.getHeight() + 2, 0xFFFFFFFF);
                 guiGraphics.drawString(font, Component.literal("✔").withStyle(ChatFormatting.GREEN),
@@ -109,8 +123,12 @@ public class BobberScreen extends Screen {
         guiGraphics.drawString(font, label, lx, by + (body - font.lineHeight) / 2 + 1, 0xFFFFFFFF, true);
         int hookColor = 0xFF2C2D35;
         guiGraphics.fill(bx + p, py, bx + 2 * p, py + p, hookColor);              // nub
-        guiGraphics.fill(bx - 1, by - 1, bx + body + 1, by + body + 1, 0xFF000000); // outline
-        drawBody(guiGraphics, current, bx, by, body, body);
+        if (round) {
+            drawRound(guiGraphics, current, bx, by, body);
+        } else {
+            guiGraphics.fill(bx - 1, by - 1, bx + body + 1, by + body + 1, 0xFF000000); // outline
+            drawBody(guiGraphics, current, bx, by, body, body);
+        }
         int hy = by + body;
         guiGraphics.fill(bx + p, hy, bx + 2 * p, hy + 2 * p, hookColor);          // shank
         guiGraphics.fill(bx, hy + 2 * p, bx + 2 * p, hy + 3 * p, hookColor);      // bend
@@ -123,6 +141,28 @@ public class BobberScreen extends Screen {
                 dannypx.foe.FishOnMCExtras.MOD_ID, style.texturePath());
         // read from the face's bottom row up (a negative height), so it shows the right way up
         g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, texture, x, y, 12, 24, w, h, 12, -12, 64, 36);
+    }
+
+    /// The round bobber: the same face, row by row, as wide as a ball is at that height, with a dark rim.
+    private static void drawRound(GuiGraphics g, BobberStyle style, int x, int y, int size) {
+        net.minecraft.resources.Identifier texture = net.minecraft.resources.Identifier.fromNamespaceAndPath(
+                dannypx.foe.FishOnMCExtras.MOD_ID, style.texturePath());
+        float r = size / 2f, cx = x + r;
+        for (int j = -1; j <= size; j++) {
+            float dy = (j + 0.5f - r) / (r + 1f);
+            if (Math.abs(dy) >= 1f) continue;
+            int half = Math.round((float) Math.sqrt(1f - dy * dy) * (r + 1f));
+            g.fill(Math.round(cx) - half, y + j, Math.round(cx) + half, y + j + 1, 0xFF000000);
+        }
+        for (int j = 0; j < size; j++) {
+            float dy = (j + 0.5f - r) / r;
+            int half = Math.round((float) Math.sqrt(Math.max(0f, 1f - dy * dy)) * r);
+            if (half <= 0) continue;
+            // the face's row for this height (stored upside down: its bottom row is the top)
+            int row = 23 - Math.min(11, j * 12 / size);
+            g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, texture, Math.round(cx) - half, y + j, 12, row,
+                    half * 2, 1, 12, 1, 64, 36);
+        }
     }
 
     @Override

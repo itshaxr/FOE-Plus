@@ -1,0 +1,77 @@
+# Bait abuse: the best baits to use at each place, for each goal, in order (1 first). Built from the community's
+# "Bait Abuser Central" sheet; FOE+ only reads this the first time (and for "Reset"): yours is saved and edited in game.
+# place|goal|condition|priority|bait|tied (Y: tied with the others at the same number)
+Cypress Lake|Epic||1|Leopard Frog|
+Cypress Lake|Epic||2|White Rooster|
+Cypress Lake|Epic||3|Shiner/Minnow|
+Cypress Lake|Epic||4|Crank|
+Kenai River|Legendary||1|Nightcrawler|
+Kenai River|Legendary|1k+ Luck|2|Trout Dough|
+Kenai River|Pet Leveling||1|Shiner/Minnow|
+Lake Biwa|Epic||1|Leopard Frog|
+Lake Biwa|Epic||2|Firetiger Rooster|
+Lake Biwa|Epic||3|Shiner/Minnow|
+Lake Biwa|Epic||4|Trout Dough|
+Lake Biwa|Epic||5|Crank|
+Murray River|Rare||1|Cut Shad|
+Murray River|Rare||2|French Fry|
+Murray River|Rare||3|Zebra Muscles|
+Murray River|Legendary|1k+ Luck|1|Worms|
+Murray River|Pet Leveling||1|Mozzarella Cheese Cube|
+Everglades|Rare||1|OG Herring Live Bait|
+Everglades|Rare||2|White Shrimp|Y
+Everglades|Rare||2|Herring Live Bait|Y
+Everglades|Rare||3|Small Cut Squid|
+Everglades|Rare||4|Scallop|
+Everglades|Legendary||1|Pinfish Live Bait|Y
+Everglades|Legendary||1|Chartreuse Bucktail Jig|Y
+Everglades|Legendary||1|Dark Shad Bucktail Jig|Y
+Everglades|Legendary||1|Red Jerkbait|Y
+Key West|Epic||1|White Shrimp|Y
+Key West|Epic||1|Menhaden Live Bait|Y
+Key West|Epic||2|Small Cut Squid|Y
+Key West|Epic||2|Sand Flea|Y
+Key West|Legendary|Booster|1|Pinfish Live Bait|
+Toledo Bend Reservoir|Epic||1|Dough Balls|
+Toledo Bend Reservoir|Legendary|1k+ Luck|1|Bread|
+Great Lakes|Rare||1|Bread|
+Great Lakes|Epic||1|Cut Roach|
+Great Lakes|Epic||2|White Rooster|
+Great Lakes|Epic||3|Pink Salmon Roe|
+Great Lakes|Legendary|Booster|1|Rusty Crawfish|
+Great Lakes|Legendary|Booster|2|Worms|
+Danube River|Epic||1|Cut Roach|
+Danube River|Epic||2|Small Chunk of Meat|
+Danube River|Epic||3|Worms|Y
+Danube River|Epic||3|Bread|Y
+Oil Rig|Rare||1|Sand Flea|
+Oil Rig|Epic||1|Ghost Bucktail Jig|
+Oil Rig|Epic||2|Menhaden Live Bait|
+Amazon|Rare||1|Dark Rainforest Frog|
+Amazon|Rare||2|Bread|
+Amazon|Rare||3|Worms|
+Amazon|Rare||4|Dough Balls|
+Amazon|Legendary|Booster|1|Lambari Live Bait|
+Mediterranean Sea|Epic||1|OG Herring Live Bait|
+Mediterranean Sea|Epic||2|Herring Live Bait|Y
+Mediterranean Sea|Epic||3|Small Cut Squid|
+Cape Cod|Epic||1|Sand Eels|Y
+Cape Cod|Epic||1|Mullet Live Bait|Y
+Cape Cod|Epic||2|Sand Worm|
+Nile River|Rare|Under 500 Luck|1|Worms|
+Nile River|Epic|500+ Luck|1|Bread|
+Nile River|Epic|500+ Luck|2|Dough Balls|
+Nile River|Legendary||1|Suspending Jerkbait|
+Hawaii|Rare||1|Muscles|Y
+Hawaii|Rare||1|White Shrimp|Y
+Hawaii|Rare||2|Scallop|Y
+Hawaii|Rare||2|Clam|Y
+Hawaii|Epic||1|Blue Jerkbait|
+Lofoten Islands|Epic||1|Small Cut Squid|
+Lofoten Islands|Epic||2|Sand Shrimp|
+Cairns|Rare||1|Sand Fleas|
+Cairns|Epic||1|Cut Octopus|
+Cairns|Epic||2|Muscles|
+Cairns|Epic||3|Small Cut Squid|
+Cairns|Epic||4|Scallop|Y
+Cairns|Epic||4|Clam|Y

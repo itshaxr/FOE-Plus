@@ -26,6 +26,10 @@ public class ModUserType {
     /// the list colour sent with it ({@link #COLOR_TYPE}), the nearest one.
     private static final int CUSTOM_COLOR_TYPE = 46;
     private static final Map<UUID, dannypx.foe.type.BobberStyle> bobberStyles = new java.util.concurrent.ConcurrentHashMap<>();
+    /// Your bobber's shape ({'S', 0 Classic / 1 Round}), on its own so versions before it, which only read the
+    /// preset ({@link #BOBBER_TYPE}), still see your colours (on the block).
+    private static final int SHAPE_TYPE = 47;
+    private static final Map<UUID, dannypx.foe.type.BobberShape> bobberShapes = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final double NEARBY_RANGE = 24.0;
     private static final int NEWCOMER_DELAY_TICKS = 10;
@@ -50,6 +54,7 @@ public class ModUserType {
         NearbyDispatcher.register(FOE_PLUS_TYPE, ModUserType::onReceiveFoePlus);
         NearbyDispatcher.register(COLOR_TYPE, ModUserType::onReceiveColor);
         NearbyDispatcher.register(BOBBER_TYPE, ModUserType::onReceiveBobber);
+        NearbyDispatcher.register(SHAPE_TYPE, ModUserType::onReceiveShape);
         NearbyDispatcher.register(CUSTOM_COLOR_TYPE, ModUserType::onReceiveCustomColor);
         ClientTickEvents.END_CLIENT_TICK.register(ModUserType::tick);
     }
@@ -60,6 +65,7 @@ public class ModUserType {
             announcedTo.clear();
             ticksInRange.clear();
             bobberStyles.clear();
+            bobberShapes.clear();
             confirmed.clear();
             unansweredTicks.clear();
             answeredAt.clear();
@@ -108,6 +114,7 @@ public class ModUserType {
         NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
         NearbyDispatcher.queue(CUSTOM_COLOR_TYPE, customColorPayload());
         NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
+        NearbyDispatcher.queue(SHAPE_TYPE, shapePayload());
     }
 
     private static byte[] customColorPayload() {
@@ -129,6 +136,24 @@ public class ModUserType {
     public static void announceBobber() {
         if (!ConnectionHandler.instance().isOnServer()) return;
         NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
+        NearbyDispatcher.queue(SHAPE_TYPE, shapePayload());
+    }
+
+    private static byte[] shapePayload() {
+        return new byte[]{'S', (byte) dannypx.foe.config.Configs.rendererConfig.bobberShape.get().ordinal()};
+    }
+
+    private static void onReceiveShape(UUID sender, byte[] payload) {
+        if (payload.length != 2 || payload[0] != 'S') return;
+        dannypx.foe.type.BobberShape[] all = dannypx.foe.type.BobberShape.values();
+        int i = payload[1] & 0xFF;
+        if (i < all.length) bobberShapes.put(sender, all[i]);
+        else bobberShapes.remove(sender);
+    }
+
+    /// The bobber shape another FOE+ user picked, or null if they haven't told us one (the block, then).
+    public static dannypx.foe.type.BobberShape bobberShapeOf(UUID player) {
+        return player == null ? null : bobberShapes.get(player);
     }
 
     private static void onReceiveBobber(UUID sender, byte[] payload) {
@@ -181,6 +206,7 @@ public class ModUserType {
             NearbyDispatcher.queue(COLOR_TYPE, colorPayload());
             NearbyDispatcher.queue(CUSTOM_COLOR_TYPE, customColorPayload());
             NearbyDispatcher.queue(BOBBER_TYPE, bobberPayload());
+            NearbyDispatcher.queue(SHAPE_TYPE, shapePayload());
         }
     }
 
@@ -201,6 +227,7 @@ public class ModUserType {
             announcedTo.remove(playerUuid);
             ticksInRange.remove(playerUuid);
             bobberStyles.remove(playerUuid);
+            bobberShapes.remove(playerUuid);
             TextDisplayHandler.instance().removeModUser(playerUuid);
         });
     }

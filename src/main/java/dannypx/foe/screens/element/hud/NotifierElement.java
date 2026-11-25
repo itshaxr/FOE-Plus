@@ -24,8 +24,8 @@ public class NotifierElement extends Element implements ScreenConstants {
     public NotifierElement() {
         super(WIDTH,
                 50,
-                Configs.hudConfig.notifierElementXPosition.get() / 100f,
-                Configs.hudConfig.notifierElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementYPosition),
                 Configs.hudConfig.notifierElementAlignment.get(),
                 Configs.hudConfig.notifierElementGroup.translation("Notifier Element"),
                 false);
@@ -34,8 +34,8 @@ public class NotifierElement extends Element implements ScreenConstants {
     public NotifierElement(boolean isCopy) {
         super(WIDTH,
                 50,
-                Configs.hudConfig.notifierElementXPosition.get() / 100f,
-                Configs.hudConfig.notifierElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementYPosition),
                 Configs.hudConfig.notifierElementAlignment.get(),
                 Configs.hudConfig.notifierElementGroup.translation("Notifier Element"),
                 isCopy);
@@ -54,8 +54,8 @@ public class NotifierElement extends Element implements ScreenConstants {
         ) {
             // Position
             if(!isCopy) {
-                xPos = Configs.hudConfig.notifierElementXPosition.get() / 100f;
-                yPos = Configs.hudConfig.notifierElementYPosition.get() / 100f;
+                xPos = dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementXPosition);
+                yPos = dannypx.foe.helper.HudFine.get(Configs.hudConfig.notifierElementYPosition);
             }
 
             int x = switch (Configs.hudConfig.notifierElementAlignment.get()) {

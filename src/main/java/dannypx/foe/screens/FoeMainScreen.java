@@ -87,12 +87,14 @@ public class FoeMainScreen extends Screen {
             tabY += tabH + 2;
         }
 
-        // The section's tiles, two to a row, three rows filling the space between the heading and the footer.
+        // The section's tiles, two to a row, filling the space between the heading and the footer (three rows, or
+        // as many as it has, smaller, so none goes over the footer).
         int cx = wx + SIDEBAR_W + PAD, cw = ww - SIDEBAR_W - PAD * 2;
         int tw = (cw - GAP) / 2;
         int ty = wy + HEAD_H + 8;
-        int TILE_H = Math.max(40, Math.min(56, (wy + wh - FOOTER_H - 8 - ty - 2 * GAP) / 3));
         List<TileSpec> tiles = tiles(section);
+        int rows = Math.max(3, (tiles.size() + 1) / 2);
+        int TILE_H = tileH(wy + wh - FOOTER_H - 8 - ty, rows);
         for (int i = 0; i < tiles.size(); i++) {
             TileSpec t = tiles.get(i);
             int x = cx + (i % 2) * (tw + GAP), y = ty + (i / 2) * (TILE_H + GAP);
@@ -103,6 +105,11 @@ public class FoeMainScreen extends Screen {
 
         // Done, bottom right of the window.
         addRenderableWidget(new FlatButton(wx + ww - PAD - 64, wy + wh - FOOTER_H + 5, 64, 18, Component.literal("Done"), b -> onClose()));
+    }
+
+    /// Package-private for tests: each tile's height, so `rows` of them fit in `room`.
+    static int tileH(int room, int rows) {
+        return Math.max(24, Math.min(56, (room - (rows - 1) * GAP) / rows));
     }
 
     /// Package-private for tests: each tab's height, so all of them fit in `room` (above the version line).
@@ -165,6 +172,11 @@ public class FoeMainScreen extends Screen {
                         b -> mc.setScreen(new PlusColorScreen(this))));
                 out.add(new TileSpec("Bobber", FoeMainScreen::bobberLabel, Items.FISHING_ROD, "Your 3D bobber's colours", true,
                         b -> mc.setScreen(new BobberScreen(this))));
+                out.add(new TileSpec("Line", FoeMainScreen::lineLabel, Items.STRING, "Your fishing line's colour (only on your screen)", true,
+                        b -> mc.setScreen(new ColorPickerScreen(this, "Fishing line", Configs.rendererConfig.fishingLineColor.get(), 0x000000,
+                                v -> Configs.rendererConfig.fishingLineColor.accept(v), () -> Configs.rendererConfig.save()))));
+                out.add(new TileSpec("Amulet Stars", null, Items.NETHER_STAR, "The star on a pet holding an amulet: a colour for each amulet", true,
+                        b -> mc.setScreen(new AmuletStarsScreen(this))));
                 out.add(new TileSpec("Item Icons", FoeMainScreen::iconStyleLabel, Items.AMETHYST_SHARD,
                         "FOE+'s markers on items, or FOE's", true,
                         b -> {
@@ -176,8 +188,9 @@ public class FoeMainScreen extends Screen {
                         b -> {
                             Configs.hudConfig.hudStyle.accept(Configs.hudConfig.hudStyle.get().next());
                             Configs.hudConfig.save();
-                            // the FOE-R boxes take the top corners: the panels there move down to make room
-                            if (dannypx.foe.screens.element.hud.FoeRBoxes.on()) dannypx.foe.screens.element.hud.FoeRBoxes.makeRoom();
+                            // each style keeps its own layout: the HUDs go back where you had them in this style
+                            // (the first time in FOE-R, the panels in the top corners move down below its boxes)
+                            dannypx.foe.handler.store.HudStyleLayouts.tick();
                         }));
             }
             case STATS -> {
@@ -225,6 +238,8 @@ public class FoeMainScreen extends Screen {
                         PetPriceScreen.ENABLED ? "What pets sell for, and yours to edit (U)" : "Being reworked: back in a later update", PetPriceScreen.ENABLED,
                         b -> { if (PetPriceScreen.ENABLED) mc.setScreen(new PetPriceScreen(this)); }));
                 out.add(tile("Bait Prices", Items.WHEAT_SEEDS, "What your baitboxes are worth, in chat", b -> mc.setScreen(new BaitPricesScreen(this))));
+                out.add(tile("Bait Abuse", Items.COD, "The best baits at each place, best first: yours to edit", b -> mc.setScreen(new BaitAbuseScreen(this))));
+                out.add(tile("Wiki", Items.BOOK, "The FishOnMC wiki, right here in game", b -> mc.setScreen(new WikiScreen(this))));
                 out.add(tile("Sounds", Items.NOTE_BLOCK, "Every FOE+ sound, and your own", b -> mc.setScreen(new SoundsScreen(this))));
                 out.add(tile("More Tools", Items.CHEST, "Triggers, timers, notifications, snippets", b -> mc.setScreen(new MainScreen(this))));
             }
@@ -276,6 +291,12 @@ public class FoeMainScreen extends Screen {
 
     private static Component hudStyleLabel() {
         return Component.literal("HUD Style: ").append(Component.literal(Configs.hudConfig.hudStyle.get().displayName()).withStyle(ChatFormatting.AQUA));
+    }
+
+    private static Component lineLabel() {
+        int c = dannypx.foe.screens.element.hud.GameXpBar.parse(Configs.rendererConfig.fishingLineColor.get());
+        return Component.literal("Line: ").append(c < 0 ? Component.literal("Default").withStyle(ChatFormatting.GRAY)
+                : Component.literal("\u25A0 " + Configs.rendererConfig.fishingLineColor.get().toUpperCase(java.util.Locale.ROOT)).withColor(c));
     }
 
     private static Component bobberLabel() {
@@ -432,19 +453,23 @@ public class FoeMainScreen extends Screen {
             int tx = x + 38, tw = w - 38 - 14;
             Component title = spec.label != null ? spec.label.get() : Component.literal(spec.title);
             List<FormattedCharSequence> lines = font.split(Component.literal(spec.desc), tw);
-            int textH = 9 + 3 + Math.min(2, lines.size()) * 10 - 1;
+            // as many lines of what it does as the tile has room for
+            int room = h >= 44 ? 2 : h >= 32 ? 1 : 0;
+            if (lines.size() > room) {
+                if (room == 0) lines = List.of();
+                else {
+                    List<FormattedCharSequence> cut = new java.util.ArrayList<>(lines.subList(0, room));
+                    StringBuilder sb = new StringBuilder();
+                    cut.get(room - 1).accept((idx, st, cp) -> { sb.appendCodePoint(cp); return true; });
+                    cut.set(room - 1, Component.literal(font.plainSubstrByWidth(sb.toString(), tw - 8) + "…").getVisualOrderText());
+                    lines = cut;
+                }
+            }
+            int textH = 9 + (lines.isEmpty() ? 0 : 3 + lines.size() * 10 - 1);
             int ty = y + (h - textH) / 2;
             if (font.width(title) <= tw) g.drawString(font, title, tx, ty, active ? TITLE : OFF, true);
             else g.drawString(font, font.plainSubstrByWidth(title.getString(), tw - 6) + "…", tx, ty, active ? TITLE : OFF, true);
-            for (int i = 0; i < Math.min(2, lines.size()); i++) {
-                FormattedCharSequence line = lines.get(i);
-                if (i == 1 && lines.size() > 2) {
-                    StringBuilder sb = new StringBuilder();
-                    line.accept((idx, st, cp) -> { sb.appendCodePoint(cp); return true; });
-                    line = Component.literal(font.plainSubstrByWidth(sb.toString(), tw - 8) + "…").getVisualOrderText();
-                }
-                g.drawString(font, line, tx, ty + 12 + i * 10, active ? DIM : OFF, false);
-            }
+            for (int i = 0; i < lines.size(); i++) g.drawString(font, lines.get(i), tx, ty + 12 + i * 10, active ? DIM : OFF, false);
             // a chevron, brighter on hover
             if (active) {
                 int ax = x + w - 10, ay = y + h / 2 - 3, c = hot ? ACCENT : 0xFF34506C;

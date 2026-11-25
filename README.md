@@ -49,6 +49,11 @@ Press **O** in game to open the FOE+ menu.
   <img src="docs/images/foe-plus-bobbers.png" alt="FOE+ bobber styles" width="560"><br>
   <img src="docs/images/foe-plus-pet-prices.png" alt="FOE+ Pet Prices screen" width="560">
 </p>
+<p align="center">
+  <img src="docs/images/foe-plus-wiki.png" alt="The FishOnMC wiki in FOE+" width="560"><br>
+  <img src="docs/images/foe-plus-bait-abuse.png" alt="FOE+ Bait Abuse" width="560"><br>
+  <img src="docs/images/foe-plus-tools.png" alt="FOE+ Tools" width="560">
+</p>
 
 **Chat**
 - Clean `[FOE+]` lines for pets, variants, Gigantic catches, alerts, Fabled catches, wrong pet, contest best and tips.
@@ -63,7 +68,9 @@ Press **O** in game to open the FOE+ menu.
 - Auto Tip (`M`): tip reaction winners and chummers automatically.
 - **Pet Prices (`U`):** your own price sheet for pets: a price for every rating from 60% up, by rarity, plus Max Luck and Max Scale, every number editable in game. Every pet's tooltip shows its price at the top right, and trades are valued with it. Estimates only.
 - Sounds (*O → Tools → Sounds*): change every FOE+ sound (fish bite included) and add your own chat triggers with match modes, exceptions, cooldowns, coloured words, a title on screen and a taskbar flash.
-- Bobbers: 36 colour sets for the 3D bobber with previews (*O → Bobber*); other FOE+ users see yours.
+- **Wiki (*O → Tools → Wiki*):** the FishOnMC wiki in its own panel in game, with links, back/forward, search and pictures; nothing opens in your browser.
+- **Bait Abuse (*O → Tools → Bait Abuse*):** the best baits at each place for each goal, best first, with conditions and ties; every line editable in game.
+- Bobbers: 36 colour sets for the 3D bobber with previews, in the Classic or Round shape (*O → Bobber*); other FOE+ users see yours.
 - Inspect always-on toggle, rating letter and max luck/scale markers on pets.
 - `+` (or the FOE+ icon) after the names of nearby FOE+ users, and in the tab list, in any colour you pick.
 - Friends (`/foe friend` or O → Social): add friends, see their balance and crew, join their instance.
@@ -89,6 +96,7 @@ The mod jar is written to `build/libs/`.
 - **FOECollab** by Kimberlyow and contributors (AGPL-3.0): many features were ported; see [CREDITS-FOECollab.md](CREDITS-FOECollab.md) for the list.
 - **landofif (dofi)** (Minecraft: merryfish): the bait sorter (`BaitSorterHandler`, `SortPlanner`), written for FOECollab ([#10](https://github.com/Kimberlyow/FOECollab/pull/10), [#11](https://github.com/Kimberlyow/FOECollab/pull/11)) and ported to FOE+.
 - **FishOnAutotip** by Kimberlyow (GPL-3.0): Auto Tip.
+- **tacklebox** by **landofif (dofi)** ([landofif/tacklebox](https://github.com/landofif/tacklebox), MIT, used with permission): the big catch moment (the glow at the edges of your screen and the big catch sounds), the water rings at your bobber, the see-through fishing line colour, and the dry streak lines in chat. See [CREDITS-tacklebox.md](CREDITS-tacklebox.md).
 
 ## License
 

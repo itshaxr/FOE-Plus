@@ -243,6 +243,25 @@ public class MoveElementScreen extends DefaultModScreen {
         if (id != null && dannypx.foe.screens.element.hud.HudCombine.movesWithHost(id)) return;
         MovableBoxWidget[] self = new MovableBoxWidget[1];
         MovableBoxWidget widget = new MovableBoxWidget(this.minecraft, element, anchors, new MovableBoxWidget.Callback() {
+            /// The exact place of the last release (kept with the setting's whole percent).
+            private float exactX = -1, exactY = -1;
+
+            @Override
+            public void onReleaseExact(float fx, float fy, Alignment newAlignment) {
+                exactX = fx;
+                exactY = fy;
+                onRelease(Math.round(fx * 100f), Math.round(fy * 100f), newAlignment);
+                exactX = -1;
+                exactY = -1;
+            }
+
+            private void place() {
+                if (exactX >= 0) {
+                    dannypx.foe.helper.HudFine.set(x, exactX);
+                    dannypx.foe.helper.HudFine.set(y, exactY);
+                }
+            }
+
             @Override
             public void onRelease(int xPercent, int yPercent, Alignment newAlignment) {
                 // held Shift and dropped onto another HUD: put it inside that one (it keeps its own place for later)
@@ -259,6 +278,7 @@ public class MoveElementScreen extends DefaultModScreen {
                         if (pair[0].equals(id)) {
                             x.accept(xPercent);
                             y.accept(yPercent);
+                            place();
                             if (alignment != null) alignment.accept(newAlignment);
                             Configs.hudConfig.save();
                         }
@@ -270,6 +290,7 @@ public class MoveElementScreen extends DefaultModScreen {
                 }
                 x.accept(xPercent);
                 y.accept(yPercent);
+                place();
                 if (alignment != null) alignment.accept(newAlignment);
                 Configs.hudConfig.save();
             }
@@ -318,6 +339,10 @@ public class MoveElementScreen extends DefaultModScreen {
                 hud.sessionStatsPanelAlignment, hud.sessionStatsPanelScale, Alignment.getCorners());
         addPanel(new GearWarningPanelElement(true), hud.showGearWarning, hud.gearWarningXPosition, hud.gearWarningYPosition,
                 hud.gearWarningAlignment, hud.gearWarningScale, Alignment.getCornersAndCenters());
+        if (hud.showInventoryWarningPanel.get())
+            addPanel(new dannypx.foe.screens.element.hud.InventoryWarningPanelElement(true), hud.showInventoryWarningPanel,
+                    hud.inventoryWarningPanelXPosition, hud.inventoryWarningPanelYPosition,
+                    hud.inventoryWarningPanelAlignment, hud.inventoryWarningPanelScale, Alignment.getCornersAndCenters());
         addPanel(new dannypx.foe.screens.element.hud.ChummerPanelElement(true), hud.showChummerPanel, hud.chummerPanelXPosition, hud.chummerPanelYPosition,
                 hud.chummerPanelAlignment, hud.chummerPanelScale, Alignment.getCornersAndCenters());
         // the FOE-R HUD Style's boxes: only there (and so only here) with that style
@@ -336,6 +361,10 @@ public class MoveElementScreen extends DefaultModScreen {
         }
         addPanel(new CatchPopupElement(true), hud.showCatchPopup, hud.catchPopupXPosition, hud.catchPopupYPosition,
                 null, hud.catchPopupScale, List.of(Alignment.TOP));
+        // the pet popup has its own place (shown while pets pop up in the middle, FOE style)
+        if (hud.petCatchStyle.get() == dannypx.foe.type.CatchPopupStyle.FOE)
+            addPanel(new dannypx.foe.screens.element.hud.PetPopupElement(true), hud.showPetPopup, hud.petPopupXPosition, hud.petPopupYPosition,
+                    null, hud.petPopupScale, List.of(Alignment.TOP));
         if (hud.catchRingOn.get()) {
             dannypx.foe.screens.element.hud.CatchRingElement ring = new dannypx.foe.screens.element.hud.CatchRingElement();
             MovableBoxWidget ringWidget = new MovableBoxWidget(this.minecraft, ring, List.of(Alignment.TOP_LEFT), new MovableBoxWidget.Callback() {
@@ -570,5 +599,11 @@ public class MoveElementScreen extends DefaultModScreen {
         g.fill(x, y, x + w, y + 12, 0xCC000000);
         g.renderOutline(x, y, w, 12, 0xFF555555);
         g.drawString(this.font, text, x + 4, y + 2, 0xFFFFFFFF, true);
+    }
+
+    /// Return sits in the bottom left corner here.
+    @Override
+    protected boolean returnOnLeft() {
+        return true;
     }
 }

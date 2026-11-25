@@ -27,16 +27,29 @@ public final class SkinTooltip {
     /// menu (the HUD mover, the settings), or once it's a moment old, it's nobody's (the pet price would land on
     /// those screens' own tooltips).
     public static net.minecraft.world.item.ItemStack hovered() {
+        if (System.nanoTime() - hoveredAt > 250_000_000L) return null;
+        // an item hovered in chat counts wherever chat is drawn
+        if (fromChat) return hovered;
         if (!(net.minecraft.client.Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>))
             return null;
-        if (System.nanoTime() - hoveredAt > 250_000_000L) return null;
         return hovered;
+    }
+
+    /// Whether the item under the mouse was one in chat (its hover).
+    private static boolean fromChat = false;
+
+    /// An item hovered in chat (a shared item's [name]): its tooltip gets what a menu's does (a pet's price).
+    public static void hoverInChat(net.minecraft.world.item.ItemStack stack) {
+        hovered = stack;
+        hoveredAt = System.nanoTime();
+        fromChat = true;
     }
 
     /// The item under the mouse in a menu (for the dump and the pet price).
     public static void hover(net.minecraft.world.item.ItemStack stack) {
         hovered = stack;
         hoveredAt = System.nanoTime();
+        fromChat = false;
     }
 
     private static String itemInfo(net.minecraft.world.item.ItemStack s) {

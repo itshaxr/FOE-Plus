@@ -37,6 +37,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class FishingHookRendererMixin {
     @Unique
     private Model<FishingHookRenderState> fishingHookModel;
+    /// The round bobber's nub and hook.
+    @Unique
+    private Model<FishingHookRenderState> foe$roundModel;
 
     @Unique
     private static final float TIP_OUTWARD = 0.0f;
@@ -49,10 +52,35 @@ public abstract class FishingHookRendererMixin {
     private void injectInit(EntityRendererProvider.Context context, CallbackInfo ci) {
         try {
             this.fishingHookModel = new FishingHookEntityModel<>(context.bakeLayer(FishingHookEntityModel.MODEL_LAYER));
+            this.foe$roundModel = new FishingHookEntityModel<>(context.bakeLayer(FishingHookEntityModel.ROUND_LAYER));
     
         } catch (Throwable foe$t) {
             if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
             dannypx.foe.helper.Safe.report("FishingHookRendererMixin.injectInit", foe$t);
+        }
+    }
+
+    /// Whose bobber is being drawn (your line in your colour: LineColour).
+    @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/FishingHookRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At("HEAD"))
+    private void foe$lineOwner(FishingHookRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera, CallbackInfo ci) {
+        try {
+            dannypx.foe.helper.LineColour.drawingOwn = ConnectionHandler.instance().isOnServer() && ((IFishingHookRenderState) state).foe$isOwn();
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.LineColour.drawingOwn = false;
+        }
+    }
+
+    /// The line (the second thing the bobber draws): in your colour, when it's yours.
+    @org.spongepowered.asm.mixin.injection.ModifyArg(method = "submit(Lnet/minecraft/client/renderer/entity/state/FishingHookRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitCustomGeometry(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;Lnet/minecraft/client/renderer/SubmitNodeCollector$CustomGeometryRenderer;)V", ordinal = 1),
+            index = 2, require = 0)
+    private SubmitNodeCollector.CustomGeometryRenderer foe$lineColour(SubmitNodeCollector.CustomGeometryRenderer line) {
+        try {
+            return dannypx.foe.helper.LineColour.wrap(line);
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            return line;
         }
     }
 
@@ -92,7 +120,20 @@ public abstract class FishingHookRendererMixin {
                 }
                 poseStack.pushPose();
                 poseStack.translate(0f, -0.0075f, 0f);
-                submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
+                // your shape on your own bobber (Round: a ball in the same colours), other FOE+ users' shapes on theirs
+                dannypx.foe.type.BobberShape shape = dannypx.foe.type.BobberShape.CLASSIC;
+                if (hookState.foe$isOwn()) shape = Configs.rendererConfig.bobberShape.get();
+                else if (Configs.rendererConfig.showOtherBobberStyles.get()) {
+                    dannypx.foe.type.BobberShape theirs = dannypx.foe.nearby_dispatcher.types.ModUserType.bobberShapeOf(hookState.foe$getOwner());
+                    if (theirs != null) shape = theirs;
+                }
+                boolean round = this.foe$roundModel != null && shape == dannypx.foe.type.BobberShape.ROUND;
+                if (round) {
+                    submitNodeCollector.submitModel(this.foe$roundModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
+                    FishingHookEntityModel.submitRoundBody(poseStack, submitNodeCollector, style.renderType(), fishingHookRenderState.lightCoords);
+                } else {
+                    submitNodeCollector.submitModel(this.fishingHookModel, fishingHookRenderState, poseStack, style.renderType(), fishingHookRenderState.lightCoords, OverlayTexture.NO_OVERLAY, fishingHookRenderState.outlineColor, null);
+                }
                 poseStack.popPose();
             }
 

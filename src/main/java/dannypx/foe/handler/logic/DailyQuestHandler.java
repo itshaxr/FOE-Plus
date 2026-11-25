@@ -65,9 +65,48 @@ public class DailyQuestHandler {
             updateQuest("Quests Completed");
             requestRefresh();
         } else if (plain.startsWith("DAILY MISSIONS")) {
-            if (plain.startsWith("DAILY MISSIONS » Contest Participation")) updateQuest("Contest Participation");
+            // "DAILY MISSIONS » MISSION COMPLETE / - Contest Participation ✓ / ┗ (1/1)": the server's own numbers
+            if (!applyMissionMessage(quests, plain) && plain.startsWith("DAILY MISSIONS » Contest Participation")) {
+                updateQuest("Contest Participation");
+            }
             requestRefresh();
         }
+    }
+
+    /// Package-private for tests: a DAILY MISSIONS message naming missions puts in their numbers (the "(1/1)" under
+    /// each), or marks them done (a ✓ or MISSION COMPLETE). True when it named one of yours.
+    static boolean applyMissionMessage(List<Quest> quests, String plain) {
+        boolean any = false;
+        boolean complete = plain.toUpperCase(java.util.Locale.ROOT).contains("MISSION COMPLETE");
+        for (Quest q : new ArrayList<>(quests)) {
+            int at = plain.indexOf(q.goal);
+            if (at < 0) continue;
+            any = true;
+            // the numbers after its name (before the next mission's)
+            String after = plain.substring(at + q.goal.length());
+            int nextMission = after.indexOf("\n- ");
+            if (nextMission >= 0) after = after.substring(0, nextMission);
+            Matcher m = Pattern.compile("\\(\\s*([\\d,]+)\\s*/\\s*([\\d,]+)\\s*\\)").matcher(after);
+            boolean numbers = m.find();
+            if (numbers) {
+                try { q.progress = Math.max(q.progress, Integer.parseInt(m.group(1).replace(",", ""))); } catch (NumberFormatException ignored) {}
+            }
+            boolean ticked = after.indexOf('\u2714') >= 0 || after.indexOf('\u2713') >= 0;
+            if (ticked || (complete && !numbers)) q.progress = Math.max(q.progress, q.needed);
+            if (q.isDone()) quests.remove(q);
+        }
+        return any;
+    }
+
+    private long contestCounted = -1;
+
+    /// You're on a contest's board (your first placement in it): Contest Participation goes up at once, once a
+    /// contest, without waiting for the server's mission message or the next menu read.
+    public void onContestEntry() {
+        long contest = System.currentTimeMillis() / (60L * 60L * 1000L);
+        if (contest == contestCounted) return;
+        contestCounted = contest;
+        updateQuest("Contest Participation");
     }
 
     /// Items in a menu arrive a few ticks after it opens, so scan every tick while it's open.

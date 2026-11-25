@@ -40,16 +40,16 @@ public class StatsPanelElement extends PanelElement {
     }
 
     public StatsPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.statsPanelXPosition.get() / 100f,
-                Configs.hudConfig.statsPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.statsPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.statsPanelYPosition),
                 Configs.hudConfig.statsPanelAlignment.get(),
                 Component.literal("All-Time Stats Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showStatsPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.statsPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.statsPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.statsPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.statsPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.statsPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.statsPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.statsPanelOpacity.get(); }
@@ -78,7 +78,7 @@ public class StatsPanelElement extends PanelElement {
         String serverRate = dannypx.foe.handler.fetch.ScoreboardHandler.instance().getCatchRate().getString().trim();
         String rate = serverRate.matches("[0-9.]+%") ? serverRate : fishShare(fishTotal, stats.petTotal + capsules + bottles);
         lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
-                Component.literal(rate).withStyle(ChatFormatting.GREEN)));
+                showPercent() ? Component.literal(rate).withStyle(ChatFormatting.GREEN) : Component.empty()));
         lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", session.getFishPerHour()))));
         lines.add(join(plain("Fish Time "), white(formatTime(session.getFishTimeMs()))));
         lines.add(join(plain("Total Quests "), white(String.valueOf(stats.questsCompleted))));
@@ -101,7 +101,7 @@ public class StatsPanelElement extends PanelElement {
             int amount = rarities.containsKey(rarity) ? rarities.get(rarity).amount() : 0;
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(rarity),
                     white(" " + amount + " "),
-                    label("(" + percent(amount, fishTotal) + "%)")));
+                    share(amount, fishTotal, false)));
         }
         // Gigantic size: count, share and dry streak, like the variants.
         if (Configs.hudConfig.statsPanelShowGigantic.get()) {
@@ -111,7 +111,7 @@ public class StatsPanelElement extends PanelElement {
             int dryStreak = gigantic == null ? fishTotal : fishTotal - gigantic.caughtOn();
             giganticLine = join(GIGANTIC_BADGE,
                     white(" " + amount + " "),
-                    label("(" + percent(amount, fishTotal) + "%) "),
+                    share(amount, fishTotal, true),
                     Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY));
             lines.add(giganticLine);
         }
@@ -124,7 +124,7 @@ public class StatsPanelElement extends PanelElement {
             int dryStreak = stat == null ? fishTotal : fishTotal - stat.caughtOn();
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(variant),
                     white(" " + amount + " "),
-                    label("(" + percent(amount, fishTotal) + "%) "),
+                    share(amount, fishTotal, true),
                     Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY)));
         }
 
@@ -160,6 +160,17 @@ public class StatsPanelElement extends PanelElement {
     }
 
     /// 39.7, 0.02, 0.002: more decimals for rarer things, like FOE.
+    /// Whether the stats HUDs show their percentages (HUD settings → All-Time Stats → Show percentages).
+    static boolean showPercent() {
+        return Configs.hudConfig.statsPanelShowPercent.get();
+    }
+
+    /// "(6.3%)" after a count (with a space after it when more follows), or nothing when percentages are off.
+    static Component share(int amount, int total, boolean more) {
+        if (!showPercent()) return Component.empty();
+        return label("(" + percent(amount, total) + "%)" + (more ? " " : ""));
+    }
+
     static String percent(int amount, int total) {
         if (total <= 0) return "0";
         double pct = amount * 100.0 / total;

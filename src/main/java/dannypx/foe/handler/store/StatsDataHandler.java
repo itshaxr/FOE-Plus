@@ -216,7 +216,44 @@ public class StatsDataHandler extends Handler {
         this.needsUpdate = true;
     }
 
+    // A shard comes as the server's "RARE CATCH!" line and as an item in your inventory, in either order, and two
+    // can come back to back. Each chat line takes the streak of the item already in (not yet taken by a line), or
+    // works it out itself and marks itself as the next item's line.
+    /// The fish total at the last shard chat line (the streak starts again there, even before its item is in).
+    private int chatShardFish = Integer.MIN_VALUE;
+    /// Shard items in before their chat line: when, and the streak each ended.
+    private final java.util.ArrayDeque<long[]> shardItems = new java.util.ArrayDeque<>();
+    /// Shard chat lines whose item isn't in yet: when.
+    private final java.util.ArrayDeque<Long> shardLines = new java.util.ArrayDeque<>();
+    static final long SHARD_PAIR_MS = 15_000;
+
+    /// A shard's chat line came in: its dry streak (fish since the shard before it).
+    public int onShardLine() {
+        long now = System.currentTimeMillis();
+        shardItems.removeIf(i -> now - i[0] > SHARD_PAIR_MS);
+        shardLines.removeIf(t -> now - t > SHARD_PAIR_MS);
+        int streak;
+        if (!shardItems.isEmpty()) {
+            streak = (int) shardItems.pollFirst()[1];
+        } else {
+            streak = shardDryStreak();
+            shardLines.addLast(now);
+        }
+        chatShardFish = statsData.fishTotal;
+        return streak;
+    }
+
     public Pair<String, Integer> setOtherItem(TagObject item, int count) {
+        if (item.getType() != null && item.getType().toLowerCase(java.util.Locale.ROOT).contains("shard")) {
+            long now = System.currentTimeMillis();
+            shardLines.removeIf(t -> now - t > SHARD_PAIR_MS);
+            if (!shardLines.isEmpty()) {
+                shardLines.pollFirst();      // its chat line came first and has its streak
+                // the item's own count takes over from the line (so an edited streak isn't overruled later)
+                if (shardLines.isEmpty()) chatShardFish = Integer.MIN_VALUE;
+            }
+            else shardItems.addLast(new long[]{now, shardDryStreak()});
+        }
         Pair<String, Integer> itemDrystreak = this.updateOtherItemData(statsData, item.getType(), count);
         dannypx.foe.handler.logic.SessionStatsHandler.instance().onItem(item.getType(), count);
         ConstantDataHandler.instance().updateItemData(item.getType(), item.getItemStack());
@@ -330,6 +367,8 @@ public class StatsDataHandler extends Handler {
                 last = Math.max(last, entry.getValue().caughtOn());
             }
         }
+        // a shard whose chat line is in but whose item isn't yet counts already
+        last = Math.max(last, chatShardFish);
         return last == Integer.MIN_VALUE ? statsData.fishTotal : Math.max(0, statsData.fishTotal - last);
     }
 
@@ -464,7 +503,9 @@ public class StatsDataHandler extends Handler {
             this.needsUpdate = true;
             return;
         }
-        if (set.equals("pet") && category.equals("any")) {
+        // the pets' streak: the edit screen sends ("pet", "pet", "any"); "any" was looked for in the wrong place,
+        // so an edited pet streak never took (it went to a "pet" → "any" entry nothing reads)
+        if (set.equals("pet") && (category.equals("any") || field.equals("any"))) {
             statsData.petCaughtOn = statsData.fishTotal - Math.max(0, dryStreak);
             markStreakKnown("pet:any");
             this.needsUpdate = true;
@@ -635,6 +676,9 @@ public class StatsDataHandler extends Handler {
         statsData.petData = new HashMap<>();
         statsData.itemData = new HashMap<>();
         statsData.fishTotal = 0;
+        chatShardFish = Integer.MIN_VALUE;
+        shardItems.clear();
+        shardLines.clear();
         statsData.petTotal = 0;
 
         statsData.questPetData = new HashMap<>();

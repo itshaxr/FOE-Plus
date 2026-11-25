@@ -55,6 +55,7 @@ public class RippleHandler extends Handler {
             dannypx.foe.helper.Safe.run("bite sound", CatchSound::onBite);
             dannypx.foe.handler.store.NotifySounds.play("fish_bite");
             this.spawnAtBobber();
+            dannypx.foe.helper.Safe.run("water rings bite", dannypx.foe.handler.renderer.WaterRings::onBite);
             RippleType.sendBite();
         }
     }

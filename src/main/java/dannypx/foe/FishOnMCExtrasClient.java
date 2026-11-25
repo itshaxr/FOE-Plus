@@ -57,6 +57,11 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(this::onEndClientTick));
         // Test builds: the map scan (/foe map scan), wherever you are.
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.FoeProfiler.tick()));
+        // each HUD Style keeps where your HUDs are
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.store.HudStyleLayouts.tick()));
+        // water rings at your bobber (from tacklebox)
+        dannypx.foe.handler.renderer.WaterRings.register();
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(dannypx.foe.handler.renderer.WaterRings::tick));
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.SpotHandler.instance().tick(mc)));
         // FOE+'s data files: changes written together every half minute, and when you leave or close the game
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.io.DataFileHandler.instance().flushIfDue()));
@@ -68,14 +73,28 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> { if (mc.player != null) dannypx.foe.handler.logic.CommunityRateHandler.instance().tick(); }));
         ClientTickEvents.END_CLIENT_TICK.register(mc -> dannypx.foe.helper.Safe.run("tick Baitbox", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.logic.BaitboxHandler.instance().tick(mc); dannypx.foe.handler.logic.FoeProfiler.end("tick Baitbox", _p); }));
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(dannypx.foe.handler.logic.MemoryGuard::tick));
+        // a trip from the crew island that landed at spawn: on to where it was going
+        ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.renderer.TravelMapHandler.instance().tick()));
         ClientTickEvents.END_CLIENT_TICK.register(safeTick(mc -> dannypx.foe.handler.logic.InstanceJoinHandler.instance().tick(mc)));
         // where a new pet came from (fished, a contest, an event): every message, before anything hides one
+        // moons and weather are read first of all, the moment the line comes (before anything, ours or another mod's,
+        // can hide it), so their timers start on time
+        net.minecraft.resources.Identifier early = net.minecraft.resources.Identifier.fromNamespaceAndPath(FishOnMCExtras.MOD_ID, "early");
+        ClientReceiveMessageEvents.ALLOW_GAME.addPhaseOrdering(early, net.fabricmc.fabric.api.event.Event.DEFAULT_PHASE);
+        ClientReceiveMessageEvents.ALLOW_GAME.register(early, (message, overlay) -> {
+            if (overlay) return true;
+            dannypx.foe.helper.Safe.run("chat moon", () -> dannypx.foe.handler.logic.MoonTimerHandler.instance().onReceiveMessage(message));
+            dannypx.foe.helper.Safe.run("chat weather", () -> dannypx.foe.handler.logic.WeatherEventHandler.instance().onChat(message.getString(), System.currentTimeMillis()));
+            dannypx.foe.helper.Safe.run("chat event teleport", () -> dannypx.foe.handler.logic.EventTeleport.onGameMessage(message));
+            return true;
+        });
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
                 overlay || dannypx.foe.helper.Safe.get("chat pet source", () -> dannypx.foe.handler.logic.PetSourceHandler.instance().onGameMessage(message.getString()), true));
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
             long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
             // a reader that fails shows the line rather than crashing (or hiding it)
             boolean keep = overlay || dannypx.foe.helper.Safe.get("chat FOE+ readers", () -> (!dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
+                        && !dannypx.foe.handler.renderer.TravelMapHandler.instance().onGameMessage(message.getString())
                         && !dannypx.foe.handler.logic.CommunityEventHandler.instance().onGameMessage(message.getString())
                         && !dannypx.foe.handler.logic.EventTimesHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.FindHandler.instance().onGameMessage(message)
@@ -86,6 +105,16 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                         && ContestTrackerHandler.instance().filterGameMessage(message)), true);
             dannypx.foe.handler.logic.FoeProfiler.end("chat FOE+ readers", _p);
             return keep;
+        });
+        // the rare pulls (counted here, before any line is hidden); the server's own line for a pull or a fished pet
+        // is hidden when FOE+ shows its own: what the shown line would have done still happens
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            if (overlay) return true;
+            boolean hide = dannypx.foe.helper.Safe.get("chat rare pulls", () -> dannypx.foe.handler.logic.RareCatchHandler.onGameMessage(message), false)
+                    || dannypx.foe.helper.Safe.get("chat pet drop", () -> dannypx.foe.handler.logic.PetSourceHandler.hideDropLine(message.getString()), false);
+            if (!hide) return true;
+            this.receiveGameMessage(message, false);
+            return false;
         });
         ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> dannypx.foe.helper.Safe.run("player chat", () -> {
             ContestTrackerHandler.instance().onChatMessageShown();
@@ -142,7 +171,6 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
     private void receiveGameMessage(Component message, boolean overlay) {
         long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
         ChatHandler.instance().onReceiveMessage(message);
-        if (!overlay) dannypx.foe.handler.logic.RareCatchHandler.onGameMessage(message.getString());
         if (!overlay) dannypx.foe.handler.logic.StoreTimerHandler.instance().onGameMessage(message.getString());
         dannypx.foe.handler.logic.FoeProfiler.end("chat triggers", _p);
     }
@@ -254,6 +282,7 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
                 dannypx.foe.helper.Safe.run("tick BaitSorterHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); BaitSorterHandler.instance().tick(minecraft); dannypx.foe.handler.logic.FoeProfiler.end("tick BaitSorterHandler", _p); });
                 dannypx.foe.helper.Safe.run("tick ContestTrackerHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); ContestTrackerHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ContestTrackerHandler", _p); });
                 dannypx.foe.helper.Safe.run("tick ContestBaitSheetHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); ContestBaitSheetHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick ContestBaitSheetHandler", _p); });
+                dannypx.foe.helper.Safe.run("tick AmuletStars", () -> dannypx.foe.handler.store.AmuletStars.tick(minecraft));
                 dannypx.foe.helper.Safe.run("tick BaitPictures", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); dannypx.foe.handler.store.BaitPictures.tick(minecraft); dannypx.foe.handler.logic.FoeProfiler.end("tick BaitPictures", _p); });
                 dannypx.foe.helper.Safe.run("tick CatchSound", dannypx.foe.handler.logic.CatchSound::tick);
                 dannypx.foe.helper.Safe.run("tick AutotipHandler", () -> { long _p = dannypx.foe.handler.logic.FoeProfiler.mark(); AutotipHandler.instance().tick(); dannypx.foe.handler.logic.FoeProfiler.end("tick AutotipHandler", _p); });
@@ -300,5 +329,6 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
 
     private void registerEntityModels() {
         EntityModelLayerRegistry.registerModelLayer(FishingHookEntityModel.MODEL_LAYER, FishingHookEntityModel::generateModel);
+        EntityModelLayerRegistry.registerModelLayer(FishingHookEntityModel.ROUND_LAYER, FishingHookEntityModel::generateRoundModel);
     }
 }

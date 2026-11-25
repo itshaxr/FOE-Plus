@@ -205,7 +205,12 @@ public final class BaitPictures {
         String c = color == null ? "" : color.replaceAll("<#[0-9A-Fa-f]{6}>|</?[a-zA-Z_:#0-9]+>", "")
                 .replaceAll("§x(§[0-9A-Fa-f]){6}", "").replaceAll("§.", "").trim();
         if (c.isEmpty() || (" " + key(name) + " ").contains(" " + key(c) + " ")) return name;
-        return name + " (" + c + ")";
+        return name + " (" + colourName(c) + ")";
+    }
+
+    /// A lure colour as the wiki names it: the server calls the Smokin' Shad crankbait's colour "Sexy Shad".
+    public static String colourName(String colour) {
+        return colour != null && colour.trim().equalsIgnoreCase("sexy shad") ? "Smokin' Shad" : colour;
     }
 
     /// Package-private for tests: a seen bait whose wiki picture is the same as this bait's, or null.
@@ -269,6 +274,18 @@ public final class BaitPictures {
             for (Slot slot : mc.player.containerMenu.slots) learn(slot.getItem());
         }
         if (dirty && System.currentTimeMillis() - savedAt > 10_000L) save();
+    }
+
+    /// A bait's name as Bait Prices lists it: a lure with its colour ("Saltwater Spoon (Silver)").
+    public static String listedName(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return "";
+        String shown = ChatFormatting.stripFormatting(stack.getHoverName().getString());
+        if (shown == null) shown = "";
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data != null && data.copyTag().getStringOr("type", "").equals("lure")) {
+            shown = withColor(shown, data.copyTag().getStringOr("color", ""));
+        }
+        return shown;
     }
 
     /// Remembers what a bait looks like, if it is one and it's new.

@@ -382,6 +382,18 @@ public class TextDisplayHandler extends Handler {
         return Component.empty().append(icon).append(" ").append(named);
     }
 
+    /// Long held-item names over pets, shortened ("Equipped Item: Titan's Graceful Necklace" → "Titan's
+    /// Necklace"), keeping their colours. The text itself when there's nothing to shorten.
+    public static Component shortNames(Component text) {
+        if (text == null || !text.getString().contains("Graceful Necklace")) return text;
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        text.visit((style, part) -> {
+            out.append(Component.literal(part.replaceAll("(Titan[\u2019']s) Graceful Necklace", "$1 Necklace")).withStyle(style));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
+    }
+
     private static boolean isDevTag(String text, String devName) {
         if (devName == null || devName.isEmpty()) return false;
         return Pattern.compile("(?<![A-Za-z0-9_])" + Pattern.quote(devName) + "(?![A-Za-z0-9_])").matcher(text).find();
@@ -406,7 +418,7 @@ public class TextDisplayHandler extends Handler {
         }
 
         boolean markers = dannypx.foe.config.Configs.rendererConfig.showFoePlusMarker.get();
-        Component prefixed = this.applyFor(source, devName, betaNames, now, markers, ownName(),
+        Component prefixed = this.applyFor(shortNames(source), devName, betaNames, now, markers, ownName(),
                 dannypx.foe.config.Configs.rendererConfig.foePlusColor.get());
         Display.TextDisplay.CachedInfo info =
                 prefixed == source ? null : splitter.apply(prefixed, lineWidth);

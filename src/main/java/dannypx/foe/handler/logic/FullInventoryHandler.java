@@ -6,8 +6,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 
 /**
- * FOE's "inventory almost full" warning: counts empty slots in your inventory and hotbar, and
- * plays a warning sound every few seconds while you're at or below the threshold.
+ * FOE's "inventory almost full" warning: counts empty slots in your inventory and hotbar, and plays a warning sound
+ * when you get to the threshold, then again only when something happens while it's that full (a catch, a slot
+ * filling): never on a timer.
  * Ported from FOECollab's FullInventoryHandler / NotificationSoundHandler (AGPL-3.0).
  */
 public class FullInventoryHandler {
@@ -62,15 +63,38 @@ public class FullInventoryHandler {
             if (Configs.hudConfig.inventoryWarningBig.get()) dannypx.foe.handler.renderer.QuestWarning.flash(message(slotsLeft));
         }
 
-        // Sound, like FOE: not in the hub or on Crew Island.
-        if (isAlmostFull()
-                && TabOverlayHandler.instance().isInInstance()) {
-            long now = System.currentTimeMillis();
-            if (now - lastSound > Configs.hudConfig.inventoryWarningSoundSeconds.get() * 1000L) {
-                lastSound = now;
-                // its sound in O → Customize → Sounds (played twice for extra loudness, as FOE does, until you change it)
-                dannypx.foe.handler.store.NotifySounds.play("inventory_full");
-            }
+        // Sound: not in the hub or on Crew Island. When you get to the warning, and again when a slot fills.
+        boolean low = isAlmostFull() && TabOverlayHandler.instance().isInInstance();
+        if (!low) {
+            wasLow = false;
+            lastSlots = slotsLeft;
+            return;
         }
+        if (!wasLow) {
+            wasLow = true;
+            lastSlots = slotsLeft;
+            sound();
+        } else if (slotsLeft < lastSlots) {
+            lastSlots = slotsLeft;
+            if (Configs.hudConfig.inventoryWarningRepeat.get()) sound();
+        } else {
+            lastSlots = slotsLeft;
+        }
+    }
+
+    private boolean wasLow = false;
+    private int lastSlots = 36;
+
+    /// You caught something: while the inventory is that full, the warning sounds again (once per catch).
+    public void onCatch() {
+        if (wasLow && isAlmostFull() && Configs.hudConfig.inventoryWarningRepeat.get()) sound();
+    }
+
+    private void sound() {
+        long now = System.currentTimeMillis();
+        if (!Configs.hudConfig.inventoryWarningSound.get() || now - lastSound < 1_000L) return;
+        lastSound = now;
+        // which sound: O → Sounds
+        dannypx.foe.handler.store.NotifySounds.play("inventory_full");
     }
 }

@@ -145,7 +145,7 @@ public class NotifierHandler extends Handler {
 
         // FOE-style floating text, like a fish
         if(Configs.hudConfig.petCatchStyle.get() == dannypx.foe.type.CatchPopupStyle.FOE) {
-            if (Configs.hudConfig.showCatchPopup.get()) dannypx.foe.screens.element.hud.CatchPopupElement.showPet(pet);
+            if (Configs.hudConfig.showPetPopup.get()) dannypx.foe.screens.element.hud.CatchPopupElement.showPet(pet);
             return;
         }
 
@@ -206,7 +206,6 @@ public class NotifierHandler extends Handler {
     /// variant and the dry streak (fish since your last of that variant, this catch included).
     public void chatVariant(FishTagObject fish, int dryStreak) {
         String variant = fish.getVariant().toLowerCase(java.util.Locale.ROOT);
-        if (VARIANT_COLORS.containsKey(variant)) dannypx.foe.handler.store.NotifySounds.play(variant);
         if (!Configs.hudConfig.showVariantCatchChat.get() || minecraft.player == null || !VARIANT_COLORS.containsKey(variant)) return;
         // [FOE+] You caught <variant badge> <fish picture> Largemouth Bass · Dry streak 1,234
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
@@ -231,7 +230,6 @@ public class NotifierHandler extends Handler {
 
     /// [FOE+] You caught <GIGANTIC badge> <fish picture> Largemouth Bass · Dry streak 1,234
     public void chatGigantic(FishTagObject fish, int dryStreak) {
-        dannypx.foe.handler.store.NotifySounds.play("gigantic");
         if (!Configs.hudConfig.showGiganticCatchChat.get() || minecraft.player == null) return;
         dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.prefix()
                 .append(dannypx.foe.helper.FoeChat.text("You caught "))

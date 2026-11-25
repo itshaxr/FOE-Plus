@@ -39,6 +39,7 @@
     "inject.CommandSuggestionsMixin",
     "inject.ClientPacketListenerMixin",
     "inject.SoundManagerMixin",
+    "inject.ScreenMixin",
     "inject.ContextualBarRendererMixin",
     "inject.CustomHeadLayerMixin",
     "inject.EditBoxMixin",

@@ -31,16 +31,16 @@ public class EventsPanelElement extends PanelElement {
     }
 
     public EventsPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.eventsPanelXPosition.get() / 100f,
-                Configs.hudConfig.eventsPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.eventsPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.eventsPanelYPosition),
                 Configs.hudConfig.eventsPanelAlignment.get(),
                 Component.literal("Events"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showEventsPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.eventsPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.eventsPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.eventsPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.eventsPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.eventsPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.eventsPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.eventsPanelOpacity.get(); }
@@ -148,31 +148,45 @@ public class EventsPanelElement extends PanelElement {
     protected List<Component> lines() {
         List<Component> lines = new ArrayList<>();
         EventTimesHandler events = EventTimesHandler.instance();
-        if (events.frenzyActive()) lines.add(frenzy(events.frenzyLocation(), events.frenzyRemainingMs()));
-        if (events.oasisActive()) lines.add(oasis(events.oasisRemainingMs(), events.oasisExact()));
-        if (events.goldRushActive()) lines.add(goldRush(events.goldRushRemainingMs(), events.goldRushExact()));
+        var c = Configs.hudConfig;
+        if (c.eventsShowFrenzy.get() && events.frenzyActive()) lines.add(frenzy(events.frenzyLocation(), events.frenzyRemainingMs()));
+        if (c.eventsShowOasis.get() && events.oasisActive()) lines.add(oasis(events.oasisRemainingMs(), events.oasisExact()));
+        if (c.eventsShowGoldRush.get() && events.goldRushActive()) lines.add(goldRush(events.goldRushRemainingMs(), events.goldRushExact()));
         // rain, thunderstorms and supercells (where you are, or still going where you left them)
         if (Configs.hudConfig.eventsShowWeather.get()) {
             long now = System.currentTimeMillis();
             var weather = dannypx.foe.handler.logic.WeatherEventHandler.instance();
-            for (var w : weather.active()) lines.add(weather(w.kind, weather.msLeft(w, now), now - w.startedAt));
+            for (var w : weather.active()) {
+                boolean on = switch (w.kind) {
+                    case RAIN -> c.eventsShowRain.get();
+                    case THUNDERSTORM -> c.eventsShowThunderstorm.get();
+                    case SUPERCELL -> c.eventsShowSupercell.get();
+                };
+                if (on) lines.add(weather(w.kind, weather.msLeft(w, now), now - w.startedAt));
+            }
             var moon = dannypx.foe.handler.logic.MoonTimerHandler.instance().getCurrentMoon();
-            if (moon != null) lines.add(moon(moon, AlertHandler.instance().moonMsLeft()));
+            if (!c.eventsShowMoon.get()) { /* moons off */ }
+            else if (moon != null) lines.add(moon(moon, AlertHandler.instance().moonMsLeft()));
+            // up by the schedule, chat not in yet (which moon it is comes with that line)
+            else if (dannypx.foe.handler.logic.MoonTimerHandler.instance().scheduledUp())
+                lines.add(join(Component.literal("○ Moon").withColor(0xDDDDDD),
+                        Component.literal(" · " + StoreTimerHandler.clock(AlertHandler.instance().moonMsLeft()) + " left").withStyle(ChatFormatting.GOLD)));
         }
         StoreTimerHandler boosters = StoreTimerHandler.instance();
         // Every global booster that's on: Money, XP, Luck and Scale (Luck and Scale also show next to
         // their numbers on the Luck & Scale panel).
         for (String kind : EVENT_BOOSTERS) {
+            if (!c.eventsShowBoosters.get()) break;
             long left = boosters.boosterRemainingMs(kind);
             if (left > 0) lines.add(booster(kind, boosters.boosterMultiplier(kind), left));
         }
         AlertHandler alerts = AlertHandler.instance();
         // cryptids that are out (the Alerts panel counts down to them)
         for (AlertHandler.Active a : alerts.active()) {
-            if (a.alert() == AlertHandler.Alert.FABLED || !AlertHandler.enabled(a.alert())) continue;
+            if (a.alert() == AlertHandler.Alert.FABLED || !AlertHandler.enabled(a.alert()) || !c.eventsShowCryptids.get()) continue;
             lines.add(cryptid(a.alert(), alerts.locationLabel(a.alert()), a.msLeft()));
         }
-        if (alerts.isFabledActive()) {
+        if (c.eventsShowFabled.get() && alerts.isFabledActive()) {
             long since = -1;
             for (AlertHandler.Active a : alerts.active()) if (a.alert() == AlertHandler.Alert.FABLED) since = a.msSince();
             lines.add(fabled(alerts.fabledLocationName(), since));

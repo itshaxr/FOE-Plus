@@ -25,16 +25,16 @@ public class CrewPanelElement extends PanelElement {
     }
 
     public CrewPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.crewPanelXPosition.get() / 100f,
-                Configs.hudConfig.crewPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.crewPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.crewPanelYPosition),
                 Configs.hudConfig.crewPanelAlignment.get(),
                 Component.literal("Social"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showCrewPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.crewPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.crewPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.crewPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.crewPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.crewPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.crewPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.crewPanelOpacity.get(); }

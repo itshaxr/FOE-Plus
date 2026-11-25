@@ -35,16 +35,16 @@ public class GearWarningPanelElement extends PanelElement {
     }
 
     public GearWarningPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.gearWarningXPosition.get() / 100f,
-                Configs.hudConfig.gearWarningYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.gearWarningXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.gearWarningYPosition),
                 Configs.hudConfig.gearWarningAlignment.get(),
                 Component.literal("Gear Warning"),
                 isCopy);
     }
 
-    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get() || (Configs.hudConfig.showInventoryWarning.get() && !Configs.hudConfig.inventoryWarningBig.get()); }
-    @Override protected float configX() { return Configs.hudConfig.gearWarningXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.gearWarningYPosition.get() / 100f; }
+    @Override protected boolean enabled() { return Configs.hudConfig.showGearWarning.get() || (Configs.hudConfig.showInventoryWarning.get() && !Configs.hudConfig.inventoryWarningBig.get() && !Configs.hudConfig.showInventoryWarningPanel.get()); }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.gearWarningXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.gearWarningYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.gearWarningAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.gearWarningScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.gearWarningOpacity.get(); }
@@ -69,26 +69,38 @@ public class GearWarningPanelElement extends PanelElement {
         List<Component> lines = new ArrayList<>();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return lines;
-        // Hidden with the dismiss key (default -) until you change location.
+        // Hidden with the dismiss key (default -) until you press it again.
         if (!isCopy && dannypx.foe.handler.logic.WarningDismissHandler.instance().isDismissed()) return lines;
+        gearLines(mc, lines);
+        // last: how to hide it
+        if (!lines.isEmpty() && Configs.hudConfig.gearWarningDismissHint.get()) {
+            lines.add(Component.literal("Press \"" + dannypx.foe.handler.logic.WarningDismissHandler.key() + "\" to dismiss")
+                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        }
+        return lines;
+    }
+
+    private void gearLines(Minecraft mc, List<Component> lines) {
 
         // Inventory almost full (FOE's FullInventoryHandler warning)
         dannypx.foe.handler.logic.FullInventoryHandler inventory = dannypx.foe.handler.logic.FullInventoryHandler.instance();
         // (with the big warning on, it's at the top of the screen instead)
-        if (inventory.isAlmostFull() && !Configs.hudConfig.inventoryWarningBig.get()) {
+        // (in its own box instead, when that's on)
+        if (inventory.isAlmostFull() && !Configs.hudConfig.inventoryWarningBig.get() && !Configs.hudConfig.showInventoryWarningPanel.get()) {
             lines.add(Component.empty()
                     .append(Component.literal("Inventory almost full. Slots left: ").withStyle(ChatFormatting.RED))
                     .append(Component.literal(String.valueOf(inventory.getSlotsLeft())).withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(".").withStyle(ChatFormatting.RED)));
         }
 
-        if (!Configs.hudConfig.showGearWarning.get() || !TabOverlayHandler.instance().isInInstance()) return lines;
+        if (!Configs.hudConfig.showGearWarning.get() || !TabOverlayHandler.instance().isInInstance()) return;
 
-        Component locationName = BossEventHandler.instance().getLocation();
-        FoeLocations.Location location = FoeLocations.fromName(locationName.getString());
-        if (location == null) return lines; // hub, crew island, or unknown
+        FoeLocations.Location location = FoeLocations.fromName(BossEventHandler.instance().getLocation().getString());
+        if (location == null) return; // hub, crew island, or unknown
+        // the place's name in its own colour (as /tt shows it)
+        Component locationName = FoeLocations.styledName(FoeLocations.displayName(location));
         // Cypress Lake's spawn area: no warning until you get to the water (like FOE).
-        if (!isCopy && dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) return lines;
+        if (!isCopy && dannypx.foe.handler.logic.PetLocationHandler.inCypressHub()) return;
 
         // Armor: shown for a few seconds when it starts being wrong (you arrive, or put a piece on), then hidden
         List<Component> armorLines = new ArrayList<>();
@@ -125,7 +137,6 @@ public class GearWarningPanelElement extends PanelElement {
                     .append(Component.literal(" pet.").withStyle(ChatFormatting.RED)));
             lines.add(PetLocationHandler.suggestion(location));
         }
-        return lines;
     }
 
     /// How long a wrong-armour warning stays up.

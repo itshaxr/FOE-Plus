@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// The alert hub: FOE's Witching Hour and the cryptid windows that are on right now, each with
-/// its location, odds, drop and how long it has left, plus what starts soon. Hidden when nothing
+/// its location and how long it has left, plus what starts soon. Hidden when nothing
 /// is on (or coming up).
 public class AlertPanelElement extends PanelElement {
     public AlertPanelElement() {
@@ -20,16 +20,16 @@ public class AlertPanelElement extends PanelElement {
     }
 
     public AlertPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.alertPanelXPosition.get() / 100f,
-                Configs.hudConfig.alertPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.alertPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.alertPanelYPosition),
                 Configs.hudConfig.alertPanelAlignment.get(),
                 Component.literal("Alerts Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showAlertPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.alertPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.alertPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.alertPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.alertPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.alertPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.alertPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.alertPanelOpacity.get(); }
@@ -62,19 +62,16 @@ public class AlertPanelElement extends PanelElement {
                     dannypx.foe.helper.FoeLocations.styledName(alerts.locationLabel(alert)),
                     here ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty()));
             if (alert == AlertHandler.Alert.FABLED) {
-                lines.add(join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                        active.msSince() >= 0
+                lines.add(join(active.msSince() >= 0
                                 ? Component.literal("up " + AlertHandler.clock(active.msSince())).withStyle(ChatFormatting.YELLOW)
                                 : Component.literal("until caught").withStyle(ChatFormatting.YELLOW)));
             } else {
-                lines.add(join(label(alert.odds),
-                        Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                        Component.literal(AlertHandler.timeLeft(active.msLeft())).withStyle(timerColor(active.msLeft()))));
+                lines.add(join(Component.literal(AlertHandler.timeLeft(active.msLeft())).withStyle(timerColor(active.msLeft()))));
             }
         }
-        int ahead = Configs.hudConfig.alertUpcomingMinutes.get();
+        int ahead = Configs.hudConfig.alertUpcomingSeconds.get();
         if (ahead > 0) {
-            List<AlertHandler.Upcoming> soon = alerts.upcoming(ahead * 60_000L);
+            List<AlertHandler.Upcoming> soon = alerts.upcoming(ahead * 1000L);
             if (!soon.isEmpty() && !lines.isEmpty()) lines.add(Component.empty());
             for (AlertHandler.Upcoming next : soon) {
                 lines.add(join(label("ɴᴇxᴛ: "), Component.literal(next.what()).withStyle(ChatFormatting.WHITE),
@@ -101,8 +98,7 @@ public class AlertPanelElement extends PanelElement {
                 join(alert.iconText(), Component.literal(alert.displayName.toUpperCase()).withColor(alert.color).withStyle(ChatFormatting.BOLD),
                         Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
                         dannypx.foe.helper.FoeLocations.styledName("Cypress Lake")),
-                join(label(alert.odds), Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY),
-                        Component.literal("2:10 left").withStyle(ChatFormatting.GREEN)),
+                join(Component.literal("2:10 left").withStyle(ChatFormatting.GREEN)),
                 join(label("ɴᴇxᴛ: "), Component.literal("Titanoboa").withStyle(ChatFormatting.WHITE),
                         label(" ɪɴ "), Component.literal("1:40").withStyle(ChatFormatting.YELLOW)));
     }

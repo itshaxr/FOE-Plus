@@ -31,7 +31,8 @@ public final class CommunityRateHandler {
     static final long KEEP_MS = 30L * 60_000L;
 
     public long current() {
-        long v = CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalCurrent().getString());
+        // the boss bar's number only while it's showing it (between its turns it's old: the panel froze on it)
+        long v = BossEventHandler.instance().communityFresh() ? CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalCurrent().getString()) : -1;
         if (v < 0) {
             CommunityEventHandler e = CommunityEventHandler.instance();
             if (e.hasData()) v = CommunityEventHandler.parse(e.total());
@@ -40,7 +41,7 @@ public final class CommunityRateHandler {
     }
 
     public long goal() {
-        long v = CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalMax().getString());
+        long v = BossEventHandler.instance().communityFresh() ? CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalMax().getString()) : -1;
         if (v <= 0) {
             CommunityEventHandler e = CommunityEventHandler.instance();
             if (e.hasData()) v = CommunityEventHandler.parse(e.goal());
@@ -61,7 +62,8 @@ public final class CommunityRateHandler {
         long v = current();
         // last session's saved number is only for showing until the fresh one comes: counting the
         // pace from it would make the first "per hour" wildly off
-        boolean bossSays = CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalCurrent().getString()) >= 0;
+        boolean bossSays = BossEventHandler.instance().communityFresh()
+                && CommunityEventHandler.parse(BossEventHandler.instance().getCommunityGoalCurrent().getString()) >= 0;
         if (!bossSays && CommunityEventHandler.instance().fromLastSession()) return;
         note(v, System.currentTimeMillis());
     }

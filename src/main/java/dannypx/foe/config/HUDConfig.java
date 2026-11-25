@@ -32,6 +32,10 @@ public class HUDConfig extends Config {
     @Desc("§7Off: XP bars look like the game's (a line with the numbers after it, like a pet's tooltip). On: FOE+'s own filled bars")
     public ValidatedBoolean foeXpBars = new ValidatedBoolean(false);
 
+    @Name("Short rarity badges")
+    @Desc("§7On: the rarity badges in the HUDs (Quests, All-Time Stats, Session Stats and the rest) are short: the first letter on the rarity's colour (C, R, E, L, M, and G for gigantic)")
+    public ValidatedBoolean shortRarityBadges = new ValidatedBoolean(false);
+
     @Name("Profile Element")
     @Desc("§7Your name, level, balance and face, in a box (only with the FOE-R HUD Style, in place of the top bar)")
     public ConfigGroup profileElementGroup = new ConfigGroup("profile_element_group");
@@ -244,7 +248,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean questWarningLocation = new ValidatedBoolean(true);
 
     @Name("Pet catch style")
-    @Desc("§7FOE: the pet in the middle of the screen, like a fish (its rating, its four stats and its item; move it with the catch popup)\nBOX: the notification box")
+    @Desc("§7FOE: the pet in the middle of the screen, like a fish (its rating and its four stats; move it in Move HUD Elements, where it has its own box)\nBOX: the notification box")
     public ValidatedEnum<CatchPopupStyle> petCatchStyle = new ValidatedEnum<>(CatchPopupStyle.FOE, ValidatedEnum.WidgetType.CYCLING);
 
     @Name("Chat message when you catch a variant")
@@ -262,6 +266,30 @@ public class HUDConfig extends Config {
     @Name("Chat message when you pull a Lightning in a Bottle")
     @Desc("§7The bottle and your Lightning Bottle dry streak, in chat")
     public ValidatedBoolean showLightningBottleChat = new ValidatedBoolean(true);
+
+    @Name("Chat message when you pull a shard")
+    @Desc("§7The shard and your shard dry streak (fish since your last shard of any climate), in chat")
+    public ValidatedBoolean showShardChat = new ValidatedBoolean(true);
+
+    @Name("Chat message when you pull a Prospecting Amulet")
+    @Desc("§7The amulet and your Prospecting Amulet dry streak, in chat")
+    public ValidatedBoolean showProspectingAmuletChat = new ValidatedBoolean(true);
+
+    @Name("Rare pull lines: smallest dry streak shown")
+    @Desc("§7Shard, capsule, bottle and amulet lines only show when the dry streak is at least this. 0 shows them all")
+    public ValidatedInt rarePullChatMinStreak = new ValidatedInt(0, 100000, 0, ValidatedNumber.WidgetType.TEXTBOX);
+
+    @Name("Rare pull lines: your own text")
+    @Desc("§7Leave empty for FOE+'s line. Otherwise your text, with & colour codes and %item% %count% %streak%. Example: &d%item% &7after &f%streak% &7catches")
+    public ValidatedString rarePullChatText = new ValidatedString("");
+
+    @Name("Teleport button on event lines")
+    @Desc("§7Under a chat line about an event at a place (a Fish Frenzy, the Fabled fish, a mini event), a [Teleport] button: it opens /travel and takes you to your favourite spot there (★ on the travel map), or its first spot")
+    public ValidatedBoolean eventTeleportButton = new ValidatedBoolean(true);
+
+    @Name("Hide the server's line when FOE+ has its own")
+    @Desc("§7The server's \"RARE CATCH!\" line for a shard, capsule, bottle or amulet, and its \"PET DROP!\" line, are hidden while FOE+'s line for it is on. Everything is still counted")
+    public ValidatedBoolean hideServerPullLines = new ValidatedBoolean(true);
 
     @Name("Chat message when you pull a pet")
     @Desc("§7Rarity, rating % and dry streak of every pet you catch, in chat")
@@ -450,6 +478,10 @@ public class HUDConfig extends Config {
     @Name("Show gigantic fish")
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
 
+    @Name("Show percentages")
+    @Desc("§7The % after each count (and the catch rate after Total Caught), in the All-Time Stats and Session Stats HUDs. Off: only the counts and dry streaks")
+    public ValidatedBoolean statsPanelShowPercent = new ValidatedBoolean(true);
+
     @Name("Show Infusion Capsules")
     @Desc("§7How many you've pulled, and the dry streak (Blood Moon catches since the last one)")
     public ValidatedBoolean statsPanelShowCapsules = new ValidatedBoolean(true);
@@ -550,6 +582,22 @@ public class HUDConfig extends Config {
     @Desc("§7The box beside the pet with the item it holds")
     public ValidatedBoolean petPanelItemBox = new ValidatedBoolean(true);
 
+    @Name("Box size")
+    @Desc("§7How big the boxes with the pet and the item it holds are, in pixels")
+    public ValidatedInt petPanelBoxSize = new ValidatedInt(22, 40, 16, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Pet picture size")
+    @Desc("§7How big the pet is in its box, in pixels (it can't be bigger than the box)")
+    public ValidatedInt petPanelPetPictureSize = new ValidatedInt(16, 40, 8, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Held item picture size")
+    @Desc("§7How big the item it holds is in its box, in pixels (it can't be bigger than the box)")
+    public ValidatedInt petPanelItemPictureSize = new ValidatedInt(16, 40, 8, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Coloured border thickness")
+    @Desc("§7How thick the coloured border round the boxes is, in half pixels: 2 is the old thin border, 3 a little thicker")
+    public ValidatedInt petPanelBorderWidth = new ValidatedInt(3, 8, 1, ValidatedNumber.WidgetType.SLIDER);
+
     @Name("Show the item line")
     @Desc("§7The line with the name of the item the pet holds")
     public ValidatedBoolean petPanelItemLine = new ValidatedBoolean(true);
@@ -613,8 +661,23 @@ public class HUDConfig extends Config {
     @Name("Only alerts for the location you're at")
     public ValidatedBoolean alertsOnlyHere = new ValidatedBoolean(false);
 
-    @Name("Show what starts soon (minutes ahead, 0 = off)")
-    public ValidatedInt alertUpcomingMinutes = new ValidatedInt(3, 15, 0, ValidatedNumber.WidgetType.SLIDER);
+    @Name("During a moon: hide Witching Hour")
+    @Desc("§7While a moon is up you're at the moon's cryptids: these ones stay out of the alerts and the Events panel until it sets")
+    public ValidatedBoolean alertHideInMoonWitchingHour = new ValidatedBoolean(false);
+
+    @Name("During a moon: hide Titanoboa")
+    public ValidatedBoolean alertHideInMoonTitanoboa = new ValidatedBoolean(false);
+
+    @Name("During a moon: hide Bessie at night")
+    @Desc("§7Bessie's 4-6 AM window (Bessie in the moon still shows)")
+    public ValidatedBoolean alertHideInMoonBessie = new ValidatedBoolean(false);
+
+    @Name("During a moon: hide Garaboncias")
+    public ValidatedBoolean alertHideInMoonGaraboncias = new ValidatedBoolean(false);
+
+    @Name("Show what starts soon (seconds ahead, 0 = off)")
+    @Desc("§7How long before a cryptid or the Fabled fish starts it shows as next, in seconds: 90 is 1:30, 180 is 3:00 (up to 15 minutes)")
+    public ValidatedInt alertUpcomingSeconds = new ValidatedInt(180, 900, 0, ValidatedNumber.WidgetType.SLIDER);
 
     @Name("Chat message when an alert starts")
     public ValidatedBoolean alertChat = new ValidatedBoolean(true);
@@ -661,6 +724,38 @@ public class HUDConfig extends Config {
     @Name("Show weather events")
     @Desc("§7Rain showers, thunderstorms, supercells and moons, with how long they have left once FOE+ has seen one end")
     public ValidatedBoolean eventsShowWeather = new ValidatedBoolean(true);
+
+    @Name("Events: Fish Frenzy")
+    public ValidatedBoolean eventsShowFrenzy = new ValidatedBoolean(true);
+
+    @Name("Events: Blooming Oasis")
+    public ValidatedBoolean eventsShowOasis = new ValidatedBoolean(true);
+
+    @Name("Events: Gold Rush")
+    public ValidatedBoolean eventsShowGoldRush = new ValidatedBoolean(true);
+
+    @Name("Events: Rain Shower")
+    public ValidatedBoolean eventsShowRain = new ValidatedBoolean(true);
+
+    @Name("Events: Thunderstorm")
+    public ValidatedBoolean eventsShowThunderstorm = new ValidatedBoolean(true);
+
+    @Name("Events: Supercell")
+    public ValidatedBoolean eventsShowSupercell = new ValidatedBoolean(true);
+
+    @Name("Events: Moons")
+    public ValidatedBoolean eventsShowMoon = new ValidatedBoolean(true);
+
+    @Name("Events: Boosters")
+    @Desc("§7Money, XP, Luck and Scale boosters that are on")
+    public ValidatedBoolean eventsShowBoosters = new ValidatedBoolean(true);
+
+    @Name("Events: Cryptids")
+    @Desc("§7Each cryptid has its own switch with the alerts (Witching Hour, Titanoboa, Bessie, Rougarou, Garaboncias)")
+    public ValidatedBoolean eventsShowCryptids = new ValidatedBoolean(true);
+
+    @Name("Events: Fabled Fish")
+    public ValidatedBoolean eventsShowFabled = new ValidatedBoolean(true);
 
     @Name("X Position in %")
     public ValidatedInt eventsPanelXPosition = new ValidatedInt(22, 100, 0, ValidatedNumber.WidgetType.SLIDER);
@@ -844,6 +939,14 @@ public class HUDConfig extends Config {
     @Name("Show Wrong Gear Warning")
     public ValidatedBoolean showGearWarning = new ValidatedBoolean(true);
 
+    @Name("Warning box hidden")
+    @Desc("§7On after you press the dismiss key (default -) on the warning box: it stays hidden everywhere until you press the key again or turn this off")
+    public ValidatedBoolean gearWarningDismissed = new ValidatedBoolean(false);
+
+    @Name("Show \"press - to dismiss\"")
+    @Desc("§7A last line in the warning box saying which key hides it")
+    public ValidatedBoolean gearWarningDismissHint = new ValidatedBoolean(true);
+
     @Name("Warn about the wrong rod")
     @Desc("§7A saltwater rod (line, pole, reel or bait) at a freshwater place, or the other way round")
     public ValidatedBoolean showWrongRodWarning = new ValidatedBoolean(true);
@@ -858,12 +961,13 @@ public class HUDConfig extends Config {
     @Name("Warn at this many free slots or fewer")
     public ValidatedInt inventoryWarningThreshold = new ValidatedInt(3, 35, 1, ValidatedNumber.WidgetType.SLIDER);
 
-    @Desc("§7Moved to O → Customize → Sounds (this only set what it started as)")
+    @Desc("§7Off: no sound for the inventory warning at all. Which sound it is: O → Sounds")
     @Name("Play a warning sound")
     public ValidatedBoolean inventoryWarningSound = new ValidatedBoolean(true);
 
-    @Name("Seconds between sounds")
-    public ValidatedInt inventoryWarningSoundSeconds = new ValidatedInt(10, 30, 1, ValidatedNumber.WidgetType.SLIDER);
+    @Name("Play it again on each catch while it's full")
+    @Desc("§7On: the sound plays when you get to the warning, then again each time you catch something (or a slot fills) while it's that full. Off: only when you get to it. It never repeats on a timer")
+    public ValidatedBoolean inventoryWarningRepeat = new ValidatedBoolean(true);
 
     @Desc("§7Moved to O → Customize → Sounds (this only set what it started as)")
     @Name("Warning sound")
@@ -884,6 +988,30 @@ public class HUDConfig extends Config {
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat gearWarningScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
+
+    @Name("Inventory Warning Box")
+    @Desc("§7The inventory almost full warning in a box of its own, away from the wrong gear warnings (off: it's a line in the Wrong Gear box)")
+    public ConfigGroup inventoryWarningGroup = new ConfigGroup("inventory_warning_group");
+
+    @Name("Show it in its own box")
+    @Desc("§7Off (default): the line in the Wrong Gear box. On: its own box, that you can move anywhere in Move HUD Elements")
+    public ValidatedBoolean showInventoryWarningPanel = new ValidatedBoolean(false);
+
+    @Name("X Position in %")
+    public ValidatedInt inventoryWarningPanelXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Y Position in %")
+    public ValidatedInt inventoryWarningPanelYPosition = new ValidatedInt(25, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Anchor point")
+    public ValidatedChoice<Alignment> inventoryWarningPanelAlignment = new ValidatedChoice<>(Alignment.TOP, Alignment.getCornersAndCenters(), new ValidatedEnum<>(Alignment.class).instanceEntry(), ValidatedChoice.WidgetType.CYCLING);
+
+    @Name("Background opacity in %")
+    public ValidatedInt inventoryWarningPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Scale")
+    public ValidatedFloat inventoryWarningPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
 
     @Name("FOE-R Bottom Bar")
     @Desc("§7Only with the FOE-R HUD Style: the hotbar in FOE-R's frame, with your rod parts and armour above it (in place of the game's hotbar and the equipment bar)")
@@ -1034,9 +1162,13 @@ public class HUDConfig extends Config {
     @Name("Y Position in % (its centre)")
     public ValidatedFloat catchRingY = new ValidatedFloat(50f, 100f, 0f);
 
-    @Name("Show the fish coming")
-    @Desc("§7Before a bite, the ring fills in blue as the fish swims to your bobber (from its trail in the water), so you see the bite coming. Then it fills green as you reel in")
+    @Name("Show the fish coming (blue part)")
+    @Desc("§7Before a bite, the ring fills in blue as the fish swims to your bobber (from its trail in the water), so you see the bite coming")
     public ValidatedBoolean catchRingApproach = new ValidatedBoolean(true);
+
+    @Name("Show reeling in (green part)")
+    @Desc("§7The ring fills green as you reel the fish in. Turn this off to keep only the blue part")
+    public ValidatedBoolean catchRingReel = new ValidatedBoolean(true);
 
     @Name("Colour while the fish comes")
     @Desc("§7The ring's colour as a fish swims to your bobber. Click to pick one; Default is blue")
@@ -1054,8 +1186,76 @@ public class HUDConfig extends Config {
     @Name("Size")
     public ValidatedFloat catchRingScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 3.0f, 0.5f), 0.05f);
 
+    // From tacklebox by landofif (MIT), with its permission.
+    @Name("Big Catch Moment")
+    @Desc("§7When you catch a big one, a soft glow in its colour fades in and out at the edges of your screen Nothing moves or shakes. Its sounds are in Sounds → Catches")
+    public ConfigGroup bigCatchGroup = new ConfigGroup("big_catch_group");
+
+    @Name("Big catch moment")
+    public ValidatedBoolean bigCatchOn = new ValidatedBoolean(true);
+
+    @Name("Fabled")
+    public ValidatedBoolean bigCatchFabled = new ValidatedBoolean(true);
+
+    @Name("Trophy")
+    public ValidatedBoolean bigCatchTrophy = new ValidatedBoolean(true);
+
+    @Name("Mythical")
+    public ValidatedBoolean bigCatchMythical = new ValidatedBoolean(false);
+
+    @Name("Gigantic")
+    public ValidatedBoolean bigCatchGigantic = new ValidatedBoolean(true);
+
+    @Name("Albino")
+    public ValidatedBoolean bigCatchAlbino = new ValidatedBoolean(true);
+
+    @Name("Melanistic")
+    public ValidatedBoolean bigCatchMelanistic = new ValidatedBoolean(true);
+
+    @Name("Legendary")
+    public ValidatedBoolean bigCatchLegendary = new ValidatedBoolean(false);
+
+    @Name("Screen edge glow")
+    public ValidatedBoolean bigCatchGlow = new ValidatedBoolean(true);
+
+    @Name("Glow strength in %")
+    public ValidatedInt bigCatchGlowOpacity = new ValidatedInt(34, 100, 5, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Glow length")
+    @Desc("§71 is the normal length (0.6 seconds); 3 lasts three times as long")
+    @ConfigGroup.Pop
+    public ValidatedFloat bigCatchGlowLength = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 5.0f, 0.5f), 0.25f);
+
+    @Name("Variant Pulse")
+    @Desc("§7The moment an albino, melanistic, trophy or fabled fish bites YOUR line (the server shows its badge at your bobber), the edges of your screen pulse in its colour while you reel it in. Other players' fish never set it off")
+    public ConfigGroup variantPulseGroup = new ConfigGroup("variant_pulse_group");
+
+    @Name("Variant pulse")
+    public ValidatedBoolean variantPulseOn = new ValidatedBoolean(true);
+
+    @Name("Albino (white)")
+    public ValidatedBoolean variantPulseAlbino = new ValidatedBoolean(true);
+
+    @Name("Melanistic (black)")
+    public ValidatedBoolean variantPulseMelanistic = new ValidatedBoolean(true);
+
+    @Name("Trophy (gold)")
+    public ValidatedBoolean variantPulseTrophy = new ValidatedBoolean(true);
+
+    @Name("Fabled (red)")
+    public ValidatedBoolean variantPulseFabled = new ValidatedBoolean(true);
+
+    @Name("Pulse strength in %")
+    public ValidatedInt variantPulseOpacity = new ValidatedInt(40, 100, 5, ValidatedNumber.WidgetType.SLIDER);
+
+    @ConfigGroup.Pop
+    @Name("Keep pulsing until it's caught")
+    @Desc("§7Off: one pulse when it bites")
+    public ValidatedBoolean variantPulseKeep = new ValidatedBoolean(true);
+
+
     @Name("FOE Catch Popup")
-    @Desc("§7The floating catch text used when Fish or Pet catch style is FOE")
+    @Desc("§7The floating text for a fish you catch, when the Fish catch style is FOE. Its lines can be turned on and off here or in the HUD Editor (Popups)")
     public ConfigGroup catchPopupGroup = new ConfigGroup("catch_popup_group");
 
     @Name("Show the catch popup")
@@ -1068,11 +1268,37 @@ public class HUDConfig extends Config {
     @Name("Y Position in %")
     public ValidatedInt catchPopupYPosition = new ValidatedInt(30, 100, 0, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("Show the catch icon")
+    @Desc("§7The server's big catch picture above the name")
+    public ValidatedBoolean catchPopupShowIcon = new ValidatedBoolean(true);
+
+    @Name("Show the name")
+    public ValidatedBoolean catchPopupShowName = new ValidatedBoolean(true);
+
+    @Name("Show the size")
+    @Desc("§7Baby, Juvenile, Adult, Large or Gigantic")
+    public ValidatedBoolean catchPopupShowSize = new ValidatedBoolean(true);
+
     @Name("Show weight")
     public ValidatedBoolean catchPopupShowWeight = new ValidatedBoolean(true);
 
     @Name("Show length")
     public ValidatedBoolean catchPopupShowLength = new ValidatedBoolean(true);
+
+    @Name("Units")
+    @Desc("§7Weight and length in pounds and inches, kilograms and centimetres, or both")
+    public ValidatedEnum<dannypx.foe.type.PopupUnits> catchPopupUnits = new ValidatedEnum<>(dannypx.foe.type.PopupUnits.BOTH, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Show size bonus")
+    @Desc("§7Your size bonus when you caught it: the size bonuses on your lure or bait, rod and armour added up (one under \"While fishing ...\" only counts there)")
+    public ValidatedBoolean catchPopupShowSizeBonus = new ValidatedBoolean(true);
+
+    @Name("Size bonus only during contests")
+    @Desc("§7Only while a contest is on where you're fishing")
+    public ValidatedBoolean catchPopupSizeBonusContestOnly = new ValidatedBoolean(false);
+
+    @Name("Show \"Inventory Full!\"")
+    public ValidatedBoolean catchPopupShowInventoryFull = new ValidatedBoolean(true);
 
     @Name("Border colour")
     @Desc("§7A box behind the catch popup with a border in this colour. Click to pick one; Default is no box, just the words")
@@ -1085,35 +1311,65 @@ public class HUDConfig extends Config {
     @Desc("§7The popup fades out over its last second (and in over its first few moments) instead of vanishing")
     public ValidatedBoolean catchPopupFade = new ValidatedBoolean(false);
 
-    @Name("Pet popup: name")
-    @Desc("§7The pet popup's lines: turn off any you don't want")
-    public ValidatedBoolean petPopupName = new ValidatedBoolean(true);
-
-    @Name("Pet popup: rarity")
-    public ValidatedBoolean petPopupRarity = new ValidatedBoolean(true);
-
-    @Name("Pet popup: level")
-    @Desc("§7Its level (\"Lv. 0\": a pet you just fished up is always level 0)")
-    public ValidatedBoolean petPopupLevel = new ValidatedBoolean(false);
-
-    @Name("Pet popup: rating")
-    public ValidatedBoolean petPopupRating = new ValidatedBoolean(true);
-
-    @Name("Pet popup: stats")
-    @Desc("§7Its four stats: climate luck and scale, location luck and scale")
-    public ValidatedBoolean petPopupStats = new ValidatedBoolean(true);
-
-    @Name("Pet popup: stat names")
-    @Desc("§7The line under the stats saying which is which")
-    public ValidatedBoolean petPopupStatNames = new ValidatedBoolean(true);
-
-    @Name("Pet popup: held item")
-    public ValidatedBoolean petPopupItem = new ValidatedBoolean(true);
-
     @ConfigGroup.Pop
     @Name("Scale")
     @Desc("§7This will scale based on the ratio. So 0.5 would be half the size")
     public ValidatedFloat catchPopupScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
+
+
+    @Name("FOE Pet Popup")
+    @Desc("§7The floating text for a pet you fish up, when the Pet catch style is FOE. Its lines can be turned on and off here or in the HUD Editor (Popups)")
+    public ConfigGroup petPopupGroup = new ConfigGroup("pet_popup_group");
+
+    @Name("Show the pet popup")
+    public ValidatedBoolean showPetPopup = new ValidatedBoolean(true);
+
+    @Name("Pet popup X position")
+    @Desc("§7Where the pet popup shows: move it in Move HUD Elements")
+    public ValidatedInt petPopupXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Pet popup Y position")
+    public ValidatedInt petPopupYPosition = new ValidatedInt(30, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Show the name")
+    public ValidatedBoolean petPopupName = new ValidatedBoolean(true);
+
+    @Name("Show the rarity")
+    public ValidatedBoolean petPopupRarity = new ValidatedBoolean(true);
+
+    @Name("Show the level")
+    @Desc("§7Its level (\"Lv. 0\": a pet you just fished up is always level 0)")
+    public ValidatedBoolean petPopupLevel = new ValidatedBoolean(false);
+
+    @Name("Show the rating")
+    public ValidatedBoolean petPopupRating = new ValidatedBoolean(true);
+
+    @Name("Show the stats")
+    @Desc("§7Its four stats: climate luck and scale, location luck and scale")
+    public ValidatedBoolean petPopupStats = new ValidatedBoolean(true);
+
+    @Name("Show the stat names")
+    @Desc("§7The line under the stats saying which is which")
+    public ValidatedBoolean petPopupStatNames = new ValidatedBoolean(true);
+
+    @Name("Show \"Inventory Full!\"")
+    public ValidatedBoolean petPopupShowInventoryFull = new ValidatedBoolean(true);
+
+    @Name("Border colour")
+    @Desc("§7A box behind the pet popup with a border in this colour. Click to pick one; Default is no box, just the words")
+    public ValidatedString petPopupBorderColor = new ValidatedString("");
+
+    @Name("Display time in seconds")
+    public ValidatedInt petPopupTime = new ValidatedInt(5, 30, 1, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Fade away")
+    @Desc("§7The popup fades out over its last second (and in over its first few moments) instead of vanishing")
+    public ValidatedBoolean petPopupFade = new ValidatedBoolean(false);
+
+    @ConfigGroup.Pop
+    @Name("Pet popup scale")
+    @Desc("§7The pet popup's size: 0.5 is half the size")
+    public ValidatedFloat petPopupScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.5f), 0.05f);
 
     @Override
     public @NotNull FileType fileType() {

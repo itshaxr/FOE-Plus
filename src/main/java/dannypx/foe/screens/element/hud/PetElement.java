@@ -29,8 +29,8 @@ public class PetElement extends Element {
     public PetElement() {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.petElementXPosition.get() / 100f,
-                Configs.hudConfig.petElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.petElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.petElementYPosition),
                 Configs.hudConfig.petElementAlignment.get(),
                 Configs.hudConfig.petElementGroup.translation("Pet Element"),
                 false);
@@ -39,8 +39,8 @@ public class PetElement extends Element {
     public PetElement(boolean isCopy) {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.petElementXPosition.get() / 100f,
-                Configs.hudConfig.petElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.petElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.petElementYPosition),
                 Configs.hudConfig.petElementAlignment.get(),
                 Configs.hudConfig.petElementGroup.translation("Pet Element"),
                 isCopy);
@@ -56,8 +56,8 @@ public class PetElement extends Element {
         float scale = FoeRBoxes.scale(cfg.petElementScale.get());
         int[] screen = FoeRBoxes.screen(scale);
         if (!isCopy) {
-            xPos = cfg.petElementXPosition.get() / 100f;
-            yPos = cfg.petElementYPosition.get() / 100f;
+            xPos = dannypx.foe.helper.HudFine.get(cfg.petElementXPosition);
+            yPos = dannypx.foe.helper.HudFine.get(cfg.petElementYPosition);
             alignment = cfg.petElementAlignment.get();
         }
         boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;

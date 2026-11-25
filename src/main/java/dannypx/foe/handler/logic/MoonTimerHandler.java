@@ -125,12 +125,29 @@ public class MoonTimerHandler {
         return currentMoon;
     }
 
+    /// When chat last said a moon set (0: not since you joined).
+    private long setAt = 0L;
+    static final long MOON_LENGTH_MS = 10L * 60_000L;
+
+    /// The schedule says a moon is up right now though chat hasn't named it (yet): its line shows from the second it
+    /// rises, not when the chat line about it comes in, or when you joined in the middle of one.
+    public boolean scheduledUp() {
+        return scheduledUp(System.currentTimeMillis());
+    }
+
+    boolean scheduledUp(long now) {
+        if (currentMoon != null || !isKnown()) return false;
+        long since = Math.floorMod(now - saved().lastRiseAt, saved().cycleMs);
+        return since < MOON_LENGTH_MS && setAt < now - since;
+    }
+
     public void onReceiveMessage(Component message) {
         String text = message.getString();
         for (Moon moon : Moon.values()) {
             if (text.startsWith(moon.chatPrefix)) {
                 boolean set = text.contains(" has set");
                 if (set && this.currentMoon != null) AlertHandler.instance().onMoonSet();
+                if (set) this.setAt = System.currentTimeMillis();
                 if (!set && text.contains("has risen")) this.onMoonrise(System.currentTimeMillis());
                 this.currentMoon = set ? null : moon;
                 return;
@@ -148,6 +165,7 @@ public class MoonTimerHandler {
 
     public void onLeaveServer() {
         this.currentMoon = null;
+        this.setAt = 0L;
     }
 
     public enum Moon {

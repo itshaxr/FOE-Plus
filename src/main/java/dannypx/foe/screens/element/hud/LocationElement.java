@@ -28,8 +28,8 @@ public class LocationElement extends Element {
     public LocationElement() {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.locationElementXPosition.get() / 100f,
-                Configs.hudConfig.locationElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.locationElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.locationElementYPosition),
                 Configs.hudConfig.locationElementAlignment.get(),
                 Configs.hudConfig.locationElementGroup.translation("Location Element"),
                 false);
@@ -38,8 +38,8 @@ public class LocationElement extends Element {
     public LocationElement(boolean isCopy) {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.locationElementXPosition.get() / 100f,
-                Configs.hudConfig.locationElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.locationElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.locationElementYPosition),
                 Configs.hudConfig.locationElementAlignment.get(),
                 Configs.hudConfig.locationElementGroup.translation("Location Element"),
                 isCopy);
@@ -55,8 +55,8 @@ public class LocationElement extends Element {
         float scale = FoeRBoxes.scale(cfg.locationElementScale.get());
         int[] screen = FoeRBoxes.screen(scale);
         if (!isCopy) {
-            xPos = cfg.locationElementXPosition.get() / 100f;
-            yPos = cfg.locationElementYPosition.get() / 100f;
+            xPos = dannypx.foe.helper.HudFine.get(cfg.locationElementXPosition);
+            yPos = dannypx.foe.helper.HudFine.get(cfg.locationElementYPosition);
             alignment = cfg.locationElementAlignment.get();
         }
         boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;

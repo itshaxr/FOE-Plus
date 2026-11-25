@@ -68,12 +68,10 @@ public class ChatHandler extends Handler {
         // FOE-style info panels
         dannypx.foe.handler.logic.ContestTrackerHandler.instance().onReceiveMessage(component);
         dannypx.foe.handler.logic.DailyQuestHandler.instance().onReceiveMessage(component);
-        dannypx.foe.handler.logic.MoonTimerHandler.instance().onReceiveMessage(component);
         {
             var player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) dannypx.foe.handler.logic.LevelStyleHandler.instance().onChat(component, player.getGameProfile().name());
         }
-        dannypx.foe.handler.logic.WeatherEventHandler.instance().onChat(component.getString(), System.currentTimeMillis());
         dannypx.foe.handler.logic.AlertHandler.instance().onReceiveMessage(component);
         if (component.getString().startsWith("QUEST Complete")) {
             dannypx.foe.handler.store.StatsDataHandler.instance().addQuestCompleted();

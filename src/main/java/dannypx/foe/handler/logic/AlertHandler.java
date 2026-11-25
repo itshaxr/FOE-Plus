@@ -377,7 +377,7 @@ public class AlertHandler {
 
     //region Moons and rainbows
     public boolean isMoonUp() {
-        return MoonTimerHandler.instance().getCurrentMoon() != null;
+        return MoonTimerHandler.instance().getCurrentMoon() != null || MoonTimerHandler.instance().scheduledUp();
     }
 
     private long moonElapsedMs() {
@@ -635,6 +635,15 @@ public class AlertHandler {
             case FABLED -> hud.alertFabled.get();
         };
         if (!on) return false;
+        // ones you hide while a moon is up
+        boolean hideInMoon = switch (alert) {
+            case WITCHING_HOUR -> hud.alertHideInMoonWitchingHour.get();
+            case TITANOBOA -> hud.alertHideInMoonTitanoboa.get();
+            case BESSIE_NIGHT -> hud.alertHideInMoonBessie.get();
+            case GARABONCIAS -> hud.alertHideInMoonGaraboncias.get();
+            default -> false;
+        };
+        if (hideInMoon && instance().isMoonUp()) return false;
         return !hud.alertsOnlyHere.get() || instance().locationOf(alert) == PetLocationHandler.currentLocation();
     }
 
@@ -669,13 +678,12 @@ public class AlertHandler {
             if (now - since < ANNOUNCE_AFTER_MS) continue;
             announced.add(active.alert());
             if (Configs.hudConfig.alertChat.get()) {
-                // [FOE+] WITCHING HOUR Cypress Lake · Bigfoot 1/300 · ~2:10 left
+                // [FOE+] WITCHING HOUR Cypress Lake · 2:10 left [Teleport]
                 dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line(active.alert().displayName.toUpperCase(Locale.ROOT), active.alert().color)
                         .append(dannypx.foe.helper.FoeChat.place(locationLabel(active.alert())))
                         .append(dannypx.foe.helper.FoeChat.sep())
-                        .append(dannypx.foe.helper.FoeChat.text(active.alert().odds))
-                        .append(dannypx.foe.helper.FoeChat.sep())
-                        .append(dannypx.foe.helper.FoeChat.highlight(active.alert() == Alert.FABLED ? "until caught" : timeLeft(active.msLeft()))));
+                        .append(dannypx.foe.helper.FoeChat.highlight(active.alert() == Alert.FABLED ? "until caught" : timeLeft(active.msLeft())))
+                        .append(EventTeleport.inline(locationOf(active.alert()))));
             }
             // its own sound (O → Customize → Sounds)
             dannypx.foe.handler.store.NotifySounds.play(soundId(active.alert()));

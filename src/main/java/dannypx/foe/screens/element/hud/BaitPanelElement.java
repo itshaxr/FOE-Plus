@@ -20,16 +20,16 @@ public class BaitPanelElement extends PanelElement {
     }
 
     public BaitPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.baitPanelXPosition.get() / 100f,
-                Configs.hudConfig.baitPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.baitPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.baitPanelYPosition),
                 Configs.hudConfig.baitPanelAlignment.get(),
                 Component.literal("Bait Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showBaitPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.baitPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.baitPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.baitPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.baitPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.baitPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.baitPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.baitPanelOpacity.get(); }
@@ -110,7 +110,7 @@ public class BaitPanelElement extends PanelElement {
     /// The tacklebox is locked (the server keeps this bait on the rod).
     private static boolean locked() {
         FishingRodTagObject rod = InventoryHandler.instance().getCurrentFishingRod();
-        return rod != null && rod.getDisableBait();
+        return rod != null && rod.getDisableBait() && dannypx.foe.config.Configs.hudConfig.showBaitLock.get();
     }
 
     private static TagObject activeBait() {
@@ -123,7 +123,9 @@ public class BaitPanelElement extends PanelElement {
     @Override
     protected List<PanelIcon> icons() {
         TagObject bait = activeBait();
-        return bait == null ? List.of() : List.of(new PanelIcon(bait.getItemStack(), 0xFFFFFFFF));
+        // locked: a red frame and a red padlock in its corner, so it can't be missed
+        return bait == null ? List.of() : List.of(locked() ? new PanelIcon(bait.getItemStack(), 0xFFFF3B3B, true)
+                : new PanelIcon(bait.getItemStack(), 0xFFFFFFFF));
     }
 
     @Override
@@ -136,7 +138,7 @@ public class BaitPanelElement extends PanelElement {
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(String.valueOf(bait.getCount())).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal("x").withStyle(ChatFormatting.GRAY))
-                .append(locked() ? Component.literal(" ʟᴏᴄᴋᴇᴅ").withStyle(ChatFormatting.DARK_GRAY) : Component.empty()));
+                .append(locked() ? Component.literal(" ʟᴏᴄᴋᴇᴅ").withColor(0xFF3B3B).withStyle(ChatFormatting.BOLD) : Component.empty()));
         return lines;
     }
 

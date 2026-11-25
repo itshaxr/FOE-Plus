@@ -64,6 +64,9 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
+	// the notices of the code FOE+ uses from others (tacklebox's MIT licence must ship with it)
+	from("CREDITS-tacklebox.md")
+	from("CREDITS-FOECollab.md")
 }
 
 // configure the maven publication

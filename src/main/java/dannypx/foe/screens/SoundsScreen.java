@@ -31,8 +31,48 @@ public class SoundsScreen extends Screen {
     private static final int ROW_H = 22, ROW_GAP = 3;
     static final String ALL = "*all*";
 
-    /// ChatNotify's quick picks (by group), with names to read.
+    /// The quick picks (by group), with names to read: FOE+'s own sounds, then ChatNotify's.
     static final String[][] QUICK = {
+            // phckd's own sounds, made for FOE+ and shipped with it (assets/fishonmcextras/sounds/custom)
+            {"FOE+ sounds", "foeplus:aah_yeah_yeah", "Aah Yeah Yeah",
+                    "foeplus:animal_crossing_exclaim", "Animal Crossing Exclaim",
+                    "foeplus:chompy", "Chompy",
+                    "foeplus:crab_rave", "Crab Rave",
+                    "foeplus:final_fantasy_victory", "Final Fantasy Victory",
+                    "foeplus:gaster_vanish", "Gaster Vanish",
+                    "foeplus:golden_fish", "Golden Fish",
+                    "foeplus:honk", "Honk",
+                    "foeplus:jawbus", "Jawbus",
+                    "foeplus:kirby_death", "Kirby Death",
+                    "foeplus:kirby_extra_life", "Kirby Extra Life",
+                    "foeplus:kirby_sleep", "Kirby Sleep",
+                    "foeplus:let_s_go_gambling", "Let's Go Gambling",
+                    "foeplus:level_start", "Level Start",
+                    "foeplus:mario_1_up", "Mario 1-Up",
+                    "foeplus:mario_coin", "Mario Coin",
+                    "foeplus:mario_goomba_stomp", "Mario Goomba Stomp",
+                    "foeplus:mario_jump", "Mario Jump",
+                    "foeplus:mario_pause", "Mario Pause",
+                    "foeplus:mario_power_up", "Mario Power-Up",
+                    "foeplus:megalovania", "Megalovania",
+                    "foeplus:money", "Money",
+                    "foeplus:mystery_sound", "Mystery Sound",
+                    "foeplus:night_squid", "Night Squid",
+                    "foeplus:pikmin_throw", "Pikmin Throw",
+                    "foeplus:shovel_knight_level_start", "Shovel Knight Level Start",
+                    "foeplus:shovel_knight_victory", "Shovel Knight Victory",
+                    "foeplus:snipe", "Snipe",
+                    "foeplus:spider_man_2099", "Spider-Man 2099",
+                    "foeplus:squeak", "Squeak",
+                    "foeplus:undertale_damage", "Undertale Damage",
+                    "foeplus:undertale_encounter", "Undertale Encounter",
+                    "foeplus:undertale_rare_find", "Undertale Rare Find",
+                    "foeplus:undertale_save", "Undertale Save",
+                    "foeplus:undertale_victory", "Undertale Victory",
+                    "foeplus:undertale_you_win", "Undertale You Win",
+                    "foeplus:vulkan_dies", "Vulkan Dies",
+                    "foeplus:yeti", "Yeti",
+                    "foeplus:yoshi_mount", "Yoshi Mount"},
             {"Note blocks", "block.note_block.bell", "Bell", "block.note_block.chime", "Chime", "block.note_block.pling", "Pling",
                     "block.note_block.didgeridoo", "Didgeridoo", "block.note_block.bit", "Bit", "block.note_block.flute", "Flute",
                     "block.note_block.harp", "Harp", "block.note_block.xylophone", "Xylophone", "block.note_block.iron_xylophone", "Iron Xylophone",
@@ -55,6 +95,24 @@ public class SoundsScreen extends Screen {
                     "entity.arrow.hit_player", "Arrow Ding", "entity.allay.item_thrown", "Allay", "entity.iron_golem.repair", "Golem Repair",
                     "block.anvil.land", "Anvil", "item.shield.block", "Shield", "entity.goat.screaming.prepare_ram", "Goat Scream",
                     "ui.button.click", "Click"}};
+
+    /// The quick picks with your own sound files (config/fishonmcextras/sounds) as a group of their own, first.
+    static String[][] quick() {
+        List<dannypx.foe.handler.store.FileSounds.Entry> files = dannypx.foe.handler.store.FileSounds.all();
+        if (files.isEmpty()) return QUICK;
+        String[] mine = new String[1 + files.size() * 2];
+        mine[0] = "Your sound files";
+        for (int i = 0; i < files.size(); i++) {
+            mine[1 + i * 2] = files.get(i).id();
+            mine[2 + i * 2] = files.get(i).name();
+        }
+        String[][] out = new String[QUICK.length + 1][];
+        out[0] = mine;
+        System.arraycopy(QUICK, 0, out, 1, QUICK.length);
+        return out;
+    }
+
+    private String[][] shownQuick = QUICK;
 
     private final Screen parent;
     private int px, py, pw, ph, lx, lw, rx, rw, listTop, listBottom;
@@ -163,6 +221,9 @@ public class SoundsScreen extends Screen {
     //region Names
     static String soundName(String id) {
         if (id == null || id.isBlank()) return "None";
+        var file = dannypx.foe.handler.store.FileSounds.byId(id.trim());
+        if (file != null) return file.name();
+        if (id.startsWith(dannypx.foe.handler.store.FileSounds.PREFIX)) return "Missing file";
         String bare = id.startsWith("minecraft:") ? id.substring(10) : id;
         for (String[] g : QUICK) for (int i = 1; i + 1 < g.length; i += 2) if (g[i].equals(bare)) return g[i + 1];
         String last = bare.substring(bare.lastIndexOf('.') + 1).replace('_', ' ');
@@ -246,13 +307,15 @@ public class SoundsScreen extends Screen {
             for (int i = rightScroll * 2; i < Math.min(found.size(), rightScroll * 2 + max); i++) {
                 int col = (i - rightScroll * 2) % 2, row = (i - rightScroll * 2) / 2;
                 String id = found.get(i);
-                addRenderableWidget(new QuickButton(rx + 8 + col * (bw + 4), y + row * 15, bw, 13, id.replace("minecraft:", ""), id, this));
+                var file = dannypx.foe.handler.store.FileSounds.byId(id);
+                addRenderableWidget(new QuickButton(rx + 8 + col * (bw + 4), y + row * 15, bw, 13, file != null ? file.name() : id.startsWith("foeplus:") ? soundName(id) : id.replace("minecraft:", ""), id, this));
             }
         } else {
             // quick picks, in their groups
             int yy = y - rightScroll * 15;
-            for (String[] g : QUICK) {
-                if (yy >= y && yy < slidersY - 12) quickButtons.add(new int[]{yy, java.util.Arrays.asList(QUICK).indexOf(g)});
+            shownQuick = quick();
+            for (String[] g : shownQuick) {
+                if (yy >= y && yy < slidersY - 12) quickButtons.add(new int[]{yy, java.util.Arrays.asList(shownQuick).indexOf(g)});
                 yy += 10;
                 for (int i = 1; i + 1 < g.length; i += 2) {
                     int k = (i - 1) / 2, col = k % 2;
@@ -279,6 +342,14 @@ public class SoundsScreen extends Screen {
                 .bounds(sx + sw / 2 + 2, slidersY + 38, sw - sw / 2 - 2, 15).build());
 
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(px + pw - 60, py + 8, 50, 16).build());
+        // your own .ogg files: put them in this folder and they're listed under "Your sound files"
+        addRenderableWidget(Button.builder(Component.literal("Your sound files…"), b -> {
+                    try {
+                        java.nio.file.Files.createDirectories(dannypx.foe.handler.store.FileSounds.folder());
+                        net.minecraft.util.Util.getPlatform().openPath(dannypx.foe.handler.store.FileSounds.folder());
+                    } catch (Exception ignored) {}
+                }).bounds(px + pw - 60 - 4 - 104, py + 8, 104, 16)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal("Opens your sounds folder: put .ogg files in it and they show under \"Your sound files\", ready to pick for any sound"))).build());
     }
 
     /// The Match page: the name, the triggers (any of them sets it off), the exceptions (none of them may be in the
@@ -386,7 +457,13 @@ public class SoundsScreen extends Screen {
         for (Identifier id : net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.keySet()) all.add(id.toString());
         for (Identifier id : Minecraft.getInstance().getSoundManager().getAvailableSounds()) all.add(id.toString());
         List<String> out = new ArrayList<>();
-        for (String s : all) if (s.contains(t)) out.add(s);
+        // your own sound files first, found by their names too
+        for (var f : dannypx.foe.handler.store.FileSounds.all())
+            if (f.name().toLowerCase(Locale.ROOT).contains(t) || f.id().contains(t)) out.add(f.id());
+        // then FOE+'s own sounds, by their names too
+        for (int i = 1; i + 1 < QUICK[0].length; i += 2)
+            if (QUICK[0][i + 1].toLowerCase(Locale.ROOT).contains(t) || QUICK[0][i].contains(t)) out.add(QUICK[0][i]);
+        for (String s : all) if (s.contains(t) && !out.contains(s)) out.add(s);
         return out;
     }
     //endregion
@@ -430,7 +507,7 @@ public class SoundsScreen extends Screen {
             return;
         }
         if (typed == null || typed.isBlank()) {
-            for (int[] q : quickButtons) g.drawString(font, QUICK[q[1]][0].toUpperCase(Locale.ROOT), rx + 8, q[0] + 1, FoeMainScreen.DIM, false);
+            for (int[] q : quickButtons) g.drawString(font, shownQuick[q[1]][0].toUpperCase(Locale.ROOT), rx + 8, q[0] + 1, FoeMainScreen.DIM, false);
         } else {
             int n = search(typed).size();
             g.drawString(font, n == 0 ? "No sound has \"" + typed + "\" in its name" : n + " sounds (scroll for more)", rx + 8, soundBox.getY() + 19, FoeMainScreen.DIM, false);
@@ -470,7 +547,8 @@ public class SoundsScreen extends Screen {
         int sx = bx + 30;
         FoeMainScreen.box(g, sx, y + 4, 92, 14, FoeMainScreen.RULE, 0xFF0D1A28);
         String label = r.all() && !allSame(t -> t.sound) ? "(mixed)" : soundName(s.sound);
-        if (!r.all() && r.custom() == null && r.kind() != null && r.kind().id().equals(dannypx.foe.handler.logic.CatchSound.ID)
+        if (!r.all() && r.custom() == null && r.kind() != null && (r.kind().id().equals(dannypx.foe.handler.logic.CatchSound.ID)
+                || r.kind().id().equals(dannypx.foe.handler.logic.CatchSound.SHARD_ID))
                 && (s.sound == null || s.sound.isBlank())) label = s.on ? "Server's own" : "Muted";
         // the volume only when it isn't full
         String tail = s.sound == null || s.sound.isBlank() || s.volume >= 0.995f ? "" : " " + Math.round(s.volume * 100) + "%";

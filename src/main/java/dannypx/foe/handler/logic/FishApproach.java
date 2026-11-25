@@ -39,6 +39,7 @@ public final class FishApproach {
             if (d < near) { near = d; nearHook = hook.getId(); }
         }
         int owner = distances.isEmpty() ? -1 : tracker.offer(distances, tick);
+        if (mine != null && owner == mine.getId()) dannypx.foe.handler.renderer.WaterRings.onWake(x, y, z);
         if (!Configs.hudConfig.hideOtherFishTrails.get()) return false;
         int myId = mine == null ? Integer.MIN_VALUE : mine.getId();
         boolean hide;
@@ -83,6 +84,8 @@ public final class FishApproach {
 
     /// How close the fish is: 0 as the trail starts, 1 at the bobber; -1 when no fish is coming to yours.
     public static float progress() {
+        // (as in 1.1.2: from the trail's own splashes only, never guessed ahead, so it never runs ahead of the fish
+        // or jumps back)
         TrailTracker.Trail t = current();
         if (t == null) return -1f;
         Minecraft mc = Minecraft.getInstance();

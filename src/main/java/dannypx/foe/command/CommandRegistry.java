@@ -72,6 +72,21 @@ public class CommandRegistry {
                                 .then(command("list").executes(Command.Friend::list))
                         )
                         .then(command("item").executes(Command.Foe::copyHeldItem))
+                        // an event's [Teleport] button: /travel, then to your favourite spot at that place
+                        .then(command("travel").then(ClientCommandManager.argument("place", StringArgumentType.word())
+                                .suggests((context, builder) -> {
+                                    for (var l : dannypx.foe.helper.FoeLocations.Location.values()) builder.suggest(l.id);
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    var place = dannypx.foe.helper.FoeLocations.fromId(StringArgumentType.getString(ctx, "place"));
+                                    if (place == null) place = dannypx.foe.helper.FoeLocations.fromName(StringArgumentType.getString(ctx, "place"));
+                                    if (place == null) return 0;
+                                    var go = place;
+                                    // after the command's own chat screen has closed
+                                    dannypx.foe.handler.logic.CodeExecuterHandler.runLater(1, () -> dannypx.foe.handler.renderer.TravelMapHandler.instance().travelTo(go));
+                                    return 1;
+                                })))
                         .then(command("showpet").executes(ctx -> {
                             // the pet popup, to show a pet off: the one in your hand, else the one you have out
                             var mc = Minecraft.getInstance();

@@ -39,6 +39,7 @@ public final class HudCombine {
         PARTS.put("MiniEventPanelElement", MiniEventPanelElement::new);
         PARTS.put("LuckScalePanelElement", LuckScalePanelElement::new);
         PARTS.put("GearWarningPanelElement", GearWarningPanelElement::new);
+        PARTS.put("InventoryWarningPanelElement", InventoryWarningPanelElement::new);
         PARTS.put("AlertPanelElement", AlertPanelElement::new);
         PARTS.put("ChummerPanelElement", ChummerPanelElement::new);
         PARTS.put("BaitPanelElement", BaitPanelElement::new);

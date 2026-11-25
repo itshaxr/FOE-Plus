@@ -71,7 +71,9 @@ public final class WikiBaits {
 
     /// Words the bait sheet spells its own way.
     private static final java.util.Map<String, String> SPELLING = java.util.Map.of(
-            "muscles", "mussels", "muscle", "mussel", "manhaden", "menhaden", "fries", "fry");
+            "muscles", "mussels", "muscle", "mussel", "manhaden", "menhaden", "fries", "fry",
+            // the server's own name for the Smokin' Shad crankbait's colour (its picture is lure_crankbait_sexyshad)
+            "sexy", "smokin");
 
     private static List<String> words(String name) {
         List<String> out = new ArrayList<>();
@@ -118,5 +120,35 @@ public final class WikiBaits {
 
     public static Bait find(String name) {
         return find(name, all());
+    }
+
+    /// Like find, for names written more loosely (the bait abuse sheet's): "Shiner/Minnow" is the first of them that's
+    /// a bait (Shiner Live Bait), and "Mozzarella Cheese Cube" is Mozzarella Cube (one word of it may be extra).
+    public static Bait findAny(String name) {
+        return findAny(name, all());
+    }
+
+    /// Package-private for tests.
+    static Bait findAny(String name, List<Bait> baits) {
+        if (name == null || name.isBlank()) return null;
+        Bait b = find(name, baits);
+        if (b != null) return b;
+        if (name.contains("/")) {
+            for (String part : name.split("/")) {
+                if (part.isBlank()) continue;
+                b = find(part.trim(), baits);
+                if (b != null) return b;
+            }
+        }
+        List<String> w = words(name);
+        if (w.size() >= 3) {
+            for (int i = 0; i < w.size(); i++) {
+                List<String> less = new ArrayList<>(w);
+                less.remove(i);
+                b = closest(String.join(" ", less), baits);
+                if (b != null) return b;
+            }
+        }
+        return null;
     }
 }

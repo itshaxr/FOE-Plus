@@ -13,6 +13,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
@@ -139,7 +140,16 @@ public abstract class PanelElement extends Element {
     }
 
     /// An item box drawn beside the text. An empty stack draws an empty box (the "nothing here" state).
-    public record PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor) {}
+    public record PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor, boolean locked) {
+        public PanelIcon(net.minecraft.world.item.ItemStack stack, int borderColor) { this(stack, borderColor, false); }
+    }
+
+    /// The bait lock's red padlock in a box's bottom-right corner, inside it.
+    static void drawLock(GuiGraphics g, int x, int y, int size) {
+        int px = Math.max(1, size / 14);
+        int w = (dannypx.foe.helper.LockIcon.SIZE + 2) * px;
+        dannypx.foe.helper.LockIcon.draw(g, x + size - w, y + size - w, px);
+    }
 
     /// Optional item boxes beside the text, side by side (the pet HUD shows the pet and its held item).
     protected List<PanelIcon> icons() {
@@ -207,7 +217,7 @@ public abstract class PanelElement extends Element {
     static void drawText(GuiGraphics g, Font font, net.minecraft.util.FormattedCharSequence seq, int x, int y) {
         boolean[] any = {false};
         seq.accept((i, style, cp) -> {
-            if (isBadge(cp)) { any[0] = true; return false; }
+            if (isBadge(cp) && !TAGS.equals(style.getFont())) { any[0] = true; return false; }
             return true;
         });
         if (!any[0]) {
@@ -218,15 +228,16 @@ public abstract class PanelElement extends Element {
         List<net.minecraft.network.chat.Style> styles = new ArrayList<>();
         List<Integer> cps = new ArrayList<>();
         seq.accept((i, style, cp) -> { styles.add(style); cps.add(cp); return true; });
+        java.util.function.IntPredicate raised = k -> isBadge(cps.get(k)) && !TAGS.equals(styles.get(k).getFont());
         int cx = x, start = 0;
         for (int k = 1; k <= cps.size(); k++) {
-            if (k < cps.size() && isBadge(cps.get(k)) == isBadge(cps.get(start))) continue;
+            if (k < cps.size() && raised.test(k) == raised.test(start)) continue;
             final int from = start, to = k;
             net.minecraft.util.FormattedCharSequence part = sink -> {
                 for (int j = from; j < to; j++) if (!sink.accept(j - from, styles.get(j), cps.get(j))) return false;
                 return true;
             };
-            g.drawString(font, part, cx, isBadge(cps.get(from)) ? y - 1 : y, 0xFFFFFFFF, true);
+            g.drawString(font, part, cx, raised.test(from) ? y - 1 : y, 0xFFFFFFFF, true);
             cx += font.width(part);
             start = k;
         }
@@ -241,25 +252,38 @@ public abstract class PanelElement extends Element {
     /// An item as big as fits in `size` panel units at (x, y), centred there, each of its pixels a whole number of
     /// screen pixels and placed on the screen's own pixels.
     static void crispItem(GuiGraphics g, net.minecraft.world.item.ItemStack stack, int x, int y, int size) {
+        crispItem(g, stack, x, y, size, false);
+    }
+
+    /// `exact`: the picture is drawn at just the size asked for, when whole screen pixels per texture pixel would
+    /// make it much smaller (a size picked with a slider shows every step).
+    static void crispItem(GuiGraphics g, net.minecraft.world.item.ItemStack stack, int x, int y, int size, boolean exact) {
         var pose = g.pose();
         org.joml.Vector2f a = pose.transformPosition(x, y, new org.joml.Vector2f());
         org.joml.Vector2f b = pose.transformPosition(x + size, y + size, new org.joml.Vector2f());
         double gui = net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScale();
         double screenSize = (b.x - a.x) * gui;
         int perTexel = Math.max(1, (int) Math.floor(screenSize / 16.0 + 0.0001));
-        int drawn = perTexel * 16;
+        float texel = perTexel;
+        if (exact && screenSize / 16.0 - perTexel > 0.1) texel = (float) (screenSize / 16.0);
+        int drawn = Math.round(texel * 16);
         int sx = (int) Math.round(a.x * gui + (screenSize - drawn) / 2.0);
         int sy = (int) Math.round(a.y * gui + ((b.y - a.y) * gui - drawn) / 2.0);
         pose.pushMatrix();
         pose.identity();
         pose.scale((float) (1.0 / gui), (float) (1.0 / gui));
         pose.translate(sx, sy);
-        pose.scale(perTexel, perTexel);
+        pose.scale(texel, texel);
         g.renderItem(stack, 0, 0);
         pose.popMatrix();
     }
 
     static void crispOutline(GuiGraphics g, int x, int y, int w, int h, int color) {
+        crispOutline(g, x, y, w, h, color, 2);
+    }
+
+    /// The same, `thickness` half panel pixels thick (whole screen pixels, at least one).
+    static void crispOutline(GuiGraphics g, int x, int y, int w, int h, int color, int thickness) {
         var pose = g.pose();
         org.joml.Vector2f a = pose.transformPosition(x, y, new org.joml.Vector2f());
         org.joml.Vector2f b = pose.transformPosition(x + w, y + h, new org.joml.Vector2f());
@@ -268,7 +292,7 @@ public abstract class PanelElement extends Element {
         int bx = (int) Math.round(b.x * gui), by = (int) Math.round(b.y * gui);
         double perPixel = (b.x - a.x) * gui / Math.max(1, w);
         // a whole panel pixel thick (it was half one, and looked thin next to the item)
-        int t = Math.max(1, (int) Math.round(perPixel));
+        int t = Math.max(1, (int) Math.round(perPixel * Math.max(1, thickness) / 2.0));
         pose.pushMatrix();
         pose.identity();
         pose.scale((float) (1.0 / gui), (float) (1.0 / gui));
@@ -292,6 +316,15 @@ public abstract class PanelElement extends Element {
 
     /// The item boxes' size and the gap between them (the pet panel's are bigger).
     protected int iconSize() { return 18; }
+
+    /// How thick the coloured border round each picture box is, in half panel pixels (2: one pixel).
+    protected int iconBorder() { return 2; }
+
+    /// How big the `index`th picture is in its box of `box` (it sits centred in it).
+    protected int iconPicture(int index, int box) { return box - 4; }
+
+    /// The pictures drawn at exactly their size (see [#crispItem]).
+    protected boolean iconPictureExact() { return false; }
     protected int iconGap() { return 3; }
 
     /// A short line drawn just above the item boxes, centred on them (the pet's "Max Luck"), or null.
@@ -328,7 +361,44 @@ public abstract class PanelElement extends Element {
         lines = new ArrayList<>(withoutHidden(lines, look().hidden));
         while (!lines.isEmpty() && lines.getFirst().getString().isBlank()) lines.removeFirst();
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
+        if (dannypx.foe.config.Configs.hudConfig.shortRarityBadges.get()) lines.replaceAll(PanelElement::shortBadges);
         return lines;
+    }
+
+    /// FOE+'s own font of little badges (its short rarity badges among them).
+    static final net.minecraft.network.chat.FontDescription TAGS = new net.minecraft.network.chat.FontDescription.Resource(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "tags"));
+
+    /// Package-private for tests: the line with its rarity badges short (the server's COMMON ... MYTHICAL as FOE+'s
+    /// C ... M, the same glyphs in FOE+'s font, and GIGANTIC as G); the rest as it was.
+    static Component shortBadges(Component line) {
+        boolean[] any = {false};
+        line.visit((st, str) -> {
+            for (int i = 0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                if ((c >= '\uF033' && c <= '\uF037' && !TAGS.equals(st.getFont())) || (c == '\uE910' && TAGS.equals(st.getFont()))) any[0] = true;
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        if (!any[0]) return line;
+        MutableComponent out = Component.empty().withStyle(line.getStyle());
+        line.visit((st, str) -> {
+            StringBuilder run = new StringBuilder();
+            for (int i = 0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                boolean rarity = c >= '\uF033' && c <= '\uF037' && !TAGS.equals(st.getFont());
+                boolean gigantic = c == '\uE910' && TAGS.equals(st.getFont());
+                if (!rarity && !gigantic) {
+                    run.append(c);
+                    continue;
+                }
+                if (!run.isEmpty()) { out.append(Component.literal(run.toString()).withStyle(st)); run.setLength(0); }
+                out.append(Component.literal(String.valueOf(gigantic ? '\uE911' : c)).withStyle(st.withFont(TAGS)));
+            }
+            if (!run.isEmpty()) out.append(Component.literal(run.toString()).withStyle(st));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
     }
 
     /// The HUD each line inside this one came from (the HUDs combined into it), so it draws its own bars.
@@ -371,9 +441,41 @@ public abstract class PanelElement extends Element {
     /// A HUD's lines as it brings them here: in two columns when it's set to (not at the tiny size, whose letters
     /// are narrower than the spaces lining them up).
     private List<Component> laidOut(PanelElement part, List<Component> lines) {
-        if (tiny || !part.look().twoColumns) return lines;
         Font font = Minecraft.getInstance().font;
-        return twoColumns(lines, font::width);
+        if (!tiny && part.look().twoColumns) lines = twoColumns(lines, font::width);
+        // a HUD whose lines start together (the quests' badges): made one width, so they stay lined up however the
+        // HUD they're shown in places its lines (centred, or to the right)
+        if (!tiny && part.linesStartTogether()) lines = sameWidth(lines, font::width);
+        return lines;
+    }
+
+    /// A HUD whose lines start together (the quests' badges, one under the other): they keep lined up when the text
+    /// is centred or to the right. Every other HUD's lines are each placed on their own.
+    protected boolean linesStartTogether() {
+        return false;
+    }
+
+    /// A line kept as it is by [#sameWidth] (a heading over the lines, centred on its own).
+    public static final String OWN_LINE_KEY = "foe:own_line";
+
+    /// Package-private for tests: every line padded at its end (one-pixel spaces) to the widest one's width, but a line
+    /// across, one with its own right-hand part or a picture, and a heading ([#OWN_LINE_KEY]), which are left alone.
+    static List<Component> sameWidth(List<Component> lines, java.util.function.ToIntFunction<Component> width) {
+        int max = 0;
+        for (Component l : lines) if (padded(l)) max = Math.max(max, width.applyAsInt(l));
+        List<Component> out = new ArrayList<>(lines.size());
+        for (Component l : lines) {
+            int pad = padded(l) ? max - width.applyAsInt(l) : 0;
+            if (pad <= 0) { out.add(l); continue; }
+            MutableComponent wrapped = Component.empty().withStyle(l.getStyle()).append(l.copy().withStyle(st -> st.withInsertion(null)))
+                    .append(Component.literal("\uE001".repeat(pad)).withStyle(st -> st.withFont(PAIR_SPACE)));
+            out.add(wrapped);
+        }
+        return out;
+    }
+
+    private static boolean padded(Component l) {
+        return !isRule(l) && l.getString().indexOf('\t') < 0 && !hasInline(l) && !OWN_LINE_KEY.equals(l.getStyle().getInsertion());
     }
 
     /// Where each HUD inside this one is in it, as last drawn (screen units): its id and the line with its title
@@ -387,8 +489,19 @@ public abstract class PanelElement extends Element {
         sections.add(new Section(id, Math.round(x * drawScale), Math.round(y * drawScale), Math.round(w * drawScale), Math.round(h * drawScale)));
     }
 
+    /// The HUD inside this one each titled line starts.
+    private final java.util.Map<Component, PanelElement> ruleOwners = new java.util.IdentityHashMap<>();
+
+    /// A HUD inside this one, drawn with its own look where it has one: its own box colour (or opacity) behind its
+    /// part, its own border colour on its title's plate, its own title colour, its own text alignment. Package-private
+    /// for tests: whether `member`'s box differs from `host`'s.
+    static boolean ownBox(dannypx.foe.handler.store.HudLooks.Look member, dannypx.foe.handler.store.HudLooks.Look host) {
+        return (member.boxColor & 0xFFFFFF) != (host.boxColor & 0xFFFFFF) || member.opacity >= 0 && member.opacity != host.opacity;
+    }
+
     private List<Component> buildLines() {
         ruleIds.clear();
+        ruleOwners.clear();
         iconRows.clear();
         List<Component> lines = new ArrayList<>(laidOut(this, partLines()));
         // the HUDs inside this one, each under a line with its title
@@ -402,6 +515,7 @@ public abstract class PanelElement extends Element {
             HudCombine.drawn(id);
             Component rule = titledRule(part.look().noTitle ? "" : part.shownTitle().getString());
             ruleIds.put(rule, id);
+            ruleOwners.put(rule, part);
             lines.add(rule);
             owners.add(null);
             // its pictures (the pet and its item, the bait), in a row of their own under its title
@@ -668,20 +782,26 @@ public abstract class PanelElement extends Element {
         int x = left + (right - left - boxesW) / 2;
         y += 1;
         List<int[]> frames = new ArrayList<>();
+        int bt = part.iconBorder(), n = 0;
         for (PanelIcon icon : icons) {
-            crispOutline(g, x, y, size, size, icon.borderColor());
+            crispOutline(g, x, y, size, size, icon.borderColor(), bt);
             if (icon.stack() == null || icon.stack().isEmpty()) {
                 g.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x55000000);
                 g.drawString(font, "-", x + (size - font.width("-")) / 2, y + (size - font.lineHeight) / 2 + 1, 0xFF777777, false);
             } else {
-                crispItem(g, icon.stack(), x + 2, y + 2, size - 4);
+                int pic = part.iconPicture(n, size);
+                crispItem(g, icon.stack(), x + (size - pic) / 2, y + (size - pic) / 2, pic, part.iconPictureExact());
             }
-            frames.add(new int[]{x, y, icon.borderColor()});
+            n++;
+            frames.add(new int[]{x, y, icon.borderColor(), icon.locked() ? 1 : 0});
             x += size + gap;
         }
         if (!frames.isEmpty()) {
             g.nextStratum();
-            for (int[] f : frames) crispOutline(g, f[0], f[1], size, size, f[2]);
+            for (int[] f : frames) {
+                crispOutline(g, f[0], f[1], size, size, f[2], bt);
+                if (f[3] == 1) drawLock(g, f[0], f[1], size);
+            }
         }
     }
     //endregion
@@ -901,6 +1021,12 @@ public abstract class PanelElement extends Element {
             }
         }
 
+        // the decorations on its corners (the border's outer corners, PADDING round the box, as FOECollab's)
+        if (look.hasFlair()) {
+            HudFlair.draw(guiGraphics, look.flairTopLeft, look.flairTopRight, look.flairBottomLeft, look.flairBottomRight,
+                    boxLeft - PADDING, top - PADDING, boxRight + PADDING, top + PADDING * 3 + innerHeight + PADDING);
+        }
+
         // Icon boxes on the anchored side, text beside them.
         List<PanelIcon> icons = iconsInRow ? List.of() : this.icons();
         int iconSpace = iconSpace();
@@ -923,8 +1049,9 @@ public abstract class PanelElement extends Element {
             // The frames are drawn again over the items afterwards: a big item model (some pets)
             // can otherwise cover the frame's edge.
             List<int[]> frames = new java.util.ArrayList<>();
+            int bt = iconBorder(), n = 0;
             for (PanelIcon icon : icons) {
-                crispOutline(guiGraphics, x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor());
+                crispOutline(guiGraphics, x, iconBoxY, ICON_SIZE, ICON_SIZE, icon.borderColor(), bt);
                 if (icon.stack() == null || icon.stack().isEmpty()) {
                     // Empty state: darker inside and a dash.
                     guiGraphics.fill(x + 1, iconBoxY + 1, x + ICON_SIZE - 1, iconBoxY + ICON_SIZE - 1, 0x55000000);
@@ -932,14 +1059,19 @@ public abstract class PanelElement extends Element {
                 } else {
                     // inside the frame with a pixel clear all round, every pixel of the item a whole number
                     // of screen pixels (at an in-between size it came out uneven and blurry)
-                    crispItem(guiGraphics, icon.stack(), x + 2, iconBoxY + 2, ICON_SIZE - 4);
+                    int pic = iconPicture(n, ICON_SIZE);
+                    crispItem(guiGraphics, icon.stack(), x + (ICON_SIZE - pic) / 2, iconBoxY + (ICON_SIZE - pic) / 2, pic, iconPictureExact());
                 }
-                frames.add(new int[]{x, iconBoxY, icon.borderColor()});
+                n++;
+                frames.add(new int[]{x, iconBoxY, icon.borderColor(), icon.locked() ? 1 : 0});
                 x += ICON_SIZE + ICON_GAP;
             }
             if (!frames.isEmpty()) {
                 guiGraphics.nextStratum();
-                for (int[] f : frames) crispOutline(guiGraphics, f[0], f[1], ICON_SIZE, ICON_SIZE, f[2]);
+                for (int[] f : frames) {
+                    crispOutline(guiGraphics, f[0], f[1], ICON_SIZE, ICON_SIZE, f[2], bt);
+                    if (f[3] == 1) drawLock(guiGraphics, f[0], f[1], ICON_SIZE);
+                }
             }
             if (right) textRightEdge -= iconSpace;
             else textLeft += iconSpace;
@@ -950,6 +1082,19 @@ public abstract class PanelElement extends Element {
         boolean first = true;
         dannypx.foe.type.TextAlign align = look.textAlign() != dannypx.foe.type.TextAlign.AUTO ? look.textAlign() : textAlign();
         for (Component line : lines) {
+            // a HUD inside this one with its own box colour: its part of the box in that colour
+            PanelElement sectionOf = isRule(line) ? ruleOwners.get(line) : isIconRow(line) ? iconRows.get(line) : lineOwners.get(line);
+            if (sectionOf != null && sectionOf != this) {
+                var pl = sectionOf.look();
+                if (ownBox(pl, look)) {
+                    int rowH = isRule(line) ? (ruleTitle(line).isEmpty() ? lineHeight : lineHeight + RULE_TITLE_ROOM)
+                            : isIconRow(line) ? lineHeight + iconRowRoom(line)
+                            : lineHeight + (!tiny && hasInline(line) ? PIC_ROOM : 0);
+                    int op = pl.opacity >= 0 ? pl.opacity : opacity;
+                    int fy0 = y - (lineHeight - font.lineHeight) / 2 - 1;
+                    guiGraphics.fill(boxLeft + 1, fy0, boxRight - 1, fy0 + rowH, (Math.round(op / 100f * 255f) << 24) | (pl.boxColor & 0xFFFFFF));
+                }
+            }
             if (isRule(line)) {
                 // a line across the box between two parts of a panel, with the second part's title in the middle,
                 // in a badge like the panel's own title (the timers, then the community catches)
@@ -961,11 +1106,16 @@ public abstract class PanelElement extends Element {
                 if (ruleTitle.isEmpty()) {
                     guiGraphics.fill(textLeft, ry, textRightEdge, ry + 1, 0x66FFFFFF);
                 } else {
+                    PanelElement owner = ruleOwners.get(line);
+                    var ol = owner == null ? look : owner.look();
+                    // its own title colour, and its own border colour on the plate (else the HUD's)
                     Component t = Component.literal(ruleTitle).withStyle(ChatFormatting.BOLD);
+                    if (owner != null && ol.titleColor >= 0) t = t.copy().withColor(ol.titleColor);
                     int tw = font.width(t);
                     int tx = boxLeft + (boxRight - boxLeft - tw) / 2;
                     if (!foeR && border && theme != PanelTheme.OFF) {
-                        int white = 0xFF000000 | (look.borderColor & 0xFFFFFF);
+                        int plate = owner != null && (ol.borderColor & 0xFFFFFF) != 0xFFFFFF ? ol.borderColor : look.borderColor;
+                        int white = 0xFF000000 | (plate & 0xFFFFFF);
                         guiGraphics.fill(textLeft, ry, tx - 10, ry + 1, 0x66FFFFFF);
                         guiGraphics.fill(tx + tw + 10, ry, textRightEdge, ry + 1, 0x66FFFFFF);
                         guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(theme, "text_left"), tx - 16, ry - 7, 16, 16, white);
@@ -1027,8 +1177,11 @@ public abstract class PanelElement extends Element {
                 y += lineHeight;
                 continue;
             }
+            // a HUD inside this one with its own text alignment keeps it
+            dannypx.foe.type.TextAlign lineAlign = owner != this && owner.look().textAlign() != dannypx.foe.type.TextAlign.AUTO
+                    ? owner.look().textAlign() : align;
             int x = owner.centeredLine(line) ? textLeft + (textRightEdge - textLeft - pr.width) / 2
-                    : lineX(align, owner.centerText(), textRight, textLeft, textRightEdge, pr.width);
+                    : lineX(lineAlign, owner.centerText(), textRight, textLeft, textRightEdge, pr.width);
             this.lineRightEdge = textRightEdge;
             owner.lineRightEdge = textRightEdge;
             owner.beforeLine(guiGraphics, font, line, x, y);

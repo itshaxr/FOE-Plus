@@ -35,55 +35,130 @@ public class CatchPopupElement extends Element {
     private static final float MID = 1.5f;
 
     /// One line of the popup and the size it's drawn at.
-    record Line(Component text, float size) {}
+    public record Line(Component text, float size) {}
 
     private static long shownAt = 0L;
     private static List<Line> lines = new ArrayList<>();
+    /// Whether what's showing is a pet's popup (drawn where the Pet Popup is placed) or a fish's.
+    private static boolean shownIsPet = false;
+
+    /// This box is the pet popup's (its own place and size), not the fish's.
+    protected final boolean pet;
 
     public CatchPopupElement() {
         this(false);
     }
 
     public CatchPopupElement(boolean isCopy) {
+        this(isCopy, false);
+    }
+
+    protected CatchPopupElement(boolean isCopy, boolean pet) {
         super(160, 90,
-                Configs.hudConfig.catchPopupXPosition.get() / 100f,
-                Configs.hudConfig.catchPopupYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(pet ? Configs.hudConfig.petPopupXPosition : Configs.hudConfig.catchPopupXPosition),
+                dannypx.foe.helper.HudFine.get(pet ? Configs.hudConfig.petPopupYPosition : Configs.hudConfig.catchPopupYPosition),
                 Alignment.TOP,
-                Component.literal("Catch Popup"),
+                Component.literal(pet ? "Pet Popup" : "Catch Popup"),
                 isCopy);
+        this.pet = pet;
         Font font = Minecraft.getInstance().font;
-        if (font != null) this.updateSize(font, sized(previewBig(), previewSmall()));
+        if (font != null) this.updateSize(font, preview());
+    }
+
+    private float popupScale() {
+        return dannypx.foe.utils.HudScale.crisp(pet ? Configs.hudConfig.petPopupScale.get() : Configs.hudConfig.catchPopupScale.get());
+    }
+
+    /// What the box shows in the HUD mover.
+    private List<Line> preview() {
+        return previewLines(pet);
+    }
+
+    /// What each popup looks like with its lines as they're set now (the HUD mover, the HUD Editor's Popups).
+    public static List<Line> previewLines(boolean pet) {
+        if (pet) return petPreview();
+        List<Line> out = fishLines(Component.empty(), Component.literal("Fish Name").withStyle(ChatFormatting.GOLD),
+                Component.literal("ᴀᴅᴜʟᴛ").withColor(0x1C7DA0), 1.23f, 12.34f,
+                Configs.hudConfig.catchPopupShowSizeBonus.get() ? 3f : null, Configs.hudConfig.catchPopupShowInventoryFull.get());
+        return out.isEmpty() ? List.of(new Line(Component.literal("(every line off)").withStyle(ChatFormatting.GRAY), MID)) : out;
+    }
+
+    private static List<Line> petPreview() {
+        var cfg = Configs.hudConfig;
+        List<Line> out = new ArrayList<>();
+        if (cfg.petPopupName.get()) out.add(new Line(Component.literal("Pet Name").withStyle(ChatFormatting.GOLD), BIG));
+        MutableComponent level = Component.empty();
+        if (cfg.petPopupRarity.get()) level.append(Component.literal("ʀᴀʀɪᴛʏ").withColor(0x55FFFF));
+        if (cfg.petPopupLevel.get()) level.append(Component.literal(cfg.petPopupRarity.get() ? " Lv. " : "Lv. ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal("0").withStyle(ChatFormatting.GREEN));
+        if (!level.getString().isEmpty()) out.add(new Line(level, BIG));
+        if (cfg.petPopupRating.get()) out.add(new Line(Component.literal("Rating 97%").withStyle(ChatFormatting.LIGHT_PURPLE), BIG));
+        if (cfg.petPopupStats.get()) out.add(new Line(Component.literal("12%  8%    15%  6%").withStyle(ChatFormatting.WHITE), BIG));
+        if (cfg.petPopupStatNames.get()) out.add(new Line(Component.literal("Luck Scale    Luck Scale").withStyle(ChatFormatting.GRAY), MID));
+        if (cfg.petPopupShowInventoryFull.get()) out.add(new Line(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED), BIG));
+        return out.isEmpty() ? List.of(new Line(Component.literal("(every line off)").withStyle(ChatFormatting.GRAY), MID)) : out;
     }
 
     /// Called when a fish is caught.
     public static void show(FishTagObject fish) {
-        List<Component> big = new ArrayList<>();
+        var cfg = Configs.hudConfig;
         Component icon = TitleHandler.instance().getTitle();
-        if (!icon.getString().isBlank()) {
-            big.add(icon.copy().withStyle(ChatFormatting.WHITE));
-            big.add(Component.empty());
-        }
-
         Component name = TitleHandler.instance().getSubTitle();
         if (name.getString().isBlank()) {
             name = TextHelper.concat(fish.getRarityComponent(), Component.literal(" "), fish.getName());
         }
-        big.add(name);
-        big.add(fish.getFishSizeComponent());
-        if (emptySlots() == 0) big.add(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED));
+        Float bonus = null;
+        if (cfg.catchPopupShowSizeBonus.get() && (!cfg.catchPopupSizeBonusContestOnly.get() || contestHere())) {
+            try {
+                bonus = dannypx.foe.helper.SizeBonus.current();
+            } catch (RuntimeException e) {
+                bonus = null;
+            }
+        }
+        lines = fishLines(icon, name, fish.getFishSizeComponent(), fish.getWeight(), fish.getLength(), bonus, emptySlots() == 0);
+        shownIsPet = false;
+        shownAt = System.currentTimeMillis();
+    }
+
+    /// The fish popup's lines, each only when it's switched on. Package-private for the preview.
+    static List<Line> fishLines(Component icon, Component name, Component size, float weight, float length, Float sizeBonus, boolean full) {
+        var cfg = Configs.hudConfig;
+        List<Component> big = new ArrayList<>();
+        if (cfg.catchPopupShowIcon.get() && icon != null && !icon.getString().isBlank()) {
+            big.add(icon.copy().withStyle(ChatFormatting.WHITE));
+            big.add(Component.empty());
+        }
+        if (cfg.catchPopupShowName.get()) big.add(name);
+        if (cfg.catchPopupShowSize.get()) big.add(size);
+        if (full && cfg.catchPopupShowInventoryFull.get()) big.add(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED));
 
         List<Component> small = new ArrayList<>();
-        if (Configs.hudConfig.catchPopupShowWeight.get()) {
+        var units = cfg.catchPopupUnits.get();
+        if (cfg.catchPopupShowWeight.get()) {
             small.add(Component.literal("ᴡᴇɪɢʜᴛ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
-            small.add(measurement(fish.getWeight(), "ʟʙ", fish.getWeight() * 0.453592f, "ᴋɢ"));
+            small.add(measurement(weight, "ʟʙ", weight * 0.453592f, "ᴋɢ", units));
         }
-        if (Configs.hudConfig.catchPopupShowLength.get()) {
+        if (cfg.catchPopupShowLength.get()) {
             small.add(Component.literal("ʟᴇɴɢᴛʜ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
-            small.add(measurement(fish.getLength(), "ɪɴ", fish.getLength() * 2.54f, "ᴄᴍ"));
+            small.add(measurement(length, "ɪɴ", length * 2.54f, "ᴄᴍ", units));
         }
+        if (sizeBonus != null) {
+            small.add(Component.literal("ꜱɪᴢᴇ ʙᴏɴᴜꜱ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
+            float b = Math.round(sizeBonus * 10f) / 10f;
+            String txt = (b >= 0 ? "+" : "") + (b == Math.floor(b) ? String.valueOf((int) b) : String.valueOf(b)) + "%";
+            small.add(Component.literal(txt).withColor(b > 0 ? 0x55FF55 : b < 0 ? 0xFF5555 : 0xAAAAAA));
+        }
+        return sized(big, small);
+    }
 
-        lines = sized(big, small);
-        shownAt = System.currentTimeMillis();
+    /// A contest on now where you're fishing (or anywhere, when it isn't known where).
+    private static boolean contestHere() {
+        var contest = dannypx.foe.handler.logic.ContestTrackerHandler.instance();
+        if (!contest.isContest) return false;
+        if (contest.location == null || contest.location.isBlank()) return true;
+        var at = dannypx.foe.helper.FoeLocations.fromName(contest.location);
+        var here = dannypx.foe.helper.FoeLocations.fromName(dannypx.foe.handler.fetch.BossEventHandler.instance().getLocation().getString());
+        return at == null || here == null || at == here;
     }
 
     /// Called when a pet is fished up: its name, rarity and level, rating and overall percent,
@@ -91,6 +166,7 @@ public class CatchPopupElement extends Element {
     /// and the item it holds.
     public static void showPet(PetTagObject pet) {
         lines = petLines(pet);
+        shownIsPet = true;
         shownAt = System.currentTimeMillis();
     }
 
@@ -149,11 +225,7 @@ public class CatchPopupElement extends Element {
         key.append(Component.literal("Luck").withColor(luck)).append(Component.literal(" ")).append(Component.literal("Scale").withColor(scale));
         if (cfg.petPopupStatNames.get()) out.add(new Line(key, MID));
 
-        ItemStack held = cfg.petPopupItem.get() ? dannypx.foe.item.PetHeldItem.decodeUncached(pet) : ItemStack.EMPTY;
-        if (!held.isEmpty()) {
-            out.add(new Line(Component.literal("Item: ").withStyle(ChatFormatting.GRAY).append(held.getHoverName().copy()), MID));
-        }
-        if (emptySlots() == 0) out.add(new Line(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED), BIG));
+        if (emptySlots() == 0 && cfg.petPopupShowInventoryFull.get()) out.add(new Line(Component.literal("Inventory Full!").withStyle(ChatFormatting.RED), BIG));
         return out;
     }
 
@@ -177,7 +249,13 @@ public class CatchPopupElement extends Element {
         return out;
     }
 
-    private static Component measurement(float value, String unit, float metric, String metricUnit) {
+    private static Component measurement(float value, String unit, float metric, String metricUnit, dannypx.foe.type.PopupUnits units) {
+        if (units == dannypx.foe.type.PopupUnits.IMPERIAL) {
+            return Component.literal(TextHelper.floatToString(value, 2)).withStyle(ChatFormatting.WHITE).append(Component.literal(unit).withColor(0xAAAAAA));
+        }
+        if (units == dannypx.foe.type.PopupUnits.METRIC) {
+            return Component.literal(TextHelper.floatToString(metric, 2)).withStyle(ChatFormatting.WHITE).append(Component.literal(metricUnit).withColor(0xAAAAAA));
+        }
         return Component.literal(TextHelper.floatToString(value, 2)).withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(unit).withColor(0xAAAAAA))
                 .append(Component.literal(" (").withColor(0x555555))
@@ -197,27 +275,12 @@ public class CatchPopupElement extends Element {
         return empty;
     }
 
-    private static List<Component> previewBig() {
-        return List.of(
-                Component.literal("Fish Name").withStyle(ChatFormatting.GOLD),
-                Component.literal("ᴀᴅᴜʟᴛ").withColor(0x1C7DA0));
-    }
-
-    private static List<Component> previewSmall() {
-        List<Component> small = new ArrayList<>();
-        small.add(Component.literal("ᴡᴇɪɢʜᴛ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
-        small.add(measurement(1.23f, "ʟʙ", 0.56f, "ᴋɢ"));
-        small.add(Component.literal("ʟᴇɴɢᴛʜ").withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE));
-        small.add(measurement(12.34f, "ɪɴ", 31.34f, "ᴄᴍ"));
-        return small;
-    }
-
     private static int lineHeight(Font font, float size) {
         return Math.round((font.lineHeight + LINE_SPACING / size) * size);
     }
 
     private void updateSize(Font font, List<Line> lines) {
-        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
+        float scale = popupScale();
         int widest = 0;
         int total = 0;
         for (Line line : lines) {
@@ -233,28 +296,30 @@ public class CatchPopupElement extends Element {
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         long elapsed = System.currentTimeMillis() - shownAt;
-        boolean showing = shownAt > 0 && elapsed < Configs.hudConfig.catchPopupTime.get() * 1000L;
+        // each box draws its own kind: the fish's popup where the Catch Popup is, a pet's where the Pet Popup is
+        long time = (pet ? Configs.hudConfig.petPopupTime.get() : Configs.hudConfig.catchPopupTime.get()) * 1000L;
+        boolean showing = shownAt > 0 && elapsed < time && shownIsPet == pet;
 
-        List<Line> shown = showing ? lines : (isCopy ? sized(previewBig(), previewSmall()) : List.of());
+        List<Line> shown = isCopy ? preview() : showing ? lines : List.of();
         if (shown.isEmpty()) return;
 
         if (!isCopy) {
-            xPos = Configs.hudConfig.catchPopupXPosition.get() / 100f;
-            yPos = Configs.hudConfig.catchPopupYPosition.get() / 100f;
+            xPos = dannypx.foe.helper.HudFine.get(pet ? Configs.hudConfig.petPopupXPosition : Configs.hudConfig.catchPopupXPosition);
+            yPos = dannypx.foe.helper.HudFine.get(pet ? Configs.hudConfig.petPopupYPosition : Configs.hudConfig.catchPopupYPosition);
             // Hide the server's own catch title while ours is up, like FOE.
             if (showing && elapsed < 3000L) mc.gui.clearTitles();
         }
         this.updateSize(font, shown);
 
-        float scale = dannypx.foe.utils.HudScale.crisp(Configs.hudConfig.catchPopupScale.get());
+        float scale = popupScale();
         float centerX = mc.getWindow().getGuiScaledWidth() * xPos / scale;
         float y = mc.getWindow().getGuiScaledHeight() * yPos / scale;
 
-        int alpha = isCopy ? 255 : fadeAlpha(elapsed, Configs.hudConfig.catchPopupTime.get() * 1000L, Configs.hudConfig.catchPopupFade.get());
+        int alpha = isCopy ? 255 : fadeAlpha(elapsed, time, pet ? Configs.hudConfig.petPopupFade.get() : Configs.hudConfig.catchPopupFade.get());
         if (alpha < 4) return;
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);
-        int border = GameXpBar.colour(Configs.hudConfig.catchPopupBorderColor::get);
+        int border = GameXpBar.colour(pet ? Configs.hudConfig.petPopupBorderColor::get : Configs.hudConfig.catchPopupBorderColor::get);
         if (border >= 0) {
             // a box behind it, its border in the colour picked
             float widest = 0, total = 0;
@@ -272,6 +337,34 @@ public class CatchPopupElement extends Element {
             y += lineHeight(font, line.size());
         }
         guiGraphics.pose().popMatrix();
+    }
+
+    /// Draws a popup's preview centred at (centerX, top), `scale` times its size, with its border box if it has one;
+    /// returns how tall it was drawn.
+    public static int drawPreview(GuiGraphics g, boolean pet, float centerX, float top, float scale) {
+        Font font = Minecraft.getInstance().font;
+        List<Line> shown = previewLines(pet);
+        float widest = 0, total = 0;
+        for (Line line : shown) {
+            widest = Math.max(widest, font.width(line.text()) * line.size());
+            total += lineHeight(font, line.size());
+        }
+        g.pose().pushMatrix();
+        g.pose().scale(scale, scale);
+        float cx = centerX / scale, y = top / scale;
+        int border = GameXpBar.colour(pet ? Configs.hudConfig.petPopupBorderColor::get : Configs.hudConfig.catchPopupBorderColor::get);
+        if (border >= 0) {
+            int bx0 = Math.round(cx - widest / 2f) - 6, bx1 = Math.round(cx + widest / 2f) + 6;
+            int by0 = Math.round(y) - 5, by1 = Math.round(y + total) + 2;
+            g.fill(bx0, by0, bx1, by1, 0xB0101418);
+            g.renderOutline(bx0, by0, bx1 - bx0, by1 - by0, 0xFF000000 | border);
+        }
+        for (Line line : shown) {
+            drawCentered(g, font, line.text(), cx, y, line.size(), 255);
+            y += lineHeight(font, line.size());
+        }
+        g.pose().popMatrix();
+        return Math.round(total * scale);
     }
 
     /// How solid the popup is `elapsed` ms into its `total`: fully, or with Fade away on, fading in over its first

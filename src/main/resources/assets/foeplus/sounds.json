@@ -1,0 +1,275 @@
+{
+  "aah_yeah_yeah": {
+    "sounds": [
+      {
+        "name": "foeplus:aah_yeah_yeah"
+      }
+    ]
+  },
+  "animal_crossing_exclaim": {
+    "sounds": [
+      {
+        "name": "foeplus:animal_crossing_exclaim"
+      }
+    ]
+  },
+  "chompy": {
+    "sounds": [
+      {
+        "name": "foeplus:chompy"
+      }
+    ]
+  },
+  "crab_rave": {
+    "sounds": [
+      {
+        "name": "foeplus:crab_rave"
+      }
+    ]
+  },
+  "honk": {
+    "sounds": [
+      {
+        "name": "foeplus:honk"
+      }
+    ]
+  },
+  "jawbus": {
+    "sounds": [
+      {
+        "name": "foeplus:jawbus"
+      }
+    ]
+  },
+  "kirby_death": {
+    "sounds": [
+      {
+        "name": "foeplus:kirby_death"
+      }
+    ]
+  },
+  "kirby_sleep": {
+    "sounds": [
+      {
+        "name": "foeplus:kirby_sleep"
+      }
+    ]
+  },
+  "let_s_go_gambling": {
+    "sounds": [
+      {
+        "name": "foeplus:let_s_go_gambling"
+      }
+    ]
+  },
+  "level_start": {
+    "sounds": [
+      {
+        "name": "foeplus:level_start"
+      }
+    ]
+  },
+  "mario_1_up": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_1_up"
+      }
+    ]
+  },
+  "mario_coin": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_coin"
+      }
+    ]
+  },
+  "mario_goomba_stomp": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_goomba_stomp"
+      }
+    ]
+  },
+  "mario_jump": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_jump"
+      }
+    ]
+  },
+  "mario_pause": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_pause"
+      }
+    ]
+  },
+  "mario_power_up": {
+    "sounds": [
+      {
+        "name": "foeplus:mario_power_up"
+      }
+    ]
+  },
+  "megalovania": {
+    "sounds": [
+      {
+        "name": "foeplus:megalovania"
+      }
+    ]
+  },
+  "money": {
+    "sounds": [
+      {
+        "name": "foeplus:money"
+      }
+    ]
+  },
+  "pikmin_throw": {
+    "sounds": [
+      {
+        "name": "foeplus:pikmin_throw"
+      }
+    ]
+  },
+  "shovel_knight_level_start": {
+    "sounds": [
+      {
+        "name": "foeplus:shovel_knight_level_start"
+      }
+    ]
+  },
+  "shovel_knight_victory": {
+    "sounds": [
+      {
+        "name": "foeplus:shovel_knight_victory"
+      }
+    ]
+  },
+  "snipe": {
+    "sounds": [
+      {
+        "name": "foeplus:snipe"
+      }
+    ]
+  },
+  "spider_man_2099": {
+    "sounds": [
+      {
+        "name": "foeplus:spider_man_2099"
+      }
+    ]
+  },
+  "squeak": {
+    "sounds": [
+      {
+        "name": "foeplus:squeak"
+      }
+    ]
+  },
+  "undertale_save": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_save"
+      }
+    ]
+  },
+  "undertale_victory": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_victory"
+      }
+    ]
+  },
+  "vulkan_dies": {
+    "sounds": [
+      {
+        "name": "foeplus:vulkan_dies"
+      }
+    ]
+  },
+  "yeti": {
+    "sounds": [
+      {
+        "name": "foeplus:yeti"
+      }
+    ]
+  },
+  "yoshi_mount": {
+    "sounds": [
+      {
+        "name": "foeplus:yoshi_mount"
+      }
+    ]
+  },
+  "undertale_encounter": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_encounter"
+      }
+    ]
+  },
+  "gaster_vanish": {
+    "sounds": [
+      {
+        "name": "foeplus:gaster_vanish"
+      }
+    ]
+  },
+  "golden_fish": {
+    "sounds": [
+      {
+        "name": "foeplus:golden_fish"
+      }
+    ]
+  },
+  "kirby_extra_life": {
+    "sounds": [
+      {
+        "name": "foeplus:kirby_extra_life"
+      }
+    ]
+  },
+  "night_squid": {
+    "sounds": [
+      {
+        "name": "foeplus:night_squid"
+      }
+    ]
+  },
+  "mystery_sound": {
+    "sounds": [
+      {
+        "name": "foeplus:mystery_sound"
+      }
+    ]
+  },
+  "undertale_damage": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_damage"
+      }
+    ]
+  },
+  "undertale_rare_find": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_rare_find"
+      }
+    ]
+  },
+  "undertale_you_win": {
+    "sounds": [
+      {
+        "name": "foeplus:undertale_you_win"
+      }
+    ]
+  },
+  "final_fantasy_victory": {
+    "sounds": [
+      {
+        "name": "foeplus:final_fantasy_victory"
+      }
+    ]
+  }
+}

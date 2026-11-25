@@ -37,6 +37,15 @@ public final class PetSourceHandler {
 
     private long dropAt = -1, contestAt = -1, eventAt = -1, questAt = -1;
 
+    /// The server's "PET DROP!" line can be hidden: FOE+ shows its own PET PULLED! line for the pet.
+    public static boolean hideDropLine(String raw) {
+        String text = ChatFormatting.stripFormatting(raw == null ? "" : raw);
+        if (text == null) return false;
+        text = text.replaceAll("[\\uE000-\\uF8FF]", " ").trim();
+        var c = dannypx.foe.config.Configs.hudConfig;
+        return PET_DROP.matcher(text).find() && !text.contains(": ") && c.showPetCatchChat.get() && c.hideServerPullLines.get();
+    }
+
     /// Every game message (never hides any).
     public boolean onGameMessage(String raw) {
         note(raw, System.currentTimeMillis());
@@ -48,14 +57,25 @@ public final class PetSourceHandler {
         String text = ChatFormatting.stripFormatting(raw == null ? "" : raw);
         if (text == null || text.isBlank()) return;
         text = text.replaceAll("[\\uE000-\\uF8FF]", " ").trim();
-        if (PET_DROP.matcher(text).find()) { dropAt = now; return; }
+        if (PET_DROP.matcher(text).find()) { dropAt = now; lookSoon(); return; }
         // a player's chat ("[Rank] Name: I won a contest...") never counts as the server's words; the server's own
         // contest and event lines have no "Name: " in them
         if (text.contains(": ")) return;
         String lower = text.toLowerCase(Locale.ROOT);
-        if (CONTEST.matcher(lower).find()) contestAt = now;
-        else if (EVENT.matcher(lower).find()) eventAt = now;
-        else if (QUEST.matcher(lower).find()) questAt = now;
+        if (CONTEST.matcher(lower).find()) { contestAt = now; lookSoon(); }
+        else if (EVENT.matcher(lower).find()) { eventAt = now; lookSoon(); }
+        else if (QUEST.matcher(lower).find()) { questAt = now; lookSoon(); }
+    }
+
+    /// After a line saying you got a pet: look for it in your inventory a second and three seconds on (once the
+    /// pet has arrived), in case it wasn't found with a catch.
+    private static void lookSoon() {
+        try {
+            CodeExecuterHandler.runLater(20, () -> CatchingHandler.instance().lookForNewPets());
+            CodeExecuterHandler.runLater(60, () -> CatchingHandler.instance().lookForNewPets());
+        } catch (RuntimeException | NoClassDefFoundError ignored) {
+            // (the tests run without the game)
+        }
     }
 
     /// Where a pet that just turned up came from.

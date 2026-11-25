@@ -23,8 +23,8 @@ public class PetPanelElement extends PanelElement {
     }
 
     public PetPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.petPanelXPosition.get() / 100f,
-                Configs.hudConfig.petPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.petPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.petPanelYPosition),
                 Configs.hudConfig.petPanelAlignment.get(),
                 Component.literal("Pet Panel"),
                 isCopy);
@@ -32,8 +32,8 @@ public class PetPanelElement extends PanelElement {
 
     /// Off with the FOE-R HUD style: its own pet box (see PetElement) shows the pet there instead.
     @Override protected boolean enabled() { return Configs.hudConfig.showPetPanel.get() && !FoeRBoxes.on(); }
-    @Override protected float configX() { return Configs.hudConfig.petPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.petPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.petPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.petPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.petPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.petPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.petPanelOpacity.get(); }
@@ -124,8 +124,37 @@ public class PetPanelElement extends PanelElement {
         }
     }
 
-    // A little bigger than the other panels' boxes, close together.
-    @Override protected int iconSize() { return 22; }
+    // A little bigger than the other panels' boxes (each part sized in HUD settings → Pet), close together.
+    @Override protected int iconSize() {
+        try {
+            return Math.max(16, Math.min(40, Configs.hudConfig.petPanelBoxSize.get()));
+        } catch (RuntimeException e) {
+            return 22;
+        }
+    }
+
+    /// In half panel pixels (2: one pixel, the other panels' boxes).
+    @Override protected int iconBorder() {
+        try {
+            return Math.max(1, Math.min(8, Configs.hudConfig.petPanelBorderWidth.get()));
+        } catch (RuntimeException e) {
+            return 3;
+        }
+    }
+
+    @Override protected boolean iconPictureExact() { return true; }
+
+    /// The pet (first box) and the item it holds (second), each its own size, never bigger than the box.
+    @Override protected int iconPicture(int index, int box) {
+        int want;
+        try {
+            want = index == 0 ? Configs.hudConfig.petPanelPetPictureSize.get() : Configs.hudConfig.petPanelItemPictureSize.get();
+        } catch (RuntimeException e) {
+            want = box - 4;
+        }
+        return Math.max(4, Math.min(box - 2, want));
+    }
+
     @Override protected int iconGap() { return 2; }
 
     /// "Max Luck" / "Max Scale" / "Perfect" just above the pet, when its rolls here are as good as they get.
@@ -311,7 +340,8 @@ public class PetPanelElement extends PanelElement {
                     Component.literal(")").withStyle(ChatFormatting.GRAY)));
         }
         lines.add(join(Component.literal("ɪᴛᴇᴍ ").withStyle(ChatFormatting.GRAY),
-                held == null ? Component.literal("None").withStyle(ChatFormatting.DARK_GRAY) : held.copy()));
+                held == null ? Component.literal("None").withStyle(ChatFormatting.DARK_GRAY)
+                        : dannypx.foe.handler.logic.TextDisplayHandler.shortNames(held.copy()).copy()));
         lastFraction = fraction;
         return lines;
     }

@@ -21,4 +21,16 @@ public abstract class SoundManagerMixin {
             dannypx.foe.helper.Safe.report("SoundManagerMixin.play", foe$t);
         }
     }
+
+    /// A sound played a moment late (one far away, as a bobber can be): heard and stopped the same way.
+    @Inject(method = "playDelayed", at = @At("HEAD"), cancellable = true)
+    private void foe$playDelayed(SoundInstance sound, int delay, org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        try {
+            if (sound == null || !dannypx.foe.handler.logic.ConnectionHandler.instance().isOnServer()) return;
+            if (dannypx.foe.handler.logic.CatchSound.onPlay(sound, sound.getIdentifier().toString())) ci.cancel();
+        } catch (Throwable foe$t) {
+            if (foe$t instanceof VirtualMachineError foe$e) throw foe$e;
+            dannypx.foe.helper.Safe.report("SoundManagerMixin.playDelayed", foe$t);
+        }
+    }
 }

@@ -58,6 +58,15 @@ public class BossEventHandler extends Handler {
         return subLocation;
     }
 
+    /// When the boss bar last showed the community goal (it takes turns with other news, so between turns the
+    /// numbers here are old).
+    private long communitySeenAt = 0L;
+
+    /// Whether the boss bar has shown the community goal in the last 15 seconds (its numbers are current).
+    public boolean communityFresh() {
+        return System.currentTimeMillis() - communitySeenAt < 15_000L;
+    }
+
     public MutableComponent getCommunityGoalCurrent() {
         return communityGoalCurrent;
     }
@@ -146,6 +155,7 @@ public class BossEventHandler extends Handler {
 
                             communityGoalMax = Component.literal(communityGoalMaxObject.get("text").getAsString().trim())
                                     .withColor(TextColor.parseColor(communityGoalMaxObject.get("color").getAsString()).getOrThrow().getValue());
+                            communitySeenAt = System.currentTimeMillis();
                         }
                     }
                 } else if(name.contains("\uA201\uEEE1\uA208") || looksLikeSpot(name)) {

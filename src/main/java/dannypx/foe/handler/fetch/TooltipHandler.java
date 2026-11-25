@@ -79,10 +79,12 @@ public class TooltipHandler extends Handler {
     static void withValue(List<Component> components, long value) {
         Component worth = Component.literal(dannypx.foe.handler.logic.BaitboxHandler.money(value)).withStyle(net.minecraft.ChatFormatting.GOLD);
         for (int i = 0; i < components.size(); i++) {
-            if (dannypx.foe.handler.logic.BaitboxHandler.stockOf(components.get(i).getString()) >= 0) {
+            long stock = dannypx.foe.handler.logic.BaitboxHandler.stockOf(components.get(i).getString());
+            if (stock >= 0) {
                 components.set(i, components.get(i).copy()
                         .append(Component.literal("  ·  ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
                         .append(worth));
+                if (stock > 1) eachUnder(components, i, Math.round(value / (double) stock));
                 return;
             }
         }
@@ -96,6 +98,88 @@ public class TooltipHandler extends Handler {
                 return;
             }
         }
+    }
+
+    /// A bait shared in chat as text only (its name on the first line, "Stock: 18x" further down): the same text
+    /// with its worth on the Stock line and one bait's under it, at your price for it (Bait Prices); null when it
+    /// isn't a bait or you have no price for it.
+    private static String lastChatHover = "";
+
+    /// What a hover in chat held, written to the log once per different hover (FOE+ could put no price on it), so
+    /// the way the server sends shared items can be seen in a log.
+    public static void noteChatHover(String kind, String what) {
+        String key = kind + ":" + what;
+        if (key.equals(lastChatHover)) return;
+        lastChatHover = key;
+        String shown = what.length() > 600 ? what.substring(0, 600) + "…" : what;
+        dannypx.foe.handler.logic.LoggerHandler.info("Chat hover (" + kind + "): " + shown.replace("\n", " / "));
+    }
+
+    public static Component baitTextWithValue(Component text) {
+        if (text == null) return null;
+        List<Component> lines = new java.util.ArrayList<>();
+        for (String part : text.getString().split("\n", -1)) lines.add(Component.literal(part));
+        // the lines with their colours: split the styled text at its line breaks
+        List<Component> styled = splitLines(text);
+        if (styled.size() == lines.size()) lines = styled;
+        if (lines.isEmpty()) return null;
+        long stock = -1;
+        for (Component l : lines) { stock = dannypx.foe.handler.logic.BaitboxHandler.stockOf(l.getString()); if (stock >= 0) break; }
+        // a lure: its uses left
+        if (stock < 0) for (Component l : lines) { stock = dannypx.foe.handler.logic.BaitboxHandler.usesOf(l.getString()); if (stock >= 0) break; }
+        if (stock < 0) return null;
+        String name = lines.get(0).getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        List<String> plain = new java.util.ArrayList<>();
+        for (Component l : lines) plain.add(l.getString());
+        // your price for it, else its rarity's (as in your inventory)
+        long each = dannypx.foe.handler.logic.BaitboxHandler.priceOfText(name, plain);
+        if (each < 0) return null;
+        List<Component> out = new java.util.ArrayList<>(lines);
+        withValue(out, stock * each);
+        net.minecraft.network.chat.MutableComponent joined = Component.empty();
+        for (int i = 0; i < out.size(); i++) {
+            if (i > 0) joined.append("\n");
+            joined.append(out.get(i));
+        }
+        return joined;
+    }
+
+    /// A text's lines, each with its own colours.
+    private static List<Component> splitLines(Component text) {
+        List<Component> out = new java.util.ArrayList<>();
+        net.minecraft.network.chat.MutableComponent[] cur = {Component.empty()};
+        text.visit((style, part) -> {
+            String[] bits = part.split("\n", -1);
+            for (int i = 0; i < bits.length; i++) {
+                if (i > 0) { out.add(cur[0]); cur[0] = Component.empty(); }
+                if (!bits[i].isEmpty()) cur[0].append(Component.literal(bits[i]).withStyle(style));
+            }
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        out.add(cur[0]);
+        return out;
+    }
+
+    /// What one bait is worth ("$225 each"), under the Stock line: on the empty row the tooltip has there (its frame
+    /// is drawn row by row, so a new row would push its name out of sight), lined up with "Stock"; with no empty row
+    /// there, at the Stock line's end. Package-private for tests.
+    static void eachUnder(List<Component> components, int stockRow, long each) {
+        Component each_ = Component.literal(dannypx.foe.handler.logic.BaitboxHandler.money(each)).withStyle(net.minecraft.ChatFormatting.GOLD)
+                .append(Component.literal(" each").withStyle(net.minecraft.ChatFormatting.GRAY));
+        String stockLine = components.get(stockRow).getString();
+        int next = stockRow + 1;
+        if (next < components.size() && components.get(next).getString().codePoints().noneMatch(cp -> cp < 0x3000 && Character.isLetterOrDigit(cp))) {
+            // (the frame's pieces are pictures in the Hangul and private ranges, not words)
+            // as far in as "Stock" is: its row's spaces less the empty row's own
+            int at = stockLine.indexOf("Stock");
+            int want = at < 0 ? 0 : (int) stockLine.substring(0, at).chars().filter(c -> c == ' ').count();
+            int have = (int) components.get(next).getString().chars().filter(c -> c == ' ').count();
+            components.set(next, components.get(next).copy().append(Component.literal(" ".repeat(Math.max(0, want - have)))).append(each_));
+            return;
+        }
+        components.set(stockRow, components.get(stockRow).copy()
+                .append(Component.literal("  (").withStyle(net.minecraft.ChatFormatting.DARK_GRAY)).append(each_)
+                .append(Component.literal(")").withStyle(net.minecraft.ChatFormatting.DARK_GRAY)));
     }
 
     private void setArmorRoll(ItemStack itemStack, List<Component> components) {

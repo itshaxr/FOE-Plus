@@ -100,6 +100,39 @@ public final class BaitboxHandler {
         }
     }
 
+    /// What one of a bait (or one use of a lure) shown only as text (hovered in chat) is worth: your own price for
+    /// it, else its rarity's (from the badge in its first lines, else the wiki); -1 when it can't be told.
+    public static long priceOfText(String name, List<String> lines) {
+        String colour = null;
+        for (String l : lines) {
+            String t = net.minecraft.ChatFormatting.stripFormatting(l);
+            if (t != null && t.trim().startsWith("Color:")) colour = t.trim().substring("Color:".length()).trim();
+        }
+        Long own = null;
+        if (colour != null && !colour.isEmpty())
+            own = dannypx.foe.handler.store.BaitPriceOverrides.get(name + " (" + dannypx.foe.handler.store.BaitPictures.colourName(colour) + ")");
+        if (own == null) own = dannypx.foe.handler.store.BaitPriceOverrides.get(name);
+        if (own != null) return own;
+        int r = -1;
+        for (int i = 0; i < Math.min(4, lines.size()) && r < 0; i++) r = rarityInLine(lines.get(i));
+        if (r < 0) {
+            dannypx.foe.helper.WikiBaits.Bait wiki = dannypx.foe.helper.WikiBaits.find(name);
+            if (wiki != null) r = rarityIndex(wiki.rarity());
+        }
+        return r < 0 ? -1 : prices()[r];
+    }
+
+    /// The number in a "Remaining Uses: 25" line (a lure), or -1.
+    public static long usesOf(String line) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("Remaining Uses:\\s*([\\d,]+)").matcher(line == null ? "" : line);
+        if (!m.find()) return -1;
+        try {
+            return Long.parseLong(m.group(1).replace(",", ""));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
     /// The number in a "Stock: 18x" line, or -1.
     public static long stockOf(String line) {
         return stockIn(line);
@@ -151,7 +184,9 @@ public final class BaitboxHandler {
 
     /// One bait's price: yours for that bait (Bait Prices), else its rarity's; -1 when neither is known.
     public static long priceOf(ItemStack s) {
-        Long own = dannypx.foe.handler.store.BaitPriceOverrides.get(s.getHoverName().getString());
+        // a lure's price is set per colour ("Saltwater Spoon (Silver)"); its plain name is the fallback
+        Long own = dannypx.foe.handler.store.BaitPriceOverrides.get(dannypx.foe.handler.store.BaitPictures.listedName(s));
+        if (own == null) own = dannypx.foe.handler.store.BaitPriceOverrides.get(s.getHoverName().getString());
         if (own != null) return own;
         int r = rarityOf(s);
         return r < 0 ? -1 : prices()[r];

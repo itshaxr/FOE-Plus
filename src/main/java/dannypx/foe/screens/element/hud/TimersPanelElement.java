@@ -19,16 +19,16 @@ public class TimersPanelElement extends PanelElement {
     }
 
     public TimersPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.timersPanelXPosition.get() / 100f,
-                Configs.hudConfig.timersPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.timersPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.timersPanelYPosition),
                 Configs.hudConfig.timersPanelAlignment.get(),
                 Component.literal("Timers"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showTimersPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.timersPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.timersPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.timersPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.timersPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.timersPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.timersPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.timersPanelOpacity.get(); }

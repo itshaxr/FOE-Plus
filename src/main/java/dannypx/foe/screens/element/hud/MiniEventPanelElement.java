@@ -19,16 +19,16 @@ public class MiniEventPanelElement extends PanelElement {
     }
 
     public MiniEventPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.miniEventPanelXPosition.get() / 100f,
-                Configs.hudConfig.miniEventPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.miniEventPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.miniEventPanelYPosition),
                 Configs.hudConfig.miniEventPanelAlignment.get(),
                 Component.literal("Mini Event"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showMiniEventPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.miniEventPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.miniEventPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.miniEventPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.miniEventPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.miniEventPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.miniEventPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.miniEventPanelOpacity.get(); }

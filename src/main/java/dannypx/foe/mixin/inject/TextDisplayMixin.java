@@ -26,6 +26,7 @@ public abstract class TextDisplayMixin {
             ) {
                 Display.TextDisplay self = (Display.TextDisplay) (Object) this;
                 ChummerHandler.instance().onTextUpdate(self, getText());
+                dannypx.foe.handler.renderer.VariantPulse.onTextUpdate(self, getText());
             }
     
         } catch (Throwable foe$t) {

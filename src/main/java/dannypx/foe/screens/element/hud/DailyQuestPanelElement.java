@@ -17,16 +17,16 @@ public class DailyQuestPanelElement extends PanelElement {
     }
 
     public DailyQuestPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.dailyQuestPanelXPosition.get() / 100f,
-                Configs.hudConfig.dailyQuestPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.dailyQuestPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.dailyQuestPanelYPosition),
                 Configs.hudConfig.dailyQuestPanelAlignment.get(),
                 Component.literal("Daily Quests Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showDailyQuestPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.dailyQuestPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.dailyQuestPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.dailyQuestPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.dailyQuestPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.dailyQuestPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.dailyQuestPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.dailyQuestPanelOpacity.get(); }

@@ -23,16 +23,16 @@ public class SessionStatsPanelElement extends PanelElement {
     }
 
     public SessionStatsPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.sessionStatsPanelXPosition.get() / 100f,
-                Configs.hudConfig.sessionStatsPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.sessionStatsPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.sessionStatsPanelYPosition),
                 Configs.hudConfig.sessionStatsPanelAlignment.get(),
                 Component.literal("Session Stats Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showSessionStatsPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.sessionStatsPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.sessionStatsPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.sessionStatsPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.sessionStatsPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.sessionStatsPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.sessionStatsPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.sessionStatsPanelOpacity.get(); }
@@ -51,7 +51,7 @@ public class SessionStatsPanelElement extends PanelElement {
         int bottles = s.rare(RareCatchHandler.LIGHTNING_BOTTLE);
 
         lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(fish + " "),
-                Component.literal(fishShare(fish, s.pets() + capsules + bottles)).withStyle(ChatFormatting.GREEN)));
+                showPercent() ? Component.literal(fishShare(fish, s.pets() + capsules + bottles)).withStyle(ChatFormatting.GREEN) : Component.empty()));
         lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", s.fishPerHour()))));
         lines.add(join(plain("Fish Time "), white(formatTime(s.fishTimeMs()))));
         lines.add(join(plain("Total Quests "), white(String.valueOf(s.quests()))));
@@ -70,11 +70,11 @@ public class SessionStatsPanelElement extends PanelElement {
         for (String rarity : RARITIES) {
             int amount = s.rarity(rarity);
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(rarity),
-                    white(" " + amount + " "), label("(" + percent(amount, fish) + "%)")));
+                    white(" " + amount + " "), share(amount, fish, false)));
         }
         if (Configs.hudConfig.statsPanelShowGigantic.get()) {
             int amount = s.size("gigantic");
-            lines.add(join(GIGANTIC_BADGE, white(" " + amount + " "), label("(" + percent(amount, fish) + "%) "),
+            lines.add(join(GIGANTIC_BADGE, white(" " + amount + " "), share(amount, fish, true),
                     Component.literal("(" + s.since("size:gigantic") + ")").withStyle(ChatFormatting.DARK_GRAY)));
         }
         lines.add(Component.empty());
@@ -82,7 +82,7 @@ public class SessionStatsPanelElement extends PanelElement {
         for (String variant : VARIANTS) {
             int amount = s.variant(variant);
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(variant),
-                    white(" " + amount + " "), label("(" + percent(amount, fish) + "%) "),
+                    white(" " + amount + " "), share(amount, fish, true),
                     Component.literal("(" + s.since("variant:" + variant) + ")").withStyle(ChatFormatting.DARK_GRAY)));
         }
         return lines;

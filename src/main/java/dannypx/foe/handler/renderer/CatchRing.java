@@ -30,6 +30,9 @@ public final class CatchRing {
     private static final Map<String, Float> strips = new HashMap<>();
     static { dannypx.foe.handler.logic.MemoryGuard.register("catchRingStrips", strips::size, strips::clear); }
     private static float shown = 0f, last = 0f;
+    /// Whether the last action bar looked at held the progress strip itself (not just the fishing font).
+    private static boolean lastHadStrip = false;
+    private static long heldLogAt = 0L;
     private static long caughtAt = 0L;
     private static boolean wasOn = false;
 
@@ -81,6 +84,7 @@ public final class CatchRing {
             });
             return Optional.empty();
         }, Style.EMPTY);
+        lastHadStrip = found[0] >= 0;
         return found[0] >= 0 ? found[0] : fishingFont[0] ? 0f : -1f;
     }
 
@@ -95,11 +99,26 @@ public final class CatchRing {
         if (mc.player == null || mc.options.hideGui) return;
         GuiAccessor gui = (GuiAccessor) mc.gui;
         float p = gui.getOverlayMessageTime() > 0 && mc.player.fishing != null ? progress(gui.getOverlayMessageString()) : -1f;
+        // a bar sent in the last second (60 when sent, counting down), not one left over from the last catch
+        boolean fresh = gui.getOverlayMessageTime() > 40;
+        // the last catch's bar still fading out after you cast again: not this line's
+        if (p >= 0 && !fresh && mc.player.fishing.getId() != reelHook) p = -1f;
+        // something in the fishing font in the action bar with no strip in it, while a fish is still swimming in:
+        // not the reel bar yet (it can't hold back the blue part)
+        if (p >= 0 && !lastHadStrip && dannypx.foe.handler.logic.FishApproach.progress() >= 0) p = -1f;
         long now = System.currentTimeMillis();
+        boolean reelOn = Configs.hudConfig.catchRingReel.get();
         if (p >= 0) {
             if (!wasOn) { shown = 0f; shownAt = now; }
             wasOn = true;
             last = p;
+            // reeling in: the blue part is over (its fish is on the line)
+            approachAt = 0;
+            if (fresh) {
+                reelEndedAt = now;
+                reelHook = mc.player.fishing.getId();
+            }
+            if (!reelOn) return;
             shown += (p - shown) * 0.25f;
             float in = Math.min(1f, (now - shownAt) / 160f);
             float pop = 0.6f + 0.4f * easeOutBack(in);
@@ -113,7 +132,7 @@ public final class CatchRing {
             if (last >= 0.75f) caughtAt = now;      // the bar went with the strip nearly full: caught
         }
         long since = now - caughtAt;
-        if (caughtAt > 0 && since < 650) {
+        if (reelOn && caughtAt > 0 && since < 650) {
             float t = since / 650f;
             colours = reel();
             draw(g, 1f, 1f - t * t, 1f + 0.12f * (float) Math.sin(Math.min(1f, t * 3f) * Math.PI), now, t);
@@ -121,7 +140,14 @@ public final class CatchRing {
             return;
         }
         // a fish on its way: the ring fills in blue as it comes, and pulses as it gets to the bobber
-        float coming = Configs.hudConfig.catchRingApproach.get() && mc.player.fishing != null ? dannypx.foe.handler.logic.FishApproach.progress() : -1f;
+        // (not just after reeling in: the splashes left at the bobber then aren't a fish coming)
+        // (only on the bobber that was reeled in: a new cast shows its fish at once)
+        boolean settled = now - reelEndedAt > AFTER_REEL_MS || mc.player.fishing == null || mc.player.fishing.getId() != reelHook;
+        float coming = Configs.hudConfig.catchRingApproach.get() && settled && mc.player.fishing != null ? dannypx.foe.handler.logic.FishApproach.progress() : -1f;
+        if (coming < 0 && !settled && now - heldLogAt > 5000L && mc.player.fishing != null && dannypx.foe.handler.logic.FishApproach.progress() >= 0) {
+            heldLogAt = now;
+            dannypx.foe.handler.logic.LoggerHandler.info("Catch ring: a fish is coming but the blue part is held back just after reeling in");
+        }
         if (coming >= 0) lastComingAt = now;
         else if (approachAt != 0 && mc.player.fishing != null && now - lastComingAt < (approachShown > 0.8f ? HOLD_BITE_MS : HOLD_GAP_MS)) {
             // the trail lost for a moment, or the fish at the bobber with the reel bar still to come: kept as it was
@@ -140,6 +166,10 @@ public final class CatchRing {
     }
 
     private static long approachAt = 0, lastComingAt = 0;
+    /// When the reel bar was last up, and how long after it no fish counts as coming (the catch's own splashes).
+    private static long reelEndedAt = 0;
+    private static int reelHook = Integer.MIN_VALUE;
+    static final long AFTER_REEL_MS = 2_500;
     /// How long the blue ring stays through a gap in the trail, and at the bite until the reel bar comes up.
     static final long HOLD_GAP_MS = 900, HOLD_BITE_MS = 2_500;
     private static float approachShown = 0f;

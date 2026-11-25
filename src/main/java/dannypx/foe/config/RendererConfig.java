@@ -66,6 +66,14 @@ public class RendererConfig extends Config {
     @Name("Show Equipped Pet Item")
     public ValidatedBoolean showPetEquippedMarker = new ValidatedBoolean(true);
 
+    @Name("Fishing line colour")
+    @Desc("§7Your own fishing line in your colour (only on your screen). Default is the game's own")
+    public ValidatedString fishingLineColor = new ValidatedString("");
+
+    @Name("Equipped pet item star colour")
+    @Desc("§7The star on a pet holding an item: Default is the held item's own colour (pink for a Bigfoot Amulet); pick one to use it for every pet")
+    public ValidatedString petEquippedMarkerColor = new ValidatedString("");
+
     @Name("+ above FOE+ users' heads")
     @Desc("§7Players near you who use this mod get a + after their name above their head")
     public ValidatedBoolean showFoePlusMarker = new ValidatedBoolean(true);
@@ -151,6 +159,11 @@ public class RendererConfig extends Config {
     public me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<dannypx.foe.type.BobberStyle> bobberStyle =
             new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.BobberStyle.CLASSIC, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
 
+    @Name("3D bobber shape")
+    @Desc("§7Classic (the block bobber) or Round (a round float, like a real one). Every colour preset works on both. Also in O → Bobber")
+    public me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<dannypx.foe.type.BobberShape> bobberShape =
+            new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.BobberShape.CLASSIC, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
+
     @Name("Show other FOE+ users' bobber styles")
     @Desc("§7Other FOE+ users' bobbers show the preset they picked. Off, or for players without FOE+: Classic")
     public ValidatedBoolean showOtherBobberStyles = new ValidatedBoolean(true);
@@ -210,6 +223,39 @@ public class RendererConfig extends Config {
 
     @Name("Show ripple on bite")
     public ValidatedBoolean showRippleOnBite = new ValidatedBoolean(true);
+
+    // From tacklebox by landofif (MIT), with its permission.
+    @Name("Water Rings")
+    @Desc("§7Flat rings on the water at your bobber: they come quicker as a fish swims in, a bigger one on the bite, a wake behind your fish, and one in the fish's rarity colour when you catch it")
+    public ConfigGroup waterRingsGroup = new ConfigGroup("water_rings_group");
+
+    @Name("Water rings")
+    public ValidatedBoolean waterRingsOn = new ValidatedBoolean(true);
+
+    @Name("Rings at the bobber as a fish comes")
+    @Desc("§7They come quicker as the fish nears, and one bigger ring on the bite")
+    public ValidatedBoolean waterRingsBite = new ValidatedBoolean(false);
+
+    @Name("Wake behind your fish")
+    @Desc("§7Small rings along your fish's trail as it swims in")
+    public ValidatedBoolean waterRingsWake = new ValidatedBoolean(false);
+
+    @Name("Ring when you catch a fish")
+    @Desc("§7One big ring where your bobber was, in the fish's rarity colour")
+    public ValidatedBoolean waterRingsCatch = new ValidatedBoolean(true);
+
+    @Name("Sparkles on a legendary, mythical or special catch")
+    public ValidatedBoolean waterRingsSparkles = new ValidatedBoolean(true);
+
+    @Name("Strength in %")
+    public ValidatedInt waterRingsOpacity = new ValidatedInt(60, 100, 5, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Size")
+    public ValidatedFloat waterRingsSize = ValidatedNumber.withIncrement(new ValidatedFloat(0.95f, 2.5f, 0.5f), 0.05f);
+
+    @ConfigGroup.Pop
+    @Name("Thickness")
+    public ValidatedFloat waterRingsWidth = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 3.0f, 0.5f), 0.05f);
 
     @Name("Hide armor on players")
     public ValidatedBoolean hideArmor = new ValidatedBoolean(false);

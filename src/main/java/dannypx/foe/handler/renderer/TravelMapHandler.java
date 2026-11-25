@@ -52,6 +52,13 @@ public final class TravelMapHandler {
     /// (the start of the full name, cut short where its plate would run into a neighbour's), and where it sits (0-1).
     record Spot(String key, String label, float x, float y) {}
 
+    /// Your favourite spot at a place (the travel map's ★), or null.
+    public static String favouriteAt(dannypx.foe.helper.FoeLocations.Location place) {
+        for (Spot s : SPOTS) if (dannypx.foe.helper.FoeLocations.fromName(s.label()) == place)
+            return dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(s.key());
+        return null;
+    }
+
     static final List<Spot> SPOTS = List.of(
             new Spot("kenai river", "Kenai River", 0.363f, 0.104f), new Spot("lofoten islands", "Lofoten Islands", 0.672f, 0.326f),
             new Spot("great lakes", "Great Lakes", 0.492f, 0.279f), new Spot("cape cod", "Cape Cod", 0.686f, 0.447f),
@@ -326,8 +333,126 @@ public final class TravelMapHandler {
     private static final float ICON = 0.4375f;
     //endregion
 
+    //region Trips from the crew island: the server lands you at spawn instead, so FOE+ goes on to where you were going
+    private dannypx.foe.helper.FoeLocations.Location tripPlace, tripFrom;
+    private String tripSpot;
+    private long tripAt, tripLandedAt;
+    private Object tripLevel;
+
+    /// A spot was picked to teleport to.
+    private void noteTrip(Spot place, String spot) {
+        Minecraft mc = Minecraft.getInstance();
+        tripPlace = place == null ? null : dannypx.foe.helper.FoeLocations.fromName(place.label());
+        tripSpot = spot;
+        tripAt = System.currentTimeMillis();
+        tripLandedAt = 0L;
+        tripLevel = mc.level;
+        tripFrom = barPlace();
+    }
+
+    /// Where the location bar says you are (null: not read, or not a fishing place: a crew island).
+    private static dannypx.foe.helper.FoeLocations.Location barPlace() {
+        try {
+            return dannypx.foe.helper.FoeLocations.fromName(dannypx.foe.handler.fetch.BossEventHandler.instance().getLocation().getString());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /// Every tick: after a trip moved you to another world, landing at Cypress Lake's spawn when you were going
+    /// somewhere else (and didn't start there) means the server dropped where you were going: FOE+ takes you on. Each
+    /// world you're moved to in the minute after the trip is looked at (the server can pass you through more than one).
+    public void tick() {
+        if (tripPlace == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        long now = System.currentTimeMillis();
+        if (now - tripAt > 60_000L) { tripPlace = null; return; }
+        // between worlds (the "Reconfiguring" screen: no player, no world for a moment): still on the way
+        if (mc.player == null || mc.level == null) return;
+        if (mc.level != tripLevel) {                                    // moved to another world: looked at once settled
+            tripLevel = mc.level;
+            tripLandedAt = now;
+            return;
+        }
+        if (tripLandedAt == 0L || now - tripLandedAt < 1500L) return;  // its location bar read first
+        var here = barPlace();
+        if (here == null) return;
+        var want = tripPlace;
+        if (now - tripLandedAt < 1600L) dannypx.foe.handler.logic.LoggerHandler.info("Travel: landed at " + here + " (going to " + want + ")");
+        if (here == want) {
+            // there: done, unless the server moves you on to spawn in the next few seconds
+            if (now - tripLandedAt > 10_000L) tripPlace = null;
+            return;
+        }
+        if (want == dannypx.foe.helper.FoeLocations.Location.CYPRESS_LAKE
+                || here != dannypx.foe.helper.FoeLocations.Location.CYPRESS_LAKE
+                || tripFrom == dannypx.foe.helper.FoeLocations.Location.CYPRESS_LAKE) {
+            if (now - tripLandedAt > 10_000L) tripPlace = null;
+            return;
+        }
+        String spot = tripSpot;
+        tripPlace = null;
+        String name = dannypx.foe.helper.FoeLocations.displayName(want);
+        dannypx.foe.helper.FoeChat.info("The server sent you to spawn: taking you on to " + name
+                + (spot == null || spot.isBlank() || FIRST_SPOT.equals(spot) ? "" : ", " + spot) + "…", 0xAAAAAA);
+        dannypx.foe.handler.logic.LoggerHandler.info("Travel: landed at spawn instead of " + name + ", going on there");
+        onTrip = want;
+        onSpot = spot;
+        onTries = 0;
+        // a moment for the server to load you in first (too soon: "Data is still loading in")
+        dannypx.foe.handler.logic.CodeExecuterHandler.runLater(50, this::goOn);
+    }
+
+    /// The trip FOE+ is taking you on with (after the crew island's spawn), and how many times it's been tried.
+    private dannypx.foe.helper.FoeLocations.Location onTrip;
+    private String onSpot;
+    private int onTries;
+    private long onSentAt;
+
+    private void goOn() {
+        if (onTrip == null) return;
+        onTries++;
+        onSentAt = System.currentTimeMillis();
+        travelTo(onTrip, onSpot);
+    }
+
+    /// The server's "Data is still loading in. Please wait a moment before trying again." to that /travel: hidden,
+    /// and tried again a couple of seconds later (up to 8 times). True to hide the line.
+    public boolean onGameMessage(String text) {
+        if (onTrip == null || text == null) return false;
+        long now = System.currentTimeMillis();
+        if (now - onSentAt > 4_000L) {
+            if (now - onSentAt > 60_000L) onTrip = null;
+            return false;
+        }
+        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
+        if (plain == null || !plain.toLowerCase(java.util.Locale.ROOT).contains("still loading")) return false;
+        travelTo = null;
+        silentTravel = false;
+        if (onTries >= 8) {
+            dannypx.foe.helper.FoeChat.info("Couldn't take you on to " + dannypx.foe.helper.FoeLocations.displayName(onTrip)
+                    + ": the server kept saying it's still loading. Use /travel when it's ready.", 0xAAAAAA);
+            onTrip = null;
+            return false;
+        }
+        dannypx.foe.handler.logic.CodeExecuterHandler.runLater(40, this::goOn);
+        return true;
+    }
+    //endregion
+
     //region Drawing
     public void render(Screen screen, GuiGraphics g, int mouseX, int mouseY, float delta) {
+        if (silent(screen)) {
+            // a [Teleport] button's trip: the menus are worked through unseen (nothing flashes up)
+            Minecraft mc = Minecraft.getInstance();
+            if (isLocationsMenu(screen)) travelOnOpen((ContainerScreen) screen, mc);
+            else if (autoSpot != null && !autoClicked && zoomSpot != null) {
+                float z1 = zoomAt(zoomSpot, 1f);
+                autoPick((ContainerScreen) screen, spotViews(((ContainerScreen) screen).getMenu(), z1, cornerAt(zoomSpot, z1)));
+            }
+            if (autoClicked && System.currentTimeMillis() - autoSince > 6000L) { autoSpot = null; autoClicked = false; }
+            return;
+        }
         if (zoomingOut(screen)) {
             drawZoomOut(g, screen.width, screen.height, mouseX, mouseY);
             return;
@@ -338,6 +463,7 @@ public final class TravelMapHandler {
         }
         zoomMenu = -1;
         Minecraft mc = Minecraft.getInstance();
+        travelOnOpen((ContainerScreen) screen, mc);
         Font font = mc.font;
         if (classic()) {
             // The plain menu: a small button to change the view back to a map.
@@ -415,6 +541,18 @@ public final class TravelMapHandler {
                 drawStar(g, cx, cy, BOX + 1, PLACE_STAR, true, onStar(cx, cy, BOX + 1, PLACE_STAR, mx, my));
             }
             drawPlate(g, font, e, cx, cy, hot, current);
+            // a contest there: a little gold trophy on the square's bottom left corner, across from the favourite
+            // star (bottom right) and the same size, drawn last so nothing covers it
+            if (PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(e.spot().label())) != null) {
+                trophies.add(new int[]{cx, cy});
+            }
+        }
+        // the trophies on a layer of their own over everything else on the map (the places drawn after one, and
+        // their pictures, were covering its left side)
+        if (!trophies.isEmpty()) {
+            g.nextStratum();
+            for (int[] t : trophies) drawTrophy(g, t[0], t[1], BOX + 1, PLACE_STAR);
+            trophies.clear();
         }
 
         // Just after zooming back out, the places fade in: the bare map over them, fading away.
@@ -462,18 +600,46 @@ public final class TravelMapHandler {
     private static final String[] TROPHY = {
             "#######",
             "#.###.#",
+            ".#####.",
             "..###..",
             "...#...",
             "..###..",
+            ".#####.",
     };
 
-    /// The trophy at (x0, y0) in screen pixels, `k` screen pixels to each of its font-sized pixels (7 wide, 5 tall,
-    /// a small letter's height): gold, lighter on its left.
-    private static void drawTrophyPixels(GuiGraphics g, int x0, int y0, int k) {
-        for (int y = 0; y < TROPHY.length; y++)
-            for (int x = 0; x < TROPHY[y].length(); x++)
-                if (TROPHY[y].charAt(x) == '#')
-                    g.fill(x0 + x * k, y0 + y * k, x0 + (x + 1) * k, y0 + (y + 1) * k, x < 3 ? 0xFFFFD84A : x == 3 ? 0xFFF2B33D : 0xFFE09A1C);
+    /// The contest trophy on the square's bottom left corner (centred on (cx - half, cy + half)), as big as the
+    /// favourite star across from it and drawn like it: whole pixels, a dark edge so it reads on any ground, gold
+    /// lighter on its left.
+    private final List<int[]> trophies = new java.util.ArrayList<>();
+
+    private void drawTrophy(GuiGraphics g, int cx, int cy, int half, float size) {
+        // a touch smaller than the star: it's solid where the star is thin
+        int n = Math.max(7, Math.round(size * pixels * 0.8f));
+        int c = Math.max(1, Math.round(n / 7f)), w = 7 * c;
+        int x0 = Math.round((cx - half) * pixels - w / 2f), y0 = Math.round((cy + half) * pixels - w / 2f);
+        boolean[][] m = new boolean[w][w];
+        for (int y = 0; y < w; y++) for (int x = 0; x < w; x++) m[y][x] = TROPHY[y / c].charAt(x / c) == '#';
+        int edge = Math.max(1, Math.round(pixels / 2f));
+        g.pose().pushMatrix();
+        g.pose().scale(1f / pixels, 1f / pixels);
+        for (int y = -edge; y < w + edge; y++) {
+            int run = -1;
+            for (int x = -edge; x <= w + edge; x++) {
+                boolean o = x < w + edge && near(m, x, y, edge);
+                if (o && run < 0) run = x;
+                if (!o && run >= 0) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, 0xFF22160A); run = -1; }
+            }
+        }
+        for (int y = 0; y < w; y++) {
+            int run = -1, col = 0;
+            for (int x = 0; x <= w; x++) {
+                boolean in = x < w && m[y][x];
+                int colr = in ? (x < w / 2 ? 0xFFFFD84A : 0xFFE09A1C) : 0;
+                if (run >= 0 && colr != col) { g.fill(x0 + run, y0 + y, x0 + x, y0 + y + 1, col); run = -1; }
+                if (in && run < 0) { run = x; col = colr; }
+            }
+        }
+        g.pose().popMatrix();
     }
 
     /// Package-private for tests: the glow's opacity, breathing between faint and half over 1.6 seconds.
@@ -814,10 +980,7 @@ public final class TravelMapHandler {
         String pet = petOf(e.spot());
         int pet_ = pet == null ? 0 : petSize(plateRect(0, k, pixels, cx, cy, false)[3]);
         int gap = pet == null ? 0 : petGap(k);
-        // a contest there: a small gold trophy at the plate's end, as tall as a small letter and on the same line
-        boolean contest = PlaceEvents.contest(dannypx.foe.helper.FoeLocations.fromName(label)) != null;
-        int trophy = 7 * k, trophyRoom = contest ? 2 * k + trophy : 0;   // its width (7 font pixels, 5 tall)
-        int[] r = plateRect(font.width(label), k, pixels, cx, cy, current && !hot, gap + pet_ + trophyRoom);
+        int[] r = plateRect(font.width(label), k, pixels, cx, cy, current && !hot, gap + pet_);
         g.pose().pushMatrix();
         g.pose().scale(1f / pixels, 1f / pixels);
         int edge = current && !hot ? 2 : 1;
@@ -825,7 +988,7 @@ public final class TravelMapHandler {
         g.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], 0xF01A120C);
         if (pet != null) {
             // the pet on the right, level with the name, the same room round it as the letters have
-            int px = r[0] + r[2] - PLATE_PAD_X - trophyRoom - pet_, py = r[1] + (r[3] - pet_ + 1) / 2;
+            int px = r[0] + r[2] - PLATE_PAD_X - pet_, py = r[1] + (r[3] - pet_ + 1) / 2;
             // a thin "|" between the name and the pet, as tall as the letters, in the name's colour but soft
             int lx = px - DIVIDER_ROOM * k - dividerW(k), ly = r[1] + PLATE_PAD_Y;
             g.fill(lx, ly, lx + dividerW(k), ly + 7 * k, 0x80F2B36A);
@@ -833,7 +996,6 @@ public final class TravelMapHandler {
                     net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "textures/gui/pets/" + pet + "_" + pet_ + ".png"),
                     px, py, 0, 0, pet_, pet_, pet_, pet_, pet_, pet_);
         }
-        if (contest) drawTrophyPixels(g, r[0] + r[2] - PLATE_PAD_X - trophy, r[1] + PLATE_PAD_Y + 2 * k, k);
         g.pose().translate(r[0] + PLATE_PAD_X, r[1] + PLATE_PAD_Y);
         g.pose().scale(k, k);
         g.drawString(font, colouredLabel(e.stack().getHoverName(), label), 0, 0, 0xFFFFFFFF, false);
@@ -965,6 +1127,60 @@ public final class TravelMapHandler {
     /// The spot to pick by itself once the place's spots are up (the star on the whole map), and since when.
     private String autoSpot;
     private long autoSince;
+
+    /// "No favourite there": the first spot in the place's list is picked.
+    static final String FIRST_SPOT = "\u0000first";
+    private dannypx.foe.helper.FoeLocations.Location travelTo;
+    private long travelAt;
+
+    /// Teleports to a place (an event's Teleport button in chat): opens /travel, then goes into the place and to your
+    /// favourite spot there, or its first spot when you have none, as the star on the map does.
+    public void travelTo(dannypx.foe.helper.FoeLocations.Location place) {
+        travelTo(place, null);
+    }
+
+    /// The same, to `spot` there (null: your favourite, or its first spot).
+    public void travelTo(dannypx.foe.helper.FoeLocations.Location place, String spot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (place == null || mc.getConnection() == null) return;
+        travelTo = place;
+        travelSpot = spot;
+        travelAt = System.currentTimeMillis();
+        silentTravel = true;
+        mc.getConnection().sendCommand("travel");
+    }
+
+    /// The spot a trip started by FOE+ goes to (null: the favourite there, or the first spot).
+    private String travelSpot;
+    /// The menus of a trip FOE+ started are never drawn (they'd flash up for a moment).
+    private boolean silentTravel;
+
+    /// Whether this screen is one of a FOE+ trip's menus, worked through without being shown.
+    public boolean silent(Screen screen) {
+        if (!silentTravel) return false;
+        boolean going = travelTo != null || autoSpot != null;
+        if (!going || System.currentTimeMillis() - travelAt > 10_000L) { silentTravel = false; return false; }
+        if (classic() || !Configs.mainConfig.enableMod.get() || !Configs.mainConfig.travelMap.get()) return false;
+        return isLocationsMenu(screen) || isSpotsMenu(screen);
+    }
+
+    /// The locations menu is up and a teleport is waiting: into its place, and to its spot once that list is up.
+    private void travelOnOpen(ContainerScreen chest, Minecraft mc) {
+        if (travelTo == null) return;
+        if (System.currentTimeMillis() - travelAt > 8000L) { travelTo = null; return; }
+        if (mc.gameMode == null || mc.player == null) return;
+        for (Entry e : entries(chest)) {
+            if (e.spot() == null || dannypx.foe.helper.FoeLocations.fromName(e.spot().label()) != travelTo) continue;
+            travelTo = null;
+            mc.gameMode.handleInventoryMouseClick(chest.getMenu().containerId, e.slot(), 0, ClickType.PICKUP, mc.player);
+            zoomSpot = e.spot(); zoomChosenAt = System.currentTimeMillis(); zoomMenu = -1;
+            String fav = dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(e.spot().key());
+            autoSpot = travelSpot != null ? travelSpot : fav == null || fav.isBlank() ? FIRST_SPOT : fav;
+            travelSpot = null;
+            autoSince = System.currentTimeMillis(); autoClicked = false;
+            return;
+        }
+    }
     /// Its spot has been clicked: waiting for the teleport.
     private boolean autoClicked;
 
@@ -1030,11 +1246,13 @@ public final class TravelMapHandler {
         if (System.currentTimeMillis() - autoSince > 6000L) { autoSpot = null; return; }
         if (views.isEmpty() || mc.gameMode == null || mc.player == null) return;
         for (SpotView v : views) {
-            if (dannypx.foe.handler.logic.TravelFavouritesHandler.clean(spotName(v.stack())).equals(dannypx.foe.handler.logic.TravelFavouritesHandler.clean(autoSpot))) {
+            if (FIRST_SPOT.equals(autoSpot) || dannypx.foe.handler.logic.TravelFavouritesHandler.clean(spotName(v.stack())).equals(dannypx.foe.handler.logic.TravelFavouritesHandler.clean(autoSpot))) {
                 String name = spotName(v.stack());
                 mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, v.slot(), 0, ClickType.PICKUP, mc.player);
                 dannypx.foe.handler.logic.MapScanHandler.instance().noteSpot(name);
                 dannypx.foe.handler.logic.SpotHandler.instance().noteSpot(name);
+                noteTrip(zoomSpot, name);
+                onTrip = null;
                 autoClicked = true;
                 return;
             }
@@ -1115,7 +1333,7 @@ public final class TravelMapHandler {
         g.pose().translate(PAD + 2, TITLE_H + MAP_H + 6);
         g.pose().scale(labelScale, labelScale);
         String foot = out ? "Left-click: teleport   Right-click: view species"
-                : autoSpot != null ? "Going to your favourite: " + autoSpot
+                : autoSpot != null ? (FIRST_SPOT.equals(autoSpot) ? "Going to its first spot" : "Going to your favourite: " + autoSpot)
                 : "Pick a spot to teleport to   ★ on a spot: make it your favourite";
         g.drawString(font, Component.literal(foot).withStyle(ChatFormatting.GRAY), 0, 0, 0xFFAAAAAA, false);
         g.pose().popMatrix();
@@ -1177,6 +1395,7 @@ public final class TravelMapHandler {
                 mc.gameMode.handleInventoryMouseClick(menu.containerId, v.slot(), button, ClickType.PICKUP, mc.player);
                 dannypx.foe.handler.logic.MapScanHandler.instance().noteSpot(spotName);
                 dannypx.foe.handler.logic.SpotHandler.instance().noteSpot(spotName);
+                if (button == 0) noteTrip(zoomSpot, spotName);
                 click(mc);
                 break;
             }
@@ -1363,6 +1582,7 @@ public final class TravelMapHandler {
                 mc.gameMode.handleInventoryMouseClick(chest.getMenu().containerId, e.slot(), 0, ClickType.PICKUP, mc.player);
                 zoomSpot = e.spot(); zoomChosenAt = System.currentTimeMillis(); zoomMenu = -1;
                 autoSpot = dannypx.foe.handler.logic.TravelFavouritesHandler.instance().get(e.spot().key());
+                noteTrip(e.spot(), autoSpot);
                 autoSince = System.currentTimeMillis(); autoClicked = false;
                 click(mc);
                 return false;
@@ -1373,7 +1593,11 @@ public final class TravelMapHandler {
             // The very click the menu would make on that item.
             mc.gameMode.handleInventoryMouseClick(chest.getMenu().containerId, hit.slot(), button, ClickType.PICKUP, mc.player);
             // A left click on a place leads to its list of spots: the map zooms in on it for that.
-            if (button == 0 && hit.spot() != null) { zoomSpot = hit.spot(); zoomChosenAt = System.currentTimeMillis(); zoomMenu = -1; autoSpot = null; autoClicked = false; }
+            if (button == 0 && hit.spot() != null) {
+                zoomSpot = hit.spot(); zoomChosenAt = System.currentTimeMillis(); zoomMenu = -1; autoSpot = null; autoClicked = false;
+                // where you're going (the spot picked next, if a list of them comes up, takes its place)
+                noteTrip(hit.spot(), null);
+            }
             click(mc);
         }
         return false;

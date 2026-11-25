@@ -16,16 +16,16 @@ public class CommunityPanelElement extends PanelElement {
     }
 
     public CommunityPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.communityPanelXPosition.get() / 100f,
-                Configs.hudConfig.communityPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.communityPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.communityPanelYPosition),
                 Configs.hudConfig.communityPanelAlignment.get(),
                 Component.literal("Community Catches"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showCommunityPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.communityPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.communityPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.communityPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.communityPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.communityPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.communityPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.communityPanelOpacity.get(); }

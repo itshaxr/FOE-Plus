@@ -34,7 +34,9 @@ public final class BaitPriceOverrides {
         if (name == null) return "";
         String t = net.minecraft.ChatFormatting.stripFormatting(name);
         if (t == null) return "";
-        return t.replaceAll("[\\uE000-\\uF8FF]", " ").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
+        // the Smokin' Shad crankbait is "Sexy Shad" to the server: one price for both names
+        return t.replaceAll("[\\uE000-\\uF8FF]", " ").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim()
+                .replace("sexy shad", "smokin shad");
     }
 
     /// Your price for this bait, or null when it goes by its rarity.

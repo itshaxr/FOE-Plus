@@ -144,11 +144,28 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    private int amuletVersion = -1;
+    /// The pets whose amulet has a star colour you picked (Amulet Stars).
+    private final java.util.Set<ItemStack> amuletPicked = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
     private int amuletColor(ItemStack petStack, PetTagObject pet) {
+        if (amuletVersion != dannypx.foe.handler.store.AmuletStars.version) {
+            amuletVersion = dannypx.foe.handler.store.AmuletStars.version;
+            amuletColors.clear();
+            amuletPicked.clear();
+        }
         Integer cached = amuletColors.get(petStack);
         if (cached != null) return cached;
-        if (amuletColors.size() >= 512) amuletColors.clear();
-        int rgb = dannypx.foe.item.PetHeldItem.nameColor(dannypx.foe.item.PetHeldItem.decodeUncached(pet));
+        if (amuletColors.size() >= 512) { amuletColors.clear(); amuletPicked.clear(); }
+        ItemStack held = dannypx.foe.item.PetHeldItem.decodeUncached(pet);
+        String name = held.getHoverName().getString().replaceAll("[\\uE000-\\uF8FF]", "").trim();
+        dannypx.foe.handler.store.AmuletStars.seen(name);
+        // your colour for this amulet's star; else a Bigfoot Amulet's pink, the colour of its stat (its name's colour
+        // isn't); else the amulet name's colour
+        int own = dannypx.foe.screens.element.hud.GameXpBar.parse(dannypx.foe.handler.store.AmuletStars.colour(name));
+        int rgb = own >= 0 ? own : dannypx.foe.handler.store.AmuletStars.defaultColour(name) == 0xFF55FF
+                ? 0xFF55FF : dannypx.foe.item.PetHeldItem.nameColor(held);
+        if (own >= 0) amuletPicked.add(petStack);
         amuletColors.put(petStack, rgb);
         return rgb;
     }
@@ -162,8 +179,11 @@ public class ItemRendererHandler extends Handler {
 
         // Only for a held item (an amulet): a skin or trail alone gets no marker.
         if(validatedPet.value1() && validatedPet.value2().contains(PetTagObject.ITEM)) {
-            // The star in the amulet's colour, in both icon styles.
-            int rgb = amuletColor(stack, validatedPet.value2());
+            // The star in its amulet's colour if you picked one (Amulet Stars), else your one colour for every star,
+            // else the amulet's own, in both icon styles.
+            int amulet = amuletColor(stack, validatedPet.value2());
+            int custom = dannypx.foe.screens.element.hud.GameXpBar.parse(Configs.rendererConfig.petEquippedMarkerColor.get());
+            int rgb = amuletPicked.contains(stack) ? amulet : custom >= 0 ? custom : amulet;
             if (rgb < 0) guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarker, x, y, 16, 16, CommonColors.WHITE);
             else guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, petItemMarkerTint, x, y, 16, 16, 0xFF000000 | rgb);
         }
@@ -188,6 +208,12 @@ public class ItemRendererHandler extends Handler {
                 : maxLuck ? maxLuckMarker
                 : maxScale ? maxScaleMarker
                 : null;
+        if (marker == maxPerfectMarker && perfectInPlaceOfRating()) {
+            // inspecting pets: the 💯 takes the rating number's place (bottom right), bigger, and the number isn't drawn
+            int size = 12;
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, marker, x + 17 - size, y + 17 - size, size, size, CommonColors.WHITE);
+            return;
+        }
         if(marker != null) {
             int iconSize = 7;
             guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, marker, x, y + 16 - iconSize, iconSize, iconSize, CommonColors.WHITE);
@@ -264,8 +290,21 @@ public class ItemRendererHandler extends Handler {
         }
     }
 
+    /// Inspecting pets with the perfect pet marker on: a perfect pet shows its 💯 where its rating number goes.
+    private static boolean perfectInPlaceOfRating() {
+        return Configs.rendererConfig.showMaxPetStatsMarker.get()
+                && dannypx.foe.handler.logic.KeyBindHandler.instance().isInspecting(dannypx.foe.type.InspectAlways.Kind.PET);
+    }
+
+    static boolean perfect(PetTagObject pet) {
+        return pet.getClimatePercentMaxLuck() >= 1.0f && pet.getLocationPercentMaxLuck() >= 1.0f
+                && pet.getClimatePercentMaxScale() >= 1.0f && pet.getLocationPercentMaxScale() >= 1.0f;
+    }
+
     public void drawPetRating(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y) {
         Pair<Boolean, PetTagObject> validatedPet = ValidateItem.isPet(stack);
+        // a perfect pet's 💯 is drawn in the number's place (drawMaxPetStats)
+        if (validatedPet.value1() && perfectInPlaceOfRating() && perfect(validatedPet.value2())) return;
 
         if(validatedPet.value1()
                 && !validatedPet.value2().getRatingComponent().getString().isBlank()

@@ -25,8 +25,8 @@ public class _DebugField extends Element {
     public _DebugField() {
         super(WIDTH,
                 HEIGHT,
-                Configs.debugConfig.debugFieldXPosition.get() / 100f,
-                Configs.debugConfig.debugFieldYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldYPosition),
                 Configs.debugConfig.debugFieldAlignment.get(),
                 Configs.debugConfig.debugFieldGroup.translation("Debug Field"),
                 false);
@@ -35,8 +35,8 @@ public class _DebugField extends Element {
     public _DebugField(boolean isCopy) {
         super(WIDTH,
                 HEIGHT,
-                Configs.debugConfig.debugFieldXPosition.get() / 100f,
-                Configs.debugConfig.debugFieldYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldYPosition),
                 Configs.debugConfig.debugFieldAlignment.get(),
                 Configs.debugConfig.debugFieldGroup.translation("Debug Field"),
                 isCopy);
@@ -57,8 +57,8 @@ public class _DebugField extends Element {
         ) {
             // Position
             if(!isCopy) {
-                xPos = Configs.debugConfig.debugFieldXPosition.get() / 100f;
-                yPos = Configs.debugConfig.debugFieldYPosition.get() / 100f;
+                xPos = dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldXPosition);
+                yPos = dannypx.foe.helper.HudFine.get(Configs.debugConfig.debugFieldYPosition);
             }
 
             int x = switch (Configs.debugConfig.debugFieldAlignment.get()) {

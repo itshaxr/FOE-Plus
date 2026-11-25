@@ -29,8 +29,8 @@ public class ProfileElement extends Element {
     public ProfileElement() {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.profileElementXPosition.get() / 100f,
-                Configs.hudConfig.profileElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.profileElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.profileElementYPosition),
                 Configs.hudConfig.profileElementAlignment.get(),
                 Configs.hudConfig.profileElementGroup.translation("Profile Element"),
                 false);
@@ -39,8 +39,8 @@ public class ProfileElement extends Element {
     public ProfileElement(boolean isCopy) {
         super(TEXTURE_WIDTH,
                 TEXTURE_HEIGHT,
-                Configs.hudConfig.profileElementXPosition.get() / 100f,
-                Configs.hudConfig.profileElementYPosition.get() / 100f,
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.profileElementXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.profileElementYPosition),
                 Configs.hudConfig.profileElementAlignment.get(),
                 Configs.hudConfig.profileElementGroup.translation("Profile Element"),
                 isCopy);
@@ -56,8 +56,8 @@ public class ProfileElement extends Element {
         float scale = FoeRBoxes.scale(cfg.profileElementScale.get());
         int[] screen = FoeRBoxes.screen(scale);
         if (!isCopy) {
-            xPos = cfg.profileElementXPosition.get() / 100f;
-            yPos = cfg.profileElementYPosition.get() / 100f;
+            xPos = dannypx.foe.helper.HudFine.get(cfg.profileElementXPosition);
+            yPos = dannypx.foe.helper.HudFine.get(cfg.profileElementYPosition);
             alignment = cfg.profileElementAlignment.get();
         }
         boolean right = alignment == dannypx.foe.type.Alignment.TOP_RIGHT;

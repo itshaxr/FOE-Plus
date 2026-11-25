@@ -44,12 +44,18 @@ public final class CatchSound {
     static final class Learner {
         final long before, after;
         final boolean catchSound;
+        /// How many times it must have been heard with it (and 3 in 4 of the times) to be taken for it.
+        int need = NEED;
+        /// A shard's sound: what plays with every catch isn't it.
+        boolean shard = false;
         final ArrayDeque<Set<String>> rounds = new ArrayDeque<>();
         final List<Long> pending = new ArrayList<>();
         String learned;
         /// Every sound that plays with nearly every one (a bite can bring the bobber's splash and a sound of the
         /// server's own together).
         Set<String> all = new HashSet<>();
+        /// Sounds that repeat round a bite: never taken for it.
+        final Set<String> noisy = new HashSet<>();
 
         Learner(long before, long after, boolean catchSound, String start) {
             this.before = before;
@@ -63,29 +69,109 @@ public final class CatchSound {
                 long at = it.next();
                 if (now < at + after) continue;
                 it.remove();
-                Set<String> round = new HashSet<>();
-                for (Heard h : heard) if (h.at() >= at - before && h.at() <= at + after) round.add(h.id());
+                Map<String, Integer> times = new HashMap<>();
+                for (Heard h : heard) if (h.at() >= at - before && h.at() <= at + after) times.merge(h.id(), 1, Integer::sum);
+                // a sound heard again and again round one (the fish's splashes as it swims in, the reel's clicks while
+                // you reel it in) is never the bite's or the catch's own sound, which plays once
+                int often = catchSound ? 3 : 4;
+                for (var e : times.entrySet()) if (e.getValue() >= often) noisy.add(e.getKey());
+                Set<String> round = new HashSet<>(times.keySet());
+                round.removeAll(noisy);
+                if (shard) {
+                    round.removeAll(CATCH.all);
+                    if (CATCH.learned != null) round.remove(CATCH.learned);
+                }
                 rounds.addLast(round);
+                // in the log, so a bite sound FOE+ doesn't catch can be seen
+                if (!catchSound) LoggerHandler.info("Bite sound: heard around this bite: " + new java.util.TreeSet<>(round)
+                        + " (taken for the server's: " + new java.util.TreeSet<>(all) + ")");
                 while (rounds.size() > KEEP) rounds.pollFirst();
-                String found = pick(rounds, catchSound);
-                if (found != null) learned = found;
+                String found = pick(rounds, catchSound, need);
+                // the server pack's own catch sound, while it's still heard with the catches, stays the one
+                boolean keepSuccess = this == CATCH && SUCCESS.equals(learned)
+                        && rounds.stream().filter(r -> r.contains(SUCCESS)).count() * 2 >= rounds.size();
+                if (found != null && !keepSuccess && !found.equals(learned)) {
+                    learned = found;
+                    LoggerHandler.info((shard ? "Shard" : "Catch") + " sound: the server's is " + found);
+                }
+                if (learned != null && noisy.contains(learned)) learned = this == CATCH ? SUCCESS : null;
                 Set<String> every = pickAll(rounds, catchSound);
-                if (!every.isEmpty()) all = every;
+                if (!catchSound) {
+                    every.removeAll(noisy);
+                    // one taken before (or saved) that turns out to repeat: dropped
+                    if (all.removeAll(noisy)) {
+                        saveBite(all);
+                        LoggerHandler.info("Bite sound: no longer taken for the server's (it repeats): " + new java.util.TreeSet<>(noisy));
+                    }
+                }
+                if (!every.isEmpty() && !every.equals(all)) {
+                    // a sound once learned stays (one bite without it doesn't let it through again)
+                    if (!catchSound) every.addAll(all);
+                    if (!every.equals(all)) {
+                        all = every;
+                        if (!catchSound) {
+                            saveBite(every);
+                            LoggerHandler.info("Bite sound: the server's bite sound is " + new java.util.TreeSet<>(every));
+                        }
+                    }
+                }
             }
         }
     }
 
     static final int KEEP = 8, NEED = 3;
-    static final Learner CATCH = new Learner(2500L, 1500L, true, "minecraft:success_sound");
-    static final Learner BITE = new Learner(600L, 600L, false, null);
+    static final String SUCCESS = "minecraft:success_sound";
+    static final Learner CATCH = new Learner(2500L, 1500L, true, SUCCESS);
+    /// The server's sound for a climate shard (it comes with the shard's chat line).
+    static final Learner SHARD = new Learner(2000L, 1500L, true, null);
+    static {
+        SHARD.shard = true;
+        SHARD.need = 2;
+    }
+    public static final String SHARD_ID = "shard_caught";
+    /// The server's bite sound can come well before the BITE! title (the title comes a moment later), or a little after
+    /// it (a far bobber's sound comes late).
+    static final Learner BITE = new Learner(1500L, 1200L, false, null);
 
     private static long fishingUntil = 0L, biteAt = 0L;
+    /// The bobber that has had its bite (its BITE! came): until it's reeled in, the reeling's own sounds play.
+    private static int bitHook = -1;
+    private static long loggedAt = 0L;
     /// True while FOE+ plays its own sound (not one to listen to).
     public static boolean own = false;
 
     /// The sound FOE+ takes for the server's catch sound, or null.
     public static String learned() {
         return CATCH.learned;
+    }
+
+    /// Where the bite sounds learned are kept, so yours replaces the server's from the first bite next time too.
+    private static java.nio.file.Path biteFile() {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve(dannypx.foe.FishOnMCExtras.MOD_ID).resolve("bite_sound.txt");
+    }
+
+    static void saveBite(Set<String> ids) {
+        try {
+            java.nio.file.Files.createDirectories(biteFile().getParent());
+            java.nio.file.Files.writeString(biteFile(), String.join("\n", new java.util.TreeSet<>(ids)));
+        } catch (Exception | LinkageError e) {
+            // learned again next time
+        }
+    }
+
+    private static boolean biteLoaded = false;
+
+    private static void loadBite() {
+        if (biteLoaded) return;
+        biteLoaded = true;
+        try {
+            if (!java.nio.file.Files.exists(biteFile())) return;
+            Set<String> ids = new HashSet<>();
+            for (String l : java.nio.file.Files.readAllLines(biteFile())) if (!l.isBlank()) ids.add(l.trim());
+            if (BITE.all.isEmpty()) BITE.all = ids;
+        } catch (Exception | LinkageError e) {
+            // learned again
+        }
     }
 
     /// The sound FOE+ takes for the server's bite sound, or null (not heard enough bites yet).
@@ -96,7 +182,11 @@ public final class CatchSound {
     /// Package-private for tests: the sound among these rounds' sounds that plays in at least 3 of them and 3 in 4 of
     /// them, the most often; null when none does yet.
     static String pick(java.util.Collection<Set<String>> rounds, boolean catchSound) {
-        if (rounds.size() < NEED) return null;
+        return pick(rounds, catchSound, NEED);
+    }
+
+    static String pick(java.util.Collection<Set<String>> rounds, boolean catchSound, int need) {
+        if (rounds.size() < need) return null;
         Map<String, Integer> count = new HashMap<>();
         for (Set<String> r : rounds) for (String id : r) if (!excluded(id, catchSound)) count.merge(id, 1, Integer::sum);
         String best = null;
@@ -107,17 +197,19 @@ public final class CatchSound {
                 bestN = e.getValue();
             }
         }
-        if (best == null || bestN < NEED || bestN * 4 < rounds.size() * 3) return null;
+        if (best == null || bestN < need || bestN * 4 < rounds.size() * 3) return null;
         return best;
     }
 
     /// Package-private for tests: every sound that passes {@link #pick}'s test.
     static Set<String> pickAll(java.util.Collection<Set<String>> rounds, boolean catchSound) {
         Set<String> out = new HashSet<>();
-        if (rounds.size() < NEED) return out;
+        // a bite's sound is learned from 2 bites (each one missed is your sound and the server's both playing)
+        int need = catchSound ? NEED : 2;
+        if (rounds.size() < need) return out;
         Map<String, Integer> count = new HashMap<>();
         for (Set<String> r : rounds) for (String id : r) if (!excluded(id, catchSound)) count.merge(id, 1, Integer::sum);
-        for (var e : count.entrySet()) if (e.getValue() >= NEED && e.getValue() * 4 >= rounds.size() * 3) out.add(e.getKey());
+        for (var e : count.entrySet()) if (e.getValue() >= need && e.getValue() * 4 >= rounds.size() * 3) out.add(e.getKey());
         return out;
     }
 
@@ -125,8 +217,12 @@ public final class CatchSound {
         return pick(rounds, true);
     }
 
+    /// What a server may play for a bite that the list above would otherwise pass over (a note block's ding, a splash).
+    static final String[] BITE_MAY_BE = {"block.note_block", "entity.player.splash", "entity.generic.splash", "entity.experience_orb", "entity.player.levelup"};
+
     static boolean excluded(String id, boolean catchSound) {
         String path = id.contains(":") ? id.substring(id.indexOf(':') + 1) : id;
+        if (!catchSound) for (String n : BITE_MAY_BE) if (path.startsWith(n)) return false;
         for (String n : NOT_IT) if (path.startsWith(n)) return true;
         if (catchSound) for (String n : NOT_CATCH) if (path.startsWith(n)) return true;
         return false;
@@ -144,19 +240,53 @@ public final class CatchSound {
     /// A sound is about to play: true to stop it.
     public static boolean onPlay(SoundInstance sound, String id) {
         if (own || id == null) return false;
+        loadBite();
         long now = System.currentTimeMillis();
         heard.addLast(new Heard(id, now, sound));
         while (!heard.isEmpty() && now - heard.peekFirst().at() > 6000L) heard.pollFirst();
-        // the server's bite sound, just after a BITE!
-        if (BITE.all.contains(id) && now - biteAt <= BITE.after && replacingBite()) return true;
-        if (CATCH.learned == null || !CATCH.learned.equals(id) || !fishing(now)) return false;
-        NotifySounds.Setting s = NotifySounds.get(ID);
+        // the server's bite sound: never heard while yours is on. It can come before the BITE! title, so it's stopped
+        // whenever your line is out and waiting for a bite, and just after a BITE! (yours plays with the title)
+        if (BITE.all.contains(id) && replacingBite()) {
+            if (waitingForBite() || now - biteAt <= BITE.after) {
+                if (now - loggedAt > 2000L) {
+                    loggedAt = now;
+                    LoggerHandler.info("Bite sound: the server's " + id + " muted (yours plays instead)");
+                }
+                return true;
+            }
+        }
+        if (!fishing(now)) return false;
+        // the server's shard sound (its own switch), then its catch sound
+        if (SHARD.learned != null && SHARD.learned.equals(id)) return replace(SHARD_ID, now, true);
+        // the server's catch sound is left alone for now ("Fish caught" is out of the Sounds menu, to come back later);
+        // it's still listened for, so a shard's own sound can be told from it
+        return false;
+    }
+
+    private static long caughtPlayedAt = 0L, shardPlayedAt = 0L;
+
+    /// The server's sound for this: its own (switch on, no sound picked), yours instead, or none (switch off). Yours
+    /// plays once however many times the server's comes close together.
+    private static boolean replace(String kind, long now, boolean shard) {
+        NotifySounds.Setting s = NotifySounds.get(kind);
         if (s.on && (s.sound == null || s.sound.isBlank())) return false;   // the server's own sound
-        if (s.on) {
+        if (s.on && now - (shard ? shardPlayedAt : caughtPlayedAt) > 1500L) {
+            if (shard) shardPlayedAt = now; else caughtPlayedAt = now;
             own = true;
             try { NotifySounds.play(s, false); } finally { own = false; }
         }
         return true;
+    }
+
+    /// A shard was caught (its chat line came).
+    public static void onShard() {
+        SHARD.pending.add(System.currentTimeMillis());
+    }
+
+    /// Your line is out and hasn't had its bite yet.
+    private static boolean waitingForBite() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.player.fishing != null && mc.player.fishing.getId() != bitHook;
     }
 
     private static boolean fishing(long now) {
@@ -172,8 +302,11 @@ public final class CatchSound {
 
     /// BITE! came up (call before FOE+'s own bite sound plays): the server's bite sound that has just started stops.
     public static void onBite() {
+        loadBite();
         long now = System.currentTimeMillis();
         biteAt = now;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.player.fishing != null) bitHook = mc.player.fishing.getId();
         BITE.pending.add(now);
         if (BITE.all.isEmpty() || !replacingBite()) return;
         var sm = Minecraft.getInstance().getSoundManager();
@@ -185,5 +318,6 @@ public final class CatchSound {
         fishing(now);
         CATCH.tick(now);
         BITE.tick(now);
+        SHARD.tick(now);
     }
 }

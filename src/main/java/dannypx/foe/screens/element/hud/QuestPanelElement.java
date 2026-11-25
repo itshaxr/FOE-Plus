@@ -19,22 +19,27 @@ public class QuestPanelElement extends PanelElement {
     }
 
     public QuestPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.questPanelXPosition.get() / 100f,
-                Configs.hudConfig.questPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.questPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.questPanelYPosition),
                 Configs.hudConfig.questPanelAlignment.get(),
                 Component.literal("Quests Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showQuestPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.questPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.questPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.questPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.questPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.questPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.questPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.questPanelOpacity.get(); }
 
     /// Left-aligned even when anchored on the right, so the quest numbers and badges line up in
     /// columns whatever the progress numbers are.
+    @Override
+    protected boolean linesStartTogether() {
+        return true;
+    }
+
     @Override
     protected boolean alignTextToAnchor() {
         return false;
@@ -62,7 +67,8 @@ public class QuestPanelElement extends PanelElement {
         if (quests.isEmpty()) return lines;
 
         if (Configs.hudConfig.questPanelShowLocation.get())
-            lines.add(dannypx.foe.helper.FoeLocations.styledName(shortLocation(location.getString())));
+            lines.add(Component.empty().withStyle(st -> st.withInsertion(OWN_LINE_KEY))
+                    .append(dannypx.foe.helper.FoeLocations.styledName(shortLocation(location.getString()))));
         for (QuestDataHandler.Quest quest : quests) {
             Component prefix = Component.empty();   // no quest numbers: the order says it
             if (quest.isDone()) {

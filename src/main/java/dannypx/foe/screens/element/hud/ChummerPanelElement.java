@@ -19,16 +19,16 @@ public class ChummerPanelElement extends PanelElement {
     }
 
     public ChummerPanelElement(boolean isCopy) {
-        super(Configs.hudConfig.chummerPanelXPosition.get() / 100f,
-                Configs.hudConfig.chummerPanelYPosition.get() / 100f,
+        super(dannypx.foe.helper.HudFine.get(Configs.hudConfig.chummerPanelXPosition),
+                dannypx.foe.helper.HudFine.get(Configs.hudConfig.chummerPanelYPosition),
                 Configs.hudConfig.chummerPanelAlignment.get(),
                 Component.literal("Chummer Panel"),
                 isCopy);
     }
 
     @Override protected boolean enabled() { return Configs.hudConfig.showChummerPanel.get(); }
-    @Override protected float configX() { return Configs.hudConfig.chummerPanelXPosition.get() / 100f; }
-    @Override protected float configY() { return Configs.hudConfig.chummerPanelYPosition.get() / 100f; }
+    @Override protected float configX() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.chummerPanelXPosition); }
+    @Override protected float configY() { return dannypx.foe.helper.HudFine.get(Configs.hudConfig.chummerPanelYPosition); }
     @Override protected Alignment configAlignment() { return Configs.hudConfig.chummerPanelAlignment.get(); }
     @Override protected float scale() { return Configs.hudConfig.chummerPanelScale.get(); }
     @Override protected int opacityPercent() { return Configs.hudConfig.chummerPanelOpacity.get(); }
