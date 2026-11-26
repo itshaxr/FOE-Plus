@@ -40,6 +40,10 @@ public abstract class PanelElement extends Element {
         if (font != null) this.updateSize(this.buildLines(), font);
     }
 
+    /// Where each HUD was last drawn on screen (GUI pixels: x, y, width, height), by its id: for scrolling one with
+    /// the mouse while chat is open.
+    public static final java.util.Map<String, int[]> DRAWN = new java.util.concurrent.ConcurrentHashMap<>();
+
     /// Shown in its own place even when it's inside another HUD (the HUD Editor's preview of it).
     public boolean showAlone = false;
 
@@ -370,13 +374,19 @@ public abstract class PanelElement extends Element {
             net.minecraft.resources.Identifier.fromNamespaceAndPath(dannypx.foe.FishOnMCExtras.MOD_ID, "tags"));
 
     /// Package-private for tests: the line with its rarity badges short (the server's COMMON ... MYTHICAL as FOE+'s
-    /// C ... M, the same glyphs in FOE+'s font, and GIGANTIC as G); the rest as it was.
-    static Component shortBadges(Component line) {
+    /// C ... M, the variants as A, M, T and F, the same characters in FOE+'s font, and GIGANTIC as G); the rest as it was.
+    /// The server's rarity (COMMON ... MYTHICAL) and variant (ALBINO, MELANISTIC, TROPHY, FABLED) badges: FOE+'s
+    /// font has a short one for each, under the same character.
+    static boolean isBadgeGlyph(char c) {
+        return (c >= '\uF033' && c <= '\uF037') || (c >= '\uF041' && c <= '\uF044');
+    }
+
+    public static Component shortBadges(Component line) {
         boolean[] any = {false};
         line.visit((st, str) -> {
             for (int i = 0; i < str.length(); i++) {
                 char c = str.charAt(i);
-                if ((c >= '\uF033' && c <= '\uF037' && !TAGS.equals(st.getFont())) || (c == '\uE910' && TAGS.equals(st.getFont()))) any[0] = true;
+                if ((isBadgeGlyph(c) && !TAGS.equals(st.getFont())) || (c == '\uE910' && TAGS.equals(st.getFont()))) any[0] = true;
             }
             return java.util.Optional.empty();
         }, net.minecraft.network.chat.Style.EMPTY);
@@ -386,7 +396,7 @@ public abstract class PanelElement extends Element {
             StringBuilder run = new StringBuilder();
             for (int i = 0; i < str.length(); i++) {
                 char c = str.charAt(i);
-                boolean rarity = c >= '\uF033' && c <= '\uF037' && !TAGS.equals(st.getFont());
+                boolean rarity = isBadgeGlyph(c) && !TAGS.equals(st.getFont());
                 boolean gigantic = c == '\uE910' && TAGS.equals(st.getFont());
                 if (!rarity && !gigantic) {
                     run.append(c);
@@ -878,6 +888,7 @@ public abstract class PanelElement extends Element {
         HudLayout.Rect placed = HudLayout.clamp(wanted, minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
         outerX = Math.round(placed.x() / scale);
         outerY = Math.round(placed.y() / scale);
+        if (!isCopy) DRAWN.put(lookId(), new int[]{placed.x(), placed.y(), placed.w(), placed.h()});
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().scale(scale, scale);

@@ -23,6 +23,10 @@
     {"type":"bitmap","file":"fishonmcextras:font/tag/spooky.png","ascent":7,"height":7,"chars":["\uF102"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/frozen.png","ascent":7,"height":7,"chars":["\uF179"]},
     {"type":"bitmap","file":"fishonmcextras:font/tag/gigantic_badge.png","ascent":7,"height":7,"chars":["\uE910"]},
-    {"type":"bitmap","file":"fishonmcextras:font/tag/gigantic_short.png","ascent":7,"height":7,"chars":["\uE911"]}
+    {"type":"bitmap","file":"fishonmcextras:font/tag/gigantic_short.png","ascent":7,"height":7,"chars":["\uE911"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/albino_short.png","ascent":7,"height":7,"chars":["\uF041"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/melanistic_short.png","ascent":7,"height":7,"chars":["\uF042"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/trophy_short.png","ascent":7,"height":7,"chars":["\uF043"]},
+    {"type":"bitmap","file":"fishonmcextras:font/tag/fabled_short.png","ascent":7,"height":7,"chars":["\uF044"]}
   ]
 }

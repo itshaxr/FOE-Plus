@@ -56,6 +56,10 @@ jobs:
           entry = next((e for e in entries if e["versionNumber"] == version), None)
           notes = open(".github/release-header.md", encoding="utf-8").read()
           if entry:
+              # the entry's "message" goes to players in game (FOE+ reads this line); hidden on GitHub
+              message = " ".join(entry.get("message", "").split()).replace("--", "-")
+              if message:
+                  notes = "<!-- in-game: " + message + " -->\n" + notes
               # "by @phckd" would tag a GitHub account of that name: plain name on GitHub.
               notes += entry["changelog"].strip().replace(" by @", " by ") + "\n"
           open("release-notes.md", "w", encoding="utf-8").write(notes)

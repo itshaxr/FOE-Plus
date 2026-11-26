@@ -1,15 +1,22 @@
 {
-  "aah_yeah_yeah": {
+  "battle_riff": {
     "sounds": [
       {
-        "name": "foeplus:aah_yeah_yeah"
+        "name": "foeplus:battle_riff"
       }
     ]
   },
-  "animal_crossing_exclaim": {
+  "battle_won": {
     "sounds": [
       {
-        "name": "foeplus:animal_crossing_exclaim"
+        "name": "foeplus:battle_won"
+      }
+    ]
+  },
+  "boing_jump": {
+    "sounds": [
+      {
+        "name": "foeplus:boing_jump"
       }
     ]
   },
@@ -20,199 +27,59 @@
       }
     ]
   },
-  "crab_rave": {
+  "coin_pickup": {
     "sounds": [
       {
-        "name": "foeplus:crab_rave"
+        "name": "foeplus:coin_pickup"
       }
     ]
   },
-  "honk": {
+  "crab_dance": {
     "sounds": [
       {
-        "name": "foeplus:honk"
+        "name": "foeplus:crab_dance"
       }
     ]
   },
-  "jawbus": {
+  "deep_sea_bubbles": {
     "sounds": [
       {
-        "name": "foeplus:jawbus"
+        "name": "foeplus:deep_sea_bubbles"
       }
     ]
   },
-  "kirby_death": {
+  "dino_mount": {
     "sounds": [
       {
-        "name": "foeplus:kirby_death"
+        "name": "foeplus:dino_mount"
       }
     ]
   },
-  "kirby_sleep": {
+  "encounter_alert": {
     "sounds": [
       {
-        "name": "foeplus:kirby_sleep"
+        "name": "foeplus:encounter_alert"
       }
     ]
   },
-  "let_s_go_gambling": {
+  "extra_life_jingle": {
     "sounds": [
       {
-        "name": "foeplus:let_s_go_gambling"
+        "name": "foeplus:extra_life_jingle"
       }
     ]
   },
-  "level_start": {
+  "fallen_giant": {
     "sounds": [
       {
-        "name": "foeplus:level_start"
+        "name": "foeplus:fallen_giant"
       }
     ]
   },
-  "mario_1_up": {
+  "glitchy_vanish": {
     "sounds": [
       {
-        "name": "foeplus:mario_1_up"
-      }
-    ]
-  },
-  "mario_coin": {
-    "sounds": [
-      {
-        "name": "foeplus:mario_coin"
-      }
-    ]
-  },
-  "mario_goomba_stomp": {
-    "sounds": [
-      {
-        "name": "foeplus:mario_goomba_stomp"
-      }
-    ]
-  },
-  "mario_jump": {
-    "sounds": [
-      {
-        "name": "foeplus:mario_jump"
-      }
-    ]
-  },
-  "mario_pause": {
-    "sounds": [
-      {
-        "name": "foeplus:mario_pause"
-      }
-    ]
-  },
-  "mario_power_up": {
-    "sounds": [
-      {
-        "name": "foeplus:mario_power_up"
-      }
-    ]
-  },
-  "megalovania": {
-    "sounds": [
-      {
-        "name": "foeplus:megalovania"
-      }
-    ]
-  },
-  "money": {
-    "sounds": [
-      {
-        "name": "foeplus:money"
-      }
-    ]
-  },
-  "pikmin_throw": {
-    "sounds": [
-      {
-        "name": "foeplus:pikmin_throw"
-      }
-    ]
-  },
-  "shovel_knight_level_start": {
-    "sounds": [
-      {
-        "name": "foeplus:shovel_knight_level_start"
-      }
-    ]
-  },
-  "shovel_knight_victory": {
-    "sounds": [
-      {
-        "name": "foeplus:shovel_knight_victory"
-      }
-    ]
-  },
-  "snipe": {
-    "sounds": [
-      {
-        "name": "foeplus:snipe"
-      }
-    ]
-  },
-  "spider_man_2099": {
-    "sounds": [
-      {
-        "name": "foeplus:spider_man_2099"
-      }
-    ]
-  },
-  "squeak": {
-    "sounds": [
-      {
-        "name": "foeplus:squeak"
-      }
-    ]
-  },
-  "undertale_save": {
-    "sounds": [
-      {
-        "name": "foeplus:undertale_save"
-      }
-    ]
-  },
-  "undertale_victory": {
-    "sounds": [
-      {
-        "name": "foeplus:undertale_victory"
-      }
-    ]
-  },
-  "vulkan_dies": {
-    "sounds": [
-      {
-        "name": "foeplus:vulkan_dies"
-      }
-    ]
-  },
-  "yeti": {
-    "sounds": [
-      {
-        "name": "foeplus:yeti"
-      }
-    ]
-  },
-  "yoshi_mount": {
-    "sounds": [
-      {
-        "name": "foeplus:yoshi_mount"
-      }
-    ]
-  },
-  "undertale_encounter": {
-    "sounds": [
-      {
-        "name": "foeplus:undertale_encounter"
-      }
-    ]
-  },
-  "gaster_vanish": {
-    "sounds": [
-      {
-        "name": "foeplus:gaster_vanish"
+        "name": "foeplus:glitchy_vanish"
       }
     ]
   },
@@ -223,17 +90,52 @@
       }
     ]
   },
-  "kirby_extra_life": {
+  "honk": {
     "sounds": [
       {
-        "name": "foeplus:kirby_extra_life"
+        "name": "foeplus:honk"
       }
     ]
   },
-  "night_squid": {
+  "hype_horn": {
     "sounds": [
       {
-        "name": "foeplus:night_squid"
+        "name": "foeplus:hype_horn"
+      }
+    ]
+  },
+  "jackpot_spin": {
+    "sounds": [
+      {
+        "name": "foeplus:jackpot_spin"
+      }
+    ]
+  },
+  "knight_quest_start": {
+    "sounds": [
+      {
+        "name": "foeplus:knight_quest_start"
+      }
+    ]
+  },
+  "knight_victory": {
+    "sounds": [
+      {
+        "name": "foeplus:knight_victory"
+      }
+    ]
+  },
+  "level_start": {
+    "sounds": [
+      {
+        "name": "foeplus:level_start"
+      }
+    ]
+  },
+  "money": {
+    "sounds": [
+      {
+        "name": "foeplus:money"
       }
     ]
   },
@@ -244,31 +146,150 @@
       }
     ]
   },
-  "undertale_damage": {
+  "one_up_chime": {
     "sounds": [
       {
-        "name": "foeplus:undertale_damage"
+        "name": "foeplus:one_up_chime"
       }
     ]
   },
-  "undertale_rare_find": {
+  "ouch_hit": {
     "sounds": [
       {
-        "name": "foeplus:undertale_rare_find"
+        "name": "foeplus:ouch_hit"
       }
     ]
   },
-  "undertale_you_win": {
+  "pause_blip": {
     "sounds": [
       {
-        "name": "foeplus:undertale_you_win"
+        "name": "foeplus:pause_blip"
       }
     ]
   },
-  "final_fantasy_victory": {
+  "power_up": {
     "sounds": [
       {
-        "name": "foeplus:final_fantasy_victory"
+        "name": "foeplus:power_up"
+      }
+    ]
+  },
+  "puffball_faint": {
+    "sounds": [
+      {
+        "name": "foeplus:puffball_faint"
+      }
+    ]
+  },
+  "rare_drop": {
+    "sounds": [
+      {
+        "name": "foeplus:rare_drop"
+      }
+    ]
+  },
+  "rare_find": {
+    "sounds": [
+      {
+        "name": "foeplus:rare_find"
+      }
+    ]
+  },
+  "save_sparkle": {
+    "sounds": [
+      {
+        "name": "foeplus:save_sparkle"
+      }
+    ]
+  },
+  "sea_beast_roar": {
+    "sounds": [
+      {
+        "name": "foeplus:sea_beast_roar"
+      }
+    ]
+  },
+  "sleepy_snore": {
+    "sounds": [
+      {
+        "name": "foeplus:sleepy_snore"
+      }
+    ]
+  },
+  "snipe": {
+    "sounds": [
+      {
+        "name": "foeplus:snipe"
+      }
+    ]
+  },
+  "squeak": {
+    "sounds": [
+      {
+        "name": "foeplus:squeak"
+      }
+    ]
+  },
+  "stomp": {
+    "sounds": [
+      {
+        "name": "foeplus:stomp"
+      }
+    ]
+  },
+  "surprised_exclaim": {
+    "sounds": [
+      {
+        "name": "foeplus:surprised_exclaim"
+      }
+    ]
+  },
+  "tiny_toss": {
+    "sounds": [
+      {
+        "name": "foeplus:tiny_toss"
+      }
+    ]
+  },
+  "victory_fanfare": {
+    "sounds": [
+      {
+        "name": "foeplus:victory_fanfare"
+      }
+    ]
+  },
+  "victory_jingle": {
+    "sounds": [
+      {
+        "name": "foeplus:victory_jingle"
+      }
+    ]
+  },
+  "wah_wah_fail": {
+    "sounds": [
+      {
+        "name": "foeplus:wah_wah_fail"
+      }
+    ]
+  },
+  "web_hero_sting": {
+    "sounds": [
+      {
+        "name": "foeplus:web_hero_sting"
+      }
+    ]
+  },
+  "yeti_howl": {
+    "sounds": [
+      {
+        "name": "foeplus:yeti_howl"
+      }
+    ]
+  },
+  "you_win": {
+    "sounds": [
+      {
+        "name": "foeplus:you_win"
       }
     ]
   }

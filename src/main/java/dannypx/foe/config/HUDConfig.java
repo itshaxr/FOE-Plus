@@ -33,8 +33,12 @@ public class HUDConfig extends Config {
     public ValidatedBoolean foeXpBars = new ValidatedBoolean(false);
 
     @Name("Short rarity badges")
-    @Desc("§7On: the rarity badges in the HUDs (Quests, All-Time Stats, Session Stats and the rest) are short: the first letter on the rarity's colour (C, R, E, L, M, and G for gigantic)")
+    @Desc("§7On: the rarity badges in the HUDs (Quests, All-Time Stats, Session Stats and the rest) are short: the first letter on the rarity's colour (C, R, E, L, M, G for gigantic, and A, M, T, F for the variants)")
     public ValidatedBoolean shortRarityBadges = new ValidatedBoolean(false);
+
+    @Name("Short badges in chat")
+    @Desc("§7On: the rank, rarity and variant badges in chat are short (the first letter on the badge's colour): players' ranks (ANGLER, STAFF...), pets, catches and FOE+'s own lines")
+    public ValidatedBoolean chatShortRarityBadges = new ValidatedBoolean(false);
 
     @Name("Profile Element")
     @Desc("§7Your name, level, balance and face, in a box (only with the FOE-R HUD Style, in place of the top bar)")
@@ -479,7 +483,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean statsPanelShowGigantic = new ValidatedBoolean(true);
 
     @Name("Show percentages")
-    @Desc("§7The % after each count (and the catch rate after Total Caught), in the All-Time Stats and Session Stats HUDs. Off: only the counts and dry streaks")
+    @Desc("§7The % after each count (and the catch rate after Caught), in the All-Time Stats and Session Stats HUDs. Off: only the counts and dry streaks")
     public ValidatedBoolean statsPanelShowPercent = new ValidatedBoolean(true);
 
     @Name("Show Infusion Capsules")
@@ -875,6 +879,10 @@ public class HUDConfig extends Config {
 
     @Name("Background opacity in %")
     public ValidatedInt crewPanelOpacity = new ValidatedInt(40, 100, 0, ValidatedNumber.WidgetType.SLIDER);
+
+    @Name("Names shown at once")
+    @Desc("§7How many people the Social HUD lists at a time; with more, scroll it (open chat and use the mouse wheel over it)")
+    public ValidatedInt crewPanelMaxNames = new ValidatedInt(4, 30, 1, ValidatedNumber.WidgetType.SLIDER);
 
     @ConfigGroup.Pop
     @Name("Scale")

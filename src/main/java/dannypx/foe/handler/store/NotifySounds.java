@@ -29,7 +29,7 @@ public final class NotifySounds {
     private NotifySounds() {}
 
     public enum Group {
-        EVENTS("Event alerts"), SERVER("Server events"), CATCHES("Catches"), SOCIAL("Social & chat"), WARNINGS("Warnings"), CUSTOM("Your own triggers");
+        EVENTS("Event alerts"), SERVER("Server events"), ENDS("Event endings"), CATCHES("Catches"), SOCIAL("Social & chat"), WARNINGS("Warnings"), CUSTOM("Your own triggers");
         public final String label;
         Group(String label) { this.label = label; }
     }
@@ -59,9 +59,23 @@ public final class NotifySounds {
             new Kind("thunderstorm", "Thunderstorm", Group.SERVER, 0xC8C8FF, false),
             new Kind("booster", "Global booster", Group.SERVER, 0x55FF55, false),
 
+            // when each one ends (all off to start; each has a sound ready)
+            new Kind("witching_hour_end", "Witching Hour ends", Group.ENDS, 0xE09A5B, false),
+            new Kind("titanoboa_end", "Titanoboa ends", Group.ENDS, 0x7CD67C, false),
+            new Kind("bessie_end", "Bessie ends", Group.ENDS, 0x7FC4F0, false),
+            new Kind("rougarou_end", "Rougarou ends", Group.ENDS, 0xB7A2EC, false),
+            new Kind("garaboncias_end", "Garaboncias ends", Group.ENDS, 0xD6A2EC, false),
+            new Kind("fabled_event_end", "Fabled Fish event ends", Group.ENDS, 0xFC3E35, false),
+            new Kind("moon_set", "The moon sets", Group.ENDS, 0x60C2E9, false),
+            new Kind("blooming_oasis_end", "Blooming Oasis ends", Group.ENDS, 0xE87BD9, false),
+            new Kind("gold_rush_end", "Gold Rush ends", Group.ENDS, 0xFFC93C, false),
+            new Kind("fish_frenzy_end", "Fish Frenzy ends", Group.ENDS, 0x55FFFF, false),
+            new Kind("thunderstorm_end", "Thunderstorm ends", Group.ENDS, 0xC8C8FF, false),
+            new Kind("booster_end", "Global booster ends", Group.ENDS, 0x55FF55, false),
+
             new Kind("fish_bite", "Fish bite (BITE!)", Group.CATCHES, 0x55FFFF, false),
             // ("Fish caught (server's sound)" is out for now, to be looked at again later)
-            new Kind(dannypx.foe.handler.logic.CatchSound.SHARD_ID, "Shard caught (server's sound)", Group.CATCHES, 0x55FF55, true),
+            new Kind(dannypx.foe.handler.logic.CatchSound.SHARD_ID, "Shard caught", Group.CATCHES, 0x55FF55, true),
             // the big catch sounds, from tacklebox by landofif (MIT, used with permission)
             new Kind("fabled", "Fabled catch", Group.CATCHES, 0xFC3E35, true),
             new Kind("trophy", "Trophy", Group.CATCHES, 0xFFC93C, true),
@@ -69,7 +83,9 @@ public final class NotifySounds {
             new Kind("gigantic", "Gigantic", Group.CATCHES, 0xFF5555, true),
             new Kind("albino", "Albino", Group.CATCHES, 0xF2F2F2, true),
             new Kind("melanistic", "Melanistic", Group.CATCHES, 0x8A8AA0, true),
-            new Kind("rare_catch", "Capsule / Lightning Bottle", Group.CATCHES, 0xB04CFF, false),
+            new Kind("infusion_capsule", "Infusion Capsule", Group.CATCHES, 0xFF5555, false),
+            new Kind("lightning_bottle", "Lightning Bottle", Group.CATCHES, 0xFFFF55, false),
+            new Kind("prospecting_amulet", "Prospecting Amulet", Group.CATCHES, 0xB04CFF, false),
             new Kind("pet_pulled", "Pet pulled", Group.CATCHES, 0xB04CFF, false),
             new Kind("perfect_pet", "Perfect pet pulled", Group.CATCHES, 0xFF55FF, true),
             new Kind("reward_pet", "Contest / event / quest pet", Group.CATCHES, 0xFFAA00, false),
@@ -181,12 +197,21 @@ public final class NotifySounds {
     public static Setting get(String id) {
         load();
         Setting s = saved.sounds.get(id);
+        if (s == null && RARE_SPLIT.contains(id) && saved.sounds.get("rare_catch") != null) {
+            // these were one sound ("Capsule / Lightning Bottle") before: each starts as you had it
+            s = saved.sounds.get("rare_catch").copy();
+            saved.sounds.put(id, s);
+            save();
+        }
         if (s == null) {
             s = defaults(id);
             saved.sounds.put(id, s);
         }
         return s;
     }
+
+    /// What "Capsule / Lightning Bottle" (rare_catch) became: a sound each.
+    static final List<String> RARE_SPLIT = List.of("infusion_capsule", "lightning_bottle", "prospecting_amulet");
 
     /// The catches with a big catch sound, in the order one is picked when a fish is several of them.
     public static final List<String> BIG_CATCH = List.of("fabled", "trophy", "mythical", "gigantic", "albino", "melanistic");
@@ -274,6 +299,7 @@ public final class NotifySounds {
                         s.echoVolume = 0.5f;
                     }
                 }
+                case ENDS -> s.sound = "minecraft:block.beacon.deactivate";
                 default -> {
                     // a perfect pet: a fanfare from the start (pick another in Sounds)
                     if (id.equals("perfect_pet")) s.sound = "minecraft:ui.toast.challenge_complete";
@@ -350,7 +376,48 @@ public final class NotifySounds {
         String old = t.sound;
         if (old.startsWith("fishonmcextras:custom.")) t.sound = "foeplus:" + old.substring("fishonmcextras:custom.".length());
         else if (old.startsWith("fishonmcextras:file/")) t.sound = "foeplus:file/" + old.substring("fishonmcextras:file/".length());
+        t.sound = renamedSound(t.sound);
         return !old.equals(t.sound);
+    }
+
+    /// FOE+'s own sounds that have new names (named for what they sound like): the old ids, and the new.
+    static final Map<String, String> RENAMED = Map.ofEntries(
+            Map.entry("aah_yeah_yeah", "hype_horn"), Map.entry("let_s_go_gambling", "jackpot_spin"),
+            Map.entry("night_squid", "deep_sea_bubbles"), Map.entry("yeti", "yeti_howl"),
+            Map.entry("aww_dang_it", "wah_wah_fail"), Map.entry("puffball_victory", "victory_jingle"),
+            Map.entry("animal_crossing_exclaim", "surprised_exclaim"),
+            Map.entry("crab_rave", "crab_dance"),
+            Map.entry("final_fantasy_victory", "victory_fanfare"),
+            Map.entry("gaster_vanish", "glitchy_vanish"),
+            Map.entry("jawbus", "sea_beast_roar"),
+            Map.entry("kirby_death", "puffball_faint"),
+            Map.entry("kirby_extra_life", "extra_life_jingle"),
+            Map.entry("kirby_sleep", "sleepy_snore"),
+            Map.entry("mario_1_up", "one_up_chime"),
+            Map.entry("mario_coin", "coin_pickup"),
+            Map.entry("mario_goomba_stomp", "stomp"),
+            Map.entry("mario_jump", "boing_jump"),
+            Map.entry("mario_pause", "pause_blip"),
+            Map.entry("mario_power_up", "power_up"),
+            Map.entry("megalovania", "battle_riff"),
+            Map.entry("pikmin_throw", "tiny_toss"),
+            Map.entry("shovel_knight_level_start", "knight_quest_start"),
+            Map.entry("shovel_knight_victory", "knight_victory"),
+            Map.entry("spider_man_2099", "web_hero_sting"),
+            Map.entry("undertale_damage", "ouch_hit"),
+            Map.entry("undertale_encounter", "encounter_alert"),
+            Map.entry("undertale_rare_find", "rare_find"),
+            Map.entry("undertale_save", "save_sparkle"),
+            Map.entry("undertale_victory", "battle_won"),
+            Map.entry("undertale_you_win", "you_win"),
+            Map.entry("vulkan_dies", "fallen_giant"),
+            Map.entry("yoshi_mount", "dino_mount"));
+
+    /// Package-private for tests: "foeplus:mario_coin" → "foeplus:coin_pickup"; any other as it is.
+    static String renamedSound(String id) {
+        if (id == null || !id.startsWith("foeplus:")) return id;
+        String now = RENAMED.get(id.substring("foeplus:".length()));
+        return now == null ? id : "foeplus:" + now;
     }
 
     /// For tests.
@@ -592,7 +659,16 @@ public final class NotifySounds {
 
     private static void started(String key, boolean now) {
         Boolean before = was.put(key, now);
-        if (before != null && !before && now) play(key.startsWith("booster:") ? "booster" : key);
+        if (before == null) return;
+        if (!before && now) play(key.startsWith("booster:") ? "booster" : key);
+        // and its sound when it ends
+        if (before && !now) play(endOf(key));
+    }
+
+    /// Package-private for tests: the sound for when this server event ends.
+    static String endOf(String key) {
+        if (key.startsWith("booster:")) return "booster_end";
+        return key.equals("moon_rise") ? "moon_set" : key + "_end";
     }
     //endregion
 }

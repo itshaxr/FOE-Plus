@@ -114,6 +114,10 @@ public final class HudLooks {
             if (Files.exists(f)) {
                 Map<String, Look> read = GSON.fromJson(Files.readString(f), new TypeToken<Map<String, Look>>() {}.getType());
                 if (read != null) looks.putAll(read);
+                // All-Time Stats' lines lost their "Total" (1.1.4): lines hidden by the old label stay hidden
+                Look stats = looks.get("StatsPanelElement");
+                if (stats != null && stats.hidden != null)
+                    stats.hidden.replaceAll(k -> k != null && k.startsWith("total ") ? k.substring(6) : k);
             }
         } catch (IOException | RuntimeException e) {
             LoggerHandler.error(e);

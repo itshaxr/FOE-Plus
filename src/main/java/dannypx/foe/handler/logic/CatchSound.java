@@ -80,6 +80,8 @@ public final class CatchSound {
                 if (shard) {
                     round.removeAll(CATCH.all);
                     if (CATCH.learned != null) round.remove(CATCH.learned);
+                    // a sound that plays with ordinary catches too is never a shard's own
+                    round.removeAll(commonWithCatches());
                 }
                 rounds.addLast(round);
                 // in the log, so a bite sound FOE+ doesn't catch can be seen
@@ -95,6 +97,10 @@ public final class CatchSound {
                     LoggerHandler.info((shard ? "Shard" : "Catch") + " sound: the server's is " + found);
                 }
                 if (learned != null && noisy.contains(learned)) learned = this == CATCH ? SUCCESS : null;
+                if (shard && learned != null && commonWithCatches().contains(learned)) {
+                    LoggerHandler.info("Shard sound: " + learned + " plays with ordinary catches too, so it isn't the shard's");
+                    learned = null;
+                }
                 Set<String> every = pickAll(rounds, catchSound);
                 if (!catchSound) {
                     every.removeAll(noisy);
@@ -129,6 +135,17 @@ public final class CatchSound {
         SHARD.need = 2;
     }
     public static final String SHARD_ID = "shard_caught";
+
+    /// Package-private for tests: the sounds heard round at least 1 in 4 of your recent catches (once 4 have been
+    /// heard): those play with ordinary fish, so none of them is a shard's own sound.
+    static Set<String> commonWithCatches() {
+        Set<String> out = new HashSet<>();
+        if (CATCH.rounds.size() < 4) return out;
+        Map<String, Integer> count = new HashMap<>();
+        for (Set<String> r : CATCH.rounds) for (String id : r) count.merge(id, 1, Integer::sum);
+        for (var e : count.entrySet()) if (e.getValue() * 4 >= CATCH.rounds.size()) out.add(e.getKey());
+        return out;
+    }
     /// The server's bite sound can come well before the BITE! title (the title comes a moment later), or a little after
     /// it (a far bobber's sound comes late).
     static final Learner BITE = new Learner(1500L, 1200L, false, null);
@@ -256,31 +273,29 @@ public final class CatchSound {
             }
         }
         if (!fishing(now)) return false;
-        // the server's shard sound (its own switch), then its catch sound
-        if (SHARD.learned != null && SHARD.learned.equals(id)) return replace(SHARD_ID, now, true);
+        // the server's shard sound: muted when you've picked your own (it plays with the shard's chat line) or turned
+        // it off; your sound is never played from here, only from the shard's line, so it can't go off with other fish
+        if (SHARD.learned != null && SHARD.learned.equals(id) && !commonWithCatches().contains(id)) {
+            NotifySounds.Setting s = NotifySounds.get(SHARD_ID);
+            return !s.on || (s.sound != null && !s.sound.isBlank());
+        }
         // the server's catch sound is left alone for now ("Fish caught" is out of the Sounds menu, to come back later);
         // it's still listened for, so a shard's own sound can be told from it
         return false;
     }
 
-    private static long caughtPlayedAt = 0L, shardPlayedAt = 0L;
+    private static long shardPlayedAt = 0L;
 
-    /// The server's sound for this: its own (switch on, no sound picked), yours instead, or none (switch off). Yours
-    /// plays once however many times the server's comes close together.
-    private static boolean replace(String kind, long now, boolean shard) {
-        NotifySounds.Setting s = NotifySounds.get(kind);
-        if (s.on && (s.sound == null || s.sound.isBlank())) return false;   // the server's own sound
-        if (s.on && now - (shard ? shardPlayedAt : caughtPlayedAt) > 1500L) {
-            if (shard) shardPlayedAt = now; else caughtPlayedAt = now;
+    /// A shard was caught (its chat line came): your shard sound plays now (once), and FOE+ listens for the server's.
+    public static void onShard() {
+        long now = System.currentTimeMillis();
+        SHARD.pending.add(now);
+        NotifySounds.Setting s = NotifySounds.get(SHARD_ID);
+        if (s.on && s.sound != null && !s.sound.isBlank() && now - shardPlayedAt > 1500L) {
+            shardPlayedAt = now;
             own = true;
             try { NotifySounds.play(s, false); } finally { own = false; }
         }
-        return true;
-    }
-
-    /// A shard was caught (its chat line came).
-    public static void onShard() {
-        SHARD.pending.add(System.currentTimeMillis());
     }
 
     /// Your line is out and hasn't had its bite yet.

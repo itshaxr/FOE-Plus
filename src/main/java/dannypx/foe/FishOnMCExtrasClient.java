@@ -125,9 +125,13 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         // your sound triggers' "Colour the words in chat"
         ClientReceiveMessageEvents.MODIFY_GAME.register((message, overlay) -> overlay ? message
                 : dannypx.foe.helper.Safe.get("chat sound trigger colours", () -> dannypx.foe.handler.store.NotifySounds.restyle(message), message));
+        // short badges in chat: ChatComponentMixin (every line, players' chat and FOE+'s own too)
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> dannypx.foe.helper.Safe.run("game message", () -> this.receiveGameMessage(message, overlay)));
         ClientSendMessageEvents.MODIFY_CHAT.register(message -> dannypx.foe.helper.Safe.get("chat send", () -> this.modifyChatMessage(message), message));
-        ClientSendMessageEvents.COMMAND.register(command -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
+        ClientSendMessageEvents.COMMAND.register(command -> {
+            dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent();
+            dannypx.foe.helper.Safe.run("find typed", () -> dannypx.foe.handler.logic.FindHandler.instance().onCommandSent(command));
+        });
         ClientSendMessageEvents.CHAT.register(message -> dannypx.foe.handler.logic.SilentMenuHandler.instance().onMessageSent());
         ClientEntityEvents.ENTITY_UNLOAD.register((entity, level) -> dannypx.foe.helper.Safe.run("entity unload", () -> this.onEntityUnload(entity, level)));
         ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> dannypx.foe.helper.Safe.run("screen " + screen.getClass().getSimpleName(), () -> this.onAfterInitScreen(mc, screen, w, h)));

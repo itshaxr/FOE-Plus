@@ -71,27 +71,27 @@ public class StatsPanelElement extends PanelElement {
         int capsules = handler.rareCatchAmount(dannypx.foe.handler.logic.RareCatchHandler.INFUSION_CAPSULE);
         int bottles = handler.rareCatchAmount(dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE);
 
-        // Total Caught, with the share of your catches that were fish (pets, capsules and bottles
+        // Caught, with the share of your catches that were fish (pets, capsules and bottles
         // are the other things you pull).
         // the catch rate the server shows (the same as the top bar's); FOE+'s own share of fish
         // among everything you pulled only when the server's isn't there
         String serverRate = dannypx.foe.handler.fetch.ScoreboardHandler.instance().getCatchRate().getString().trim();
         String rate = serverRate.matches("[0-9.]+%") ? serverRate : fishShare(fishTotal, stats.petTotal + capsules + bottles);
-        lines.add(join(total("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
+        lines.add(join(named("Caught", CAUGHT_COLOR, ROD), white(String.valueOf(fishTotal) + " "),
                 showPercent() ? Component.literal(rate).withStyle(ChatFormatting.GREEN) : Component.empty()));
         lines.add(join(plain("Fish/Hour "), white(String.format("%.1f", session.getFishPerHour()))));
         lines.add(join(plain("Fish Time "), white(formatTime(session.getFishTimeMs()))));
-        lines.add(join(plain("Total Quests "), white(String.valueOf(stats.questsCompleted))));
+        lines.add(join(plain("Quests "), white(String.valueOf(stats.questsCompleted))));
         lines.add(Component.empty());
 
-        lines.add(totalLine("Pets", PET_COLOR, PAW, stats.petTotal, handler.petDryStreak()));
-        lines.add(totalLine("Shards", SHARD_COLOR, SHARD, handler.shardTotal(), handler.shardDryStreak()));
+        lines.add(namedLine("Pets", PET_COLOR, PAW, stats.petTotal, handler.petDryStreak()));
+        lines.add(namedLine("Shards", SHARD_COLOR, SHARD, handler.shardTotal(), handler.shardDryStreak()));
         if (Configs.hudConfig.statsPanelShowCapsules.get()) {
-            lines.add(totalLine("Infusion", CAPSULE_COLOR, CAPSULE, capsules,
+            lines.add(namedLine("Infusion", CAPSULE_COLOR, CAPSULE, capsules,
                     handler.rareCatchStreak(dannypx.foe.handler.logic.RareCatchHandler.INFUSION_CAPSULE)));
         }
         if (Configs.hudConfig.statsPanelShowBottles.get()) {
-            lines.add(totalLine("Bottle", BOTTLE_COLOR, BOLT, bottles,
+            lines.add(namedLine("Bottle", BOTTLE_COLOR, BOLT, bottles,
                     handler.rareCatchStreak(dannypx.foe.handler.logic.RareCatchHandler.LIGHTNING_BOTTLE)));
         }
         lines.add(Component.empty());
@@ -112,7 +112,7 @@ public class StatsPanelElement extends PanelElement {
             giganticLine = join(GIGANTIC_BADGE,
                     white(" " + amount + " "),
                     share(amount, fishTotal, true),
-                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY));
+                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.GRAY));
             lines.add(giganticLine);
         }
         lines.add(Component.empty());
@@ -125,22 +125,36 @@ public class StatsPanelElement extends PanelElement {
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(variant),
                     white(" " + amount + " "),
                     share(amount, fishTotal, true),
-                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.DARK_GRAY)));
+                    Component.literal("(" + dryStreak + ")").withStyle(ChatFormatting.GRAY)));
         }
 
         return lines;
     }
 
-    /// "Total Pets 🐾 " : "Total" in grey, the name and its icon in the item's colour.
+    /// "Total Pets 🐾 " : "Total" in grey, the name and its icon in the item's colour (Session Stats).
     static Component total(String name, int color, String icon) {
-        return join(plain("Total "), Component.literal(name + " ").withColor(color),
+        return join(plain("Total "), named(name, color, icon));
+    }
+
+    /// "Pets 🐾 ": the name and its icon in the item's colour (All-Time Stats, which has no "Total").
+    static Component named(String name, int color, String icon) {
+        return join(Component.literal(name + " ").withColor(color),
                 Component.literal(icon).withStyle(style -> style.withFont(ICON_FONT).withColor(color)),
                 Component.literal(" "));
     }
 
     /// "Total Pets 🐾 1721 (657)": amount, and the dry streak in brackets ("?" until it's known).
     static Component totalLine(String name, int color, String icon, int amount, int dryStreak) {
-        return join(total(name, color, icon), white(amount + " "),
+        return countLine(total(name, color, icon), amount, dryStreak);
+    }
+
+    /// "Pets 🐾 1721 (657)", as {@link #totalLine} without "Total".
+    static Component namedLine(String name, int color, String icon, int amount, int dryStreak) {
+        return countLine(named(name, color, icon), amount, dryStreak);
+    }
+
+    private static Component countLine(Component label, int amount, int dryStreak) {
+        return join(label, white(amount + " "),
                 Component.literal("(" + (dryStreak < 0 ? "?" : String.valueOf(dryStreak)) + ")").withStyle(ChatFormatting.GRAY));
     }
 

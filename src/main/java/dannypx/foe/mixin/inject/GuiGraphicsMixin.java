@@ -60,6 +60,8 @@ public abstract class GuiGraphicsMixin {
                         + " | pet " + dannypx.foe.item.ValidateItem.isPet(item).value1() + " | data " + (item.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA) != null));
             } else if (style.getHoverEvent() instanceof net.minecraft.network.chat.HoverEvent.ShowText(Component text)) {
                 Component worth = Configs.mainConfig.baitTooltipValue.get() ? dannypx.foe.handler.fetch.TooltipHandler.baitTextWithValue(text) : null;
+                // a pet shared as text: its price from your Pet Prices sheet
+                if (worth == null && Configs.mainConfig.petTooltipPrice.get()) worth = dannypx.foe.handler.fetch.TooltipHandler.petTextWithPrice(text);
                 // a shared bait or pet (its lines, then the server's "Sent at"): only on its name, not anywhere on its
                 // message; elsewhere only when it was sent
                 String sent = dannypx.foe.helper.ChatHoverSpot.sentAt(text);

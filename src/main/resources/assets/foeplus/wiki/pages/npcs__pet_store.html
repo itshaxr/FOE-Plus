@@ -1,0 +1,57 @@
+<article id="main-content">
+<!-- - - - - - - - - ARTICLE CONTENT - - - - - - - -->
+<h1 class="sectionedit1" id="pet_store">Pet Store</h1>
+<div class="level1">
+<div class="infobox" style="border: 1px solid #aaa; background-color: #333; color: #eee; width: 300px; float: right; margin: 0 0 1em 1em; padding: 0.5em; font-size: 95%; line-height: 1.5em;"><div class="infobox-title" style="font-size: 120%; font-weight: bold; margin-bottom: 0.5em; color: #fff;">
+<p>
+The Pet Store
+</p>
+</div><div class="infobox-image" style="text-align: center; margin-bottom: 0.5em;"><img alt="The Pet Store" src="/lib/exe/fetch.php?media=npcs:petstore.png" style="max-width: 100%; height: auto;"/></div><table class="infobox-table" style="width: 100%; border-spacing: 0;"></table></div>
+<p>
+The Pet Store, located to the east of spawn (to the left), is an <a class="wikilink1" data-wiki-id="npcs" href="/doku.php?id=npcs" title="npcs">NPC</a> used to sell unwanted <a class="wikilink1" data-wiki-id="pets" href="/doku.php?id=pets" title="pets">pets</a> that are below <span style="color:#54fcfc;">excellent</span> for <span style="color:#54fc54;">money</span>. The higher the rating and rarity, the more <span style="color:#54fc54;">money</span> you receive.
+</p>
+</div>
+<h4 id="pet_prices">Pet Prices</h4>
+<div class="level4">
+<p>
+Below are some prices for different Rarities and Ratings:
+</p>
+<div class="wrap_centeralign plugin_wrap"><div class="table sectionedit4"><table class="inline">
+<thead>
+<tr class="row0">
+<th class="col0 centeralign">  Pet rarity  </th><th class="col1 centeralign"> <span style="color:#733f3a;">Sickly <br/>
+(20%)</span> </th><th class="col2 centeralign"> <span style="color:#fcfc54;">Below Average <br/>
+(30%)</span> </th><th class="col3 centeralign"> <span style="color:#fca800;">Average <br/>
+(40%)</span> </th><th class="col4 centeralign"> <span style="color:#54fc54;">Good <br/>
+(50%)</span> </th><th class="col5 centeralign"> <span style="color:#00a800;">Great <br/>
+(60%)</span> </th><th class="col6 centeralign"> <span style="color:#00a800;">Great <br/>
+(70%)</span> </th>
+</tr>
+</thead>
+<tr class="row1">
+<td class="col0"> <img alt="" class="media" loading="lazy" src="/lib/exe/fetch.php?w=78&amp;tok=d57557&amp;media=prefix_common.png" width="78"/> </td><td class="col1"> $156.25 </td><td class="col2"> $312.5 </td><td class="col3"> $625 </td><td class="col4"> $1,250 </td><td class="col5"> $2,500 </td><td class="col6"> $5,000 </td>
+</tr>
+<tr class="row2">
+<td class="col0"> <img alt="" class="media" loading="lazy" src="/lib/exe/fetch.php?w=54&amp;tok=ebd57d&amp;media=prefix_rare.png" width="54"/> </td><td class="col1"> $312.5 </td><td class="col2"> $625 </td><td class="col3"> $1,250 </td><td class="col4"> $2,500 </td><td class="col5"> $5,000 </td><td class="col6"> $10,000 </td>
+</tr>
+<tr class="row3">
+<td class="col0"> <img alt="" class="media" loading="lazy" src="/lib/exe/fetch.php?w=54&amp;tok=dacef3&amp;media=prefix_epic.png" width="54"/> </td><td class="col1"> $625 </td><td class="col2"> $1,250 </td><td class="col3"> $2,500 </td><td class="col4"> $5,000 </td><td class="col5"> $10,000 </td><td class="col6"> $20,000 </td>
+</tr>
+<tr class="row4">
+<td class="col0"> <img alt="" class="media" loading="lazy" src="/lib/exe/fetch.php?w=114&amp;tok=520f2e&amp;media=prefix_legendary.png" width="114"/></td><td class="col1"> $1,250 </td><td class="col2"> $2,500 </td><td class="col3"> $5,000 </td><td class="col4"> $10,000 </td><td class="col5"> $20,000 </td><td class="col6"> $40,000 </td>
+</tr>
+<tr class="row5">
+<td class="col0"> <img alt="" class="media" loading="lazy" src="/lib/exe/fetch.php?w=102&amp;tok=885cbd&amp;media=prefix_mythical.png" width="102"/> </td><td class="col1"> $2,500 </td><td class="col2"> $5,000 </td><td class="col3"> $10,000 </td><td class="col4"> $20,000 </td><td class="col5"> $40,000 </td><td class="col6"> $80,000 </td>
+</tr>
+</table></div>
+</div><div class="wrap_clear plugin_wrap"></div>
+<p>
+The formula for the sale price of a <a class="wikilink1" data-wiki-id="pets" href="/doku.php?id=pets" title="pets">pet</a> is as follows:
+</p>
+<pre class="code">Price = (5000*2^[10*{Rating-0.7}])*Rarity</pre>
+<p>
+Where Rating is a decimal (e.g. 50% is 0.5), and Rarity is how many commons merge into it. So Common = 1, Rare = 2, Epic = 4, Legendary = 8, and Mythic = 16.
+</p>
+</div>
+<!-- - - - - - - - - END OF ARTICLE - - - - - - - -->
+</article>

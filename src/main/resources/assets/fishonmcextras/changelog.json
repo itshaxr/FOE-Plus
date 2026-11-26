@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.4+1.21.11",
+      "name": "FOE+ 1.1.4+1.21.11",
+      "datePublished": "2026-11-26",
+      "changelog": "## What's Changed\n- New: Bait packs in Bait Prices (O → Tools → Bait Prices → Packs): Standard, Advanced and every location's packs, each with its own picture; set what each is worth to you by @phckd\n- New: update notices while you play: when a new FOE+ comes out you're told once, with [What's new] to hover for the changes by @phckd\n- New: event ending sounds (Sounds → Event endings): Witching Hour, Titanoboa, Bessie, Rougarou, Garaboncias, Fabled, moon set, Blooming Oasis, Gold Rush, Fish Frenzy, thunderstorms and boosters by @phckd\n- New: Infusion Capsule, Lightning in a Bottle and Prospecting Amulet each have their own sound by @phckd\n- New: the Social HUD shows up to 4 names (change it in HUD settings); scroll on it with chat open to see the rest by @phckd\n- New: HUDs can grow up or down: right-click one in the HUD Editor by @phckd\n- New: Short badges in chat: player ranks (ANGLER, STAFF...), rarities and variants as short badges; short variant badges in the HUDs too by @phckd\n- New: hover a pet shared in chat to see its price by @phckd\n- Changed: the in-game wiki is now kept inside FOE+, so it works without going online by @phckd\n- Changed: all 42 FOE+ sounds remade from scratch, with new names (your picks carry over) by @phckd\n- Changed: All-Time Stats lines no longer say \"Total\" by @phckd\n- Fixed: the shard sound played on every catch; it now plays only for shards by @phckd\n- Fixed: a /find you type yourself shows its answer again; only FOE+'s quiet checks are hidden by @phckd\n- Fixed: variant and Gigantic dry streaks are easier to read by @phckd"
+    },
+    {
       "versionNumber": "1.1.3+1.21.11",
       "name": "FOE+ 1.1.3+1.21.11",
       "datePublished": "2026-11-25",

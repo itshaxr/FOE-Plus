@@ -60,8 +60,48 @@ public class CrewPanelElement extends PanelElement {
         if (!Configs.inventoryScreenConfig.timersCrew.get()) return List.of();
         // offline names follow the inventory box's "Show offline names" switch, so both always agree
         TimersCrewBox.Crew crew = TimersCrewBox.crew();
-        List<Component> all = lines(crew.range(), crew.total(), TimersCrewBox.legend(), crew.onlineNames(), crew.offlineNames());
+        List<Component> names = new ArrayList<>(crew.onlineNames());
+        names.addAll(crew.offlineNames());
+        List<Component> shown = window(names, Configs.hudConfig.crewPanelMaxNames.get());
+        List<Component> all = lines(crew.range(), crew.total(), TimersCrewBox.legend(), shown, List.of());
         return fitBelow(all, roomForLines());
+    }
+
+    /// How far down the list of names you've scrolled.
+    private static int scroll = 0;
+    private static int lastCount = 0;
+
+    /// Package-private for tests: the names from where you've scrolled to, `max` of them, with a line saying how many
+    /// more there are above and below (and how to scroll) when they don't all fit.
+    static List<Component> window(List<Component> names, int max) {
+        lastCount = names.size();
+        max = Math.max(1, max);
+        if (names.size() <= max) {
+            scroll = 0;
+            return names;
+        }
+        scroll = Math.max(0, Math.min(scroll, names.size() - max));
+        List<Component> out = new ArrayList<>(names.subList(scroll, scroll + max));
+        int above = scroll, below = names.size() - scroll - max;
+        StringBuilder sb = new StringBuilder();
+        if (above > 0) sb.append("▲ ").append(above).append("  ");
+        if (below > 0) sb.append("▼ ").append(below).append("  ");
+        sb.append("(scroll in chat)");
+        out.add(Component.literal(sb.toString().trim()).withStyle(ChatFormatting.DARK_GRAY));
+        return out;
+    }
+
+    /// The mouse wheel over the Social HUD (chat open): true when it was over it (the names moved).
+    public static boolean onScroll(double mouseX, double mouseY, double amount) {
+        String id = "CrewPanelElement";
+        String host = HudCombine.shownInHost(id) ? HudCombine.hostOf(id) : null;
+        int[] r = DRAWN.get(host != null ? host : id);
+        if (r == null || amount == 0) return false;
+        if (mouseX < r[0] || mouseX >= r[0] + r[2] || mouseY < r[1] || mouseY >= r[1] + r[3]) return false;
+        int max = Configs.hudConfig.crewPanelMaxNames.get();
+        if (lastCount <= max) return false;
+        scroll = Math.max(0, Math.min(scroll + (amount > 0 ? -1 : 1), lastCount - max));
+        return true;
     }
 
     /// How many lines fit between where the panel starts and the screen's bottom, for a panel anchored at the top

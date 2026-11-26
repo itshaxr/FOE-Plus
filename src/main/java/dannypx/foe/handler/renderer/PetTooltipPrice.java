@@ -64,7 +64,7 @@ public final class PetTooltipPrice {
 
     /// The middle pieces of the server's tooltip frames (in its pack's default font: common, rare, epic, legendary,
     /// mythical), one on each row inside the frame.
-    static final int[] MIDDLE_PIECES = {0xD003, 0xD007, 0xD011, 0xD015, 0xD019};
+    public static final int[] MIDDLE_PIECES = {0xD003, 0xD007, 0xD011, 0xD015, 0xD019};
 
     static boolean hasMiddlePiece(FormattedCharSequence seq) {
         boolean[] found = {false};

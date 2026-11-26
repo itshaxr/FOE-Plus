@@ -107,7 +107,11 @@ public final class RareCatchHandler {
             return c.showShardChat.get() && c.hideServerPullLines.get();
         }
         int streak = StatsDataHandler.instance().onRareCatch(pull.key(), pull.count());
-        dannypx.foe.handler.store.NotifySounds.play("rare_catch");
+        dannypx.foe.handler.store.NotifySounds.play(switch (pull.key()) {
+            case LIGHTNING_BOTTLE -> "lightning_bottle";
+            case PROSPECTING_AMULET -> "prospecting_amulet";
+            default -> "infusion_capsule";
+        });
         boolean chat = switch (pull.key()) {
             case LIGHTNING_BOTTLE -> c.showLightningBottleChat.get();
             case PROSPECTING_AMULET -> c.showProspectingAmuletChat.get();

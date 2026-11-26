@@ -672,6 +672,7 @@ public class AlertHandler {
         Set<Alert> current = EnumSet.noneOf(Alert.class);
         for (Active active : active()) {
             current.add(active.alert());
+            lastLeft.put(active.alert(), active.msLeft());
             if (announced.contains(active.alert())) continue;
             // Only announce once it has really started (held for a moment), never for a blip.
             long since = activeSince.computeIfAbsent(active.alert(), a -> now);
@@ -688,6 +689,14 @@ public class AlertHandler {
             // its own sound (O → Customize → Sounds)
             dannypx.foe.handler.store.NotifySounds.play(soundId(active.alert()));
         }
+        // the end sound of each that has just ended
+        // (only when it really ran out: not when it just stops showing, like when you leave its place)
+        for (Alert a : announced) {
+            if (current.contains(a)) continue;
+            long left = lastLeft.getOrDefault(a, -1L);
+            if (left < 0 || left <= 20_000L) dannypx.foe.handler.store.NotifySounds.play(soundId(a) + "_end");
+        }
+        lastLeft.keySet().retainAll(current);
         announced.retainAll(current);
         activeSince.keySet().retainAll(current);
     }
@@ -706,6 +715,8 @@ public class AlertHandler {
         };
     }
     private final java.util.Map<Alert, Long> activeSince = new java.util.EnumMap<>(Alert.class);
+    /// How long each was said to have left the last time it was seen.
+    private final java.util.Map<Alert, Long> lastLeft = new java.util.EnumMap<>(Alert.class);
 
     //region Text helpers
     public static String locationName(FoeLocations.Location location) {

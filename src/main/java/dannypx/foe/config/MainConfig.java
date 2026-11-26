@@ -83,7 +83,7 @@ public class MainConfig extends Config {
             new me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum<>(dannypx.foe.type.PresetsStyle.B, me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedEnum.WidgetType.CYCLING);
 
     @Name("Tell me about FOE+ updates")
-    @Desc("§7When a newer FOE+ is on GitHub, a line in chat a few seconds after you join (nothing when you're up to date)")
+    @Desc("§7When a newer FOE+ is on GitHub, a line in chat a few seconds after you join, or while you play when one comes out (checked every 10 minutes). Once per game: after that, only on your next join after restarting")
     public ValidatedBoolean updateCheck = new ValidatedBoolean(true);
 
     @Name("Use FOE title screen")

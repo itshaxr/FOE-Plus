@@ -45,16 +45,21 @@ public class FindHandler {
     static final long ASK_GAP_MS = 2_500L;
     /// What an answer is good for before it's too old to show.
     static final long FRESH_MS = 4L * 60_000L;
-    /// Our own ask's answer comes within this.
-    private static final long ANSWER_MS = 4_000L;
+    /// Our own ask's answer comes within this (the server can be slow, with other lines coming at the same time).
+    static final long ANSWER_MS = 12_000L;
 
     record Seen(String where, long at) {}
 
     private final Map<String, Seen> seen = new HashMap<>();
     private final Map<String, Long> askedAt = new HashMap<>();
     { dannypx.foe.handler.logic.MemoryGuard.register("findInstances", () -> seen.size() + askedAt.size(), () -> { seen.clear(); askedAt.clear(); }); }
-    private String pending = null;
-    private long pendingAt = 0L;
+    /// Our own asks still waiting for their answer: who, and when.
+    private final Map<String, Long> ours = new java.util.LinkedHashMap<>();
+    /// The /find you typed yourself (its answer always shows): who, and when.
+    private String typed = null;
+    private long typedAt = 0L;
+    /// True while FOE+ sends its own ask (the "you typed a command" event comes for it too).
+    private boolean sending = false;
     private long nextAskAt = 0L;
 
     /// "Instance 5" for someone /find put on instance5 (whatever else it said, as it said it), or null when unknown,
@@ -79,29 +84,46 @@ public class FindHandler {
         return text != null && onLine(text, System.currentTimeMillis());
     }
 
-    /// Package-private for tests.
+    /// You typed a command (or FOE+ sent one): a /find of yours is remembered, so its answer shows.
+    public void onCommandSent(String command) {
+        if (sending || command == null) return;
+        String c = command.trim();
+        if (!c.toLowerCase(Locale.ROOT).startsWith("find")) return;
+        String[] parts = c.split("\\s+");
+        typed = parts.length > 1 ? parts[1] : "";
+        typedAt = System.currentTimeMillis();
+    }
+
+    /// Package-private for tests: true to hide the line (the answer to one of our own quiet asks; never yours).
     boolean onLine(String text, long now) {
+        if (!FIND_LINE.matcher(text).find()) return false;
+        ours.values().removeIf(at -> now - at > ANSWER_MS);
+        boolean yoursWaiting = typed != null && now - typedAt <= ANSWER_MS;
+        String lower = text.toLowerCase(Locale.ROOT);
         Matcher m = ON.matcher(text);
-        String who;
+        String who = null;
         if (m.matches()) {
             who = m.group(1);
             seen.put(who.toLowerCase(Locale.ROOT), new Seen(shortName(m.group(2)), now));
         } else {
-            // any other FIND answer naming the one we asked about ("... is not online", "Couldn't find ..."): not on
-            if (!FIND_LINE.matcher(text).find() || pending == null) return false;
-            if (!text.toLowerCase(Locale.ROOT).contains(pending.toLowerCase(Locale.ROOT))) {
-                // an answer that names nobody ("FIND » Error. Unable to obtain server!"), just after our own ask:
-                // ours too, hidden; it says nothing about where they are
-                if (now - pendingAt > ANSWER_MS) return false;
-                pending = null;
-                return true;
-            }
-            who = pending;
-            seen.put(who.toLowerCase(Locale.ROOT), new Seen(null, now));
+            // any other FIND answer naming someone we asked about ("... is not online", "Couldn't find ..."): not on
+            for (String n : ours.keySet()) if (lower.contains(n)) { who = n; break; }
+            if (who == null && yoursWaiting && !typed.isEmpty() && lower.contains(typed.toLowerCase(Locale.ROOT))) who = typed;
+            if (who != null) seen.put(who.toLowerCase(Locale.ROOT), new Seen(null, now));
         }
-        boolean ours = pending != null && who.equalsIgnoreCase(pending) && now - pendingAt <= ANSWER_MS;
-        if (ours) pending = null;
-        return ours;
+        // your own /find: always shown
+        if (yoursWaiting && (who == null || typed.isEmpty() || who.equalsIgnoreCase(typed))) {
+            typed = null;
+            if (who != null) ours.remove(who.toLowerCase(Locale.ROOT));
+            return false;
+        }
+        if (who != null) return ours.remove(who.toLowerCase(Locale.ROOT)) != null;
+        // an answer that names nobody ("FIND » Error. Unable to obtain server!") while one of ours is waiting: ours
+        if (!ours.isEmpty()) {
+            ours.remove(ours.keySet().iterator().next());
+            return true;
+        }
+        return false;
     }
 
     /// Package-private for tests: who to ask about next (null = nobody due): never asked first, then the
@@ -123,8 +145,7 @@ public class FindHandler {
 
     void noteAsked(String name, long now) {
         askedAt.put(name.toLowerCase(Locale.ROOT), now);
-        pending = name;
-        pendingAt = now;
+        ours.put(name.toLowerCase(Locale.ROOT), now);
     }
 
     /// The server said to wait: no ask until then.
@@ -171,6 +192,11 @@ public class FindHandler {
         if (who == null || !who.matches("[A-Za-z0-9_]{1,16}")) return;
         noteAsked(who, now);
         SilentMenuHandler.instance().noteBackgroundCommand("find " + who);
-        mc.getConnection().sendCommand("find " + who);
+        sending = true;
+        try {
+            mc.getConnection().sendCommand("find " + who);
+        } finally {
+            sending = false;
+        }
     }
 }

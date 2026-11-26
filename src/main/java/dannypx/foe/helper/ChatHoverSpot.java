@@ -108,7 +108,8 @@ public final class ChatHoverSpot {
     public static String firstLine(Component text) {
         String all = text.getString();
         int nl = all.indexOf('\n');
-        return (nl < 0 ? all : all.substring(0, nl)).trim();
+        // without the server's frame pieces (pictures in the Hangul and private ranges) before the name
+        return (nl < 0 ? all : all.substring(0, nl)).replaceAll("[\\uAC00-\\uD7AF\\uE000-\\uF8FF]", "").trim();
     }
 
     /// The hover's "Sent at ..." line (the server's time on each message), or null.

@@ -20,10 +20,12 @@ import java.util.Locale;
 /**
  * Bait Prices: what a bait is worth to you. Each rarity has a price (250 / 500 / 1,000 / 5,000 to start with), and any
  * single bait can have its own (an event making one bait dearer at one place): find it by name or by its group and
- * type its price; leave it empty and it goes by its rarity again. Opening a baitbox adds these up in chat.
+ * type its price; leave it empty and it goes by its rarity again. Opening a baitbox adds these up in chat. Bait packs
+ * (Standard, Advanced and each location's, one per rarity, with the server's pictures) have no price of their own
+ * yet: you type what each is worth to you.
  */
 public class BaitPricesScreen extends Screen {
-    private static final int PANEL_W = 360, H = 18, ROW = 20, PRICE_W = 74;
+    private static final int PANEL_W = 396, H = 18, ROW = 20, PRICE_W = 74;
 
     record Rarity(String name, String letter, int color, ValidatedInt price, int start) {}
 
@@ -36,7 +38,7 @@ public class BaitPricesScreen extends Screen {
 
     /// The groups across the top of the list.
     enum Group {
-        ALL("All"), COMMON("Common"), RARE("Rare"), EPIC("Epic"), LEGENDARY("Legend"), MYTHICAL("Mythic"), LURES("Lures"), MINE("Yours");
+        ALL("All"), COMMON("Common"), RARE("Rare"), EPIC("Epic"), LEGENDARY("Legend"), MYTHICAL("Mythic"), LURES("Lures"), PACKS("Packs"), MINE("Yours");
         final String label;
         Group(String label) { this.label = label; }
     }
@@ -58,6 +60,39 @@ public class BaitPricesScreen extends Screen {
         this.parent = parent;
     }
 
+    /// A bait pack: its name, its rarity, and its picture (the server's own: a baked potato with this model number).
+    record Pack(String name, String rarity, int model) {}
+
+    /// Standard packs come Common to Epic; Advanced and the location packs Common to Mythical.
+    static final List<Pack> PACKS = packs();
+
+    private static List<Pack> packs() {
+        List<Pack> out = new ArrayList<>();
+        String[] all = {"Common", "Rare", "Epic", "Legendary", "Mythical"};
+        for (int i = 0; i < 3; i++) out.add(new Pack("Standard " + all[i] + " Pack", all[i], 1));
+        for (String r : all) out.add(new Pack("Advanced " + r + " Pack", r, 2));
+        String[] places = {"Cypress Lake", "Kenai River", "Lake Biwa", "Murray River", "Everglades", "Key West", "Toledo Bend",
+                "Great Lakes", "Danube River", "Amazon River", "Mediterranean Sea", "Cape Cod", "Hawaii", "Cairns", "Oil Rig",
+                "Lofoten Islands", "Nile River"};
+        for (int p = 0; p < places.length; p++)
+            for (String r : all) out.add(new Pack(places[p] + " " + r + " Pack", r, 3 + p));
+        return List.copyOf(out);
+    }
+
+    static Pack packOf(WikiBaits.Bait b) {
+        if (!b.texture().equals("pack")) return null;
+        for (Pack p : PACKS) if (p.name().equals(b.name())) return p;
+        return null;
+    }
+
+    /// A pack's picture: the server pack draws it from the model number (a plain baked potato without the pack).
+    private static ItemStack packPicture(Pack p) {
+        ItemStack s = new ItemStack(net.minecraft.world.item.Items.BAKED_POTATO);
+        s.set(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA,
+                new net.minecraft.world.item.component.CustomModelData(List.of((float) p.model()), List.of(), List.of(), List.of()));
+        return s;
+    }
+
     static boolean isLure(WikiBaits.Bait b) {
         return b.texture().startsWith("lure_");
     }
@@ -66,9 +101,13 @@ public class BaitPricesScreen extends Screen {
     static List<WikiBaits.Bait> filter(List<WikiBaits.Bait> all, Group group, String search, java.util.function.Predicate<String> yours) {
         String[] words = search == null ? new String[0] : search.toLowerCase(Locale.ROOT).trim().split("\\s+");
         List<WikiBaits.Bait> out = new ArrayList<>();
+        if (group == Group.PACKS) {
+            all = new ArrayList<>();
+            for (Pack p : PACKS) all.add(new WikiBaits.Bait(p.name(), p.rarity(), "pack"));
+        }
         for (WikiBaits.Bait b : all) {
             boolean in = switch (group) {
-                case ALL -> true;
+                case ALL, PACKS -> true;
                 case LURES -> isLure(b);
                 case MINE -> yours.test(b.name());
                 // lures too: a mythical lure is listed under Mythical (and under Lures)
@@ -184,7 +223,7 @@ public class BaitPricesScreen extends Screen {
             Configs.mainConfig.save();
             BaitPriceOverrides.clear();
             rebuildWidgets();
-        }).bounds(left + 12, by, half, H).tooltip(Tooltip.create(Component.literal("Rarities back to 250 / 500 / 1,000 / 5,000 / 10,000, every bait back to its rarity"))).build());
+        }).bounds(left + 12, by, half, H).tooltip(Tooltip.create(Component.literal("Rarities back to 250 / 500 / 1,000 / 5,000 / 10,000, every bait back to its rarity, bait pack prices cleared"))).build());
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(left + 12 + half + 4, by, half, H).build());
     }
 
@@ -208,8 +247,10 @@ public class BaitPricesScreen extends Screen {
             price.setFilter(t -> t.matches("\\d*"));
             Long own = BaitPriceOverrides.get(bait.name());
             price.setValue(own == null ? "" : String.valueOf(own));
-            price.setHint(Component.literal(r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get())).withStyle(ChatFormatting.DARK_GRAY));
-            price.setTooltip(Tooltip.create(Component.literal("Your price for one " + bait.name() + ". Empty: its rarity's price.")));
+            Pack pack = packOf(bait);
+            price.setHint(Component.literal(hintFor(bait, r)).withStyle(ChatFormatting.DARK_GRAY));
+            price.setTooltip(Tooltip.create(pack != null ? packTooltip(pack)
+                    : Component.literal("Your price for one " + bait.name() + ". Empty: its rarity's price.")));
             price.setResponder(t -> {
                 try {
                     BaitPriceOverrides.set(bait.name(), t.isEmpty() ? null : Long.parseLong(t));
@@ -222,9 +263,20 @@ public class BaitPricesScreen extends Screen {
                         price.setValue("");
                         setFocused(null);
                     }).bounds(left + PANEL_W - 12 - 16, y + 1, 16, ROW - 4)
-                    .tooltip(Tooltip.create(Component.literal("Back to its rarity's price"))).build()));
+                    .tooltip(Tooltip.create(Component.literal(pack != null ? "Clear your price" : "Back to its rarity's price"))).build()));
             y += ROW;
         }
+    }
+
+    /// The grey hint in an empty price box: a bait's rarity price, or "price?" for a pack (no price until you set one).
+    private static String hintFor(WikiBaits.Bait bait, Rarity r) {
+        if (packOf(bait) != null) return "price?";
+        return r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get());
+    }
+
+    /// A pack's box tooltip.
+    private static Component packTooltip(Pack p) {
+        return Component.literal("Your price for one " + p.name() + ". Packs have no set price: fill it in yourself.");
     }
 
     private static Component onOff(boolean on) {
@@ -276,7 +328,8 @@ public class BaitPricesScreen extends Screen {
             WikiBaits.Bait bait = shown.get(i);
             Rarity r = rarityOf(bait);
             try {
-                ItemStack pic = dannypx.foe.handler.store.BaitPictures.pictureFor(bait.name());
+                Pack pack = packOf(bait);
+                ItemStack pic = pack != null ? packPicture(pack) : dannypx.foe.handler.store.BaitPictures.pictureFor(bait.name());
                 if (pic != null && !pic.isEmpty()) g.renderItem(pic, left + 14, y + 2);
             } catch (RuntimeException ignored) {}
             boolean own = BaitPriceOverrides.get(bait.name()) != null;
@@ -293,7 +346,7 @@ public class BaitPricesScreen extends Screen {
             Rarity r = null;
             int i = scroll + priceBoxes.indexOf(box);
             if (i < shown.size()) r = rarityOf(shown.get(i));
-            String hint = r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get());
+            String hint = i < shown.size() ? hintFor(shown.get(i), r) : "by rarity";
             g.drawString(font, Component.literal(hint).withStyle(ChatFormatting.DARK_GRAY), box.getX() + 4 + font.width("_"), box.getY() + (box.getHeight() - 8) / 2, 0xFFFFFFFF, false);
         }
         if (shown.isEmpty()) g.drawCenteredString(font, Component.literal("No bait matches").withStyle(ChatFormatting.DARK_GRAY), width / 2, listTop + 10, 0xFFFFFFFF);

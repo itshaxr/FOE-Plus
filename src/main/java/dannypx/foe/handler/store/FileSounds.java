@@ -85,25 +85,26 @@ public final class FileSounds {
 
     /// Names for well-known sound files, nicer than the file name says.
     private static final Map<String, String> KNOWN = Map.ofEntries(
-            Map.entry("aahyeahyea", "Aah Yeah Yeah"), Map.entry("acexclaim", "Animal Crossing Exclaim"),
-            Map.entry("crabrave", "Crab Rave"), Map.entry("enemy encounter undertale", "Undertale Encounter"),
-            Map.entry("gaster vanish", "Gaster Vanish"), Map.entry("golden fish sound", "Golden Fish"),
-            Map.entry("kirby extra life", "Kirby Extra Life"), Map.entry("kirbydeath", "Kirby Death"),
-            Map.entry("kirbyssusleeplouder", "Kirby Sleep"), Map.entry("letsgogambling", "Let's Go Gambling"),
-            Map.entry("level start", "Level Start"), Map.entry("mario1up", "Mario 1-Up"), Map.entry("mariocoin", "Mario Coin"),
-            Map.entry("mariogoombajump", "Mario Goomba Stomp"), Map.entry("mariojump", "Mario Jump"),
-            Map.entry("mariopause", "Mario Pause"), Map.entry("mariopowerup", "Mario Power-Up"),
-            Map.entry("new night squid sound", "Night Squid"), Map.entry("pikminthrow", "Pikmin Throw"),
-            Map.entry("sklevelstart", "Shovel Knight Level Start"), Map.entry("skvictory", "Shovel Knight Victory"),
-            Map.entry("spider man 2099 miguel ohara sound effect", "Spider-Man 2099"), Map.entry("sqek", "Squeak"),
-            Map.entry("undertale damage taken", "Undertale Damage"), Map.entry("undertale sfx rare to find", "Undertale Rare Find"),
-            Map.entry("undertale sound effect you win", "Undertale You Win"), Map.entry("undertalesave", "Undertale Save"),
-            Map.entry("undertalevictory", "Undertale Victory"), Map.entry("victoryff", "Final Fantasy Victory"),
-            Map.entry("vulkandies", "Vulkan Dies"), Map.entry("yoshimount", "Yoshi Mount"), Map.entry("monee", "Money"),
+            Map.entry("aahyeahyea", "Aah Yeah Yeah"), Map.entry("acexclaim", "Surprised Exclaim"),
+            Map.entry("crabrave", "Crab Dance"), Map.entry("enemy encounter undertale", "Encounter!"),
+            Map.entry("gaster vanish", "Glitchy Vanish"), Map.entry("golden fish sound", "Golden Fish"),
+            Map.entry("kirby extra life", "Extra Life Jingle"), Map.entry("kirbydeath", "Puffball Faint"),
+            Map.entry("kirbyssusleeplouder", "Sleepy Snore"), Map.entry("letsgogambling", "Let's Go Gambling"),
+            Map.entry("level start", "Level Start"), Map.entry("mario1up", "1-Up Chime"), Map.entry("mariocoin", "Coin Pickup"),
+            Map.entry("mariogoombajump", "Stomp"), Map.entry("mariojump", "Boing Jump"),
+            Map.entry("mariopause", "Pause Blip"), Map.entry("mariopowerup", "Power-Up"),
+            Map.entry("new night squid sound", "Night Squid"), Map.entry("pikminthrow", "Tiny Toss"),
+            Map.entry("sklevelstart", "Knight Quest Start"), Map.entry("skvictory", "Knight Victory"),
+            Map.entry("spider man 2099 miguel ohara sound effect", "Web Hero Sting"), Map.entry("sqek", "Squeak"),
+            Map.entry("undertale damage taken", "Ouch Hit"), Map.entry("undertale sfx rare to find", "Rare Find"),
+            Map.entry("undertale sound effect you win", "You Win"), Map.entry("undertalesave", "Save Sparkle"),
+            Map.entry("undertalevictory", "Battle Won"), Map.entry("victoryff", "Victory Fanfare"),
+            Map.entry("vulkandies", "Fallen Giant"), Map.entry("jawbus", "Sea Beast Roar"), Map.entry("megalovania", "Battle Riff"),
+            Map.entry("kirbyvictory", "Puffball Victory"), Map.entry("awwdangit", "Aww Dang It"), Map.entry("raredrop", "Rare Drop"), Map.entry("yoshimount", "Dino Mount"), Map.entry("monee", "Money"),
             Map.entry("out", "Mystery Sound"));
 
-    /// Package-private for tests: a clean name from a file name ("kirby_extra_life.ogg" → "Kirby Extra Life",
-    /// "undertale-damage-taken_0iH1Nxl.ogg" → "Undertale Damage", "MarioCoin.ogg" → "Mario Coin").
+    /// Package-private for tests: a clean name from a file name ("kirby_extra_life.ogg" → "Extra Life Jingle",
+    /// "undertale-damage-taken_0iH1Nxl.ogg" → "Ouch Hit", "MarioCoin.ogg" → "Coin Pickup").
     static String cleanName(String file) {
         String stem = file.replaceAll("(?i)\\.ogg$", "");
         // what download sites add: "(1)", "(mp3cut.net)", a random code after the last _ ("_0iH1Nxl")

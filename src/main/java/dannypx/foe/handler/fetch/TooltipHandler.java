@@ -144,6 +144,66 @@ public class TooltipHandler extends Handler {
         return joined;
     }
 
+    private static final java.util.regex.Pattern PET_RATING = java.util.regex.Pattern.compile("\\[(\\d+(?:\\.\\d+)?)%\\]");
+    private static final java.util.regex.Pattern STAT_PERCENT = java.util.regex.Pattern.compile("\\((\\d+(?:\\.\\d+)?)%\\)\\s*$");
+
+    /// A pet shared in chat as text only (its name, "ᴘᴇᴛ ʟᴇᴠᴇʟ", its Luck and Scale lines, "ʀᴀᴛɪɴɢ: ... [92.5%]",
+    /// in the server's frame): the same text with its price from your Pet Prices sheet at the end of its name's line;
+    /// null when it isn't a pet or can't be priced.
+    public static Component petTextWithPrice(Component text) {
+        if (text == null) return null;
+        String all = text.getString();
+        if (!all.contains("ʀᴀᴛɪɴɢ") || !all.contains("ᴘᴇᴛ")) return null;
+        List<Component> lines = splitLines(text);
+        List<String> plain = new java.util.ArrayList<>();
+        for (Component l : lines) plain.add(l.getString());
+        long[] price = petPriceOfText(plain);
+        if (price == null) return null;
+        // the name's line: the first with words on it
+        int nameRow = -1;
+        for (int i = 0; i < plain.size(); i++) if (plain.get(i).codePoints().anyMatch(cp -> cp < 0x3000 && Character.isLetter(cp))) { nameRow = i; break; }
+        if (nameRow < 0) return null;
+        String money = "$" + dannypx.foe.handler.store.PetPrices.format(price[0])
+                + (price[1] > price[0] ? "–" + dannypx.foe.handler.store.PetPrices.format(price[1]) : "");
+        List<Component> out = new java.util.ArrayList<>(lines);
+        out.set(nameRow, lines.get(nameRow).copy()
+                .append(Component.literal("  ·  ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+                .append(Component.literal(money).withStyle(net.minecraft.ChatFormatting.GOLD)));
+        net.minecraft.network.chat.MutableComponent joined = Component.empty();
+        for (int i = 0; i < out.size(); i++) {
+            if (i > 0) joined.append("\n");
+            joined.append(out.get(i));
+        }
+        return joined;
+    }
+
+    /// Package-private for tests: {low, high} for a pet from its tooltip's lines, or null. Its rarity is the
+    /// colour of its frame (the piece each row starts with), its rating the "[92.5%]" on its rating line, and it's
+    /// Max Luck (Max Scale) when every Luck (Scale) line says 100%.
+    static long[] petPriceOfText(List<String> plain) {
+        int rarity = -1;
+        int[] middles = dannypx.foe.handler.renderer.PetTooltipPrice.MIDDLE_PIECES;
+        outer:
+        for (String l : plain) {
+            for (int k = 0; k < middles.length; k++) if (l.indexOf(middles[k]) >= 0) { rarity = k; break outer; }
+        }
+        double rating = -1;
+        boolean luckSeen = false, scaleSeen = false, maxLuck = true, maxScale = true;
+        for (String l : plain) {
+            if (l.contains("ʀᴀᴛɪɴɢ")) {
+                java.util.regex.Matcher m = PET_RATING.matcher(l);
+                if (m.find()) rating = Double.parseDouble(m.group(1));
+            }
+            java.util.regex.Matcher pm = STAT_PERCENT.matcher(l.trim());
+            if (l.contains("ʟᴜᴄᴋ:") && pm.find()) { luckSeen = true; maxLuck &= Double.parseDouble(pm.group(1)) >= 99.95; }
+            else if (l.contains("sᴄᴀʟᴇ:") && pm.find()) { scaleSeen = true; maxScale &= Double.parseDouble(pm.group(1)) >= 99.95; }
+        }
+        if (rarity < 0 || rating < 0) return null;
+        int row = dannypx.foe.handler.store.PetPrices.rowFor(rating);
+        if (row < 0) return null;
+        return dannypx.foe.handler.store.PetPrices.price(row, rarity, luckSeen && maxLuck, scaleSeen && maxScale);
+    }
+
     /// A text's lines, each with its own colours.
     private static List<Component> splitLines(Component text) {
         List<Component> out = new java.util.ArrayList<>();

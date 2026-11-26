@@ -75,7 +75,7 @@ public class SessionStatsPanelElement extends PanelElement {
         if (Configs.hudConfig.statsPanelShowGigantic.get()) {
             int amount = s.size("gigantic");
             lines.add(join(GIGANTIC_BADGE, white(" " + amount + " "), share(amount, fish, true),
-                    Component.literal("(" + s.since("size:gigantic") + ")").withStyle(ChatFormatting.DARK_GRAY)));
+                    Component.literal("(" + s.since("size:gigantic") + ")").withStyle(ChatFormatting.GRAY)));
         }
         lines.add(Component.empty());
 
@@ -83,7 +83,7 @@ public class SessionStatsPanelElement extends PanelElement {
             int amount = s.variant(variant);
             lines.add(join(ConstantDataHandler.instance().getConstantFishComponent(variant),
                     white(" " + amount + " "), share(amount, fish, true),
-                    Component.literal("(" + s.since("variant:" + variant) + ")").withStyle(ChatFormatting.DARK_GRAY)));
+                    Component.literal("(" + s.since("variant:" + variant) + ")").withStyle(ChatFormatting.GRAY)));
         }
         return lines;
     }

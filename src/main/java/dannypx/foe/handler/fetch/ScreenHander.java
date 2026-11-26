@@ -39,6 +39,16 @@ public class ScreenHander extends Handler {
     public void onAfterInitScreen(Minecraft minecraft, Screen screen, int scaledWidth, int scaledHeight) {
         // the HUD's hover tooltips (the contest's other baits), over chat and any screen the HUD shows under
         ScreenEvents.afterRender(screen).register(dannypx.foe.helper.SafeScreen.render("ScreenHander:41", (s, g, mx, my, d) -> dannypx.foe.screens.element.hud.HudHover.render(g, mx, my)));
+        // the Social HUD's names scroll under the mouse wheel while chat is open
+        if (screen instanceof net.minecraft.client.gui.screens.ChatScreen chat) {
+            ScreenMouseEvents.allowMouseScroll(chat).register((s, mx, my, h, v) -> {
+                try {
+                    return !dannypx.foe.screens.element.hud.CrewPanelElement.onScroll(mx, my, v);
+                } catch (Throwable t) {
+                    return true;
+                }
+            });
+        }
         if(screen instanceof InventoryScreen inventoryScreen) {
             InventoryScreenRenderHandler.instance().init(inventoryScreen);
             ScreenMouseEvents.afterMouseScroll(inventoryScreen).register(dannypx.foe.helper.SafeScreen.scroll("ScreenHander:44", InventoryScreenRenderHandler.instance()::onMouseScrolled));

@@ -239,11 +239,13 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
                             Component.literal(String.valueOf(Math.round(element.xPos * 100f)))),
                     TextHelper.concat(Component.literal("Y Position: ").withStyle(ChatFormatting.GRAY),
                             Component.literal(String.valueOf(Math.round(element.yPos * 100f)))),
-                    TextHelper.concat(Component.literal("Alignment: ").withStyle(ChatFormatting.GRAY),
-                            Component.literal(element.alignment.toString())),
+                    TextHelper.concat(Component.literal("Grows: ").withStyle(ChatFormatting.GRAY),
+                            Component.literal(growsUp(element.alignment) ? "Up (new lines push it up)" : "Down (new lines go below)")),
                     Component.empty(),
                     Component.literal("Hold Left Click and Drag to change position").withStyle(ChatFormatting.ITALIC),
-                    Component.literal("Right Click to cycle Alignment").withStyle(ChatFormatting.ITALIC),
+                    Component.literal(flipVertical(element.alignment) != null && alignmentList.contains(flipVertical(element.alignment))
+                            ? "Right Click to make it grow " + (growsUp(element.alignment) ? "down" : "up")
+                            : "Right Click to cycle Alignment").withStyle(ChatFormatting.ITALIC),
                     Component.literal("Middle Click to open " + element.message.getString() + " config")
                             .withStyle(ChatFormatting.ITALIC)
 
@@ -303,7 +305,16 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
             } else if (click.button() == 1) {
                 this.playDownSound(Minecraft.getInstance().getSoundManager());
 
-                element.alignment = this.nextAlignment();
+                Alignment flipped = flipVertical(element.alignment);
+                if (flipped != null && alignmentList.contains(flipped)) {
+                    // grows the other way (down from its top, or up from its bottom), staying just where it is
+                    int screenH = minecraft.getWindow().getGuiScaledHeight();
+                    int top = getY();
+                    element.alignment = flipped;
+                    element.yPos = growsUp(flipped) ? (screenH - (top + element.height)) / (float) screenH : top / (float) screenH;
+                } else {
+                    element.alignment = this.nextAlignment();
+                }
                 this.setup(element);
 
                 callback.onReleaseExact(element.xPos, element.yPos, element.alignment);
@@ -402,6 +413,24 @@ public class MovableBoxWidget extends AbstractWidget implements ScreenConstants 
         default void onReleaseExact(float x, float y, Alignment alignment) {
             onRelease(Math.round(x * 100f), Math.round(y * 100f), alignment);
         }
+    }
+
+    /// Anchored at its bottom: it grows upward.
+    static boolean growsUp(Alignment a) {
+        return a == Alignment.BOTTOM_LEFT || a == Alignment.BOTTOM || a == Alignment.BOTTOM_RIGHT;
+    }
+
+    /// The same side, anchored at the other edge (top ↔ bottom), or null.
+    static Alignment flipVertical(Alignment a) {
+        return switch (a) {
+            case TOP_LEFT -> Alignment.BOTTOM_LEFT;
+            case BOTTOM_LEFT -> Alignment.TOP_LEFT;
+            case TOP_RIGHT -> Alignment.BOTTOM_RIGHT;
+            case BOTTOM_RIGHT -> Alignment.TOP_RIGHT;
+            case TOP -> Alignment.BOTTOM;
+            case BOTTOM -> Alignment.TOP;
+            default -> null;
+        };
     }
 
     private Alignment nextAlignment() {

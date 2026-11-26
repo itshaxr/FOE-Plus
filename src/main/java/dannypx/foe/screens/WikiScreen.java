@@ -25,8 +25,9 @@ import java.util.Deque;
 import java.util.Locale;
 
 /**
- * The FishOnMC wiki, in game (O → Tools → Wiki): FOE+ reads the wiki's pages and lays them out itself (headings, text,
- * tables, pictures, lists), so nothing opens in your web browser. Links go to their page, ← and → go back and forward
+ * The FishOnMC wiki, in game (O → Tools → Wiki): FOE+ reads its own copy of the wiki's pages, inside the mod (nothing
+ * is fetched from the internet), and lays them out itself (headings, text, tables, pictures, lists), so nothing opens in
+ * your web browser. Links go to their page, ← and → go back and forward
  * (so do the mouse's side buttons), ⌂ goes to the start page, and the search box searches the whole wiki. A click on a
  * picture shows it big. Links that leave the wiki are copied for you instead of opened.
  */
@@ -176,15 +177,15 @@ public class WikiScreen extends Screen {
         // the back and forward buttons as they are now
         if (rebuild && minecraft != null) rebuildWidgets();
         if (target.startsWith("?")) {
-            // the wiki's quick search (its full search is behind a "are you human" check that a game can't pass)
+            // searched in FOE+'s own copy of the wiki: titles first, then the pages' words
             String q = target.substring(1);
-            WikiNet.post(WikiNet.BASE + "/lib/exe/ajax.php", "call=qsearch&q=" + enc(q)).thenApply(html -> {
+            WikiNet.search(q).thenApply(html -> {
                 Html.Node root = Html.parse(html);
                 if (root.text().isBlank()) root = Html.parse("<p>Nothing on the wiki is called that. Try fewer or other words.</p>");
                 return root;
             }).whenComplete((n, t) -> done(mine, n, t));
         } else {
-            // the whole page as the website sends it, and only its article
+            // the page's article, from FOE+'s copy of the wiki
             WikiNet.text(WikiNet.BASE + "/doku.php?id=" + enc(target)).thenApply(html -> {
                 Html.Node content = content(Html.parse(html));
                 if (content == null) throw new IllegalStateException("the wiki sent something else (try again in a moment)");
@@ -214,7 +215,7 @@ public class WikiScreen extends Screen {
                 Throwable cause = t;
                 while (cause != null && cause.getCause() != null && cause.getCause() != cause) cause = cause.getCause();
                 String why = cause == null || cause.getMessage() == null ? "no answer" : cause.getMessage();
-                status = why.contains("404") ? "Couldn't open this page: it isn't on the wiki (yet)" : "Couldn't open this page: " + why;
+                status = why.contains("404") ? "This page isn't in FOE+'s copy of the wiki" : "Couldn't open this page: " + why;
                 return;
             }
             page = n;
