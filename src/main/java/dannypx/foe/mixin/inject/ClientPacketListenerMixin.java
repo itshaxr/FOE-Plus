@@ -94,6 +94,7 @@ public abstract class ClientPacketListenerMixin {
                 && !uuids.contains(textDisplay.getUUID())
         ) {
             String[] lines = textDisplay.getText().getString().split("\n");
+            dannypx.foe.screens.element.hud.CatchPopupElement.onCatchSummary(textDisplay.getText().getString());
 
             if(lines.length > 6) {
                 Arrays.stream(lines)

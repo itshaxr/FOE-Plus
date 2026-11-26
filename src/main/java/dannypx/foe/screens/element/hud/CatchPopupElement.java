@@ -99,6 +99,38 @@ public class CatchPopupElement extends Element {
         return out.isEmpty() ? List.of(new Line(Component.literal("(every line off)").withStyle(ChatFormatting.GRAY), MID)) : out;
     }
 
+    /// The size bonus the server put on its catch summary for the latest catch, and when (it's the real one: FOE+'s own
+    /// count from your gear misses bonuses it can't see).
+    private static float serverBonus = 0f;
+    private static long serverBonusAt = 0L;
+    /// The fish popup shown last, to put the server's size bonus on it when the summary comes after it.
+    private static Runnable redrawFish = null;
+    private static boolean fishWantsBonus = false;
+
+    /// "Size Bonus +26.9%" from the server's catch summary.
+    private static final java.util.regex.Pattern SERVER_BONUS = java.util.regex.Pattern.compile("(?i)size\\s*bonus\\s*:?\\s*([+-]?\\s*\\d+(?:\\.\\d+)?)\\s*%");
+
+    /// Package-private for tests: the size bonus on a catch summary's lines, or null when it has none.
+    static Float bonusOf(String summary) {
+        if (summary == null) return null;
+        java.util.regex.Matcher m = SERVER_BONUS.matcher(summary.replaceAll("[\\uE000-\\uF8FF]", ""));
+        if (!m.find()) return null;
+        try {
+            return Float.parseFloat(m.group(1).replace(" ", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /// The server's catch summary appeared: its size bonus goes on the catch popup (now, or when the popup shows).
+    public static void onCatchSummary(String summary) {
+        Float b = bonusOf(summary);
+        if (b == null) return;
+        serverBonus = b;
+        serverBonusAt = System.currentTimeMillis();
+        if (redrawFish != null && fishWantsBonus && !shownIsPet && System.currentTimeMillis() - shownAt < 8_000L) redrawFish.run();
+    }
+
     /// Called when a fish is caught.
     public static void show(FishTagObject fish) {
         var cfg = Configs.hudConfig;
@@ -108,14 +140,26 @@ public class CatchPopupElement extends Element {
             name = TextHelper.concat(fish.getRarityComponent(), Component.literal(" "), fish.getName());
         }
         Float bonus = null;
-        if (cfg.catchPopupShowSizeBonus.get() && (!cfg.catchPopupSizeBonusContestOnly.get() || contestHere())) {
-            try {
-                bonus = dannypx.foe.helper.SizeBonus.current();
-            } catch (RuntimeException e) {
-                bonus = null;
+        fishWantsBonus = cfg.catchPopupShowSizeBonus.get() && (!cfg.catchPopupSizeBonusContestOnly.get() || contestHere());
+        if (fishWantsBonus) {
+            if (System.currentTimeMillis() - serverBonusAt < 3_000L) {
+                bonus = serverBonus;   // the server's summary for this catch came first
+            } else {
+                try {
+                    bonus = dannypx.foe.helper.SizeBonus.current();
+                } catch (RuntimeException e) {
+                    bonus = null;
+                }
             }
         }
-        lines = fishLines(icon, name, fish.getFishSizeComponent(), fish.getWeight(), fish.getLength(), bonus, emptySlots() == 0);
+        rememberIcon(fish, icon);
+        lastFish = fish;
+        Component fIcon = icon, fName = name, fSize = fish.getFishSizeComponent();
+        float weight = fish.getWeight(), length = fish.getLength();
+        boolean full = emptySlots() == 0;
+        lines = fishLines(fIcon, fName, fSize, weight, length, bonus, full);
+        // when the server's summary comes after the popup, its size bonus replaces FOE+'s own count
+        redrawFish = () -> lines = fishLines(fIcon, fName, fSize, weight, length, serverBonus, full);
         shownIsPet = false;
         shownAt = System.currentTimeMillis();
     }
@@ -383,6 +427,74 @@ public class CatchPopupElement extends Element {
     public static void showOff(PetTagObject pet) {
         showPet(pet);
     }
+
+    //region /foe showfish
+
+    /// The fish caught last (for /foe showfish when you aren't holding one).
+    private static FishTagObject lastFish = null;
+    /// Each fish's picture from its catch (the server's title), so a fish held later shows it too; kept in
+    /// config/fishonmcextras/fish_icons.json.
+    private static java.util.Map<String, String> icons = null;
+
+    private static java.nio.file.Path iconFile() {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve(dannypx.foe.FishOnMCExtras.MOD_ID).resolve("fish_icons.json");
+    }
+
+    private static java.util.Map<String, String> icons() {
+        if (icons != null) return icons;
+        icons = new java.util.HashMap<>();
+        try {
+            var f = iconFile();
+            if (java.nio.file.Files.exists(f)) {
+                var root = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(f));
+                if (root.isJsonObject()) for (var e : root.getAsJsonObject().entrySet()) icons.put(e.getKey(), e.getValue().getAsString());
+            }
+        } catch (Exception e) {
+            dannypx.foe.handler.logic.LoggerHandler.error(e);
+        }
+        return icons;
+    }
+
+    private static void rememberIcon(FishTagObject fish, Component icon) {
+        String id = fish.getFish();
+        if (id == null || id.isBlank() || icon == null) return;
+        String glyph = icon.getString().trim();
+        if (glyph.length() != 1 || glyph.charAt(0) < 0xE000 || glyph.charAt(0) > 0xF8FF) return;
+        if (glyph.equals(icons().get(id))) return;
+        icons().put(id, glyph);
+        try {
+            var out = new com.google.gson.JsonObject();
+            new java.util.TreeMap<>(icons()).forEach(out::addProperty);
+            java.nio.file.Files.createDirectories(iconFile().getParent());
+            java.nio.file.Files.writeString(iconFile(), out.toString());
+        } catch (Exception e) {
+            dannypx.foe.handler.logic.LoggerHandler.error(e);
+        }
+    }
+
+    /// The fish to show off: the one in your hand, else the one you caught last; null when there's neither.
+    public static FishTagObject fishToShow() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.player != null) {
+            var held = dannypx.foe.item.ValidateItem.isFish(mc.player.getMainHandItem());
+            if (held.value1() && held.value2() != null) return held.value2();
+        }
+        return lastFish;
+    }
+
+    /// The fish popup for a fish you want to show off (/foe showfish): its picture (once you've caught one), name,
+    /// size, weight and length, as when it was caught.
+    public static void showOff(FishTagObject fish) {
+        String glyph = icons().get(fish.getFish());
+        Component icon = glyph == null ? null : Component.literal(glyph);
+        Component name = TextHelper.concat(fish.getRarityComponent(), Component.literal(" "), fish.getName());
+        lines = fishLines(icon, name, fish.getFishSizeComponent(), fish.getWeight(), fish.getLength(), null, false);
+        redrawFish = null;
+        fishWantsBonus = false;
+        shownIsPet = false;
+        shownAt = System.currentTimeMillis();
+    }
+    //endregion
 
     private static void drawCentered(GuiGraphics guiGraphics, Font font, Component line, float centerX, float y, float size, int alpha) {
         guiGraphics.pose().pushMatrix();

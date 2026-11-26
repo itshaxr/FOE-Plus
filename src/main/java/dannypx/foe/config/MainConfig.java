@@ -86,6 +86,10 @@ public class MainConfig extends Config {
     @Desc("§7When a newer FOE+ is on GitHub, a line in chat a few seconds after you join, or while you play when one comes out (checked every 10 minutes). Once per game: after that, only on your next join after restarting")
     public ValidatedBoolean updateCheck = new ValidatedBoolean(true);
 
+    @Name("FOE+ loading screen")
+    @Desc("§7FOE+'s own loading screen (a bobber cast onto the line, FOE+ rising out of the water) in place of the red Mojang one: when the game starts, on F3+T and while a server's pack loads. Off: Mojang's")
+    public ValidatedBoolean foeLoadingScreen = new ValidatedBoolean(true);
+
     @Name("Use FOE title screen")
     @Desc("§7Replace the main menu with the FOE title screen (Join FishOnMC button, player count)")
     public ValidatedBoolean useCustomTitleScreen = new ValidatedBoolean(true);

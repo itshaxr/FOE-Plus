@@ -58,6 +58,7 @@
     "inject.LevelRendererBrightnessGetterMixin",
     "inject.LivingEntityRendererMixin",
     "inject.LivingEntityRenderStateMixin",
+    "inject.LoadingOverlayMixin",
     "inject.LocatorBarMixin",
     "inject.PlayerModelMixin",
     "inject.ObjectContentsMixin",

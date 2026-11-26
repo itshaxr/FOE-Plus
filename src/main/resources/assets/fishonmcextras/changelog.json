@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.5+1.21.11",
+      "name": "FOE+ 1.1.5+1.21.11",
+      "datePublished": "2026-11-26",
+      "changelog": "## What's Changed\n- New: FOE+ loading screen in place of the red Mojang one: a bobber is cast onto the line, FOE rises out of the water and the + pops in; the line is the loading bar (turn it off in Settings → FOE+ loading screen) by @phckd\n- New: /foe showfish shows the catch popup for the fish in your hand (or the one you caught last), to show it off by @phckd\n- Fixed: the catch popup's size bonus now matches the server's catch summary by @phckd"
+    },
+    {
       "versionNumber": "1.1.4+1.21.11",
       "name": "FOE+ 1.1.4+1.21.11",
       "datePublished": "2026-11-26",

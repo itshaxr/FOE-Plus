@@ -104,6 +104,17 @@ public class CommandRegistry {
                             dannypx.foe.screens.element.hud.CatchPopupElement.showOff(pet);
                             return 1;
                         }))
+                        .then(command("showfish").executes(ctx -> {
+                            // the catch popup, to show a fish off: the one in your hand, else the one you caught last
+                            var fish = dannypx.foe.screens.element.hud.CatchPopupElement.fishToShow();
+                            if (fish == null || fish.getName().getString().isBlank()) {
+                                dannypx.foe.helper.FoeChat.send(dannypx.foe.helper.FoeChat.line("FISH", dannypx.foe.helper.FoeChat.AQUA)
+                                        .append(dannypx.foe.helper.FoeChat.text("Hold a fish (or catch one) to show it off")));
+                                return 0;
+                            }
+                            dannypx.foe.screens.element.hud.CatchPopupElement.showOff(fish);
+                            return 1;
+                        }))
                         .then(command("menu").then(command("dump").executes(Command.Crew::dumpMenus)))
                         .then(command("memory").executes(ctx -> {
                             var report = dannypx.foe.handler.logic.MemoryGuard.writeReport("asked for");
