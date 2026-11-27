@@ -280,7 +280,7 @@ public class HUDConfig extends Config {
     public ValidatedBoolean showProspectingAmuletChat = new ValidatedBoolean(true);
 
     @Name("Rare pull lines: smallest dry streak shown")
-    @Desc("§7Shard, capsule, bottle and amulet lines only show when the dry streak is at least this. 0 shows them all")
+    @Desc("§7FOE+'s shard, capsule, bottle and amulet lines only show when the dry streak is at least this (below it, the server's own line shows). 0 shows them all")
     public ValidatedInt rarePullChatMinStreak = new ValidatedInt(0, 100000, 0, ValidatedNumber.WidgetType.TEXTBOX);
 
     @Name("Rare pull lines: your own text")
@@ -884,6 +884,14 @@ public class HUDConfig extends Config {
     @Desc("§7How many people the Social HUD lists at a time; with more, scroll it (open chat and use the mouse wheel over it)")
     public ValidatedInt crewPanelMaxNames = new ValidatedInt(4, 30, 1, ValidatedNumber.WidgetType.SLIDER);
 
+    @Name("Don't show friends")
+    @Desc("§7On: the Social HUD lists only your crew (a friend who's in your crew still shows)")
+    public ValidatedBoolean crewPanelHideFriends = new ValidatedBoolean(false);
+
+    @Name("Don't show crew")
+    @Desc("§7On: the Social HUD lists only your friends, without \"Member in Range\" (a crew member who's your friend still shows)")
+    public ValidatedBoolean crewPanelHideCrew = new ValidatedBoolean(false);
+
     @ConfigGroup.Pop
     @Name("Scale")
     public ValidatedFloat crewPanelScale = ValidatedNumber.withIncrement(new ValidatedFloat(1.0f, 2.0f, 0.1f), 0.05f);
@@ -1069,6 +1077,10 @@ public class HUDConfig extends Config {
     @Name("In the top bar")
     @Desc("§7How the chummer sits in the top bar: the rarity's badge over the time, or a short badge (its first letter) beside the picture or on its corner")
     public ValidatedEnum<dannypx.foe.type.ChummerStyle> chummerBarStyle = new ValidatedEnum<>(dannypx.foe.type.ChummerStyle.BADGE_OVER_TIME, ValidatedEnum.WidgetType.CYCLING);
+
+    @Name("Chummer circle in its rarity's colour")
+    @Desc("§7The sparkles a chummer draws around it on the ground take its rarity's colour: Common white, Rare blue, Epic light green, Legendary gold, Mythical red. Off: the server's green")
+    public ValidatedBoolean chummerCircleRarityColour = new ValidatedBoolean(true);
 
     @Name("X Position in %")
     public ValidatedInt chummerPanelXPosition = new ValidatedInt(50, 100, 0, ValidatedNumber.WidgetType.SLIDER);

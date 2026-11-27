@@ -69,6 +69,8 @@ public final class HudLooks {
         /// The border: "DEFAULT" (as Info panel border style says for every HUD: none when that's Off), "ON" (always,
         /// in that style, or Clean rounded when it's Off) or "OFF". Null in older saves: from {@link #border}.
         public String frame = null;
+        /// Its rarity badges: "DEFAULT" (as Short rarity badges says for every HUD), "SHORT" or "FULL".
+        public String badges = "DEFAULT";
         /// Decorations on its corners (FOECollab's flair): a picture's name for each, "" for none.
         public String flairTopLeft = "", flairTopRight = "", flairBottomLeft = "", flairBottomRight = "";
 
@@ -86,7 +88,8 @@ public final class HudLooks {
             return lineSpacing == 2 && padding == 0 && boxColor == 0 && opacity == -1 && borderColor == 0xFFFFFF
                     && titleColor == -1 && "AUTO".equals(align) && picture.isEmpty() && hidden.isEmpty()
                     && (title == null || title.isEmpty()) && !noTitle && !columns && !twoColumns && (image == null || image.isEmpty())
-                && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode()) && !hasFlair();
+                && (style == null || "DEFAULT".equals(style)) && "DEFAULT".equals(frameMode()) && !hasFlair()
+                && (badges == null || "DEFAULT".equals(badges));
         }
 
         public dannypx.foe.type.TextAlign textAlign() {
@@ -148,7 +151,7 @@ public final class HudLooks {
         to.title = from.title; to.noTitle = from.noTitle; to.columns = from.columns; to.twoColumns = from.twoColumns; to.hidden = new ArrayList<>(from.hidden);
         to.image = from.image; to.imageSize = from.imageSize; to.imageX = from.imageX; to.imageY = from.imageY;
         to.imageOpacity = from.imageOpacity; to.imageInFront = from.imageInFront; to.imageFill = from.imageFill;
-        to.style = from.style; to.border = from.border; to.frame = from.frame;
+        to.style = from.style; to.border = from.border; to.frame = from.frame; to.badges = from.badges;
     }
 
     /// Writes the edited looks. Unedited ones are left out of the file but kept in memory: the HUD Editor holds on

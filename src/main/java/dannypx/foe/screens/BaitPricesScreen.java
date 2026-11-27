@@ -38,7 +38,8 @@ public class BaitPricesScreen extends Screen {
 
     /// The groups across the top of the list.
     enum Group {
-        ALL("All"), COMMON("Common"), RARE("Rare"), EPIC("Epic"), LEGENDARY("Legend"), MYTHICAL("Mythic"), LURES("Lures"), PACKS("Packs"), MINE("Yours");
+        ALL("All"), COMMON("Common"), RARE("Rare"), EPIC("Epic"), LEGENDARY("Legendary"), MYTHICAL("Mythical"),
+        LURES("Lures"), PACKS("Bait Packs"), CHUMMERS("Chummers"), MINE("Yours");
         final String label;
         Group(String label) { this.label = label; }
     }
@@ -79,6 +80,13 @@ public class BaitPricesScreen extends Screen {
         return List.copyOf(out);
     }
 
+    /// The chummers, one per rarity: like packs, no set price, yours to fill in (shown when you hover a chummer).
+    static final List<String> CHUMMER_RARITIES = List.of("Common", "Rare", "Epic", "Legendary", "Mythical");
+
+    static boolean isChummer(WikiBaits.Bait b) {
+        return b.texture().equals("chummer");
+    }
+
     static Pack packOf(WikiBaits.Bait b) {
         if (!b.texture().equals("pack")) return null;
         for (Pack p : PACKS) if (p.name().equals(b.name())) return p;
@@ -104,10 +112,13 @@ public class BaitPricesScreen extends Screen {
         if (group == Group.PACKS) {
             all = new ArrayList<>();
             for (Pack p : PACKS) all.add(new WikiBaits.Bait(p.name(), p.rarity(), "pack"));
+        } else if (group == Group.CHUMMERS) {
+            all = new ArrayList<>();
+            for (String r : CHUMMER_RARITIES) all.add(new WikiBaits.Bait(r + " Chummer", r, "chummer"));
         }
         for (WikiBaits.Bait b : all) {
             boolean in = switch (group) {
-                case ALL, PACKS -> true;
+                case ALL, PACKS, CHUMMERS -> true;
                 case LURES -> isLure(b);
                 case MINE -> yours.test(b.name());
                 // lures too: a mythical lure is listed under Mythical (and under Lures)
@@ -156,7 +167,7 @@ public class BaitPricesScreen extends Screen {
         left = width / 2 - PANEL_W / 2;
         top = Math.max(6, height / 2 - 150);
         int bottom = Math.min(height - 6, height / 2 + 150);
-        listTop = top + 104;
+        listTop = top + 122;
         listBottom = bottom - 52;
 
         // the rarity prices, side by side
@@ -195,13 +206,21 @@ public class BaitPricesScreen extends Screen {
             find.moveCursorToEnd(false);
         }
 
-        // groups
-        int gx = left + 12, gw = (PANEL_W - 24) / Group.values().length;
-        for (Group g : Group.values()) {
-            Button b = Button.builder(Component.literal(g.label).withStyle(g == group ? ChatFormatting.YELLOW : ChatFormatting.GRAY),
-                    btn -> { group = g; scroll = 0; searchFocused = false; rebuildWidgets(); }).bounds(gx, top + 84, gw - 2, 16).build();
-            addRenderableWidget(b);
-            gx += gw;
+        // groups, in two rows: the rarities, then the rest (each row's buttons share its width, so every label has
+        // room and sits in the middle of its button)
+        Group[][] tabRows = {{Group.ALL, Group.COMMON, Group.RARE, Group.EPIC, Group.LEGENDARY, Group.MYTHICAL},
+                {Group.LURES, Group.PACKS, Group.CHUMMERS, Group.MINE}};
+        for (int row = 0; row < tabRows.length; row++) {
+            Group[] gs = tabRows[row];
+            int span = PANEL_W - 24, gap = 2;
+            float each = (span + gap) / (float) gs.length;
+            for (int i = 0; i < gs.length; i++) {
+                Group g = gs[i];
+                int x0 = left + 12 + Math.round(i * each), x1 = left + 12 + Math.round((i + 1) * each) - gap;
+                Button b = Button.builder(Component.literal(g.label).withStyle(g == group ? ChatFormatting.YELLOW : ChatFormatting.GRAY),
+                        btn -> { group = g; scroll = 0; searchFocused = false; rebuildWidgets(); }).bounds(x0, top + 84 + row * 18, x1 - x0, 16).build();
+                addRenderableWidget(b);
+            }
         }
 
         // the list
@@ -248,8 +267,10 @@ public class BaitPricesScreen extends Screen {
             Long own = BaitPriceOverrides.get(bait.name());
             price.setValue(own == null ? "" : String.valueOf(own));
             Pack pack = packOf(bait);
+            boolean chummer = isChummer(bait);
             price.setHint(Component.literal(hintFor(bait, r)).withStyle(ChatFormatting.DARK_GRAY));
             price.setTooltip(Tooltip.create(pack != null ? packTooltip(pack)
+                    : chummer ? Component.literal("Your price for one " + bait.name() + ". Chummers have no set price: fill it in yourself. It shows when you hover a chummer.")
                     : Component.literal("Your price for one " + bait.name() + ". Empty: its rarity's price.")));
             price.setResponder(t -> {
                 try {
@@ -263,14 +284,14 @@ public class BaitPricesScreen extends Screen {
                         price.setValue("");
                         setFocused(null);
                     }).bounds(left + PANEL_W - 12 - 16, y + 1, 16, ROW - 4)
-                    .tooltip(Tooltip.create(Component.literal(pack != null ? "Clear your price" : "Back to its rarity's price"))).build()));
+                    .tooltip(Tooltip.create(Component.literal(pack != null || chummer ? "Clear your price" : "Back to its rarity's price"))).build()));
             y += ROW;
         }
     }
 
     /// The grey hint in an empty price box: a bait's rarity price, or "price?" for a pack (no price until you set one).
     private static String hintFor(WikiBaits.Bait bait, Rarity r) {
-        if (packOf(bait) != null) return "price?";
+        if (packOf(bait) != null || isChummer(bait)) return "price?";
         return r == null ? "by rarity" : String.format(Locale.ROOT, "%,d", r.price().get());
     }
 
@@ -319,7 +340,14 @@ public class BaitPricesScreen extends Screen {
 
         int x = left + 12, w = (PANEL_W - 24) / 5;
         for (Rarity r : rarities()) {
-            g.drawString(font, Component.literal(r.letter()).withColor(r.color()).withStyle(ChatFormatting.BOLD), x + 3, top + 43, 0xFFFFFFFF, true);
+            // the rarity's short badge (as in the HUDs), level with the middle of its price box
+            String glyph = dannypx.foe.screens.element.hud.ChummerPanelElement.badgeGlyph(r.name());
+            if (glyph != null) {
+                Component badge = dannypx.foe.screens.element.hud.PanelElement.shortBadges(Component.literal(glyph).withStyle(ChatFormatting.WHITE));
+                g.drawString(font, badge, x + 2, top + 44, 0xFFFFFFFF, false);
+            } else {
+                g.drawString(font, Component.literal(r.letter()).withColor(r.color()).withStyle(ChatFormatting.BOLD), x + 3, top + 43, 0xFFFFFFFF, true);
+            }
             x += w;
         }
 
@@ -329,8 +357,13 @@ public class BaitPricesScreen extends Screen {
             Rarity r = rarityOf(bait);
             try {
                 Pack pack = packOf(bait);
-                ItemStack pic = pack != null ? packPicture(pack) : dannypx.foe.handler.store.BaitPictures.pictureFor(bait.name());
-                if (pic != null && !pic.isEmpty()) g.renderItem(pic, left + 14, y + 2);
+                if (isChummer(bait)) {
+                    g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, dannypx.foe.screens.element.hud.ChummerPanelElement.BUCKET,
+                            left + 14, y + 2, 0f, 0f, 16, 16, 16, 16);
+                } else {
+                    ItemStack pic = pack != null ? packPicture(pack) : dannypx.foe.handler.store.BaitPictures.pictureFor(bait.name());
+                    if (pic != null && !pic.isEmpty()) g.renderItem(pic, left + 14, y + 2);
+                }
             } catch (RuntimeException ignored) {}
             boolean own = BaitPriceOverrides.get(bait.name()) != null;
             Component name = Component.literal(bait.name()).withColor(r == null ? 0xBBBBBB : r.color());

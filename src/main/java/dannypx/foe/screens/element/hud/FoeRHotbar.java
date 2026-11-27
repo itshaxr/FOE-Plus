@@ -39,8 +39,13 @@ public final class FoeRHotbar {
     /// A frame `w` by `h`: a dark outline with rounded corners, the ring (dark brown, or the colour picked), the glass
     /// (dark, or the colour picked) with a glint on top.
     static void frame(GuiGraphics g, int x, int y, int w, int h) {
+        frame(g, x, y, w, h, -1);
+    }
+
+    /// The same with its ring in `ringColor` (RGB; -1: the bar's own), the bait lock's red.
+    static void frame(GuiGraphics g, int x, int y, int w, int h, int ringColor) {
         var cfg = Configs.hudConfig;
-        int ring = FoeRBoxes.ring(cfg.foeRHotbarBorderColor.get(), RING);
+        int ring = ringColor >= 0 ? ringColor & 0xFFFFFF : FoeRBoxes.ring(cfg.foeRHotbarBorderColor.get(), RING);
         int c = dannypx.foe.screens.element.hud.GameXpBar.parse(cfg.foeRHotbarBoxColor.get());
         int glass = Math.round(Math.max(0, Math.min(100, cfg.foeRHotbarOpacity.get())) * 255 / 100f) << 24 | (c < 0 ? 0x101418 : c);
         g.fill(x + 2, y, x + w - 2, y + h, 0xFF0B0B0B);

@@ -14,6 +14,8 @@ import java.util.List;
  * progress, in the server's colours. Hidden when no mini event is on.
  */
 public class MiniEventPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public MiniEventPanelElement() {
         this(false);
     }
@@ -49,12 +51,51 @@ public class MiniEventPanelElement extends PanelElement {
                 Component.literal(MiniEventHandler.dhms(msLeft)).withStyle(ChatFormatting.WHITE));
     }
 
-    /// "— Kenai River GIGANTIC  (0/2) One Timer", with a ✔ once it's done.
+    /// The "(0/2)" count in a mission's progress.
+    private static final java.util.regex.Pattern COUNT = java.util.regex.Pattern.compile("\\(\\s*[\\d,]+\\s*/\\s*[\\d,]+\\s*\\)");
+
+    /// One mission: its name on the left (the server's dash before it left out) and its count and what kind it is
+    /// on the right ("⛏ Kenai GIGANTIC ⇥ (0/2) One Timer"), with a ✔ once it's done.
     static Component mission(MiniEventHandler.Mission m) {
         String progress = m.progress().getString();
         boolean serverTicked = progress.contains("✓") || progress.contains("✔");
-        return join(badged(m.name()), Component.literal("  "), m.progress(),
-                m.complete() && !serverTicked ? Component.literal(" ✔").withStyle(ChatFormatting.GREEN) : Component.empty());
+        Component name = tidy(badged(m.name()), true);
+        Component count, kind;
+        java.util.regex.Matcher c = COUNT.matcher(progress);
+        if (c.find()) {
+            count = tidy(slice(m.progress(), c.start(), c.end()), false);
+            kind = tidy(slice(m.progress(), c.end(), progress.length()), false);
+        } else {
+            count = tidy(m.progress(), false);
+            kind = Component.empty();
+        }
+        if (m.complete() && !serverTicked) kind = join(kind, Component.literal(kind.getString().isEmpty() ? "✔" : " ✔").withStyle(ChatFormatting.GREEN));
+        Component tail = kind.getString().isEmpty() ? count : join(count, Component.literal(" "), kind);
+        return join(name, TAB, tail);
+    }
+
+    /// Package-private for tests: the text with no spaces at its ends and one between words (and, for a name, no
+    /// dash or bullet before it), in its colours.
+    static Component tidy(Component line, boolean name) {
+        String t = line.getString();
+        int a = 0, b = t.length();
+        while (a < b && (Character.isWhitespace(t.charAt(a)) || (name && "—–-•·»└├".indexOf(t.charAt(a)) >= 0))) a++;
+        while (b > a && Character.isWhitespace(t.charAt(b - 1))) b--;
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        boolean[] space = {false};
+        slice(line, a, b).visit((style, str) -> {
+            StringBuilder run = new StringBuilder();
+            for (int i = 0; i < str.length(); i++) {
+                char ch = str.charAt(i);
+                boolean ws = Character.isWhitespace(ch);
+                if (ws && space[0]) continue;
+                space[0] = ws;
+                run.append(ws ? ' ' : ch);
+            }
+            if (run.length() > 0) out.append(Component.literal(run.toString()).withStyle(style));
+            return java.util.Optional.empty();
+        }, net.minecraft.network.chat.Style.EMPTY);
+        return out;
     }
 
     /// Long place names, shorter, so the panel stays narrow.
@@ -137,6 +178,9 @@ public class MiniEventPanelElement extends PanelElement {
         lines.add(mission(new MiniEventHandler.Mission(
                 Component.literal("— ").withStyle(ChatFormatting.GOLD).append(Component.literal("Sockeye Salmon").withStyle(ChatFormatting.GREEN)),
                 Component.literal("(3/10) Daily").withStyle(ChatFormatting.GRAY), 3, 10)));
+        lines.add(mission(new MiniEventHandler.Mission(
+                Component.literal("— ").withStyle(ChatFormatting.AQUA).append(Component.literal("Shark Pet").withStyle(ChatFormatting.GREEN)),
+                Component.literal("(0/100) ∞ x0").withStyle(ChatFormatting.GRAY), 0, 100)));
         return lines;
     }
 }

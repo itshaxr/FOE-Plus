@@ -17,8 +17,9 @@ public final class PetSourceHandler {
 
     public enum Source { FISHED, CONTEST, EVENT, QUEST, UNKNOWN }
 
-    /// "PET DROP! You pulled a ...": a pet fished up.
-    static final Pattern PET_DROP = Pattern.compile("^\\s*PET DROP!", Pattern.CASE_INSENSITIVE);
+    /// "PET DROP! You pulled a ...": a pet you fished up. Only yours: the server also tells everyone when someone
+    /// else pulls a big one ("PET DROP! Name pulled a MYTHICAL ..."), and that line is never hidden or counted.
+    static final Pattern PET_DROP = Pattern.compile("^\\s*PET DROP!\\s*You\\b", Pattern.CASE_INSENSITIVE);
     /// A contest's results or prizes ("CONTEST » You placed #2", "Contest rewards", "won the contest").
     static final Pattern CONTEST = Pattern.compile("\\bcontest\\b.*\\b(reward|rewards|prize|prizes|won|winner|winners|placed|place|results?|#\\d)\\b"
             + "|\\b(reward|rewards|prize|won|placed)\\b.*\\bcontest\\b", Pattern.CASE_INSENSITIVE);

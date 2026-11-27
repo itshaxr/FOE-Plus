@@ -78,6 +78,30 @@ public class ChummerHandler extends Handler {
 
     private static net.minecraft.world.item.ItemStack fallbackIcon = null;
 
+    /// The rarities' colours for a chummer's circle: Common white, Rare blue, Epic light green, Legendary gold,
+    /// Mythical red.
+    private static final Map<String, Integer> CIRCLE = Map.of("common", 0xFFFFFF, "rare", 0x4A9BFF, "epic", 0x7CFF6B,
+            "legendary", 0xFFC21F, "mythical", 0xFF3B3B);
+
+    /// The colour for a sparkle at (x, y, z) when it's part of a chummer's circle (within its range around it, near its
+    /// height), or -1 when it's not by a chummer of a known rarity.
+    public int circleColourAt(double x, double y, double z) {
+        ChummerInfo best = null;
+        double bestD = Double.MAX_VALUE;
+        for (ChummerInfo info : CHUMMERS.values()) {
+            double dx = info.getPos().x - x, dz = info.getPos().z - z, dy = info.getPos().y - y;
+            double d = dx * dx + dz * dz;
+            if (d <= 23 * 23 && Math.abs(dy) <= 8 && d < bestD) {   // its range (20 blocks), and a little
+                best = info;
+                bestD = d;
+            }
+        }
+        if (best == null) return -1;
+        // its rarity as its sign shows it (a badge, or the word)
+        Integer rgb = CIRCLE.get(dannypx.foe.screens.element.hud.PetPanelElement.rarityFromText(best.getRarity()));
+        return rgb == null ? -1 : rgb;
+    }
+
     /// The chummer whose range you're standing in (the nearest), or null.
     public ChummerInfo inRange() {
         ChummerInfo c = getChummer();

@@ -12,6 +12,8 @@ import java.util.List;
 /// Unfinished daily missions, in FOE's panel style. Ported from FOECollab's
 /// DailyQuestTrackerHudHandler (AGPL-3.0). Open the main menu once per session to fill it.
 public class DailyQuestPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public DailyQuestPanelElement() {
         this(false);
     }

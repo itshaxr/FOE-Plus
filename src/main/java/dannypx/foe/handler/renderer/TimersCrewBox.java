@@ -139,9 +139,15 @@ public final class TimersCrewBox {
 
     /// "■Crew ■Friends"
     public static Component legend() {
-        return Component.empty()
-                .append(Component.literal("■").withColor(CREW_COLOR)).append(Component.literal("Crew ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("■").withColor(FRIEND_COLOR)).append(Component.literal("Friends").withStyle(ChatFormatting.GRAY));
+        return legend(true, true);
+    }
+
+    /// The legend for what's listed: "■Crew ■Friends", or just one of them.
+    public static Component legend(boolean crew, boolean friends) {
+        var out = Component.empty();
+        if (crew) out.append(Component.literal("■").withColor(CREW_COLOR)).append(Component.literal(friends ? "Crew " : "Crew").withStyle(ChatFormatting.GRAY));
+        if (friends) out.append(Component.literal("■").withColor(FRIEND_COLOR)).append(Component.literal("Friends").withStyle(ChatFormatting.GRAY));
+        return out;
     }
 
     public static Crew crew() {
@@ -150,6 +156,12 @@ public final class TimersCrewBox {
 
     /// Your crew and friends, online first; `offline`: the offline ones listed too.
     public static Crew crew(boolean offline) {
+        return crew(offline, true, true);
+    }
+
+    /// The same, with only your crew ({@code showFriends} false) or only your friends ({@code showCrew} false). A friend
+    /// who's in your crew is both, so shows either way; "Member in Range" is about your crew, so goes with it.
+    public static Crew crew(boolean offline, boolean showCrew, boolean showFriends) {
         Minecraft mc = Minecraft.getInstance();
         UUID me = mc.player == null ? null : mc.player.getUUID();
         boolean inCrew = !ScoreboardHandler.instance().getCrew().getString().isBlank();
@@ -157,7 +169,9 @@ public final class TimersCrewBox {
         Map<UUID, String> friends = FriendsHandler.instance().all();
 
         Component range = null;
-        if (inCrew && !loaded) {
+        if (!showCrew) {
+            // no crew lines
+        } else if (inCrew && !loaded) {
             range = Component.empty().append(Component.literal("Open ").withStyle(ChatFormatting.GRAY))
                     .append(Component.literal("/crew").withStyle(ChatFormatting.AQUA))
                     .append(Component.literal(" to load your crew").withStyle(ChatFormatting.GRAY));
@@ -169,7 +183,12 @@ public final class TimersCrewBox {
         }
 
         LinkedHashMap<UUID, String> crew = new LinkedHashMap<>();
-        if (loaded) {
+        if (loaded && !showCrew && showFriends) {
+            // only friends: crew members who are friends still show, as friends
+            for (Pair<UUID, String> m : CrewHandler.instance().getCrewListOrdered()) {
+                if (!m.value1().equals(me) && friends.containsKey(m.value1())) crew.put(m.value1(), m.value2());
+            }
+        } else if (loaded) {
             for (Pair<UUID, String> m : CrewHandler.instance().getCrewListOrdered()) {
                 if (!m.value1().equals(me)) crew.put(m.value1(), m.value2());
             }
@@ -180,12 +199,14 @@ public final class TimersCrewBox {
             (isOn ? on : off).add(person(m.getValue(), isOn, true, friends.containsKey(m.getKey()), instanceOf(m.getValue())));
         }
         for (Map.Entry<UUID, String> f : friends.entrySet()) {
+            if (!showFriends) break;
             if (crew.containsKey(f.getKey()) || f.getKey().equals(me)) continue;
             boolean isOn = on(f.getKey(), f.getValue());
             (isOn ? on : off).add(person(f.getValue(), isOn, false, true, instanceOf(f.getValue())));
         }
         if (!offline) off.clear();
-        return new Crew(range, on.size(), crew.size() + (int) friends.keySet().stream().filter(k -> !crew.containsKey(k) && !k.equals(me)).count(), on, off);
+        int friendsOnly = showFriends ? (int) friends.keySet().stream().filter(k -> !crew.containsKey(k) && !k.equals(me)).count() : 0;
+        return new Crew(range, on.size(), crew.size() + friendsOnly, on, off);
     }
 
     /// Draws the box with its right edge at {@code right}, from {@code top}, no lower than

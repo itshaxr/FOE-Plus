@@ -93,8 +93,8 @@ public class FishOnMCExtrasClient implements ClientModInitializer {
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
             long _p = dannypx.foe.handler.logic.FoeProfiler.mark();
             // a reader that fails shows the line rather than crashing (or hiding it)
-            boolean keep = overlay || dannypx.foe.helper.Safe.get("chat FOE+ readers", () -> (!dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
-                        && !dannypx.foe.handler.renderer.TravelMapHandler.instance().onGameMessage(message.getString())
+            boolean keep = overlay || dannypx.foe.helper.Safe.get("chat FOE+ readers", () -> (!dannypx.foe.handler.renderer.TravelMapHandler.instance().onGameMessage(message.getString())
+                        && !dannypx.foe.handler.logic.SilentMenuHandler.instance().hideCooldownReply(message.getString())
                         && !dannypx.foe.handler.logic.CommunityEventHandler.instance().onGameMessage(message.getString())
                         && !dannypx.foe.handler.logic.EventTimesHandler.instance().onGameMessage(message)
                         && !dannypx.foe.handler.logic.FindHandler.instance().onGameMessage(message)

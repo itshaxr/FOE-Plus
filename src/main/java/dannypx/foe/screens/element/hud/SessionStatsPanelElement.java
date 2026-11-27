@@ -18,6 +18,8 @@ import static dannypx.foe.screens.element.hud.StatsPanelElement.*;
 /// rarity, gigantic and each variant with their share and the fish since the last one this
 /// session. Counted from the catches themselves and cleared when you log out.
 public class SessionStatsPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public SessionStatsPanelElement() {
         this(false);
     }

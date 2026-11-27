@@ -18,6 +18,8 @@ import java.util.List;
 /// shards, then counts per rarity and variant with their share and dry streak. Layout ported from
 /// FOECollab's FishTrackerHudHandler (AGPL-3.0); the numbers come from FOE-R's stats tracker.
 public class StatsPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     static final List<String> RARITIES = List.of("common", "rare", "epic", "legendary", "mythical");
     /// The GIGANTIC badge: a glyph image in this mod's tag font, drawn like the server's rarity
     /// badges (the text shadow gives it the same dark drop shadow).

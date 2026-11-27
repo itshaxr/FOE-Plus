@@ -206,19 +206,19 @@ public class CatchingHandler extends Handler {
                 if (!firstTime(validatePet.value2())) return;
                 // Only a pet fished up ("PET DROP!") counts; one from a contest, an event or a quest gets its own popup
                 PetSourceHandler.Source source = PetSourceHandler.instance().sourceOfNewPet();
-                PetSourceHandler.instance().used(source);
                 if (source == PetSourceHandler.Source.FISHED) {
-                    Pair<Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setPet(validatePet.value2());
-                    lastCaughtPet = validatePet.value2();
-                    lastDataPet = prevStats;
-                } else if (source == PetSourceHandler.Source.UNKNOWN) {
-                    // the reward line ("QUEST Complete [#3] ... 1x Fox Pet") can come a moment after the pet:
-                    // look again in two seconds
+                    fished(validatePet.value2());
+                } else {
+                    // not (yet) a "PET DROP!": look again in two seconds. Its line can come a moment after the pet,
+                    // and it wins: a pet pulled just as a quest is completed is the pulled pet, not the quest's
+                    // reward. So can the reward line ("QUEST Complete [#3] ... 1x Fox Pet").
                     ItemStack copy = itemStack.copy();
                     PetTagObject pet = validatePet.value2();
-                    CodeExecuterHandler.runLater(40, () -> RewardPets.notify(copy, pet, PetSourceHandler.instance().sourceOfNewPet()));
-                } else {
-                    RewardPets.notify(itemStack, validatePet.value2(), source);
+                    CodeExecuterHandler.runLater(40, () -> safely("new pet", () -> {
+                        PetSourceHandler.Source later = PetSourceHandler.instance().sourceOfNewPet();
+                        if (later == PetSourceHandler.Source.FISHED) fished(pet);
+                        else RewardPets.notify(copy, pet, later);
+                    }));
                 }
             } else {
                 Pair<String, Integer> prevStats = StatsDataHandler.instance().setOtherItem(validatedItem.value2(), count);
@@ -259,6 +259,14 @@ public class CatchingHandler extends Handler {
                     Pair<Boolean, TagObject> t = ValidateItem.isType(item.value2());
                     if (t.value1() && ValidateItem.isPet(t.value2()).value1()) scanItem(item.value2(), item.value3());
                 });
+    }
+
+    /// A pet fished up (its "PET DROP!" came): counted in your stats, with its PET PULLED! line.
+    private void fished(PetTagObject pet) {
+        PetSourceHandler.instance().used(PetSourceHandler.Source.FISHED);
+        Pair<Pair<String, Integer>, Pair<String, Integer>> prevStats = StatsDataHandler.instance().setPet(pet);
+        lastCaughtPet = pet;
+        lastDataPet = prevStats;
     }
 
     private Pair<Boolean, FishTagObject> findFish() {

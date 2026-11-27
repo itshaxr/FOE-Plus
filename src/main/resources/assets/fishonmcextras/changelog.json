@@ -1,6 +1,12 @@
 {
   "entries": [
     {
+      "versionNumber": "1.1.6+1.21.11",
+      "name": "FOE+ 1.1.6+1.21.11",
+      "datePublished": "2026-11-27",
+      "changelog": "## What's Changed\n- Fixed: the game crashing on start with Puzzle (Fabulously Optimized and other packs) by @phckd\n- New: the loading screen is now a pixel-art lake, at dusk or at night (a different one each time you start), and it runs smoother by @phckd\n- New: each HUD with rarity badges has its own Badges setting in the HUD Editor (Short, Full or Default), so you can pick where short badges show by @phckd\n- New: Social HUD settings Don't show friends and Don't show crew by @phckd\n- New: the chummer circle in the world shows in its rarity's colour (white, blue, green, gold, red), and the chummer HUDs have a sharper bucket picture by @phckd\n- New: Chummers in Bait Prices: set your own price for each rarity, and it shows when you hover a chummer. The tabs are now two rows and the rarity row uses short badges by @phckd\n- Changed: the Bait Value and Fish Value boxes are cleaner, and the numbers no longer run into the names by @phckd\n- Changed: the Mini Event HUD is lined up: names on the left, progress on the right by @phckd\n- Fixed: Mini Event missions named after a fish (like Common Thresher) now go up when you catch it by @phckd\n- Fixed: travelling from your crew island now takes you on to where you picked instead of leaving you at spawn by @phckd\n- Fixed: other players' PET DROP announcements (a mythical pet) were hidden from your chat by @phckd\n- Fixed: the server's RARE CATCH line was hidden below your smallest dry streak setting, leaving only the + shards line by @phckd\n- Fixed: the FOE-R style Bait HUD now shows when your tacklebox is locked by @phckd\n- Fixed: a pet pulled while a quest finished was called a quest pet by @phckd\n- Fixed: wrong pictures for a few baits in Bait Prices (Deep Diving Crankbait Pink, Suspending Jerkbait Firetiger, Frozen Crawlers) by @phckd"
+    },
+    {
       "versionNumber": "1.1.5+1.21.11",
       "name": "FOE+ 1.1.5+1.21.11",
       "datePublished": "2026-11-26",

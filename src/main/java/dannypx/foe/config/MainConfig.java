@@ -87,7 +87,7 @@ public class MainConfig extends Config {
     public ValidatedBoolean updateCheck = new ValidatedBoolean(true);
 
     @Name("FOE+ loading screen")
-    @Desc("§7FOE+'s own loading screen (a bobber cast onto the line, FOE+ rising out of the water) in place of the red Mojang one: when the game starts, on F3+T and while a server's pack loads. Off: Mojang's")
+    @Desc("§7FOE+'s own loading screen in place of the red Mojang one: a pixel-art lake at dusk or at night (one at random each time), with the loading bar and \"Fish on!\" when it's done. When the game starts, on F3+T and while a server's pack loads. Off: Mojang's")
     public ValidatedBoolean foeLoadingScreen = new ValidatedBoolean(true);
 
     @Name("Use FOE title screen")

@@ -62,7 +62,7 @@ Yabby Crawfish|epic|bait_yabby_crawfish
 Murray Crawfish|legendary|bait_murray_crawfish
 Stone Crab|special|bait_stone_crab
 Creepy Crawlers|special|bait_creepycrawlers
-Frozen Crawlers|special|bait_frozencrawlers
+Frozen Crawlers|special|bait_frozen_crawlers
 Southern Ray Cutbait|special|bait_southern_ray_cutbait
 Crankbait (Tiger Craw)|rare|lure_crankbait_tigercraw
 Crankbait (Smokin' Shad)|rare|lure_crankbait_smokinshad
@@ -88,11 +88,11 @@ Bucktail Jig (Dark Shad)|epic|lure_bucktail_jig_dark_shad
 Bucktail Jig (Ghost)|epic|lure_bucktail_jig_white
 Jerkbait (Blueback Herring)|epic|lure_jerkbait_blueback_herring
 Jerkbait (Redhead)|epic|lure_jerkbait_redhead
-Suspending Jerkbait (Fire Tiger)|epic|lure_suspending_jerkbait_firetiger
+Suspending Jerkbait (Fire Tiger)|epic|lure_suspendingjerkbait_firetiger
 Saltwater Spoon (Gold)|epic|lure_saltwater_spoon_gold
 Saltwater Spoon (Silver)|epic|lure_saltwater_spoon_silver
 Jerkbait (Mullet)|legendary|lure_jerkbait_mullet
-Deep Diving Crankbait (Pink Chrome)|legendary|lure_deep_diving_crankbait_pinkchrome
+Deep Diving Crankbait (Pink Chrome)|legendary|lure_deepdivingcrankbait_pink
 Marlin Lure (Blue)|legendary|lure_marlin_lure_blue
 Marlin Lure (Mini Mahi)|legendary|lure_marlin_lure_mini_mahi
 Marlin Lure (Purple)|legendary|lure_marlin_lure_purple

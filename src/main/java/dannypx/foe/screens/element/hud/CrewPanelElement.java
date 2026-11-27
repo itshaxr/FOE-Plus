@@ -59,11 +59,13 @@ public class CrewPanelElement extends PanelElement {
         splitOnce();
         if (!Configs.inventoryScreenConfig.timersCrew.get()) return List.of();
         // offline names follow the inventory box's "Show offline names" switch, so both always agree
-        TimersCrewBox.Crew crew = TimersCrewBox.crew();
+        // "Don't show crew" / "Don't show friends": only the other kind listed
+        boolean showCrew = !Configs.hudConfig.crewPanelHideCrew.get(), showFriends = !Configs.hudConfig.crewPanelHideFriends.get();
+        TimersCrewBox.Crew crew = TimersCrewBox.crew(Configs.inventoryScreenConfig.timersOffline.get(), showCrew, showFriends);
         List<Component> names = new ArrayList<>(crew.onlineNames());
         names.addAll(crew.offlineNames());
         List<Component> shown = window(names, Configs.hudConfig.crewPanelMaxNames.get());
-        List<Component> all = lines(crew.range(), crew.total(), TimersCrewBox.legend(), shown, List.of());
+        List<Component> all = lines(crew.range(), crew.total(), TimersCrewBox.legend(showCrew, showFriends), shown, List.of());
         return fitBelow(all, roomForLines());
     }
 

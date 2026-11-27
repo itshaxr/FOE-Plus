@@ -85,8 +85,15 @@ public class BaitPanelElement extends PanelElement {
         y = Math.max(0, Math.min(y, sh - SLOT_H));
         g.pose().pushMatrix();
         g.pose().scale(scale, scale);
-        FoeRHotbar.frame(g, x, y, SLOT_W, SLOT_H);
+        // locked tacklebox: a red ring and the red padlock in its top corner, as the other styles show it
+        boolean lock = bait != null && locked();
+        FoeRHotbar.frame(g, x, y, SLOT_W, SLOT_H, lock ? 0xFF3B3B : -1);
         g.renderItem(stack, x + (SLOT_W - 16) / 2, y + 3);
+        if (lock) {
+            g.nextStratum();
+            int lw = dannypx.foe.helper.LockIcon.SIZE + 2;
+            dannypx.foe.helper.LockIcon.draw(g, x + SLOT_W - lw - 1, y + 2, 1);
+        }
         String n = shortCount(count);
         var font = mc.font;
         g.drawString(font, n, x + (SLOT_W - font.width(n) + 1) / 2, y + SLOT_H - 11, 0xFFFFFFFF, true);

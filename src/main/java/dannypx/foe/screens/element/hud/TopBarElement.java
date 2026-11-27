@@ -212,12 +212,9 @@ public class TopBarElement extends Element {
         g.disableScissor();
     }
 
+    /// FOE+'s chummer bucket ({@link ChummerPanelElement#BUCKET}), {@code size} pixels square.
     private static void drawIcon(GuiGraphics g, dannypx.foe.handler.fetch.ChummerHandler.ChummerInfo c, int x, int y, int size) {
-        g.pose().pushMatrix();
-        g.pose().translate(x, y);
-        g.pose().scale(size / 16f, size / 16f);
-        g.renderItem(dannypx.foe.handler.fetch.ChummerHandler.instance().icon(c), 0, 0);
-        g.pose().popMatrix();
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, ChummerPanelElement.BUCKET, x, y, 0f, 0f, size, size, size, size);
     }
 
     /// The chummer at `x`, in the style picked (see {@link dannypx.foe.type.ChummerStyle}).

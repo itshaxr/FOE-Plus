@@ -363,9 +363,10 @@ public final class TravelMapHandler {
     /// somewhere else (and didn't start there) means the server dropped where you were going: FOE+ takes you on. Each
     /// world you're moved to in the minute after the trip is looked at (the server can pass you through more than one).
     public void tick() {
-        if (tripPlace == null) return;
         Minecraft mc = Minecraft.getInstance();
         long now = System.currentTimeMillis();
+        checkGoingOn(mc, now);
+        if (tripPlace == null) return;
         if (now - tripAt > 60_000L) { tripPlace = null; return; }
         // between worlds (the "Reconfiguring" screen: no player, no world for a moment): still on the way
         if (mc.player == null || mc.level == null) return;
@@ -399,49 +400,87 @@ public final class TravelMapHandler {
         onTrip = want;
         onSpot = spot;
         onTries = 0;
+        onSentAt = 0L;
+        onMenuAt = 0L;
         // a moment for the server to load you in first (too soon: "Data is still loading in")
+        onQueued = true;
         dannypx.foe.handler.logic.CodeExecuterHandler.runLater(50, this::goOn);
     }
 
-    /// The trip FOE+ is taking you on with (after the crew island's spawn), and how many times it's been tried.
+    /// The trip FOE+ is taking you on with (after the crew island's spawn), how many times its /travel has been sent,
+    /// when it was last sent, when its menu last opened, and whether another try is already on its way.
     private dannypx.foe.helper.FoeLocations.Location onTrip;
     private String onSpot;
     private int onTries;
-    private long onSentAt;
+    private long onSentAt, onMenuAt;
+    private boolean onQueued;
+    /// How many times FOE+ sends the /travel before giving up.
+    static final int ON_TRIES = 8;
 
     private void goOn() {
+        onQueued = false;
         if (onTrip == null) return;
         onTries++;
         onSentAt = System.currentTimeMillis();
+        dannypx.foe.handler.logic.LoggerHandler.info("Travel: /travel to go on to " + onTrip + " (try " + onTries + ")");
         travelTo(onTrip, onSpot);
     }
 
-    /// The server's "Data is still loading in. Please wait a moment before trying again." to that /travel: hidden,
-    /// and tried again a couple of seconds later (up to 8 times). True to hide the line.
-    public boolean onGameMessage(String text) {
-        if (onTrip == null || text == null) return false;
-        long now = System.currentTimeMillis();
-        if (now - onSentAt > 4_000L) {
-            if (now - onSentAt > 60_000L) onTrip = null;
-            return false;
-        }
-        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
-        if (plain == null || !plain.toLowerCase(java.util.Locale.ROOT).contains("still loading")) return false;
+    /// Another try in `ms` (none after the last one: then it says so in chat).
+    private void retryOn(long ms, String why) {
+        dannypx.foe.handler.logic.LoggerHandler.info("Travel: " + why + ", trying again");
         travelTo = null;
         silentTravel = false;
-        if (onTries >= 8) {
+        if (onTries >= ON_TRIES) {
             dannypx.foe.helper.FoeChat.info("Couldn't take you on to " + dannypx.foe.helper.FoeLocations.displayName(onTrip)
-                    + ": the server kept saying it's still loading. Use /travel when it's ready.", 0xAAAAAA);
+                    + ": the server didn't answer the /travel. Use /travel when it's ready.", 0xAAAAAA);
             onTrip = null;
-            return false;
+            return;
         }
-        dannypx.foe.handler.logic.CodeExecuterHandler.runLater(40, this::goOn);
-        return true;
+        onQueued = true;
+        dannypx.foe.handler.logic.CodeExecuterHandler.runLater((int) Math.max(1, ms / 50), this::goOn);
     }
+
+    /// Every tick while FOE+ is taking you on: its /travel sent but no travel menu a few seconds later (the server
+    /// let it go by while it was still loading you in, or answered somewhere else) → sent again.
+    private void checkGoingOn(Minecraft mc, long now) {
+        if (onTrip == null || onQueued || onSentAt == 0L) return;
+        if (now - onSentAt > 90_000L) { onTrip = null; return; }
+        if (onMenuAt >= onSentAt || now - onSentAt < 5_000L) return;
+        if (mc.player == null || mc.level == null || mc.screen != null) return;   // between worlds, or a menu of yours
+        var here = barPlace();
+        if (here == onTrip) { onTrip = null; return; }                            // there after all
+        retryOn(0, "no travel menu " + (now - onSentAt) + " ms after the /travel");
+    }
+
+    /// The server's "Data is still loading in. Please wait a moment before trying again." or "Wait 5 seconds." to that
+    /// /travel: hidden, and tried again once it's ready (up to {@link #ON_TRIES} times). True to hide the line.
+    public boolean onGameMessage(String text) {
+        if (onTrip == null || text == null || onQueued) return false;
+        long now = System.currentTimeMillis();
+        if (now - onSentAt > 4_000L) return false;
+        String plain = net.minecraft.ChatFormatting.stripFormatting(text);
+        if (plain == null) return false;
+        if (plain.toLowerCase(java.util.Locale.ROOT).contains("still loading")) {
+            retryOn(2_000L, "the server is still loading");
+            return true;
+        }
+        java.util.regex.Matcher m = COOLDOWN.matcher(plain);
+        if (m.matches()) {
+            retryOn(Long.parseLong(m.group(1)) * 1000L + 1_000L, "the server said " + plain.trim());
+            return true;
+        }
+        return false;
+    }
+
+    /// The server's command wait ("Wait 5 seconds.").
+    private static final java.util.regex.Pattern COOLDOWN = java.util.regex.Pattern.compile("^\\s*Wait (\\d+) seconds?\\.?\\s*$");
     //endregion
 
     //region Drawing
     public void render(Screen screen, GuiGraphics g, int mouseX, int mouseY, float delta) {
+        // the travel menu is up while FOE+ is taking you on: its /travel got through
+        if (onTrip != null && (isLocationsMenu(screen) || isSpotsMenu(screen))) onMenuAt = System.currentTimeMillis();
         if (silent(screen)) {
             // a [Teleport] button's trip: the menus are worked through unseen (nothing flashes up)
             Minecraft mc = Minecraft.getInstance();

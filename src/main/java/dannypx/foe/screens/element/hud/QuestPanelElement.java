@@ -14,6 +14,8 @@ import java.util.List;
 /// Quests for your current location, in FOE's panel style. Uses FOE-R's own quest data
 /// (open the quest menu once per location to fill it).
 public class QuestPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public QuestPanelElement() {
         this(false);
     }

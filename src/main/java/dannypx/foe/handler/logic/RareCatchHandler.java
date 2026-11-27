@@ -103,8 +103,11 @@ public final class RareCatchHandler {
             // the shard itself is counted when it reaches your inventory (before or after this line)
             dannypx.foe.helper.Safe.run("shard sound", CatchSound::onShard);
             int streak = StatsDataHandler.instance().onShardLine();
-            if (c.showShardChat.get() && streak >= c.rarePullChatMinStreak.get()) FoeChat.send(line(pull, streak));
-            return c.showShardChat.get() && c.hideServerPullLines.get();
+            boolean sent = c.showShardChat.get() && streak >= c.rarePullChatMinStreak.get();
+            if (sent) FoeChat.send(line(pull, streak));
+            // the server's line goes only when FOE+'s takes its place (under the smallest dry streak shown, FOE+
+            // sends none, and hiding the server's left just the "+ 3x Oceanic Shard" pick-up line)
+            return sent && c.hideServerPullLines.get();
         }
         int streak = StatsDataHandler.instance().onRareCatch(pull.key(), pull.count());
         dannypx.foe.handler.store.NotifySounds.play(switch (pull.key()) {
@@ -117,8 +120,9 @@ public final class RareCatchHandler {
             case PROSPECTING_AMULET -> c.showProspectingAmuletChat.get();
             default -> c.showInfusionCapsuleChat.get();
         };
-        if (chat && (streak < 0 || streak >= c.rarePullChatMinStreak.get())) FoeChat.send(line(pull, streak));
-        return chat && c.hideServerPullLines.get();
+        boolean sent = chat && (streak < 0 || streak >= c.rarePullChatMinStreak.get());
+        if (sent) FoeChat.send(line(pull, streak));
+        return sent && c.hideServerPullLines.get();
     }
 
     /// The item's name as the server coloured it in its line (a shard's gradient), or null when it can't be found.

@@ -14,6 +14,8 @@ import java.util.List;
  * (read by FOE-R's ChummerHandler), so it's exact.
  */
 public class ChummerPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public ChummerPanelElement() {
         this(false);
     }
@@ -46,23 +48,31 @@ public class ChummerPanelElement extends PanelElement {
         if (c == null) return List.of();
         // with the top bar on, it's in the bar (between your name and the location) instead, when it fits there
         if (TopBarElement.shown() && TopBarElement.chummerInBar) return List.of();
-        return List.of(line(handler.icon(c), c.getRarity(), c.remainingMs()));
+        return List.of(line(c.getRarity(), c.remainingMs()));
     }
 
     @Override
     protected List<Component> previewLines() {
-        return List.of(line(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COD_BUCKET), "epic", 4 * 60_000L + 32_000L));
+        return List.of(line("epic", 4 * 60_000L + 32_000L));
     }
 
-    /// "[picture] [EPIC] 4:32": small, like the bait panel. The chummer's picture, its rarity's badge and the time left
+    /// FOE+'s chummer bucket (tools/chummer_icon.py: the server's grey bucket with red chum, at twice its detail).
+    public static final net.minecraft.resources.Identifier BUCKET = net.minecraft.resources.Identifier.fromNamespaceAndPath("foeplus", "textures/gui/chummer_bucket.png");
+
+    /// "[bucket] [EPIC] 4:32": small, like the bait panel. The chummer bucket, its rarity's badge and the time left
     /// (green, then yellow under two minutes, red under one).
-    static Component line(net.minecraft.world.item.ItemStack icon, String rarityText, long msLeft) {
-        return join(inlineItem(icon), Component.literal(" "), text(rarityText, msLeft));
+    static Component line(String rarityText, long msLeft) {
+        return join(inlinePicture(BUCKET), Component.literal(" "), text(rarityText, msLeft));
     }
 
     /// The server's rarity badges, as on its items.
     static final java.util.Map<String, String> BADGES = java.util.Map.of("common", "\uF033", "rare", "\uF034",
             "epic", "\uF035", "legendary", "\uF036", "mythical", "\uF037");
+
+    /// The server's badge character for a rarity ("Epic" → its EPIC box), or null.
+    public static String badgeGlyph(String rarityText) {
+        return BADGES.get(PetPanelElement.rarityFromText(rarityText));
+    }
 
     /// The rarity's badge (the same box the server puts on its items), or null for a rarity it has none for.
     static Component badge(String rarityText) {

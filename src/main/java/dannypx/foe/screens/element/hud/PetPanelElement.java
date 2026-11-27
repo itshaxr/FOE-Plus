@@ -18,6 +18,8 @@ import java.util.List;
 /// Ported from FOECollab's PetEquipHud / PetEquipHudHandler (AGPL-3.0); the pet data comes
 /// from FOE-R's inventory tracking.
 public class PetPanelElement extends PanelElement {
+    @Override public boolean usesBadges() { return true; }
+
     public PetPanelElement() {
         this(false);
     }
@@ -67,7 +69,7 @@ public class PetPanelElement extends PanelElement {
         }
     }
 
-    static String rarityFromText(String text) {
+    public static String rarityFromText(String text) {
         if (text == null) return "";
         String t = text.toLowerCase(java.util.Locale.ROOT);
         if (t.indexOf('\uF033') >= 0 || t.contains("common")) return "common";

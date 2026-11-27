@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -68,37 +69,16 @@ public final class FishValueBox {
     }
 
     /// The box itself, its top left at (x, top).
+    /// The box's height (two rows: the menu and your inventory).
+    public static final int HEIGHT = ValueBox.height(2);
+
     public static void draw(GuiGraphics g, int x, int top, Totals t, String what) {
-        Font font = Minecraft.getInstance().font;
-        Component[][] rowsText = {
-                {Component.literal(what).withStyle(ChatFormatting.GRAY), Component.literal(money(t.chest())).withStyle(ChatFormatting.GOLD),
-                        Component.literal(t.chestCount() + " fish").withStyle(ChatFormatting.DARK_GRAY)},
-                {Component.literal("Inventory").withStyle(ChatFormatting.GRAY), Component.literal(money(t.mine())).withStyle(ChatFormatting.GOLD),
-                        Component.literal(t.mineCount() + " fish").withStyle(ChatFormatting.DARK_GRAY)},
-        };
-        Component total = Component.literal(money(t.chest() + t.mine())).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD);
-        int w = 104;
-        int h = 18 + 2 * 20 + 14 + 4;
-        g.fill(x + 1, top + 1, x + w - 1, top + h - 1, 0xC0101418);
-        g.fill(x + 1, top, x + w - 1, top + 1, 0xFF5A6770);
-        g.fill(x + 1, top + h - 1, x + w - 1, top + h, 0xFF5A6770);
-        g.fill(x, top + 1, x + 1, top + h - 1, 0xFF5A6770);
-        g.fill(x + w - 1, top + 1, x + w, top + h - 1, 0xFF5A6770);
-        Component title = Component.literal("Fish Value").withStyle(ChatFormatting.BOLD);
-        g.drawString(font, title, x + w / 2 - font.width(title) / 2, top + 5, 0xFFFFFFFF, true);
-        int y = top + 18;
-        for (Component[] r : rowsText) {
-            g.drawString(font, r[0], x + 5, y, 0xFFFFFFFF, true);
-            g.drawString(font, r[1], x + w - 5 - font.width(r[1]), y, 0xFFFFFFFF, true);
-            g.pose().pushMatrix();
-            g.pose().translate(x + w - 5, y + 9);
-            g.pose().scale(0.75f, 0.75f);
-            g.drawString(font, r[2], -font.width(r[2]), 0, 0xFFFFFFFF, false);
-            g.pose().popMatrix();
-            y += 20;
-        }
-        g.fill(x + 5, y - 2, x + w - 5, y - 1, 0x40FFFFFF);
-        g.drawString(font, Component.literal("Total").withStyle(ChatFormatting.WHITE), x + 5, y + 2, 0xFFFFFFFF, true);
-        g.drawString(font, total, x + w - 5 - font.width(total), y + 2, 0xFFFFFFFF, true);
+        List<ValueBox.Row> rows = List.of(
+                new ValueBox.Row(0x55C8FF, Component.literal(what).withStyle(ChatFormatting.WHITE),
+                        Component.literal(t.chestCount() + " fish").withColor(0x8A93A0), Component.literal(money(t.chest())).withStyle(ChatFormatting.GOLD)),
+                new ValueBox.Row(0xB0B8C4, Component.literal("Inventory").withStyle(ChatFormatting.WHITE),
+                        Component.literal(t.mineCount() + " fish").withColor(0x8A93A0), Component.literal(money(t.mine())).withStyle(ChatFormatting.GOLD)));
+        ValueBox.draw(g, x, top, Component.literal("Fish Value"), rows,
+                Component.literal(money(t.chest() + t.mine())).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
     }
 }

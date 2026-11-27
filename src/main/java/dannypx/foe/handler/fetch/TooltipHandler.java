@@ -55,6 +55,7 @@ public class TooltipHandler extends Handler {
             }
 
             if (Configs.mainConfig.baitTooltipValue.get()) addBaitValue(itemStack, components);
+            if (Configs.mainConfig.baitTooltipValue.get()) addChummerValue(itemStack, components);
 
             if(SearchHandler.instance().isOnScreen()
                     && !SearchHandler.instance().getQuery().isEmpty()
@@ -73,6 +74,36 @@ public class TooltipHandler extends Handler {
         long value = dannypx.foe.handler.logic.BaitboxHandler.stackValue(itemStack);
         if (value < 0) return;
         withValue(components, value);
+    }
+
+    /// A chummer's tooltip: what it's worth at your price for its rarity (Bait Prices → Chummers), after its name
+    /// ("Epic Chummer  ·  $50,000"; for a stack, the stack's worth). Nothing when you have no price for it: chummers
+    /// have no set price. Never a line of its own (the server's tooltip frame is drawn line by line).
+    static void addChummerValue(ItemStack itemStack, List<Component> components) {
+        if (components.isEmpty()) return;
+        String name = itemStack.getHoverName().getString();
+        int at = -1;
+        for (int i = 0; i < components.size(); i++) if (isChummerText(components.get(i).getString())) { at = i; break; }
+        if (at < 0 && !isChummerText(name)) return;
+        if (at < 0) at = 0;
+        // its rarity: the server's badge or word, on its name or anywhere in its tooltip
+        String rarity = dannypx.foe.screens.element.hud.PetPanelElement.rarityFromText(name);
+        for (int i = 0; i < components.size() && (rarity.isEmpty() || rarity.equals("special")); i++)
+            rarity = dannypx.foe.screens.element.hud.PetPanelElement.rarityFromText(components.get(i).getString());
+        if (rarity.isEmpty() || rarity.equals("special")) return;
+        Long each = dannypx.foe.handler.store.BaitPriceOverrides.get(Character.toUpperCase(rarity.charAt(0)) + rarity.substring(1) + " Chummer");
+        if (each == null) return;
+        long value = each * Math.max(1, itemStack.getCount());
+        components.set(at, components.get(at).copy()
+                .append(Component.literal("  ·  ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+                .append(Component.literal(dannypx.foe.handler.logic.BaitboxHandler.money(value)).withStyle(net.minecraft.ChatFormatting.GOLD)));
+    }
+
+    /// Package-private for tests: whether a line names a chummer (in plain or small letters).
+    static boolean isChummerText(String text) {
+        if (text == null) return false;
+        String t = text.toLowerCase(java.util.Locale.ROOT);
+        return t.contains("chummer") || t.contains("ᴄʜᴜᴍᴍᴇʀ");
     }
 
     /// Package-private for tests.

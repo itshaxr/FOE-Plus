@@ -400,20 +400,33 @@ public class MiniEventHandler {
                 break;
             }
         }
+        // The fish's own name first: a name can hold a rarity or size word ("Common Thresher" is a shark, not a
+        // common Thresher), so the catch's name in the mission counts as the fish and its words as nothing else.
+        String caughtName = normalize(c.fishName() == null ? "" : c.fishName());
+        caughtName = caughtName == null ? "" : caughtName.replaceAll("[^a-z' ]", " ").trim().replaceAll("\\s+", " ");
+        boolean named = !caughtName.isEmpty() && hasWord(text, caughtName);
+        if (named) text = removeWord(text, caughtName);
         String size = null, variant = null, rarity = null;
         for (String w : SIZES) if (hasWord(text, w)) { size = w; text = removeWord(text, w); }
         for (String w : VARIANTS) if (hasWord(text, w)) { variant = w; text = removeWord(text, w); }
-        for (String w : RARITIES) if (hasWord(text, w)) { rarity = w.equals("mythic") ? "mythical" : w; text = removeWord(text, w); }
+        String beforeRarity = text;
+        String rarityWord = null;
+        for (String w : RARITIES) if (hasWord(text, w)) { rarityWord = w; rarity = w.equals("mythic") ? "mythical" : w; text = removeWord(text, w); }
         String fish = text.replaceAll("[^a-z' ]", " ").trim().replaceAll("\\s+", " ");
         // "Catch 50 fish" / "any fish": any fish (the other details still have to match).
         fish = fish.replaceAll("(?<![a-z])(catch|catches|any|fish|fishes)(?![a-z])", " ").trim().replaceAll("\\s+", " ");
+        if (named && !fish.isEmpty()) return false;     // more fish words than the catch's name: another fish
+        // A rarity word straight before the fish's words is part of a name ("Common Thresher"): another fish than
+        // this one, unless the words are the catch's family ("Epic Tunas").
+        if (!named && rarityWord != null && !fish.isEmpty() && hasWord(beforeRarity.replaceAll("[^a-z' ]", " ").replaceAll("\\s+", " "), rarityWord + " " + fish)
+                && !sameFamily(fish, c.group())) return false;
 
-        if (place == null && size == null && variant == null && rarity == null && fish.isEmpty()) return false;
+        if (!named && place == null && size == null && variant == null && rarity == null && fish.isEmpty()) return false;
         if (place != null && place != c.here()) return false;
         if (size != null && !size.equals(lower(c.size()))) return false;
         if (variant != null && !variant.equals(lower(c.variant()))) return false;
         if (rarity != null && !rarity.equals(lower(c.rarity()))) return false;
-        if (!fish.isEmpty()) {
+        if (!named && !fish.isEmpty()) {
             // The fish ("Blue Runner") or its family ("Tunas", "Seabreams", "Rays"): the server counts
             // every fish of a family for a family's mission.
             String caught = normalize(c.fishName() == null ? "" : c.fishName());

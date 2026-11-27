@@ -16,6 +16,7 @@
   },
   "client": [
     "accessor.AbstractSelectionListAccessor",
+    "accessor.SingleQuadParticleAccessor",
     "accessor.BossHealthOverlayAccessor",
     "accessor.ContainerScreenPosAccessor",
     "accessor.MinecraftFontAccessor",
@@ -59,6 +60,7 @@
     "inject.LivingEntityRendererMixin",
     "inject.LivingEntityRenderStateMixin",
     "inject.LoadingOverlayMixin",
+    "inject.ParticleEngineMixin",
     "inject.LocatorBarMixin",
     "inject.PlayerModelMixin",
     "inject.ObjectContentsMixin",

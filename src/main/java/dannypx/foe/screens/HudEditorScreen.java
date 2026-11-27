@@ -229,8 +229,24 @@ public class HudEditorScreen extends Screen {
             y += ROW - 4;
         }
         y += 4;
+        boolean badges = panel().usesBadges();
         this.addRenderableWidget(Button.builder(Component.literal("Text: ").append(Component.literal(l.textAlign().displayName()).withStyle(ChatFormatting.AQUA)),
-                b -> { l.align = l.textAlign().next().name(); changed(); rebuildWidgets(); }).bounds(left, y, COL_W, H).build());
+                b -> { l.align = l.textAlign().next().name(); changed(); rebuildWidgets(); }).bounds(left, y, badges ? COL_W / 2 - 1 : COL_W, H).build());
+        if (badges) {
+            // this HUD's own short or full rarity badges, or as Short rarity badges says for every HUD
+            String own = l.badges == null ? "DEFAULT" : l.badges;
+            boolean allShort = dannypx.foe.config.Configs.hudConfig.shortRarityBadges.get();
+            String badgeLabel = switch (own) { case "SHORT" -> "Short"; case "FULL" -> "Full"; default -> allShort ? "Default (short)" : "Default (full)"; };
+            this.addRenderableWidget(Button.builder(Component.literal("Badges: ").append(Component.literal(badgeLabel)
+                                    .withStyle("DEFAULT".equals(own) ? ChatFormatting.AQUA : ChatFormatting.GREEN)),
+                            b -> {
+                                l.badges = switch (own) { case "DEFAULT" -> "SHORT"; case "SHORT" -> "FULL"; default -> "DEFAULT"; };
+                                changed();
+                                rebuildWidgets();
+                            }).bounds(left + COL_W / 2 + 1, y, COL_W / 2 - 1, H)
+                    .tooltip(Tooltip.create(Component.literal("This HUD's rarity badges: Short (the first letter on the rarity's colour) or Full (the server's). Default: as Short rarity badges says for every HUD (now "
+                            + (allShort ? "Short" : "Full") + ")"))).build());
+        }
         y += ROW;
         this.addRenderableWidget(Button.builder(Component.literal("<"), b -> { stepPicture(-1); rebuildWidgets(); }).bounds(left, y, 20, H).build());
         this.addRenderableWidget(Button.builder(Component.literal("Title icon: ").append(Component.literal(pictureName()).withStyle(ChatFormatting.AQUA)),

@@ -164,6 +164,13 @@ public abstract class PanelElement extends Element {
     private static final java.util.Map<String, net.minecraft.world.item.ItemStack> INLINE = new java.util.HashMap<>();
     static { dannypx.foe.handler.logic.MemoryGuard.register("panelPictures", INLINE::size, INLINE::clear); }
     private static final String INLINE_KEY = "foe:item:";
+    /// A picture of FOE+'s own (a texture) in a line, in place of an item: "foe:item:tex:<namespace:path>".
+    private static final String INLINE_TEX = INLINE_KEY + "tex:";
+
+    /// FOE+'s own picture (16 × 16 room, any square texture, drawn sharp) put into a line, like {@link #inlineItem}.
+    public static Component inlinePicture(net.minecraft.resources.Identifier texture) {
+        return Component.literal(INLINE_ROOM).withStyle(s -> s.withInsertion(INLINE_TEX + texture));
+    }
 
     /// A small item picture in a line of text (the bait by its name): room in the line, with the picture drawn
     /// in it, the size of the letters. Nothing for an empty stack.
@@ -193,7 +200,13 @@ public abstract class PanelElement extends Element {
         part.visit((style, str) -> {
             int w = font.width(Component.literal(str).withStyle(style));
             String ins = style.getInsertion();
-            if (ins != null && ins.startsWith(INLINE_KEY)) {
+            if (ins != null && ins.startsWith(INLINE_TEX)) {
+                net.minecraft.resources.Identifier tex = net.minecraft.resources.Identifier.tryParse(ins.substring(INLINE_TEX.length()));
+                if (tex != null) {
+                    int[] p = inlinePlace(w, letterH);
+                    g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex, at[0] + p[0], y + p[1], 0f, 0f, p[2], p[2], p[2], p[2]);
+                }
+            } else if (ins != null && ins.startsWith(INLINE_KEY)) {
                 net.minecraft.world.item.ItemStack stack = INLINE.get(ins);
                 if (stack != null && !stack.isEmpty()) {
                     int[] p = inlinePlace(w, letterH);
@@ -365,8 +378,22 @@ public abstract class PanelElement extends Element {
         lines = new ArrayList<>(withoutHidden(lines, look().hidden));
         while (!lines.isEmpty() && lines.getFirst().getString().isBlank()) lines.removeFirst();
         while (!lines.isEmpty() && lines.getLast().getString().isBlank()) lines.removeLast();
-        if (dannypx.foe.config.Configs.hudConfig.shortRarityBadges.get()) lines.replaceAll(PanelElement::shortBadges);
+        if (shortBadgesOn()) lines.replaceAll(PanelElement::shortBadges);
         return lines;
+    }
+
+    /// Whether this HUD shows rarity badges (so the HUD Editor offers its own Badges setting).
+    public boolean usesBadges() {
+        return false;
+    }
+
+    /// Whether this HUD's rarity badges are short: its own Badges setting (HUD Editor), or Short rarity badges when
+    /// that's Default.
+    protected boolean shortBadgesOn() {
+        String own = look().badges;
+        if ("SHORT".equals(own)) return true;
+        if ("FULL".equals(own)) return false;
+        return dannypx.foe.config.Configs.hudConfig.shortRarityBadges.get();
     }
 
     /// FOE+'s own font of little badges (its short rarity badges among them).
@@ -442,6 +469,13 @@ public abstract class PanelElement extends Element {
                     .append(lines.get(i + half)));
         }
         return out;
+    }
+
+    /// Whether the line is lined up with FOE+'s one-pixel spaces (two columns, a table): never cut into name and
+    /// number columns.
+    static boolean hasGaps(Component line) {
+        return line.visit((style, str) -> PAIR_SPACE.equals(style.getFont()) ? java.util.Optional.of(Boolean.TRUE) : java.util.Optional.empty(),
+                net.minecraft.network.chat.Style.EMPTY).isPresent();
     }
 
     /// FOE+'s one-pixel space (font fishonmcextras:gap_one), to line the right column up to the pixel.
@@ -933,7 +967,7 @@ public abstract class PanelElement extends Element {
             p.tab0W = font.width(p.tab0);
             p.tab1W = font.width(p.tab1);
         } else {
-            p.cols = columns && !p.inline && !isPair(shown) ? split(shown) : null;
+            p.cols = columns && !p.inline && !isPair(shown) && !hasGaps(shown) ? split(shown) : null;
             if (p.cols != null) {
                 p.label = p.cols.label().getVisualOrderText();
                 p.value = p.cols.value().getVisualOrderText();
